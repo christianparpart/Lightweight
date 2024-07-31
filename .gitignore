@@ -1,0 +1,5 @@
+.cache/
+.vs/
+Testing/
+build/
+compile_commands.json
