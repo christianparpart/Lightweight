@@ -8,13 +8,14 @@ struct Company;
 struct Phone;
 struct Job;
 
-struct Phone: SqlModel<Phone, "phones">
+struct Phone: SqlModel<Phone>
 {
     SqlModelField<std::string, 1, "name"> number;
     SqlModelField<std::string, 2, "type"> type;
     SqlModelBelongsTo<Person, 3, "person_id"> person;
 
     Phone():
+        SqlModel { "phones" },
         number { *this },
         type { *this },
         person { *this }
@@ -22,7 +23,7 @@ struct Phone: SqlModel<Phone, "phones">
     }
 };
 
-struct Job: SqlModel<Job, "jobs">
+struct Job: SqlModel<Job>
 {
     SqlModelBelongsTo<Person, 1, "person_id"> person;
     SqlModelField<std::string, 2, "title"> title;
@@ -32,6 +33,7 @@ struct Job: SqlModel<Job, "jobs">
     SqlModelField<bool, 6, "is_current"> isCurrent;
 
     Job():
+        SqlModel { "jobs" },
         person { *this },
         title { *this },
         salary { *this },
@@ -42,7 +44,7 @@ struct Job: SqlModel<Job, "jobs">
     }
 };
 
-struct Person: SqlModel<Person, "persons">
+struct Person: SqlModel<Person>
 {
     SqlModelField<std::string, 1, "first_name"> firstName;
     SqlModelField<SqlTrimmedString, 2, "last_name"> lastName;
@@ -52,6 +54,7 @@ struct Person: SqlModel<Person, "persons">
     HasMany<Phone> phones;
 
     Person():
+        SqlModel { "persons" },
         firstName { *this },
         lastName { *this },
         company { *this },
@@ -61,12 +64,13 @@ struct Person: SqlModel<Person, "persons">
     }
 };
 
-struct Company: SqlModel<Company, "companies">
+struct Company: SqlModel<Company>
 {
     SqlModelField<std::string> name;
     HasMany<Person> employees;
 
     Company():
+        SqlModel { "companies" },
         name { *this },
         employees { *this }
     {
@@ -95,12 +99,17 @@ int main(int argc, char const* argv[])
     Company::CreateTable();
     Person::CreateTable();
     Phone::CreateTable();
-    Jobs::CreateTable();
+    Job::CreateTable();
+
+    Person person;
+    // person.firstName = "John";
+    // person.lastName = "Doe";
+    person.Create();
 
     Phone phone;
     phone.number = "555-1234";
     phone.type = "mobile";
-    phone.person = SqlModelId { 1 };
+    phone.person = SqlModelId { person.id.Value() };
 
     return 0;
 }
