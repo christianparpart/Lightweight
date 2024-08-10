@@ -124,6 +124,10 @@ struct SqlModel
         m_value[index.value] = std::forward<T>(value);
     }
 
+    static SqlResult<SqlModel> Where(SqlModelId id) noexcept;
+    static SqlResult<SqlModel> Where(const std::string& name, const SqlVariant& value) noexcept;
+    static SqlResult<std::vector<SqlModel>> All() noexcept;
+
   private:
     SqlConnection* m_connection;
     const SqlTableSchema& m_schema;
