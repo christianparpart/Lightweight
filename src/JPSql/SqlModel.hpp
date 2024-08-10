@@ -1,6 +1,6 @@
 #pragma once
 
-// Skatching the surface of a modern C++23 ORM layer
+// Skatching the surface of a modern C++23 Object Relational Mapping (ORM) layer
 //
 // We usually know exactly the schema of the database we are working with,
 // but we need to be able to address columns with an unknown name but known index,
@@ -8,9 +8,11 @@
 
 #include "SqlConnection.hpp"
 #include "SqlDataBinder.hpp"
+#include "SqlStatement.hpp"
 
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 template <size_t N>
@@ -24,45 +26,6 @@ struct SqlStringLiteral
     char value[N];
 };
 
-struct SqlColumnSchema
-{
-    std::string name;
-    std::string type;
-    bool isNullable;
-    bool isPrimaryKey;
-    bool isAutoIncrement;
-    bool isUnique;
-    bool isInded;
-};
-
-class SqlTableSchema
-{
-  public:
-    SqlTableSchema(std::string_view tableName, SqlConnection* connection);
-    ~SqlTableSchema();
-
-    size_t ColumnCount() const noexcept;
-    const SqlColumnSchema& GetColumn(size_t index) const;
-
-  private:
-    std::vector<SqlColumnSchema> m_columns;
-};
-
-template <typename T = SqlVariant, std::size_t TableColumnIndex = 0, SqlStringLiteral ColumnName = "">
-class SqlModelField
-{
-  public:
-    SqlModelField(const std::string& name, T&& value):
-        m_name(name),
-        m_value(std::move(value))
-    {
-    }
-
-  private:
-    std::string m_name;
-    T m_value;
-};
-
 struct SqlColumnIndex
 {
     size_t value;
@@ -73,116 +36,285 @@ struct SqlModelId
     size_t value;
 };
 
-template <typename T>
-struct Relation
+// {{{ schema
+enum class SqlWhereOperator : uint8_t
 {
-    std::string name;
-    std::string type;
+    EQUAL,
+    NOT_EQUAL,
+    LESS_THAN,
+    GREATER_THAN,
+    LESS_OR_EQUAL,
+    GREATER_OR_EQUAL
 };
 
-template <typename T>
-struct HasMany: public Relation<T>
+enum class SqlColumnType : uint8_t
 {
-    std::vector<T> value;
+    UNKNOWN,
+    STRING,
+    BOOLEAN,
+    INTEGER,
+    REAL,
+    BLOB,
+    DATE,
+    TIME,
+    TIMESTAMP,
 };
 
-template <typename T>
-struct HasOne: public Relation<T>
+struct SqlColumnSchema
 {
-    T value;
+    // std::string name;
+    SqlColumnType type = SqlColumnType::UNKNOWN;
+    bool isNullable : 1 = false;
+    bool isPrimaryKey : 1 = false;
+    bool isAutoIncrement : 1 = false;
+    bool isUnique : 1 = false;
+    bool isInded : 1 = false;
+    unsigned columnSize = 0;
 };
 
-template <typename T, SqlStringLiteral TheForeignKeyName, SqlStringLiteral TheTableName>
-struct SqlForeignKey
-{
-    T* foreignModel {};
-
-    constexpr static inline std::string_view ForeignKeyName { TheForeignKeyName.value };
-    constexpr static inline std::string_view TableName { TheTableName.value };
-};
-
-template <typename Derived, SqlStringLiteral TableName>
-struct SqlModel
+// Loads and represents a table schema from the database
+class SqlTableSchema
 {
   public:
-    SqlModel(SqlConnection* connection, const SqlTableSchema& schema);
-    ~SqlModel();
+    using ColumnList = std::vector<SqlColumnSchema>;
+    SqlTableSchema(std::string tableName, ColumnList columns);
+
+    std::string const& TableName() const noexcept;
+    SqlColumnSchema const& Columns() const noexcept;
+
+    SqlResult<SqlTableSchema> Load(SqlConnection& connection, std::string tableName);
+
+  private:
+    std::string m_tableName;
+    std::vector<SqlColumnSchema> m_columns;
+};
+// }}}
+
+// Forward declarations
+template <typename Derived, SqlStringLiteral TableNameLiteral, SqlStringLiteral PrimaryKeyLiteral>
+struct SqlModel;
+
+// Base class for all fields in a model.
+class SqlModelFieldRegistrable
+{
+  public:
+    virtual ~SqlModelFieldRegistrable() = default;
+
+    virtual void BindOutputColumn(SqlStatement& statement) const = 0;
+};
+
+class SqlModelRelation
+{
+  public:
+    virtual ~SqlModelRelation() = default;
+};
+
+// Used to get fields registered to their model.
+class SqlModelFieldRegistry
+{
+  public:
+    // clang-format off
+    void RegisterField(SqlModelFieldRegistrable& field) noexcept { m_fields.push_back(&field); }
+    void RegisterRelation(SqlModelRelation& relation) noexcept { m_relations.push_back(&relation); }
+    SqlModelFieldRegistrable const& GetField(SqlColumnIndex index) const noexcept { return *m_fields[index.value]; }
+    SqlModelFieldRegistrable& GetField(SqlColumnIndex index) noexcept { return *m_fields[index.value]; }
+    // clang-format on
+
+  private:
+    std::vector<SqlModelFieldRegistrable*> m_fields;
+    std::vector<SqlModelRelation*> m_relations;
+};
+
+// Represents a single column in a table.
+//
+// The column name, index, and type are known at compile time.
+// If either name or index are not known at compile time, leave them at their default values,
+// but at least one of them msut be known.
+template <typename T = SqlVariant, std::size_t TheTableColumnIndex = 0, SqlStringLiteral TheColumnName = "">
+class SqlModelField: public SqlModelFieldRegistrable
+{
+  public:
+    static constexpr inline std::size_t ColumnIndex = TheTableColumnIndex;
+    static constexpr inline std::string_view ColumnName = TheColumnName;
+
+    explicit SqlModelField(SqlModelFieldRegistry& registry)
+    {
+        registry.RegisterField(*this);
+    }
+
+    // clang-format off
+
+    T& Data() noexcept { return m_value; }
+    T const& Data() const noexcept { return m_value; }
+    void SetData(T&& value) { m_value = std::move(value); }
+    void SetNull() { m_value = T {}; }
+
+    SqlModelField& operator=(T&& value) noexcept;
+
+    T& operator*() noexcept;
+    T const& operator*() const noexcept;
+
+    // clang-format on
+
+    void BindOutputColumn(SqlStatement& statement) const override;
+
+  private:
+    T m_value {};
+};
+
+// Represents a column in a table that is a foreign key to another table.
+template <typename Model, std::size_t TheColumnIndex, SqlStringLiteral TheForeignKeyName>
+class SqlModelBelongsTo: public SqlModelFieldRegistrable
+{
+  public:
+    explicit SqlModelBelongsTo(SqlModelFieldRegistry& registry)
+    {
+        registry.RegisterField(*this);
+    }
+
+    SqlModelBelongsTo& operator=(SqlModelId modelId) noexcept;
+    //SqlModelBelongsTo& operator=(SqlModel<Model> const& model) noexcept;
+
+    Model* operator->() noexcept;
+    Model& operator*() noexcept;
+
+    constexpr static inline std::size_t ColumnIndex { TheColumnIndex };
+    constexpr static inline std::string_view ColumnName { TheForeignKeyName.value };
+
+    void BindOutputColumn(SqlStatement& statement) const override;
+};
+
+template <typename Model>
+struct HasOne: public SqlModelRelation
+{
+    Model* operator->() noexcept;
+    Model& operator*() noexcept;
+
+    explicit HasOne(SqlModelFieldRegistry& registry)
+    {
+        (void) registry; // registry.RegisterRelation(*this);
+    }
+};
+
+template <typename Model>
+struct HasMany: public SqlModelRelation
+{
+    size_t Count() const noexcept;
+    std::vector<Model> All() const noexcept;
+
+    explicit HasMany(SqlModelFieldRegistry& registry)
+    {
+        registry.RegisterRelation(*this);
+    }
+};
+
+#if 0
+// This SQL query builder is used to build the queries for the SqlModel.
+namespace SqlQueryBuilder
+{
+
+class Builder
+{
+  public:
+    Builder() = default;
+
+    Builder& Select(const std::string& columns) &&;
+    Builder& Update(const std::string& columns) &&;
+    Builder& Delete() &&;
+    Builder& From(const std::string& table) &&;
+    Builder& Where(const std::string& column, const SqlVariant& value, SqlWhereOperator whereOperator) &&;
+    Builder& OrderBy(const std::string& column, bool ascending = true) &&;
+    Builder& Limit(size_t limit) &&;
+    Builder& Offset(size_t offset) &&;
+
+    std::string Build() const&&;
+
+    class ColumnsBuilder
+    {
+    };
+    class BuilderStart
+    {
+        Columns
+    };
+
+  private:
+    std::string m_query;
+};
+
+SqlQueryBuilder::Selecting Select();
+
+} // namespace SqlQueryBuilder
+
+inline auto testBuildQuery()
+{
+    return SqlQueryBuilder::Builder {}.Select("name").From("persons").Where("id", 1);
+}
+#endif
+
+template <typename Derived, SqlStringLiteral TableNameLiteral, SqlStringLiteral PrimaryKeyLiteral = "id">
+struct SqlModel: public SqlModelFieldRegistry
+{
+  public:
+    constexpr static inline std::string_view TableName = TableNameLiteral;
+    constexpr static inline std::string_view PrimaryKeyName = PrimaryKeyLiteral;
+
+    SqlModel();
+    ~SqlModel() = default;
 
     SqlResult<void> Save();
     SqlResult<SqlModelId> Create();
     SqlResult<void> Delete();
 
-    template <typename T>
-    void SetValue(const std::string& name, const T& value)
-    {
-        m_value[index.value] = std::forward<T>(value);
-    }
+    static SqlResult<SqlModel> First() noexcept;
 
-    template <typename T>
-    void GetValue(SqlColumnIndex index, T&& value)
-    {
-        m_value[index.value] = std::forward<T>(value);
-    }
+    static SqlResult<SqlModel> Last() noexcept;
 
-    static SqlResult<SqlModel> Where(SqlModelId id) noexcept;
-    static SqlResult<SqlModel> Where(const std::string& name, const SqlVariant& value) noexcept;
+    template <typename ColumnName, typename T>
+    static SqlResult<SqlModel> FindBy(ColumnName const& columnName, T const& value) noexcept;
+
     static SqlResult<std::vector<SqlModel>> All() noexcept;
 
-  private:
-    SqlConnection* m_connection;
-    const SqlTableSchema& m_schema;
-    std::vector<SqlModelField<SqlVariant>> m_values;
+    static SqlResult<std::vector<SqlModel>> Find(SqlModelId id) noexcept;
+
+    static SqlResult<std::vector<SqlModel>> Where(SqlColumnIndex columnIndex,
+                                                  const SqlVariant& value,
+                                                  SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
+
+    static SqlResult<std::vector<SqlModel>> Where(const std::string& columnName,
+                                                  const SqlVariant& value,
+                                                  SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
+
+    static SqlResult<void> CreateTable() noexcept;
 };
 
-namespace Example
+template <typename Derived, SqlStringLiteral TableNameLiteral, SqlStringLiteral PrimaryKeyLiteral>
+SqlModel<Derived, TableNameLiteral, PrimaryKeyLiteral>::SqlModel()
 {
-
-struct Person;
-struct Phone: SqlModel<Phone, "phones">
-{
-    SqlModelField<std::string, 1, "name"> number;
-    SqlModelField<std::string, 1, "type"> type;
-    SqlForeignKey<Person, "person"> person;
-};
-
-struct Person: SqlModel<Person, "persons">
-{
-    SqlModelField<std::string> name;
-    HasOne<Company> company;
-    HasMany<Phone> phones;
-};
-
-struct Company: SqlModel<Company, "companies">
-{
-    SqlModelField<std::string> name;
-    HasMany<Person> employees;
-};
-
-#if 0
-inline void testMain()
-{
-    SqlConnection connection;
-    SqlTableSchema schema("persons", &connection);
-
-    Phone phone(&connection, schema);
-    phone.SetValue("name", "555-1234");
-    phone.SetValue("type", "mobile");
-    phone.Create();
-
-    Person person(&connection, schema);
-    person.SetValue("name", "John Doe");
-    person.Create();
-
-    person.phones.value.push_back(phone);
-    person.Create();
-
-    Company company(&connection, schema);
-    company.SetValue("name", "ACME Inc.");
-    company.Create();
-
-    person.company.value = company;
-    person.Save();
 }
-#endif
 
-} // namespace Example
+template <typename Derived, SqlStringLiteral TableNameLiteral, SqlStringLiteral PrimaryKeyLiteral>
+SqlResult<void> SqlModel<Derived, TableNameLiteral, PrimaryKeyLiteral>::CreateTable() noexcept
+{
+    auto model = SqlModel<Derived, TableNameLiteral, PrimaryKeyLiteral>();
+    return {};
+}
+
+template <typename T, std::size_t TheTableColumnIndex, SqlStringLiteral TheColumnName>
+void SqlModelField<T, TheTableColumnIndex, TheColumnName>::BindOutputColumn(SqlStatement& statement) const
+{
+    (void) statement; // TODO
+}
+
+template <typename Model, std::size_t TheColumnIndex, SqlStringLiteral TheForeignKeyName>
+void SqlModelBelongsTo<Model, TheColumnIndex, TheForeignKeyName>::BindOutputColumn(SqlStatement& statement) const
+{
+    (void) statement; // TODO
+}
+
+template <typename T, std::size_t TheTableColumnIndex, SqlStringLiteral TheColumnName>
+SqlModelField<T, TheTableColumnIndex, TheColumnName>& SqlModelField<T, TheTableColumnIndex, TheColumnName>::operator=(
+    T&& value) noexcept
+{
+    m_value = std::move(value);
+    return *this;
+}

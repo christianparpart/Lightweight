@@ -54,8 +54,16 @@ endif()
 
 enable_testing()
 find_package(Catch2 REQUIRED)
+
 add_executable(JPSqlTest)
 target_compile_features(JPSqlTest PUBLIC cxx_std_23)
 target_link_libraries(JPSqlTest PRIVATE JPSql::JPSql Catch2::Catch2)
 target_sources(JPSqlTest PRIVATE ../JPSqlTest/JPSqlTest.cpp)
 add_test(NAME JPSqlTest COMMAND JPSqlTest)
+
+add_executable(JPSqlModelTest)
+target_compile_features(JPSqlModelTest PUBLIC cxx_std_23)
+target_link_libraries(JPSqlModelTest PRIVATE JPSql::JPSql Catch2::Catch2)
+target_sources(JPSqlModelTest PRIVATE ../JPSqlTest/SqlModelTest.cpp)
+add_test(NAME JPSqlModelTest COMMAND JPSqlModelTest)
+
