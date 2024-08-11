@@ -96,9 +96,14 @@ int main(int argc, char const* argv[])
         .connectionString = std::format("DRIVER={};Database={}", TestSqlDriver, "file::memory:"),
     });
 
-    std::print("-- CREATING TABLES:\n\n{}\n", CreateSqlTablesString<Company, Person, Phone, Job>(SqlConnection().ServerType()));
+    std::print("-- CREATING TABLES:\n\n{}\n",
+               CreateSqlTablesString<Company, Person, Phone, Job>(SqlConnection().ServerType()));
 
-    CreateSqlTables<Company, Person, Phone, Job>();
+    if (auto result = CreateSqlTables<Company, Person, Phone, Job>(); !result)
+    {
+        std::print("Error creating tables: {}\n", result.error());
+        return EXIT_FAILURE;
+    }
 
     Person person;
     person.firstName = "John";
@@ -119,7 +124,7 @@ int main(int argc, char const* argv[])
     job.Create();
 
     job.salary = 60'000;
-    job.Update();               // only the salary field is updated
+    job.Update(); // only the salary field is updated
 
     return 0;
 }

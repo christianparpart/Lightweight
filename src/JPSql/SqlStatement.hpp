@@ -55,6 +55,9 @@ class SqlStatement final: public SqlDataBinderCallback
     // Prepares the statement for execution.
     [[nodiscard]] SqlResult<void> Prepare(std::string_view query) noexcept;
 
+    template <SqlInputParameterBinder Arg>
+    [[nodiscard]] SqlResult<void> BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg) noexcept;
+
     // Binds the given arguments to the prepared statement to store the fetched data to.
     //
     // The statement must be prepared before calling this function.
@@ -170,6 +173,14 @@ template <SqlOutputColumnBinder T>
         SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, &m_indicators[columnIndex], *this));
 }
 
+template <SqlInputParameterBinder Arg>
+[[nodiscard]] SqlResult<void> SqlStatement::BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg) noexcept
+{
+    // tell Execute() that we don't know the expected count
+    m_expectedParameterCount = std::numeric_limits<size_t>::max();
+    return UpdateLastError(SqlDataBinder<Arg>::InputParameter(m_hStmt, columnIndex, arg));
+}
+
 template <SqlInputParameterBinder... Args>
 [[nodiscard]] SqlResult<void> SqlStatement::Execute(Args const&... args) noexcept
 {
@@ -177,7 +188,8 @@ template <SqlInputParameterBinder... Args>
     // such that we can call SQLBindParameter() without needing to copy it.
     // The memory region behind the input parameter must exist until the SQLExecute() call.
 
-    if (m_expectedParameterCount != sizeof...(args))
+    if (!(m_expectedParameterCount == std::numeric_limits<size_t>::max() && sizeof...(args) == 0)
+        && !(m_expectedParameterCount == sizeof...(args)))
         return std::unexpected { SqlError::INVALID_ARGUMENT };
 
     SqlLogger::GetLogger().OnExecute();
