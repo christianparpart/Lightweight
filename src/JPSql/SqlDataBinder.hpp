@@ -157,6 +157,11 @@ struct SqlDate
     {
     }
 
+    static SqlDate Today() noexcept
+    {
+        return SqlDate { std::chrono::year_month_day { std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now()) } };
+    }
+
     static SQL_DATE_STRUCT ConvertToSqlValue(std::chrono::year_month_day value) noexcept
     {
         return SQL_DATE_STRUCT {

@@ -10,6 +10,9 @@
 #include "SqlDataBinder.hpp"
 #include "SqlStatement.hpp"
 
+#include <algorithm>
+#include <ranges>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -31,10 +34,32 @@ struct SqlColumnIndex
     size_t value;
 };
 
+// {{{ SqlModelId
 struct SqlModelId
 {
     size_t value;
 };
+
+template <>
+struct SqlDataBinder<SqlModelId>
+{
+    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLSMALLINT column, SqlModelId const& value)
+    {
+        return SqlDataBinder<decltype(value.value)>::InputParameter(stmt, column, value.value);
+    }
+
+    static SQLRETURN OutputColumn(
+        SQLHSTMT stmt, SQLSMALLINT column, SqlModelId* result, SQLLEN* indicator, SqlDataBinderCallback& cb)
+    {
+        return SqlDataBinder<decltype(result->value)>::OutputColumn(stmt, column, &result->value, indicator, cb);
+    }
+
+    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLSMALLINT column, SqlModelId* result, SQLLEN* indicator)
+    {
+        return SqlDataBinder<decltype(result->value)>::GetColumn(stmt, column, &result->value, indicator);
+    }
+};
+// }}}
 
 // {{{ schema
 enum class SqlWhereOperator : uint8_t
@@ -59,6 +84,56 @@ enum class SqlColumnType : uint8_t
     TIME,
     TIMESTAMP,
 };
+
+constexpr std::string_view SqlColumnTypeName(SqlColumnType value) noexcept
+{
+    switch (value)
+    {
+        case SqlColumnType::STRING:
+            return "TEXT";
+        case SqlColumnType::BOOLEAN:
+            return "BOOLEAN";
+        case SqlColumnType::INTEGER:
+            return "INTEGER";
+        case SqlColumnType::REAL:
+            return "REAL";
+        case SqlColumnType::BLOB:
+            return "BLOB";
+        case SqlColumnType::DATE:
+            return "DATE";
+        case SqlColumnType::TIME:
+            return "TIME";
+        case SqlColumnType::TIMESTAMP:
+            return "TIMESTAMP";
+    }
+    return "UNKNOWN";
+}
+
+namespace detail
+{
+template <typename>
+struct SqlColumnTypeOf;
+
+// clang-format off
+template <> struct SqlColumnTypeOf<std::string> { static constexpr SqlColumnType value = SqlColumnType::STRING; };
+template <> struct SqlColumnTypeOf<bool> { static constexpr SqlColumnType value = SqlColumnType::BOOLEAN; };
+template <> struct SqlColumnTypeOf<int> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
+template <> struct SqlColumnTypeOf<unsigned int> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
+template <> struct SqlColumnTypeOf<long> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
+template <> struct SqlColumnTypeOf<unsigned long> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
+template <> struct SqlColumnTypeOf<long long> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
+template <> struct SqlColumnTypeOf<unsigned long long> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
+template <> struct SqlColumnTypeOf<float> { static constexpr SqlColumnType value = SqlColumnType::REAL; };
+template <> struct SqlColumnTypeOf<double> { static constexpr SqlColumnType value = SqlColumnType::REAL; };
+template <> struct SqlColumnTypeOf<SqlDate> { static constexpr SqlColumnType value = SqlColumnType::DATE; };
+template <> struct SqlColumnTypeOf<SqlTime> { static constexpr SqlColumnType value = SqlColumnType::TIME; };
+template <> struct SqlColumnTypeOf<SqlTimestamp> { static constexpr SqlColumnType value = SqlColumnType::TIMESTAMP; };
+template <> struct SqlColumnTypeOf<SqlModelId> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
+// clang-format on
+} // namespace detail
+
+template <typename T>
+constexpr SqlColumnType SqlColumnTypeOf = detail::SqlColumnTypeOf<T>::value;
 
 struct SqlColumnSchema
 {
@@ -94,13 +169,53 @@ class SqlTableSchema
 template <typename Derived>
 struct SqlModel;
 
+template <typename... Models>
+SqlResult<void> CreateSqlTables();
+
+enum class SqlFieldValueRequirement : uint8_t
+{
+    NULLABLE,
+    NOT_NULL,
+};
+
+constexpr inline SqlFieldValueRequirement SqlNullable = SqlFieldValueRequirement::NULLABLE;
+constexpr inline SqlFieldValueRequirement SqlNotNullable = SqlFieldValueRequirement::NULLABLE;
+
 // Base class for all fields in a model.
 class SqlModelFieldRegistrable
 {
   public:
+    SqlModelFieldRegistrable(SQLSMALLINT index,
+                             std::string_view name,
+                             SqlColumnType type,
+                             SqlFieldValueRequirement requirement):
+        m_index { index },
+        m_name { name },
+        m_type { type },
+        m_requirement { requirement }
+    {
+    }
+
     virtual ~SqlModelFieldRegistrable() = default;
 
-    virtual void BindOutputColumn(SqlStatement& statement) const = 0;
+    virtual SqlResult<void> BindOutputColumn(SqlStatement& stmt) = 0;
+
+    // clang-format off
+    bool IsModified() const noexcept { return m_modified; }
+    void SetModified(bool value) noexcept { m_modified = value; }
+    SQLSMALLINT Index() const noexcept { return m_index; }
+    std::string_view Name() const noexcept { return m_name; }
+    SqlColumnType Type() const noexcept { return m_type; }
+    bool IsNullable() const noexcept { return m_requirement == SqlFieldValueRequirement::NULLABLE; }
+    bool IsRequired() const noexcept { return m_requirement == SqlFieldValueRequirement::NOT_NULL; }
+    // clang-format on
+
+  private:
+    SQLSMALLINT m_index;
+    std::string_view m_name;
+    SqlColumnType m_type;
+    SqlFieldValueRequirement m_requirement;
+    bool m_modified = false;
 };
 
 class SqlModelRelation
@@ -120,6 +235,11 @@ class SqlModelFieldRegistry
     SqlModelFieldRegistrable& GetField(SqlColumnIndex index) noexcept { return *m_fields[index.value]; }
     // clang-format on
 
+    void SortFieldsByIndex() noexcept
+    {
+        std::sort(m_fields.begin(), m_fields.end(), [](auto a, auto b) { return a->Index() < b->Index(); });
+    }
+
   protected:
     std::vector<SqlModelFieldRegistrable*> m_fields;
     std::vector<SqlModelRelation*> m_relations;
@@ -130,24 +250,29 @@ class SqlModelFieldRegistry
 // The column name, index, and type are known at compile time.
 // If either name or index are not known at compile time, leave them at their default values,
 // but at least one of them msut be known.
-template <typename T = SqlVariant, std::size_t TheTableColumnIndex = 0, SqlStringLiteral TheColumnName = "">
+template <typename T,
+          SQLSMALLINT TheTableColumnIndex = 0,
+          SqlStringLiteral TheColumnName = "",
+          SqlFieldValueRequirement TheRequirement = SqlFieldValueRequirement::NOT_NULL>
 class SqlModelField: public SqlModelFieldRegistrable
 {
   public:
-    static constexpr inline std::size_t Index = TheTableColumnIndex;
-    static constexpr inline std::string_view Name = TheColumnName.value;
-
-    explicit SqlModelField(SqlModelFieldRegistry& registry)
+    explicit SqlModelField(SqlModelFieldRegistry& registry):
+        SqlModelFieldRegistrable {
+            TheTableColumnIndex,
+            TheColumnName.value,
+            SqlColumnTypeOf<T>,
+            TheRequirement,
+        }
     {
         registry.RegisterField(*this);
     }
 
     // clang-format off
 
-    T& Value() noexcept { return m_value; }
     T const& Value() const noexcept { return m_value; }
-    void SetData(T&& value) { m_value = std::move(value); }
-    void SetNull() { m_value = T {}; }
+    void SetData(T&& value) { SetModified(true); m_value = std::move(value); }
+    void SetNull() { SetModified(true); m_value = T {}; }
 
     SqlModelField& operator=(T&& value) noexcept;
 
@@ -156,18 +281,27 @@ class SqlModelField: public SqlModelFieldRegistrable
 
     // clang-format on
 
-    void BindOutputColumn(SqlStatement& statement) const override;
+    SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
 
   private:
     T m_value {};
 };
 
 // Represents a column in a table that is a foreign key to another table.
-template <typename Model, std::size_t TheColumnIndex, SqlStringLiteral TheForeignKeyName>
+template <typename Model,
+          SQLSMALLINT TheColumnIndex,
+          SqlStringLiteral TheForeignKeyName,
+          SqlFieldValueRequirement TheRequirement = SqlFieldValueRequirement::NOT_NULL>
 class SqlModelBelongsTo: public SqlModelFieldRegistrable
 {
   public:
-    explicit SqlModelBelongsTo(SqlModelFieldRegistry& registry)
+    explicit SqlModelBelongsTo(SqlModelFieldRegistry& registry):
+        SqlModelFieldRegistrable {
+            TheColumnIndex,
+            TheForeignKeyName.value,
+            SqlColumnTypeOf<SqlModelId>,
+            TheRequirement,
+        }
     {
         registry.RegisterField(*this);
     }
@@ -178,10 +312,10 @@ class SqlModelBelongsTo: public SqlModelFieldRegistrable
     Model* operator->() noexcept;
     Model& operator*() noexcept;
 
-    constexpr static inline std::size_t ColumnIndex { TheColumnIndex };
+    constexpr static inline SQLSMALLINT ColumnIndex { TheColumnIndex };
     constexpr static inline std::string_view ColumnName { TheForeignKeyName.value };
 
-    void BindOutputColumn(SqlStatement& statement) const override;
+    SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
 
   private:
     SqlModelId m_value {};
@@ -197,11 +331,6 @@ struct HasOne: public SqlModelRelation
     {
         registry.RegisterRelation(*this);
     }
-
-    void BindOutputColumn(SqlStatement& stmt) const override
-    {
-        stmt.BindOutputColumns<SqlModelId>(m_value);
-    };
 };
 
 template <typename Model>
@@ -263,8 +392,9 @@ template <typename Derived>
 struct SqlModel: public SqlModelFieldRegistry
 {
     std::string_view const tableName;
-    std::string_view const primaryKeyName; // keep it vs "id" below?
-    SqlModelField<SqlModelId, 0, "id"> id;
+    // SqlModelField<SqlModelId, 1, "id"> id;
+    SqlModelId id;
+    std::string_view const primaryKeyName;
 
     explicit SqlModel(std::string_view tableName, std::string_view primaryKey = "id");
 
@@ -295,78 +425,131 @@ struct SqlModel: public SqlModelFieldRegistry
                                                   const SqlVariant& value,
                                                   SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
 
+    static std::string CreateTableString(SqlServerType serverType) noexcept;
     static SqlResult<void> CreateTable() noexcept;
+};
+
+// TODO: Design a model schema registry, such that an instantiation of a model for
+//       regular data use is as efficient as possible.
+class SqlModelSchemaRegistry
+{
+  public:
+    template <typename Model>
+    void RegisterModel()
+    {
+        // TODO: m_modelSchemas.emplace_back(SqlModel<Model>(*this));
+    }
+
+  private:
+    // std::vector<SqlModelSchema> m_modelSchemas;
 };
 
 template <typename Derived>
 SqlModel<Derived>::SqlModel(std::string_view tableName, std::string_view primaryKey):
     tableName { tableName },
     primaryKeyName { primaryKey },
-    id { *this }
+    id {}
 {
+}
+
+template <typename Derived>
+std::string SqlModel<Derived>::CreateTableString(SqlServerType serverType) noexcept
+{
+    SqlTraits const& traits = GetSqlTraits(serverType); // TODO: take server type from connection
+    std::stringstream sql;
+    auto model = Derived();
+    model.SortFieldsByIndex();
+
+    // TODO: verify that field indices are unique, contiguous, and start at 1
+    // TODO: verify that the primary key is the first field
+    // TODO: verify that the primary key is not nullable
+
+    sql << "CREATE TABLE IF NOT EXISTS " << model.tableName << " (\n";
+
+    sql << "    " << model.primaryKeyName << " " << traits.PrimaryKeyAutoIncrement << ",\n";
+
+    for (auto const* field: model.m_fields)
+    {
+        sql << "    " << field->Name() << " " << SqlColumnTypeName(field->Type());
+        if (field->IsNullable())
+            sql << " NULL";
+        else
+            sql << " NOT NULL";
+        sql << ",\n";
+    }
+
+    sql << "    "
+        << "PRIMARY KEY (" << model.primaryKeyName << ")\n"
+        << ");\n";
+
+    return std::move(sql.str());
 }
 
 template <typename Derived>
 SqlResult<void> SqlModel<Derived>::CreateTable() noexcept
 {
-    // auto model = SqlModel<Derived>();
-    return {}; // TODO
+    auto stmt = SqlStatement {};
+    return stmt.ExecuteDirect(CreateTableString(stmt.Connection().ServerType()));
 }
 
-template <typename T, std::size_t TheTableColumnIndex, SqlStringLiteral TheColumnName>
-void SqlModelField<T, TheTableColumnIndex, TheColumnName>::BindOutputColumn(SqlStatement& statement) const
+template <typename T,
+          SQLSMALLINT TheTableColumnIndex,
+          SqlStringLiteral TheColumnName,
+          SqlFieldValueRequirement TheRequirement>
+SqlResult<void> SqlModelField<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindOutputColumn(
+    SqlStatement& stmt)
 {
-    (void) statement; // TODO
+    SetModified(true);
+    return stmt.BindOutputColumn(TheTableColumnIndex, &m_value);
+    // return {}; (void) stmt; // TODO
 }
 
-template <typename Model, std::size_t TheColumnIndex, SqlStringLiteral TheForeignKeyName>
-void SqlModelBelongsTo<Model, TheColumnIndex, TheForeignKeyName>::BindOutputColumn(SqlStatement& statement) const
+template <typename Model,
+          SQLSMALLINT TheColumnIndex,
+          SqlStringLiteral TheForeignKeyName,
+          SqlFieldValueRequirement TheRequirement>
+SqlResult<void> SqlModelBelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
+    SqlStatement& stmt)
 {
-    statement.BindOutputColumn<T>(m_value);
+    return {};
+    (void) stmt; // TODO: return stmt.BindOutputColumn(TheColumnIndex, &m_value.value);
 }
 
-template <typename T, std::size_t TheTableColumnIndex, SqlStringLiteral TheColumnName>
-void HasOne<T, TheTableColumnIndex, TheColumnName>::BindOutputColumn(SqlStatement& statement) const
+template <typename T,
+          SQLSMALLINT TheTableColumnIndex,
+          SqlStringLiteral TheColumnName,
+          SqlFieldValueRequirement TheRequirement>
+SqlModelField<T, TheTableColumnIndex, TheColumnName, TheRequirement>&
+SqlModelField<T, TheTableColumnIndex, TheColumnName, TheRequirement>::operator=(T&& value) noexcept
 {
-    statement.BindOutputColumn<T>(m_value);
-}
-
-template <typename T, std::size_t TheTableColumnIndex, SqlStringLiteral TheColumnName>
-void HasOne<T, TheTableColumnIndex, TheColumnName>::BindOutputColumn(SqlStatement& statement) const
-{
-    statement.BindOutputColumn<T>(m_value);
-}
-
-template <typename T, std::size_t TheTableColumnIndex, SqlStringLiteral TheColumnName>
-void HasOne<T, TheTableColumnIndex, TheColumnName>::BindOutputColumn(SqlStatement& statement) const
-{
-    statement.BindOutputColumn<T>(m_value);
-}
-
-template <typename T, std::size_t TheTableColumnIndex, SqlStringLiteral TheColumnName>
-SqlModelField<T, TheTableColumnIndex, TheColumnName>& SqlModelField<T, TheTableColumnIndex, TheColumnName>::operator=(
-    T&& value) noexcept
-{
+    SetModified(true);
     m_value = std::move(value);
     return *this;
 }
 
-template <typename Model, std::size_t TheColumnIndex, SqlStringLiteral TheForeignKeyName>
-SqlModelBelongsTo<Model, TheColumnIndex, TheForeignKeyName>& SqlModelBelongsTo<
-    Model,
-    TheColumnIndex,
-    TheForeignKeyName>::operator=(SqlModelId modelId) noexcept
+template <typename Model,
+          SQLSMALLINT TheColumnIndex,
+          SqlStringLiteral TheForeignKeyName,
+          SqlFieldValueRequirement TheRequirement>
+SqlModelBelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>&
+SqlModelBelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator=(SqlModelId modelId) noexcept
 {
+    SetModified(true);
     m_value = modelId;
     return *this;
 }
 
-template <typename Model, std::size_t TheColumnIndex, SqlStringLiteral TheForeignKeyName>
-SqlModelBelongsTo<Model, TheColumnIndex, TheForeignKeyName>& SqlModelBelongsTo<
+template <typename Model,
+          SQLSMALLINT TheColumnIndex,
+          SqlStringLiteral TheForeignKeyName,
+          SqlFieldValueRequirement TheRequirement>
+SqlModelBelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>& SqlModelBelongsTo<
     Model,
     TheColumnIndex,
-    TheForeignKeyName>::operator=(SqlModel<Model> const& model) noexcept
+    TheForeignKeyName,
+    TheRequirement>::operator=(SqlModel<Model> const& model) noexcept
 {
+    SetModified(true);
     m_value = model.id;
     return *this;
 }
@@ -375,46 +558,71 @@ template <typename Derived>
 SqlResult<SqlModelId> SqlModel<Derived>::Create()
 {
     return {}; // TODO: INSERT statement
-    auto stmt = SqlStatement {};
-    auto columns = "TODO";
-    return stmt.ExecuteDirect("INSERT INTO {} SET {} WHERE {} = {}", tableName, columns, id.name, id.Value());
+    // auto stmt = SqlStatement {};
+    // auto columns = "TODO";
+    // auto rc = stmt.ExecuteDirect("INSERT INTO {} SET {} WHERE {} = {}", tableName, columns, id.Name, id.Value());
+    // ...
+    // return stmt.LastInsertId();
 }
 
 template <typename Derived>
-SqlResult<void> SqlModel<Derived>::Read(SqlModelId id)
+SqlResult<void> SqlModel<Derived>::Read(SqlModelId modelId)
 {
     auto stmt = SqlStatement {};
 
-    auto rc = stmt.Prepare("SELECT * FROM {} WHERE {} = {}", tableName, primaryKeyName, id.value);
-    if (!rc)
-        return rc;
+    if (auto result = stmt.Prepare("SELECT * FROM {} WHERE {} = {}", tableName, id.Name, modelId.value); !result)
+        return result;
 
-    for (size_t i = 0; i < m_fields.size(); ++i)
-        m_fields[i].BindOutputColumn(stmt);
+    for (auto& field: m_fields)
+        if (auto result = field.BindOutputColumn(stmt); !result)
+            return result;
 
-    rc = stmt.Execute();
-    if (!rc)
-        return rc;
-
-    return rc;
+    return stmt.Execute();
 }
 
 template <typename Derived>
 SqlResult<void> SqlModel<Derived>::Update()
 {
     auto stmt = SqlStatement {};
-    auto columns = "TODO";
-    for (size_t i = 0; i < m_fields.size(); ++i)
-    {
-        auto& field = m_fields[i];
-        field.BindInputParameter(stmt);
-    }
-    return stmt.ExecuteDirect("UPDATE {} INTO {} SET {} WHERE {} = {}", tableName, columns, id.Value());
+    auto columns = std::string {}; // TODO
+
+    if (auto result = stmt.Prepare("UPDATE ? SET {} WHERE {} = ?", tableName, id.Name); !result)
+        // TODO: number of "?" must match number of parameters
+        return result;
+
+    for (auto& field: m_fields)
+        if (field.IsModified())
+            if (auto result = field.BindInputParameter(stmt); !result)
+                return result;
+
+    if (auto result = stmt.Execute(); !result)
+        return result;
+
+    for (auto& field: m_fields)
+        field.ResetModified();
+
+    return {};
 }
 
 template <typename Derived>
 SqlResult<void> SqlModel<Derived>::Delete()
 {
     auto stmt = SqlStatement {};
-    return stmt.ExecuteDirect("DELETE FROM {} WHERE {} = {}", tableName, primaryKeyName, id.Value());
+    return stmt.ExecuteDirect(std::format("DELETE FROM {} WHERE {} = {}", tableName, id.Name, id.Value()));
+}
+
+template <typename... Models>
+std::string CreateSqlTablesString(SqlServerType serverType)
+{
+    std::string result;
+    result = ((Models::CreateTableString(serverType) + "\n") + ...);
+    return result;
+}
+
+template <typename... Models>
+SqlResult<void> CreateSqlTables()
+{
+    SqlResult<void> result;
+    ((result = Models::CreateTable()) && ...);
+    return result;
 }

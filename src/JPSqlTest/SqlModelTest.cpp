@@ -1,6 +1,8 @@
 #include "../JPSql/SqlConnection.hpp"
 #include "../JPSql/SqlModel.hpp"
 
+#include <print>
+
 using namespace std::string_view_literals;
 
 struct Person;
@@ -10,9 +12,9 @@ struct Job;
 
 struct Phone: SqlModel<Phone>
 {
-    SqlModelField<std::string, 1, "name"> number;
-    SqlModelField<std::string, 2, "type"> type;
-    SqlModelBelongsTo<Person, 3, "person_id"> person;
+    SqlModelField<std::string, 4, "name"> number;
+    SqlModelField<std::string, 3, "type"> type;
+    SqlModelBelongsTo<Person, 2, "person_id", SqlNullable> person;
 
     Phone():
         SqlModel { "phones" },
@@ -25,12 +27,12 @@ struct Phone: SqlModel<Phone>
 
 struct Job: SqlModel<Job>
 {
-    SqlModelBelongsTo<Person, 1, "person_id"> person;
-    SqlModelField<std::string, 2, "title"> title;
-    SqlModelField<unsigned, 3, "salary"> salary;
-    SqlModelField<SqlDate, 4, "start_date"> startDate;
-    SqlModelField<SqlDate, 5, "end_date"> endDate;
-    SqlModelField<bool, 6, "is_current"> isCurrent;
+    SqlModelBelongsTo<Person, 2, "person_id"> person;
+    SqlModelField<std::string, 3, "title"> title;
+    SqlModelField<unsigned, 4, "salary"> salary;
+    SqlModelField<SqlDate, 5, "start_date"> startDate;
+    SqlModelField<SqlDate, 6, "end_date"> endDate;
+    SqlModelField<bool, 7, "is_current"> isCurrent;
 
     Job():
         SqlModel { "jobs" },
@@ -46,10 +48,9 @@ struct Job: SqlModel<Job>
 
 struct Person: SqlModel<Person>
 {
-    SqlModelField<std::string, 1, "first_name"> firstName;
-    SqlModelField<SqlTrimmedString, 2, "last_name"> lastName;
+    SqlModelField<std::string, 2, "first_name"> firstName;
+    SqlModelField<std::string, 3, "last_name"> lastName;
 
-    HasOne<Company> company;
     HasMany<Job> jobs;
     HasMany<Phone> phones;
 
@@ -57,7 +58,6 @@ struct Person: SqlModel<Person>
         SqlModel { "persons" },
         firstName { *this },
         lastName { *this },
-        company { *this },
         jobs { *this },
         phones { *this }
     {
@@ -66,7 +66,7 @@ struct Person: SqlModel<Person>
 
 struct Company: SqlModel<Company>
 {
-    SqlModelField<std::string> name;
+    SqlModelField<std::string, 2, "name"> name;
     HasMany<Person> employees;
 
     Company():
@@ -96,20 +96,26 @@ int main(int argc, char const* argv[])
         .connectionString = std::format("DRIVER={};Database={}", TestSqlDriver, "file::memory:"),
     });
 
-    Company::CreateTable();
-    Person::CreateTable();
-    Phone::CreateTable();
-    Job::CreateTable();
+    std::print("-- CREATING TABLES:\n\n{}\n", CreateSqlTablesString<Company, Person, Phone, Job>(SqlConnection().ServerType()));
+    CreateSqlTables<Company, Person, Phone, Job>();
 
     Person person;
-    // person.firstName = "John";
-    // person.lastName = "Doe";
+    person.firstName = "John";
+    person.lastName = "Doe";
     person.Create();
 
     Phone phone;
     phone.number = "555-1234";
     phone.type = "mobile";
-    phone.person = SqlModelId { person.id.Value() };
+    phone.person = person;
+    phone.Create();
+
+    Job job;
+    job.title = "Software Developer";
+    job.salary = 50'000;
+    job.startDate = SqlDate::Today();
+    job.person = person;
+    job.Create();
 
     return 0;
 }

@@ -61,6 +61,9 @@ class SqlStatement final: public SqlDataBinderCallback
     template <SqlOutputColumnBinder... Args>
     [[nodiscard]] SqlResult<void> BindOutputColumns(Args*... args);
 
+    template <SqlOutputColumnBinder T>
+    [[nodiscard]] SqlResult<void> BindOutputColumn(SQLUSMALLINT columnIndex, T* arg);
+
     // Binds the given arguments to the prepared statement and executes it.
     template <SqlInputParameterBinder... Args>
     [[nodiscard]] SqlResult<void> Execute(Args const&... args) noexcept;
@@ -155,6 +158,16 @@ template <SqlOutputColumnBinder... Args>
 
         return {};
     });
+}
+
+template <SqlOutputColumnBinder T>
+[[nodiscard]] SqlResult<void> SqlStatement::BindOutputColumn(SQLUSMALLINT columnIndex, T* arg)
+{
+    if (m_indicators.size() <= columnIndex)
+        m_indicators.resize(NumColumnsAffected().value_or(columnIndex) + 1);
+
+    return UpdateLastError(
+        SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, &m_indicators[columnIndex], *this));
 }
 
 template <SqlInputParameterBinder... Args>
