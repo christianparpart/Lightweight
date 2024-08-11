@@ -159,7 +159,9 @@ struct SqlDate
 
     static SqlDate Today() noexcept
     {
-        return SqlDate { std::chrono::year_month_day { std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now()) } };
+        return SqlDate { std::chrono::year_month_day {
+            std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now()),
+        } };
     }
 
     static SQL_DATE_STRUCT ConvertToSqlValue(std::chrono::year_month_day value) noexcept
@@ -373,6 +375,24 @@ struct SqlDataBinder<StringType>
     static SQLRETURN OutputColumn(
         SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
     {
+        {
+            // Ensure we're having sufficient space to store the worst-case scenario of bytes in this column
+            SQLULEN columnSize {};
+            auto const describeResult = SQLDescribeCol(stmt,
+                                                       column,
+                                                       nullptr /*colName*/,
+                                                       0 /*sizeof(colName)*/,
+                                                       nullptr /*&colNameLen*/,
+                                                       nullptr /*&dataType*/,
+                                                       &columnSize,
+                                                       nullptr /*&decimalDigits*/,
+                                                       nullptr /*&nullable*/);
+            if (!SQL_SUCCEEDED(describeResult))
+                return describeResult;
+
+            StringTraits::Resize(result, columnSize);
+        }
+
         cb.PlanPostProcessOutputColumn([indicator, result]() {
             // NB: If the indicator is greater than the buffer size, we have a truncation.
             auto const bufferSize = StringTraits::Size(result);
@@ -716,10 +736,7 @@ concept SqlOutputColumnBinder =
 template <typename T>
 concept SqlInputParameterBatchBinder =
     requires(SQLHSTMT hStmt, SQLUSMALLINT column, std::ranges::range_value_t<T>* result) {
-        {
-            SqlDataBinder<std::ranges::range_value_t<T>>::InputParameter(
-                hStmt, column, std::declval<std::ranges::range_value_t<T>>())
-        } -> std::same_as<SQLRETURN>;
+        { SqlDataBinder<std::ranges::range_value_t<T>>::InputParameter( hStmt, column, std::declval<std::ranges::range_value_t<T>>()) } -> std::same_as<SQLRETURN>;
     };
 
 template <typename T>

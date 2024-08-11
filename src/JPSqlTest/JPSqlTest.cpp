@@ -545,24 +545,13 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
 
     SECTION("check handling for bound output columns")
     {
-        std::string actualText(expectedText.size() + 1, '\0');
+        std::string actualText; // intentionally an empty string, auto-growing behind the scenes
         REQUIRE(stmt.Prepare("SELECT Value FROM Text"));
         REQUIRE(stmt.BindOutputColumns(&actualText));
         REQUIRE(stmt.Execute());
         REQUIRE(stmt.FetchRow());
         REQUIRE(actualText.size() == expectedText.size());
         REQUIRE(actualText == expectedText);
-    }
-
-    SECTION("check handling for bound output columns: insufficient storage")
-    {
-        std::string actualText(expectedText.size(), '\0'); // one byte less
-        REQUIRE(stmt.Prepare("SELECT Value FROM Text"));
-        REQUIRE(stmt.BindOutputColumns(&actualText));
-        REQUIRE(stmt.Execute());
-        REQUIRE(stmt.FetchRow());
-        REQUIRE(actualText.size() == expectedText.size() - 1);
-        REQUIRE(actualText == expectedText.substr(0, expectedText.size() - 1));
     }
 }
 
