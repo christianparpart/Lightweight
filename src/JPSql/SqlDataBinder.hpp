@@ -329,7 +329,8 @@ struct SqlOutputStringTraits<std::string>
 
     static void Resize(std::string* str, SQLLEN indicator) noexcept
     {
-        str->resize(indicator);
+        if (indicator > 0)
+            str->resize(indicator);
     }
 
     static void Clear(std::string* str) noexcept

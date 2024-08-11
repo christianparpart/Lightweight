@@ -95,11 +95,15 @@ SqlResult<void> FatalError(SqlError ec)
     std::unreachable();
 }
 
-int main(int argc, char const* argv[])
+int main(/*int argc, char const* argv[]*/)
 {
+    #if 0
     auto const databaseFilePath = argc == 2 && std::string_view(argv[1]) == "--memory"
                                       ? std::filesystem::path("file::memory")
                                       : std::filesystem::path(argv[0]).parent_path() / "ModelTest.sqlite";
+    #else
+    auto const databaseFilePath = std::filesystem::path("C:/source/test.sqlite");
+    #endif
 
     SqlConnection::SetDefaultConnectInfo(SqlConnectionString {
         .connectionString = std::format("DRIVER={};Database={}", TestSqlDriver, databaseFilePath.string()),
@@ -118,14 +122,14 @@ int main(int argc, char const* argv[])
     person.firstName = "John";
     person.lastName = "Doe";
     person.Save().or_else(FatalError);
-    std::print("Person: {}\n", person.Inspect());
+    std::println("Person: {}", person.Inspect());
 
     Phone phone;
     phone.number = "555-1234";
     phone.type = "mobile";
     phone.owner = person;
     phone.Save().or_else(FatalError);
-    std::print("Phone: {}\n", phone.Inspect());
+    std::println("Phone: {}", phone.Inspect());
 
     Job job;
     job.title = "Software Developer";
@@ -134,15 +138,16 @@ int main(int argc, char const* argv[])
     job.person = person;
     job.isCurrent = true;
     job.Save().or_else(FatalError);
-    std::print("Job Initial: {}\n", job.Inspect());
+    std::println("Job Initial: {}", job.Inspect());
 
     job.salary = 60'000;
     job.Save().or_else(FatalError); // only the salary field is updated
-    std::print("Job Updated: {}\n", job.Inspect());
+    std::println("Job Updated: {}", job.Inspect());
 
-//    auto allPersons = Person::All().value();
-//    for (auto const& person: allPersons)
-//        std::print("Person: {}\n", person.Inspect());
+    auto allPersons = std::move(Person::All().value());
+    std::println("all persons count: {}", allPersons.size());
+    for (auto const& person: allPersons)
+        std::print("Person: {}\n", person.Inspect());
     /*std::ranges::for_each(
         Person::All().or_else(FatalError).value(),
         [](Person const& p) {
