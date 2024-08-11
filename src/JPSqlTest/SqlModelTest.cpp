@@ -87,6 +87,13 @@ auto const TestSqlConnectionString = SqlConnectionString {
     .connectionString = std::format("DRIVER={};Database={}", TestSqlDriver, "file::memory:"),
 };
 
+SqlResult<void> FatalError(SqlError ec)
+{
+    std::print("Fatal error: {}\n", ec);
+    std::exit(EXIT_FAILURE);
+    std::unreachable();
+}
+
 int main(int argc, char const* argv[])
 {
     (void) argc;
@@ -99,32 +106,28 @@ int main(int argc, char const* argv[])
     std::print("-- CREATING TABLES:\n\n{}\n",
                CreateSqlTablesString<Company, Person, Phone, Job>(SqlConnection().ServerType()));
 
-    if (auto result = CreateSqlTables<Company, Person, Phone, Job>(); !result)
-    {
-        std::print("Error creating tables: {}\n", result.error());
-        return EXIT_FAILURE;
-    }
+    CreateSqlTables<Company, Person, Phone, Job>().or_else(FatalError);
 
     Person person;
     person.firstName = "John";
     person.lastName = "Doe";
-    person.Create();
+    person.Save().or_else(FatalError);
 
     Phone phone;
     phone.number = "555-1234";
     phone.type = "mobile";
     phone.person = person;
-    phone.Create();
+    phone.Save().or_else(FatalError);
 
     Job job;
     job.title = "Software Developer";
     job.salary = 50'000;
     job.startDate = SqlDate::Today();
     job.person = person;
-    job.Create();
+    job.Save().or_else(FatalError);
 
     job.salary = 60'000;
-    job.Update(); // only the salary field is updated
+    job.Save().or_else(FatalError); // only the salary field is updated
 
     return 0;
 }

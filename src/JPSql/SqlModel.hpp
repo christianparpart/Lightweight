@@ -338,15 +338,58 @@ struct HasOne: public SqlModelRelation
 };
 
 template <typename Model>
-struct HasMany: public SqlModelRelation
+class HasMany: public SqlModelRelation
 {
+  public:
     size_t Count() const noexcept;
-    std::vector<Model> All() const noexcept;
+
+    std::vector<Model>& All() noexcept
+    {
+        RequireLoaded();
+        return m_models;
+    }
 
     explicit HasMany(SqlModelFieldRegistry& registry)
     {
         registry.RegisterRelation(*this);
     }
+
+    bool IsLoaded() const noexcept
+    {
+        return m_loaded;
+    }
+
+    void Load();
+
+    bool IsEmpty() const noexcept
+    {
+        RequireLoaded();
+        return m_models.empty();
+    }
+
+    size_t Size() const noexcept
+    {
+        // TODO: consider simply doing: SELECt COUNT(*) FROM table WHERE foreign_key = ?
+        RequireLoaded();
+        return m_models.size();
+    }
+
+    Model& At(size_t index) noexcept
+    {
+        RequireLoaded();
+        return m_models.at(index);
+    }
+    Model& operator[](size_t index) noexcept
+    {
+        RequireLoaded();
+        return m_models[index];
+    }
+
+  private:
+    bool RequireLoaded();
+
+    bool m_loaded = false;
+    std::vector<Model> m_models;
 };
 
 #if 0 // Builder API
@@ -395,31 +438,45 @@ inline auto testBuildQuery()
 template <typename Derived>
 struct SqlModel: public SqlModelFieldRegistry
 {
-    std::string_view const tableName;
-    // SqlModelField<SqlModelId, 1, "id"> id;
+    std::string_view tableName;      // Should not be modified, but we want to allow move semantics
+    std::string_view primaryKeyName; // Should not be modified, but we want to allow move semantics
     SqlModelId id;
-    std::string_view const primaryKeyName;
-
-    explicit SqlModel(std::string_view tableName, std::string_view primaryKey = "id");
 
     std::string_view TableName() const noexcept;
     std::string_view PrimaryKeyName() const noexcept;
 
+    // Creates (or recreates a copy of) the model in the database.
     SqlResult<SqlModelId> Create();
-    SqlResult<void> Read(SqlModelId id);
-    SqlResult<void> Update();
-    SqlResult<void> Delete();
 
+    // Reads the model from the database by given model ID.
+    SqlResult<void> Read(SqlModelId id);
+
+    // Updates the model in the database.
+    SqlResult<void> Update();
+
+    // Creates or updates the model in the database, depending on whether it already exists.
+    SqlResult<void> Save();
+
+    // Deletes the model from the database.
+    SqlResult<void> Destroy();
+
+    // Updates all models with the given changes in the modelChanges model.
+    static SqlResult<void> UpdateAll(SqlModel<Derived> const& modelChanges) noexcept;
+
+    // Retrieves the first model from the database (ordered by ID ASC).
     static SqlResult<SqlModel> First() noexcept;
 
+    // Retrieves the last model from the database (ordered by ID ASC).
     static SqlResult<SqlModel> Last() noexcept;
 
     template <typename ColumnName, typename T>
     static SqlResult<SqlModel> FindBy(ColumnName const& columnName, T const& value) noexcept;
 
+    // Retrieves all models of this kind from the database.
     static SqlResult<std::vector<SqlModel>> All() noexcept;
 
-    static SqlResult<std::vector<SqlModel>> Find(SqlModelId id) noexcept;
+    // Retrieves the model with the given ID from the database.
+    static SqlResult<SqlModel> Find(SqlModelId id) noexcept;
 
     static SqlResult<std::vector<SqlModel>> Where(SqlColumnIndex columnIndex,
                                                   const SqlVariant& value,
@@ -429,8 +486,14 @@ struct SqlModel: public SqlModelFieldRegistry
                                                   const SqlVariant& value,
                                                   SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
 
+    // Returns the SQL string to create the table for this model.
     static std::string CreateTableString(SqlServerType serverType) noexcept;
+
+    // Creates the table for this model in the database.
     static SqlResult<void> CreateTable() noexcept;
+
+  protected:
+    explicit SqlModel(std::string_view tableName, std::string_view primaryKey = "id");
 };
 
 // TODO: Design a model schema registry, such that an instantiation of a model for
@@ -627,6 +690,15 @@ SqlResult<SqlModelId> SqlModel<Derived>::Create()
 }
 
 template <typename Derived>
+SqlResult<SqlModelId> SqlModel<Derived>::Save()
+{
+    if (id.value == 0)
+        return Create();
+    else
+        return Update();
+}
+
+template <typename Derived>
 SqlResult<void> SqlModel<Derived>::Read(SqlModelId modelId)
 {
     auto stmt = SqlStatement {};
@@ -646,7 +718,7 @@ SqlResult<void> SqlModel<Derived>::Update()
 {
     auto stmt = SqlStatement {};
     auto columns = std::string {}; // TODO
-#if 0 // TODO
+#if 0                              // TODO
     if (auto result = stmt.Prepare("UPDATE ? SET {} WHERE {} = ?", tableName, primaryKeyName); !result)
         // TODO: number of "?" must match number of parameters
         return result;
@@ -666,7 +738,7 @@ SqlResult<void> SqlModel<Derived>::Update()
 }
 
 template <typename Derived>
-SqlResult<void> SqlModel<Derived>::Delete()
+SqlResult<void> SqlModel<Derived>::Destroy()
 {
     auto stmt = SqlStatement {};
     return stmt.ExecuteDirect(std::format("DELETE FROM {} WHERE {} = {}", tableName, id.Name, id.Value()));
