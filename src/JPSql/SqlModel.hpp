@@ -547,13 +547,9 @@ SqlResult<std::vector<SqlModel<Derived>>> SqlModel<Derived>::All() noexcept
     Derived model;
 
     std::string sqlColumnsString;
-
     sqlColumnsString += model.m_primaryKeyName;
     for (SqlModelFieldBase const* field: model.m_fields)
-    {
-        sqlColumnsString += ", ";
-        sqlColumnsString += field->Name();
-    }
+        (sqlColumnsString += ", ") += field->Name();
 
     SqlStatement stmt;
 
@@ -572,11 +568,10 @@ SqlResult<std::vector<SqlModel<Derived>>> SqlModel<Derived>::All() noexcept
 
     while (stmt.FetchRow())
     {
-        std::println("Fetched model: {}", model.Inspect());
         allModels.push_back(model);
     }
 
-    return allModels;
+    return { std::move(allModels) };
 }
 
 template <typename Derived>
@@ -675,10 +670,7 @@ template <typename T,
 SqlResult<void> SqlModelField<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindOutputColumn(
     SqlStatement& stmt)
 {
-    SetModified(true);
-
-    if constexpr (std::is_same_v<T, std::string>)
-        m_value.resize(256); // TODO: avoid hack
+    SetModified(false);
 
     return stmt.BindOutputColumn(TheTableColumnIndex, &m_value);
 }

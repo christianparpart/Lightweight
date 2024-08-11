@@ -118,6 +118,11 @@ int main(/*int argc, char const* argv[]*/)
     // TODO: add std::formatter for SqlResult<T>
     // TODO: optimize HasMany<T>.Size()
 
+    Person susi;
+    susi.firstName = "Susi";
+    susi.lastName = "Hanni-Nanni-Bunny";
+    susi.Save();
+
     Person person;
     person.firstName = "John";
     person.lastName = "Doe";
@@ -144,15 +149,10 @@ int main(/*int argc, char const* argv[]*/)
     job.Save().or_else(FatalError); // only the salary field is updated
     std::println("Job Updated: {}", job.Inspect());
 
-    auto allPersons = std::move(Person::All().value());
+    auto allPersons = Person::All().value();
     std::println("all persons count: {}", allPersons.size());
     for (auto const& person: allPersons)
-        std::print("Person: {}\n", person.Inspect());
-    /*std::ranges::for_each(
-        Person::All().or_else(FatalError).value(),
-        [](Person const& p) {
-            std::print("Person: {}\n", p.Inspect());
-        });*/
+        std::println("Person: {}", person.Inspect());
 
     return 0;
 }
