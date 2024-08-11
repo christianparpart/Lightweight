@@ -63,6 +63,15 @@ struct Person: SqlModel<Person>
         phones { *this }
     {
     }
+
+    Person(Person const& other):
+        SqlModel { "persons" },
+        firstName { *this, other.firstName },
+        lastName { *this, other.lastName },
+        jobs { *this },
+        phones { *this }
+    {
+    }
 };
 
 struct Company: SqlModel<Company>
@@ -95,13 +104,15 @@ SqlResult<void> FatalError(SqlError ec)
     std::unreachable();
 }
 
-int main(/*int argc, char const* argv[]*/)
+int main(int argc, char const* argv[])
 {
-    #if 0
+    #if 1
     auto const databaseFilePath = argc == 2 && std::string_view(argv[1]) == "--memory"
                                       ? std::filesystem::path("file::memory")
                                       : std::filesystem::path(argv[0]).parent_path() / "ModelTest.sqlite";
     #else
+    (void) argc;
+    (void) argv;
     auto const databaseFilePath = std::filesystem::path("C:/source/test.sqlite");
     #endif
 
