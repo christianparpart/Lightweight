@@ -97,6 +97,7 @@ int main(int argc, char const* argv[])
     });
 
     std::print("-- CREATING TABLES:\n\n{}\n", CreateSqlTablesString<Company, Person, Phone, Job>(SqlConnection().ServerType()));
+
     CreateSqlTables<Company, Person, Phone, Job>();
 
     Person person;
@@ -119,30 +120,3 @@ int main(int argc, char const* argv[])
 
     return 0;
 }
-
-#if 0  // {{{
-inline void testMain()
-{
-    SqlConnection connection;
-    SqlTableSchema schema("persons", &connection);
-
-    Phone phone(&connection, schema);
-    phone.SetValue("name", "555-1234");
-    phone.SetValue("type", "mobile");
-    phone.Create();
-
-    Person person(&connection, schema);
-    person.SetValue("name", "John Doe");
-    person.Create();
-
-    person.phones.value.push_back(phone);
-    person.Create();
-
-    Company company(&connection, schema);
-    company.SetValue("name", "ACME Inc.");
-    company.Create();
-
-    person.company.value = company;
-    person.Save();
-}
-#endif // }}}
