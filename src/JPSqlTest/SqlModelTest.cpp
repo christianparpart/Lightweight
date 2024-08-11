@@ -110,6 +110,10 @@ int main(int argc, char const* argv[])
 
     CreateSqlTables<Company, Person, Phone, Job>().or_else(FatalError);
 
+    // TODO: add std::formatter for SqlModel<T>
+    // TODO: add std::formatter for SqlResult<T>
+    // TODO: optimize HasMany<T>.Size()
+
     Person person;
     person.firstName = "John";
     person.lastName = "Doe";

@@ -226,10 +226,20 @@ class SqlModelRelation
     virtual ~SqlModelRelation() = default;
 };
 
-// Used to get fields registered to their model.
-class SqlModelFieldRegistry
+// Base class for every SqlModel<T>.
+class SqlModelBase
 {
   public:
+    SqlModelBase(std::string_view tableName, std::string_view primaryKey, SqlModelId id):
+        m_tableName { tableName },
+        m_primaryKeyName { primaryKey },
+        m_id {}
+    {
+    }
+
+    std::string_view TableName() const noexcept;
+    std::string_view PrimaryKeyName() const noexcept;
+
     // clang-format off
     void RegisterField(SqlModelFieldBase& field) noexcept { m_fields.push_back(&field); }
     void RegisterRelation(SqlModelRelation& relation) noexcept { m_relations.push_back(&relation); }
@@ -243,6 +253,10 @@ class SqlModelFieldRegistry
     }
 
   protected:
+    std::string_view m_tableName;      // Should not be modified, but we want to allow move semantics
+    std::string_view m_primaryKeyName; // Should not be modified, but we want to allow move semantics
+    SqlModelId m_id;
+
     std::vector<SqlModelFieldBase*> m_fields;
     std::vector<SqlModelRelation*> m_relations;
 };
@@ -259,7 +273,7 @@ template <typename T,
 class SqlModelField final: public SqlModelFieldBase
 {
   public:
-    explicit SqlModelField(SqlModelFieldRegistry& registry):
+    explicit SqlModelField(SqlModelBase& registry):
         SqlModelFieldBase {
             TheTableColumnIndex,
             TheColumnName.value,
@@ -299,7 +313,7 @@ template <typename Model,
 class SqlModelBelongsTo final: public SqlModelFieldBase
 {
   public:
-    explicit SqlModelBelongsTo(SqlModelFieldRegistry& registry):
+    explicit SqlModelBelongsTo(SqlModelBase& registry):
         SqlModelFieldBase {
             TheColumnIndex,
             TheForeignKeyName.value,
@@ -332,7 +346,7 @@ template <typename Model>
 class HasOne final: public SqlModelRelation
 {
   public:
-    explicit HasOne(SqlModelFieldRegistry& registry)
+    explicit HasOne(SqlModelBase& registry)
     {
         registry.RegisterRelation(*this);
     }
@@ -359,7 +373,7 @@ class HasMany: public SqlModelRelation
         return m_models;
     }
 
-    explicit HasMany(SqlModelFieldRegistry& registry)
+    explicit HasMany(SqlModelBase& registry)
     {
         registry.RegisterRelation(*this);
     }
@@ -446,15 +460,8 @@ inline auto testBuildQuery()
 #endif
 
 template <typename Derived>
-struct SqlModel: public SqlModelFieldRegistry
+struct SqlModel: public SqlModelBase
 {
-    std::string_view tableName;      // Should not be modified, but we want to allow move semantics
-    std::string_view primaryKeyName; // Should not be modified, but we want to allow move semantics
-    SqlModelId id;
-
-    std::string_view TableName() const noexcept;
-    std::string_view PrimaryKeyName() const noexcept;
-
     // Returns a human readable string representation of this model.
     std::string Inspect() const noexcept;
 
@@ -825,6 +832,24 @@ SqlResult<void> SqlModel<Derived>::Destroy()
     auto stmt = SqlStatement {};
     return stmt.ExecuteDirect(std::format("DELETE FROM {} WHERE {} = {}", tableName, id.Name, id.Value()));
 }
+
+// ----------------------------------------------------------------------------------------------------------------
+// HasMany<T>
+
+template <typename Model>
+size_t HasMany<Model>::Count() const noexcept
+{
+    if (!models.empty())
+        return m_models.size();
+
+    auto stmt = SqlStatement {};
+    auto const conceptModel = Model();
+    auto result = stmt.Prepare(std::format("SELECT COUNT(*) FROM {} WHERE {} = ?", conceptModel.TableName(), conceptModel.PrimaryKeyName()));
+    stmt.Execute()
+}
+
+// ----------------------------------------------------------------------------------------------------------------
+// free functions
 
 template <typename... Models>
 std::string CreateSqlTablesString(SqlServerType serverType)
