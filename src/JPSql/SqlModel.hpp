@@ -690,12 +690,15 @@ SqlResult<SqlModelId> SqlModel<Derived>::Create()
 }
 
 template <typename Derived>
-SqlResult<SqlModelId> SqlModel<Derived>::Save()
+SqlResult<void> SqlModel<Derived>::Save()
 {
-    if (id.value == 0)
-        return Create();
-    else
+    if (id.value != 0)
         return Update();
+
+    if (auto result = Create(); !result)
+        return std::unexpected { result.error() };
+
+    return {};
 }
 
 template <typename Derived>

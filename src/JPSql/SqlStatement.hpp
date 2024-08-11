@@ -177,7 +177,7 @@ template <SqlInputParameterBinder Arg>
 [[nodiscard]] SqlResult<void> SqlStatement::BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg) noexcept
 {
     // tell Execute() that we don't know the expected count
-    m_expectedParameterCount = std::numeric_limits<size_t>::max();
+    m_expectedParameterCount = (std::numeric_limits<size_t>::max)();
     return UpdateLastError(SqlDataBinder<Arg>::InputParameter(m_hStmt, columnIndex, arg));
 }
 
