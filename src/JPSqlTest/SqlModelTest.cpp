@@ -1,6 +1,7 @@
 #include "../JPSql/SqlConnection.hpp"
 #include "../JPSql/SqlModel.hpp"
 
+#include <filesystem>
 #include <print>
 
 using namespace std::string_view_literals;
@@ -14,13 +15,13 @@ struct Phone: SqlModel<Phone>
 {
     SqlModelField<std::string, 4, "name"> number;
     SqlModelField<std::string, 3, "type"> type;
-    SqlModelBelongsTo<Person, 2, "person_id", SqlNullable> person;
+    SqlModelBelongsTo<Person, 2, "owner_id", SqlNullable> owner;
 
     Phone():
         SqlModel { "phones" },
         number { *this },
         type { *this },
-        person { *this }
+        owner { *this }
     {
     }
 };
@@ -96,11 +97,12 @@ SqlResult<void> FatalError(SqlError ec)
 
 int main(int argc, char const* argv[])
 {
-    (void) argc;
-    (void) argv;
+    auto const databaseFilePath = argc == 2 && std::string_view(argv[1]) == "--memory"
+                                      ? std::filesystem::path("file::memory")
+                                      : std::filesystem::path(argv[0]).parent_path() / "ModelTest.sqlite";
 
     SqlConnection::SetDefaultConnectInfo(SqlConnectionString {
-        .connectionString = std::format("DRIVER={};Database={}", TestSqlDriver, "file::memory:"),
+        .connectionString = std::format("DRIVER={};Database={}", TestSqlDriver, databaseFilePath.string()),
     });
 
     std::print("-- CREATING TABLES:\n\n{}\n",
@@ -117,7 +119,7 @@ int main(int argc, char const* argv[])
     Phone phone;
     phone.number = "555-1234";
     phone.type = "mobile";
-    phone.person = person;
+    phone.owner = person;
     phone.Save().or_else(FatalError);
     std::print("Phone: {}\n", phone.Inspect());
 
@@ -133,6 +135,15 @@ int main(int argc, char const* argv[])
     job.salary = 60'000;
     job.Save().or_else(FatalError); // only the salary field is updated
     std::print("Job Updated: {}\n", job.Inspect());
+
+//    auto allPersons = Person::All().value();
+//    for (auto const& person: allPersons)
+//        std::print("Person: {}\n", person.Inspect());
+    /*std::ranges::for_each(
+        Person::All().or_else(FatalError).value(),
+        [](Person const& p) {
+            std::print("Person: {}\n", p.Inspect());
+        });*/
 
     return 0;
 }
