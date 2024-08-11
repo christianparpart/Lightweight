@@ -118,5 +118,8 @@ int main(int argc, char const* argv[])
     job.person = person;
     job.Create();
 
+    job.salary = 60'000;
+    job.Update();               // only the salary field is updated
+
     return 0;
 }
