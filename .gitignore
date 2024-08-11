@@ -1,5 +1,8 @@
 .cache/
 .vs/
 Testing/
+Debug/
+Release/
 build/
+vcpkg_installed/
 compile_commands.json

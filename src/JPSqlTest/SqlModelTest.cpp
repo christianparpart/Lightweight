@@ -31,7 +31,7 @@ struct Job: SqlModel<Job>
     SqlModelField<std::string, 3, "title"> title;
     SqlModelField<unsigned, 4, "salary"> salary;
     SqlModelField<SqlDate, 5, "start_date"> startDate;
-    SqlModelField<SqlDate, 6, "end_date"> endDate;
+    SqlModelField<SqlDate, 6, "end_date", SqlNullable> endDate;
     SqlModelField<bool, 7, "is_current"> isCurrent;
 
     Job():
@@ -112,22 +112,27 @@ int main(int argc, char const* argv[])
     person.firstName = "John";
     person.lastName = "Doe";
     person.Save().or_else(FatalError);
+    std::print("Person: {}\n", person.Inspect());
 
     Phone phone;
     phone.number = "555-1234";
     phone.type = "mobile";
     phone.person = person;
     phone.Save().or_else(FatalError);
+    std::print("Phone: {}\n", phone.Inspect());
 
     Job job;
     job.title = "Software Developer";
     job.salary = 50'000;
     job.startDate = SqlDate::Today();
     job.person = person;
+    job.isCurrent = true;
     job.Save().or_else(FatalError);
+    std::print("Job Initial: {}\n", job.Inspect());
 
     job.salary = 60'000;
     job.Save().or_else(FatalError); // only the salary field is updated
+    std::print("Job Updated: {}\n", job.Inspect());
 
     return 0;
 }
