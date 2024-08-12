@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../JPSql/Model.hpp"
 #include "../JPSql/SqlConnectInfo.hpp"
 #include "../JPSql/SqlDataBinder.hpp"
 #include "../JPSql/SqlLogger.hpp"
-#include "../JPSql/SqlModel.hpp"
 
 #include <format>
 #include <ostream>
@@ -55,7 +55,7 @@ class ScopedSqlNullLogger: public SqlLogger
 };
 
 // {{{ ostream support for JPSql, for debugging purposes
-inline std::ostream& operator<<(std::ostream& os, SqlModelId value)
+inline std::ostream& operator<<(std::ostream& os, Model::RecordId value)
 {
     return os << "ModelId { " << value.value << " }";
 }
@@ -96,11 +96,12 @@ inline std::ostream& operator<<(std::ostream& os, SqlResult<T> const& result)
 
 template <typename T,
           SQLSMALLINT TheTableColumnIndex,
-          SqlStringLiteral TheColumnName,
-          SqlFieldValueRequirement TheRequirement>
-inline std::ostream& operator<<(std::ostream& os, SqlModelField<T, TheTableColumnIndex, TheColumnName, TheRequirement> const& field)
+          Model::StringLiteral TheColumnName,
+          Model::FieldValueRequirement TheRequirement>
+inline std::ostream& operator<<(std::ostream& os,
+                                Model::Field<T, TheTableColumnIndex, TheColumnName, TheRequirement> const& field)
 {
-    return os << std::format("SqlModelField<{}:{}: {}>", TheTableColumnIndex, TheColumnName.value, field.Value());
+    return os << std::format("Field<{}:{}: {}>", TheTableColumnIndex, TheColumnName.value, field.Value());
 }
 
 // }}}

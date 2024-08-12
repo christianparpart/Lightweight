@@ -1,57 +1,65 @@
 #pragma once
 
-#include <vector>
 #include <string_view>
+#include <vector>
 
 namespace Model
 {
 
-class SqlModelFieldBase;
+class AbstractField;
+struct AbstractRecord;
 
-class SqlModelQueryLogger
+class QueryLogger
 {
   public:
-    virtual ~SqlModelQueryLogger() = default;
+    virtual ~QueryLogger() = default;
 
-    using FieldList = std::vector<SqlModelFieldBase*>;
+    using FieldList = std::vector<AbstractField*>;
 
     virtual void QueryStart(std::string_view /*query*/, FieldList const& /*output*/) {};
+    virtual void QueryNextRow(AbstractRecord const& /*model*/) {}
     virtual void QueryEnd() {}
 
-    static void Set(SqlModelQueryLogger* next) noexcept
+    static void Set(QueryLogger* next) noexcept
     {
         m_instance = next;
     }
 
-    static SqlModelQueryLogger& Get() noexcept
+    static QueryLogger& Get() noexcept
     {
         return *m_instance;
     }
 
-    static SqlModelQueryLogger* NullLogger() noexcept;
-    static SqlModelQueryLogger* StandardLogger() noexcept;
+    static QueryLogger* NullLogger() noexcept;
+    static QueryLogger* StandardLogger() noexcept;
 
   private:
-    static SqlModelQueryLogger* m_instance;
+    static QueryLogger* m_instance;
 };
 
 namespace detail
 {
 
-struct SqlScopedModelQueryLogger
-{
-    using FieldList = SqlModelQueryLogger::FieldList;
-
-    SqlScopedModelQueryLogger(std::string_view query, FieldList const& output)
+    struct SqlScopedModelQueryLogger
     {
-        SqlModelQueryLogger::Get().QueryStart(query, output);
-    }
+        using FieldList = QueryLogger::FieldList;
 
-    ~SqlScopedModelQueryLogger()
-    {
-        SqlModelQueryLogger::Get().QueryEnd();
-    }
-};
+        SqlScopedModelQueryLogger(std::string_view query, FieldList const& output)
+        {
+            QueryLogger::Get().QueryStart(query, output);
+        }
+
+        SqlScopedModelQueryLogger& operator+=(AbstractRecord const& model)
+        {
+            QueryLogger::Get().QueryNextRow(model);
+            return *this;
+        }
+
+        ~SqlScopedModelQueryLogger()
+        {
+            QueryLogger::Get().QueryEnd();
+        }
+    };
 
 } // namespace detail
 

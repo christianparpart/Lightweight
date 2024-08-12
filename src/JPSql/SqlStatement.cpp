@@ -97,14 +97,14 @@ SqlResult<unsigned long long> SqlStatement::LastInsertId() noexcept
 // Fetches the next row of the result set.
 SqlResult<void> SqlStatement::FetchRow() noexcept
 {
-//    for (auto const& preProcess: m_preProcessOutputColumnCallbacks) // TODO: not finished here yet (and there)
-//        preProcess();
+    for (auto const& preProcess: m_preProcessOutputColumnCallbacks) // TODO: not finished here yet (and there)
+        preProcess();
 
     return UpdateLastError(SQLFetch(m_hStmt)).and_then([&]() -> SqlResult<void> {
         // post-process the output columns, if needed
         for (auto const& postProcess: m_postProcessOutputColumnCallbacks)
             postProcess();
-        //? m_postProcessOutputColumnCallbacks.clear();
+        m_postProcessOutputColumnCallbacks.clear();
         return {};
     });
 }

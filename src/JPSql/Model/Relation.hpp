@@ -3,18 +3,18 @@
 namespace Model
 {
 
-class SqlModelRelation
+class Relation
 {
   public:
-    virtual ~SqlModelRelation() = default;
+    virtual ~Relation() = default;
 };
 
 // Represents an association of another Model with a foreign key to this model.
 template <typename Model>
-class HasOne final: public SqlModelRelation
+class HasOne final: public Relation
 {
   public:
-    explicit HasOne(SqlModelBase& registry)
+    explicit HasOne(AbstractRecord& registry)
     {
         registry.RegisterRelation(*this);
     }
@@ -29,8 +29,8 @@ class HasOne final: public SqlModelRelation
     std::optional<Model> m_model;
 };
 
-template <typename Model, SqlStringLiteral ForeignKeyName>
-class HasMany: public SqlModelRelation
+template <typename Model, StringLiteral ForeignKeyName>
+class HasMany: public Relation
 {
   public:
     size_t Count() const noexcept;
@@ -41,7 +41,7 @@ class HasMany: public SqlModelRelation
         return m_models;
     }
 
-    explicit HasMany(SqlModelBase& model):
+    explicit HasMany(AbstractRecord& model):
         m_model { &model }
     {
         model.RegisterRelation(*this);
@@ -93,13 +93,13 @@ class HasMany: public SqlModelRelation
     bool RequireLoaded();
 
     bool m_loaded = false;
-    SqlModelBase* m_model;
+    AbstractRecord* m_model;
     std::vector<Model> m_models;
 };
 
 #pragma region HasMany<> implementation
 
-template <typename Model, SqlStringLiteral ForeignKeyName>
+template <typename Model, StringLiteral ForeignKeyName>
 size_t HasMany<Model, ForeignKeyName>::Count() const noexcept
 {
     if (!m_models.empty())

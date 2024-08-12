@@ -14,14 +14,24 @@ set(HEADER_FILES
     SqlError.hpp
     SqlLogger.hpp
     SqlStatement.hpp
+    Model/ColumnType.hpp
+    Model/Detail.hpp
+    Model/Logger.hpp
+    Model/ModelId.hpp
+    Model/Record.hpp
+    Model/Relation.hpp
+    Model/StringLiteral.hpp
+    Model/Utils.hpp
 )
 
 set(SOURCE_FILES
     SqlConnection.cpp
     SqlLogger.cpp
-    SqlModel.cpp
     SqlStatement.cpp
     SqlTransaction.cpp
+    Model/AbstractRecord.cpp
+    Model/Logger.cpp
+    Model/Record.cpp
 )
 
 add_library(JPSql STATIC)
@@ -65,6 +75,6 @@ add_test(NAME JPSqlTest COMMAND JPSqlTest)
 add_executable(JPSqlModelTest)
 target_compile_features(JPSqlModelTest PUBLIC cxx_std_23)
 target_link_libraries(JPSqlModelTest PRIVATE JPSql::JPSql Catch2::Catch2)
-target_sources(JPSqlModelTest PRIVATE ../JPSqlTest/SqlModelTest.cpp)
+target_sources(JPSqlModelTest PRIVATE "../JPSqlTest/ModelTest.cpp")
 add_test(NAME JPSqlModelTest COMMAND JPSqlModelTest)
 

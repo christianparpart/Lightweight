@@ -394,10 +394,10 @@ struct SqlDataBinder<StringType>
 
         StringTraits::Reserve(result, columnSize); // Must be called now, because otherwise std::string won't do anything
 
-        cb.PlanPreProcessOutputColumn([result, columnSize]() {
-            // Ensure we're having sufficient space to store the worst-case scenario of bytes in this column
-            StringTraits::Reserve(result, columnSize);
-        });
+        //cb.PlanPreProcessOutputColumn([result, columnSize]() {
+        //    // Ensure we're having sufficient space to store the worst-case scenario of bytes in this column
+        //    StringTraits::Reserve(result, columnSize);
+        //});
 
         cb.PlanPostProcessOutputColumn([indicator, result]() {
             // Now resize the string to the actual length of the data

@@ -1,7 +1,6 @@
 #include "JPSqlTestUtils.hpp"
 
 #include <JPSql/SqlConnection.hpp>
-#include <JPSql/SqlModel.hpp>
 #include <JPSql/SqlStatement.hpp>
 #include <JPSql/SqlTransaction.hpp>
 

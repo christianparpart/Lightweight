@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../SqlDataBinder.hpp"
-#include "ModelId.hpp"
+#include "RecordId.hpp"
 
 #include <string_view>
 #include <string>
@@ -10,7 +10,7 @@
 namespace Model
 {
 
-enum class SqlColumnType : uint8_t
+enum class ColumnType : uint8_t
 {
     UNKNOWN,
     STRING,
@@ -23,25 +23,25 @@ enum class SqlColumnType : uint8_t
     TIMESTAMP,
 };
 
-constexpr std::string_view SqlColumnTypeName(SqlColumnType value) noexcept
+constexpr std::string_view ColumnTypeName(ColumnType value) noexcept
 {
     switch (value)
     {
-        case SqlColumnType::STRING:
+        case ColumnType::STRING:
             return "TEXT";
-        case SqlColumnType::BOOLEAN:
+        case ColumnType::BOOLEAN:
             return "BOOLEAN";
-        case SqlColumnType::INTEGER:
+        case ColumnType::INTEGER:
             return "INTEGER";
-        case SqlColumnType::REAL:
+        case ColumnType::REAL:
             return "REAL";
-        case SqlColumnType::BLOB:
+        case ColumnType::BLOB:
             return "BLOB";
-        case SqlColumnType::DATE:
+        case ColumnType::DATE:
             return "DATE";
-        case SqlColumnType::TIME:
+        case ColumnType::TIME:
             return "TIME";
-        case SqlColumnType::TIMESTAMP:
+        case ColumnType::TIMESTAMP:
             return "TIMESTAMP";
     }
     return "UNKNOWN";
@@ -50,27 +50,27 @@ constexpr std::string_view SqlColumnTypeName(SqlColumnType value) noexcept
 namespace detail
 {
 template <typename>
-struct SqlColumnTypeOf;
+struct ColumnTypeOf;
 
 // clang-format off
-template <> struct SqlColumnTypeOf<std::string> { static constexpr SqlColumnType value = SqlColumnType::STRING; };
-template <> struct SqlColumnTypeOf<bool> { static constexpr SqlColumnType value = SqlColumnType::BOOLEAN; };
-template <> struct SqlColumnTypeOf<int> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
-template <> struct SqlColumnTypeOf<unsigned int> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
-template <> struct SqlColumnTypeOf<long> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
-template <> struct SqlColumnTypeOf<unsigned long> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
-template <> struct SqlColumnTypeOf<long long> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
-template <> struct SqlColumnTypeOf<unsigned long long> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
-template <> struct SqlColumnTypeOf<float> { static constexpr SqlColumnType value = SqlColumnType::REAL; };
-template <> struct SqlColumnTypeOf<double> { static constexpr SqlColumnType value = SqlColumnType::REAL; };
-template <> struct SqlColumnTypeOf<SqlDate> { static constexpr SqlColumnType value = SqlColumnType::DATE; };
-template <> struct SqlColumnTypeOf<SqlTime> { static constexpr SqlColumnType value = SqlColumnType::TIME; };
-template <> struct SqlColumnTypeOf<SqlTimestamp> { static constexpr SqlColumnType value = SqlColumnType::TIMESTAMP; };
-template <> struct SqlColumnTypeOf<SqlModelId> { static constexpr SqlColumnType value = SqlColumnType::INTEGER; };
+template <> struct ColumnTypeOf<std::string> { static constexpr ColumnType value = ColumnType::STRING; };
+template <> struct ColumnTypeOf<bool> { static constexpr ColumnType value = ColumnType::BOOLEAN; };
+template <> struct ColumnTypeOf<int> { static constexpr ColumnType value = ColumnType::INTEGER; };
+template <> struct ColumnTypeOf<unsigned int> { static constexpr ColumnType value = ColumnType::INTEGER; };
+template <> struct ColumnTypeOf<long> { static constexpr ColumnType value = ColumnType::INTEGER; };
+template <> struct ColumnTypeOf<unsigned long> { static constexpr ColumnType value = ColumnType::INTEGER; };
+template <> struct ColumnTypeOf<long long> { static constexpr ColumnType value = ColumnType::INTEGER; };
+template <> struct ColumnTypeOf<unsigned long long> { static constexpr ColumnType value = ColumnType::INTEGER; };
+template <> struct ColumnTypeOf<float> { static constexpr ColumnType value = ColumnType::REAL; };
+template <> struct ColumnTypeOf<double> { static constexpr ColumnType value = ColumnType::REAL; };
+template <> struct ColumnTypeOf<SqlDate> { static constexpr ColumnType value = ColumnType::DATE; };
+template <> struct ColumnTypeOf<SqlTime> { static constexpr ColumnType value = ColumnType::TIME; };
+template <> struct ColumnTypeOf<SqlTimestamp> { static constexpr ColumnType value = ColumnType::TIMESTAMP; };
+template <> struct ColumnTypeOf<RecordId> { static constexpr ColumnType value = ColumnType::INTEGER; };
 // clang-format on
 } // namespace detail
 
 template <typename T>
-constexpr SqlColumnType SqlColumnTypeOf = detail::SqlColumnTypeOf<T>::value;
+constexpr ColumnType ColumnTypeOf = detail::ColumnTypeOf<T>::value;
 
 } // namespace Model

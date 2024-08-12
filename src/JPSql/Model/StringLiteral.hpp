@@ -6,9 +6,9 @@ namespace Model
 {
 
 template <size_t N>
-struct SqlStringLiteral
+struct StringLiteral
 {
-    constexpr SqlStringLiteral(const char (&str)[N]) noexcept
+    constexpr StringLiteral(const char (&str)[N]) noexcept
     {
         std::copy_n(str, N, value);
     }
