@@ -21,7 +21,6 @@
 #include <ranges>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <variant>
 #include <vector>
 
@@ -40,6 +39,8 @@ struct SqlColumnIndex
 {
     size_t value;
 };
+
+#pragma region detail::StringBuilder
 
 namespace detail
 {
@@ -75,7 +76,10 @@ struct StringBuilder
 };
 } // namespace detail
 
-// {{{ SqlModelId
+#pragma endregion
+
+#pragma region SqlModelId
+
 struct SqlModelId
 {
     size_t value;
@@ -102,18 +106,10 @@ struct SqlDataBinder<SqlModelId>
         return SqlDataBinder<decltype(result->value)>::GetColumn(stmt, column, &result->value, indicator);
     }
 };
-// }}}
 
-// {{{ schema
-enum class SqlWhereOperator : uint8_t
-{
-    EQUAL,
-    NOT_EQUAL,
-    LESS_THAN,
-    GREATER_THAN,
-    LESS_OR_EQUAL,
-    GREATER_OR_EQUAL
-};
+#pragma endregion
+
+#pragma region SqlColumnType API and implementation
 
 enum class SqlColumnType : uint8_t
 {
@@ -178,6 +174,10 @@ template <> struct SqlColumnTypeOf<SqlModelId> { static constexpr SqlColumnType 
 template <typename T>
 constexpr SqlColumnType SqlColumnTypeOf = detail::SqlColumnTypeOf<T>::value;
 
+#pragma endregion
+
+#pragma region SQL Schema API (research area)
+
 struct SqlColumnSchema
 {
     // std::string name;
@@ -188,6 +188,17 @@ struct SqlColumnSchema
     bool isUnique : 1 = false;
     bool isInded : 1 = false;
     unsigned columnSize = 0;
+};
+
+
+enum class SqlWhereOperator : uint8_t
+{
+    EQUAL,
+    NOT_EQUAL,
+    LESS_THAN,
+    GREATER_THAN,
+    LESS_OR_EQUAL,
+    GREATER_OR_EQUAL
 };
 
 // Loads and represents a table schema from the database
@@ -206,7 +217,8 @@ class SqlTableSchema
     std::string m_tableName;
     std::vector<SqlColumnSchema> m_columns;
 };
-// }}}
+
+#pragma endregion
 
 // Forward declarations
 struct SqlModelBase;
@@ -216,6 +228,8 @@ struct SqlModel;
 
 template <typename... Models>
 SqlResult<void> CreateSqlTables();
+
+#pragma region SqlModelField<> API
 
 enum class SqlFieldValueRequirement : uint8_t
 {
@@ -275,11 +289,15 @@ class SqlModelFieldBase
     bool m_modified = false;
 };
 
+#pragma endregion
+
 class SqlModelRelation
 {
   public:
     virtual ~SqlModelRelation() = default;
 };
+
+#pragma region SqlModel<> API (SqlModelBase, SqlModel<>)
 
 // Base class for every SqlModel<T>.
 class SqlModelBase
@@ -359,6 +377,10 @@ class SqlModelBase
     std::vector<SqlModelRelation*> m_relations;
 };
 
+#pragma endregion
+
+#pragma region class SqlModelField final: public SqlModelFieldBase
+
 // Represents a single column in a table.
 //
 // The column name, index, and type are known at compile time.
@@ -425,6 +447,8 @@ class SqlModelField final: public SqlModelFieldBase
   private:
     T m_value {};
 };
+
+#pragma endregion
 
 // Represents a column in a table that is a foreign key to another table.
 template <typename ModelType,
@@ -866,6 +890,8 @@ SqlResult<void> SqlModelField<T, TheTableColumnIndex, TheColumnName, TheRequirem
     return stmt.BindOutputColumn(TheTableColumnIndex, &m_value);
 }
 
+#pragma region SqlModelBelongsTo<> implementation
+
 template <typename Model,
           SQLSMALLINT TheColumnIndex,
           SqlStringLiteral TheForeignKeyName,
@@ -934,8 +960,9 @@ SqlModelBelongsTo<ModelType, TheColumnIndex, TheForeignKeyName, TheRequirement>&
     return *this;
 }
 
-// ----------------------------------------------------------------------------------------------------------------
-// SqlModel
+#pragma endregion
+
+#pragma region SqlModel<Derived> implementation
 
 template <typename Derived>
 SqlResult<SqlModelId> SqlModel<Derived>::Create()
@@ -1087,8 +1114,9 @@ SqlResult<void> SqlModel<Derived>::Destroy()
     return stmt.ExecuteDirect(std::format("DELETE FROM {} WHERE {} = {}", m_tableName, m_primaryKeyName, m_id.value));
 }
 
-// ----------------------------------------------------------------------------------------------------------------
-// HasMany<T>
+#pragma endregion
+
+#pragma region HasMany<T> implementation
 
 template <typename Model, SqlStringLiteral ForeignKeyName>
 size_t HasMany<Model, ForeignKeyName>::Count() const noexcept
@@ -1107,8 +1135,9 @@ size_t HasMany<Model, ForeignKeyName>::Count() const noexcept
     return stmt.GetColumn<size_t>(1);
 }
 
-// ----------------------------------------------------------------------------------------------------------------
-// free functions
+#pragma endregion
+
+#pragma region free functions
 
 template <typename... Models>
 std::string CreateSqlTablesString(SqlServerType serverType)
@@ -1125,3 +1154,5 @@ SqlResult<void> CreateSqlTables()
     ((result = Models::CreateTable()) && ...);
     return result;
 }
+
+#pragma endregion
