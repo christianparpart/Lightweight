@@ -4,6 +4,8 @@
     #include <Windows.h>
 #endif
 
+#include "SqlLogger.hpp"
+
 #include <chrono>
 #include <compare>
 #include <cstring>

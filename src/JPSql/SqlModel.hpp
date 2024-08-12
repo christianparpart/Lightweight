@@ -279,10 +279,16 @@ class SqlModelBase
     {
     }
 
+    SqlModelBase(SqlModelBase&& other) noexcept:
+        m_tableName { other.m_tableName },
+        m_primaryKeyName { other.m_primaryKeyName },
+        m_id { other.m_id }
+    {
+    }
+
     SqlModelBase() = delete;
     SqlModelBase(SqlModelBase const&) = delete;
     SqlModelBase& operator=(SqlModelBase const&) = delete;
-    SqlModelBase(SqlModelBase&&) = default;
     SqlModelBase& operator=(SqlModelBase&&) = default;
     ~SqlModelBase() = default;
 
@@ -313,7 +319,7 @@ class SqlModelBase
   protected:
     std::string_view m_tableName;      // Should not be modified, but we want to allow move semantics
     std::string_view m_primaryKeyName; // Should not be modified, but we want to allow move semantics
-    SqlModelId m_id;
+    SqlModelId m_id { std::numeric_limits<size_t>::max() };
 
     std::vector<SqlModelFieldBase*> m_fields;
     std::vector<SqlModelRelation*> m_relations;
@@ -339,7 +345,7 @@ class SqlModelField final: public SqlModelFieldBase
         registry.RegisterField(*this);
     }
 
-    explicit SqlModelField(SqlModelBase& registry, SqlModelField const& field):
+    explicit SqlModelField(SqlModelBase& registry, SqlModelField&& field):
         SqlModelFieldBase {
             registry, TheTableColumnIndex, TheColumnName.value, SqlColumnTypeOf<T>, TheRequirement,
         },
@@ -366,6 +372,16 @@ class SqlModelField final: public SqlModelFieldBase
         return *this;
     }
 
+    SqlModelField& operator=(SqlModelField const& other)
+    {
+        if (this != &other)
+        {
+            SqlModelFieldBase::operator=(std::move(other));
+            m_value = other.m_value;
+        }
+        return *this;
+    }
+
     SqlModelField(SqlModelField const& other):
         SqlModelFieldBase { other },
         m_value { other.m_value }
@@ -375,6 +391,16 @@ class SqlModelField final: public SqlModelFieldBase
     }
 
     // clang-format off
+
+    template <typename U, SQLSMALLINT I, SqlStringLiteral N, SqlFieldValueRequirement R>
+    auto operator<=>(SqlModelField<U, I, N, R> const& other) const noexcept { return m_value <=> other.m_value; }
+
+    // We also define the equality and inequality operators explicitly, because <=> from above does not seem to work in MSVC VS 2022.
+    template <typename U, SQLSMALLINT I, SqlStringLiteral N, SqlFieldValueRequirement R>
+    auto operator==(SqlModelField<U, I, N, R> const& other) const noexcept { return m_value == other.m_value; }
+
+    template <typename U, SQLSMALLINT I, SqlStringLiteral N, SqlFieldValueRequirement R>
+    auto operator!=(SqlModelField<U, I, N, R> const& other) const noexcept { return m_value != other.m_value; }
 
     T const& Value() const noexcept { return m_value; }
     void SetData(T&& value) { SetModified(true); m_value = std::move(value); }
@@ -411,6 +437,13 @@ class SqlModelBelongsTo final: public SqlModelFieldBase
         registry.RegisterField(*this);
     }
 
+    explicit SqlModelBelongsTo(SqlModelBase& registry, SqlModelBelongsTo&& other):
+        SqlModelFieldBase { std::move(other) },
+        m_value { other.m_value }
+    {
+        registry.RegisterField(*this);
+    }
+
     SqlModelBelongsTo& operator=(SqlModelId modelId) noexcept;
     SqlModelBelongsTo& operator=(SqlModel<ModelType> const& model) noexcept;
 
@@ -423,6 +456,13 @@ class SqlModelBelongsTo final: public SqlModelFieldBase
     std::string InspectValue() const override;
     SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
     SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
+
+    auto operator<=>(SqlModelBelongsTo const& other) const noexcept { return m_value <=> other.m_value; }
+
+    template <typename U, SQLSMALLINT I, SqlStringLiteral N, SqlFieldValueRequirement R>
+    bool operator==(SqlModelBelongsTo<U, I, N, R> const& other) const noexcept { return m_value == other.m_value; }
+    template <typename U, SQLSMALLINT I, SqlStringLiteral N, SqlFieldValueRequirement R>
+    bool operator!=(SqlModelBelongsTo<U, I, N, R> const& other) const noexcept { return m_value == other.m_value; }
 
   private:
     SqlModelId m_value {};
@@ -671,7 +711,8 @@ SqlResult<Derived> SqlModel<Derived>::Find(SqlModelId id)
 {
     Derived model;
     model.Load(id);
-    return model;
+    std::println("Loaded model: {}", model.Inspect());
+    return { std::move(model) };
 }
 
 template <typename Derived>
@@ -956,14 +997,16 @@ SqlResult<void> SqlModel<Derived>::Load(SqlModelId id)
 
     SqlStatement stmt;
 
-    if (auto result = stmt.Prepare(std::format("SELECT {} FROM {}", *sqlColumnsString, m_tableName)); !result)
+    if (auto result = stmt.Prepare(
+            std::format("SELECT {} FROM {} WHERE {} = ? LIMIT 1", *sqlColumnsString, m_tableName, m_primaryKeyName));
+        !result)
         return std::unexpected { result.error() };
 
     if (auto result = stmt.BindInputParameter(1, id); !result)
         return std::unexpected { result.error() };
 
-    //if (auto result = stmt.BindOutputColumn(1, &m_id.value); !result)
-    //    return std::unexpected { result.error() };
+    if (auto result = stmt.BindOutputColumn(1, &m_id.value); !result)
+        return std::unexpected { result.error() };
 
     for (SqlModelFieldBase* field: m_fields)
         if (auto result = field->BindOutputColumn(stmt); !result)

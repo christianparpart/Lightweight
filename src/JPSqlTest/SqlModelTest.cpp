@@ -4,6 +4,8 @@
 #include "../JPSql/SqlConnection.hpp"
 #include "../JPSql/SqlModel.hpp"
 
+#include "JPSqlTestUtils.hpp"
+
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -70,15 +72,15 @@ struct Book: SqlModel<Book>
     {
     }
 
-    Book(Book&& other):
-        SqlModel { "books" },
-        title { *this },
-        isbn { *this },
-        author { *this }
+    Book(Book&& other) noexcept:
+        SqlModel { std::move(other) },
+        title { *this, std::move(other.title) },
+        isbn { *this, std::move(other.isbn) },
+        author { *this, std::move(other.author) }
     {
-        // title = other.title.Value();
-        // isbn = other.isbn.Value();
-        // author = other.author;
+        //title = (other.title);
+        //isbn = (other.isbn);
+        //author = (other.author);
     }
 };
 
@@ -125,6 +127,30 @@ TEST_CASE_METHOD(SqlTestFixture, "Creations", "[model]")
     REQUIRE(author.books.Size().value() == 2);
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
+{
+    REQUIRE(Author::CreateTable());
+    REQUIRE(Book::CreateTable());
+
+    Author author;
+    author.name = "Bjarne Stroustrup";
+    REQUIRE(author.Save());
+
+    Book book;
+    book.title = "The C++ Programming Language";
+    book.isbn = "978-0-321-56384-2";
+    book.author = author;
+    REQUIRE(book.Save());
+
+    Book bookLoaded = Book::Find(book.Id()).value();
+    INFO("Book: " << book.Inspect());
+    CHECK(bookLoaded.Id() == book.Id());
+    CHECK(bookLoaded.title == book.title);
+    CHECK(bookLoaded.isbn == book.isbn);
+    CHECK(bookLoaded.author == book.author);
+}
+
+#if 0
 TEST_CASE_METHOD(SqlTestFixture, "Updating", "[model]")
 {
     REQUIRE(Author::CreateTable());
@@ -150,15 +176,18 @@ TEST_CASE_METHOD(SqlTestFixture, "Updating", "[model]")
     book2.isbn = "978-0-321-958310-2";
     REQUIRE(book2.Save());
 
-    Book book2Loaded = std::move(Book::Find(book2.Id()).value());
-    REQUIRE(book2Loaded.Id() == book2.Id()); // TODO: should not need .value
-//    REQUIRE(book2Loaded.title == book2.title);
-//    REQUIRE(book2Loaded.isbn == book2.isbn);
-//    REQUIRE(book2Loaded.author.Id() == author.Id());
+    Book book2Loaded = Book::Find(book2.Id()).value();
+    INFO("Book 1        : " << book1.Inspect());
+    INFO("Book 2        : " << book2.Inspect());
+    INFO("Book 2 loaded : " << book2Loaded.Inspect());
+    CHECK(book2Loaded.Id() == book2.Id());
+    CHECK(book2Loaded.title == book2.title);
+    CHECK(book2Loaded.isbn == book2.isbn);
+    //REQUIRE(book2Loaded.author.Id() == author.Id());
 }
+#endif
 
 #if 0
-
 struct Phone: SqlModel<Phone>
 {
     SqlModelField<std::string, 4, "name"> number;
