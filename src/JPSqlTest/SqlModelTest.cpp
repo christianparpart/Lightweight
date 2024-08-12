@@ -1,3 +1,5 @@
+#include "../JPSql/Model/Logger.hpp"
+#include "../JPSql/Model/Record.hpp"
 #include "../JPSql/SqlConnection.hpp"
 #include "../JPSql/SqlModel.hpp"
 #include "JPSqlTestUtils.hpp"
@@ -46,7 +48,7 @@ class SqlTestFixture
 
 int main(int argc, char const* argv[])
 {
-    SqlModelQueryLogger::Set(SqlModelQueryLogger::StandardLogger());
+    Model::SqlModelQueryLogger::Set(Model::SqlModelQueryLogger::StandardLogger());
 
     return Catch::Session().run(argc, argv);
 }
@@ -54,11 +56,11 @@ int main(int argc, char const* argv[])
 struct Author;
 struct Book;
 
-struct Book: SqlModel<Book>
+struct Book: Model::SqlModel<Book>
 {
-    SqlModelField<std::string, 2, "title"> title;
-    SqlModelField<std::string, 3, "isbn"> isbn;
-    SqlModelBelongsTo<Author, 4, "author_id"> author;
+    Model::SqlModelField<std::string, 2, "title"> title;
+    Model::SqlModelField<std::string, 3, "isbn"> isbn;
+    Model::SqlModelBelongsTo<Author, 4, "author_id"> author;
 
     Book():
         SqlModel { "books" },
@@ -77,10 +79,10 @@ struct Book: SqlModel<Book>
     }
 };
 
-struct Author: SqlModel<Author>
+struct Author: Model::SqlModel<Author>
 {
-    SqlModelField<std::string, 2, "name"> name;
-    HasMany<Book, "author_id"> books;
+    Model::SqlModelField<std::string, 2, "name"> name;
+    Model::HasMany<Book, "author_id"> books;
 
     Author():
         SqlModel { "authors" },
@@ -122,7 +124,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
 {
-    REQUIRE(CreateSqlTables<Author, Book>());
+    REQUIRE(Model::CreateSqlTables<Author, Book>());
 
     Author author;
     author.name = "Bjarne Stroustrup";
@@ -145,7 +147,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
 {
-    REQUIRE(CreateSqlTables<Author, Book>());
+    REQUIRE(Model::CreateSqlTables<Author, Book>());
 
     Author author;
     author.name = "Bjarne Stroustrup";
@@ -167,7 +169,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Update", "[model]")
 {
-    REQUIRE(CreateSqlTables<Author, Book>());
+    REQUIRE(Model::CreateSqlTables<Author, Book>());
 
     Author author;
     author.name = "Bjarne Stroustrup";
