@@ -11,6 +11,7 @@
 #include "SqlStatement.hpp"
 
 #include <algorithm>
+#include <compare>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -70,6 +71,8 @@ struct StringBuilder
 struct SqlModelId
 {
     size_t value;
+
+    constexpr std::strong_ordering operator<=>(SqlModelId const& other) const noexcept = default;
 };
 
 template <>
@@ -486,7 +489,7 @@ class HasMany: public SqlModelRelation
 
         auto const tableName = Model().TableName(); // TODO: cache schema information once
         auto const id = m_model->Id().value;
-#if 0
+#if 0 // TODO: enable this instead
         stmt.Prepare(std::format("SELECT COUNT(*) FROM {} WHERE {} = {}", tableName, ForeignKeyName.value, id))
             .and_then([&] { return stmt.Execute(); })
             .and_then([&] { return stmt.FetchRow(); })
@@ -512,6 +515,7 @@ class HasMany: public SqlModelRelation
         RequireLoaded();
         return m_models.at(index);
     }
+
     Model& operator[](size_t index) noexcept
     {
         RequireLoaded();
@@ -579,7 +583,7 @@ struct SqlModel: public SqlModelBase
     SqlResult<SqlModelId> Create();
 
     // Reads the model from the database by given model ID.
-    SqlResult<void> Read(SqlModelId id);
+    SqlResult<void> Load(SqlModelId id);
 
     // Updates the model in the database.
     SqlResult<void> Update();
@@ -594,10 +598,13 @@ struct SqlModel: public SqlModelBase
     static SqlResult<void> UpdateAll(Derived const& modelChanges) noexcept;
 
     // Retrieves the first model from the database (ordered by ID ASC).
-    static SqlResult<Derived> First() noexcept;
+    static SqlResult<Derived> First();
 
     // Retrieves the last model from the database (ordered by ID ASC).
-    static SqlResult<Derived> Last() noexcept;
+    static SqlResult<Derived> Last();
+
+    // Retrieves the model with the given ID from the database.
+    static SqlResult<Derived> Find(SqlModelId id);
 
     template <typename ColumnName, typename T>
     static SqlResult<Derived> FindBy(ColumnName const& columnName, T const& value) noexcept;
@@ -607,9 +614,6 @@ struct SqlModel: public SqlModelBase
 
     // Retrieves the number of models of this kind from the database.
     static SqlResult<size_t> Count() noexcept;
-
-    // Retrieves the model with the given ID from the database.
-    static SqlResult<SqlModel> Find(SqlModelId id) noexcept;
 
     static SqlResult<std::vector<SqlModel>> Where(SqlColumnIndex columnIndex,
                                                   const SqlVariant& value,
@@ -660,6 +664,14 @@ SqlResult<size_t> SqlModel<Derived>::Count() noexcept
         .and_then([&] { return stmt.Execute(); })
         .and_then([&] { return stmt.FetchRow(); })
         .and_then([&] { return stmt.GetColumn<size_t>(1); });
+}
+
+template <typename Derived>
+SqlResult<Derived> SqlModel<Derived>::Find(SqlModelId id)
+{
+    Derived model;
+    model.Load(id);
+    return model;
 }
 
 template <typename Derived>
@@ -870,6 +882,9 @@ SqlModelBelongsTo<ModelType, TheColumnIndex, TheForeignKeyName, TheRequirement>&
     return *this;
 }
 
+// ----------------------------------------------------------------------------------------------------------------
+// SqlModel
+
 template <typename Derived>
 SqlResult<SqlModelId> SqlModel<Derived>::Create()
 {
@@ -932,40 +947,35 @@ SqlResult<SqlModelId> SqlModel<Derived>::Create()
 }
 
 template <typename Derived>
-SqlResult<void> SqlModel<Derived>::Save()
+SqlResult<void> SqlModel<Derived>::Load(SqlModelId id)
 {
-    if (m_id.value != 0)
-        return Update();
+    detail::StringBuilder sqlColumnsString;
+    sqlColumnsString << m_primaryKeyName;
+    for (SqlModelFieldBase const* field: m_fields)
+        sqlColumnsString << ", " << field->Name();
 
-    if (auto result = Create(); !result)
+    SqlStatement stmt;
+
+    if (auto result = stmt.Prepare(std::format("SELECT {} FROM {}", *sqlColumnsString, m_tableName)); !result)
+        return std::unexpected { result.error() };
+
+    if (auto result = stmt.BindInputParameter(1, id); !result)
+        return std::unexpected { result.error() };
+
+    //if (auto result = stmt.BindOutputColumn(1, &m_id.value); !result)
+    //    return std::unexpected { result.error() };
+
+    for (SqlModelFieldBase* field: m_fields)
+        if (auto result = field->BindOutputColumn(stmt); !result)
+            return std::unexpected { result.error() };
+
+    if (auto result = stmt.Execute(); !result)
+        return std::unexpected { result.error() };
+
+    if (auto result = stmt.FetchRow(); !result)
         return std::unexpected { result.error() };
 
     return {};
-}
-
-template <typename Derived>
-SqlResult<void> SqlModel<Derived>::Read(SqlModelId modelId)
-{
-    auto stmt = SqlStatement {};
-
-    detail::StringBuilder sqlColumnsString;
-    for (auto const* field: m_fields)
-    {
-        if (!sqlColumnsString.empty())
-            sqlColumnsString << ", ";
-        sqlColumnsString << field->Name(); // TODO: quote column name
-    }
-    std::string sqlSelectStmtString =
-        std::format("SELECT {} FROM {} WHERE {} = ?", *sqlColumnsString, m_tableName, m_primaryKeyName);
-
-    if (auto result = stmt.Prepare(sqlSelectStmtString); !result)
-        return result;
-
-    for (auto& field: m_fields)
-        if (auto result = field.BindOutputColumn(stmt); !result)
-            return result;
-
-    return stmt.Execute();
 }
 
 template <typename Derived>
@@ -989,6 +999,18 @@ SqlResult<void> SqlModel<Derived>::Update()
     for (auto& field: m_fields)
         field.ResetModified();
 #endif
+    return {};
+}
+
+template <typename Derived>
+SqlResult<void> SqlModel<Derived>::Save()
+{
+    if (m_id.value != 0)
+        return Update();
+
+    if (auto result = Create(); !result)
+        return std::unexpected { result.error() };
+
     return {};
 }
 

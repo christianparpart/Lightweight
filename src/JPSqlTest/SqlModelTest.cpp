@@ -69,6 +69,17 @@ struct Book: SqlModel<Book>
         author { *this }
     {
     }
+
+    Book(Book&& other):
+        SqlModel { "books" },
+        title { *this },
+        isbn { *this },
+        author { *this }
+    {
+        // title = other.title.Value();
+        // isbn = other.isbn.Value();
+        // author = other.author;
+    }
 };
 
 struct Author: SqlModel<Author>
@@ -139,7 +150,11 @@ TEST_CASE_METHOD(SqlTestFixture, "Updating", "[model]")
     book2.isbn = "978-0-321-958310-2";
     REQUIRE(book2.Save());
 
-    // TODO: Book book3 = Book::Find(book2.Id()).value();
+    Book book2Loaded = std::move(Book::Find(book2.Id()).value());
+    REQUIRE(book2Loaded.Id() == book2.Id()); // TODO: should not need .value
+//    REQUIRE(book2Loaded.title == book2.title);
+//    REQUIRE(book2Loaded.isbn == book2.isbn);
+//    REQUIRE(book2Loaded.author.Id() == author.Id());
 }
 
 #if 0
