@@ -8,6 +8,9 @@
 
 // TODO: Add std::format support for: SqlModel<T>
 // TODO: We might need to differenciate between VARCHAR (std::string) and TEXT (maybe SqlText<std::string>?)
+// TODO: Make logging more useful, adding payload data (similar to ActiveRecord)
+// TODO: remove debug prints
+// TODO: add proper trace logging (like ActiveRecord)
 
 #include "SqlConnection.hpp"
 #include "SqlDataBinder.hpp"
@@ -18,6 +21,7 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -239,6 +243,11 @@ class SqlModelFieldBase
     {
     }
 
+    SqlModelFieldBase() = delete;
+    SqlModelFieldBase(SqlModelFieldBase&&) = default;
+    SqlModelFieldBase& operator=(SqlModelFieldBase&&) = default;
+    SqlModelFieldBase(SqlModelFieldBase const&) = delete;
+    SqlModelFieldBase& operator=(SqlModelFieldBase const&) = delete;
     virtual ~SqlModelFieldBase() = default;
 
     virtual std::string InspectValue() const = 0;
@@ -331,13 +340,22 @@ class SqlModelBase
         std::sort(m_fields.begin(), m_fields.end(), [](auto a, auto b) { return a->Index() < b->Index(); });
     }
 
+    using FieldList = std::vector<SqlModelFieldBase*>;
+
+    FieldList GetModifiedFields() const noexcept
+    {
+        FieldList result;
+        std::ranges::copy_if(m_fields, std::back_inserter(result), [](auto* field) { return field->IsModified(); });
+        return result;
+    }
+
   protected:
     std::string_view m_tableName;      // Should not be modified, but we want to allow move semantics
     std::string_view m_primaryKeyName; // Should not be modified, but we want to allow move semantics
     SqlModelId m_id { std::numeric_limits<size_t>::max() };
 
     bool m_modified = false;
-    std::vector<SqlModelFieldBase*> m_fields;
+    FieldList m_fields;
     std::vector<SqlModelRelation*> m_relations;
 };
 
@@ -395,8 +413,8 @@ class SqlModelField final: public SqlModelFieldBase
 
     SqlModelField& operator=(T&& value) noexcept;
 
-    T& operator*() noexcept;
-    T const& operator*() const noexcept;
+    T& operator*() noexcept { return m_value; }
+    T const& operator*() const noexcept { return m_value; }
 
     // clang-format on
 
@@ -444,12 +462,21 @@ class SqlModelBelongsTo final: public SqlModelFieldBase
     SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
     SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
 
-    auto operator<=>(SqlModelBelongsTo const& other) const noexcept { return m_value <=> other.m_value; }
+    auto operator<=>(SqlModelBelongsTo const& other) const noexcept
+    {
+        return m_value <=> other.m_value;
+    }
 
     template <typename U, SQLSMALLINT I, SqlStringLiteral N, SqlFieldValueRequirement R>
-    bool operator==(SqlModelBelongsTo<U, I, N, R> const& other) const noexcept { return m_value == other.m_value; }
+    bool operator==(SqlModelBelongsTo<U, I, N, R> const& other) const noexcept
+    {
+        return m_value == other.m_value;
+    }
     template <typename U, SQLSMALLINT I, SqlStringLiteral N, SqlFieldValueRequirement R>
-    bool operator!=(SqlModelBelongsTo<U, I, N, R> const& other) const noexcept { return m_value == other.m_value; }
+    bool operator!=(SqlModelBelongsTo<U, I, N, R> const& other) const noexcept
+    {
+        return m_value == other.m_value;
+    }
 
   private:
     SqlModelId m_value {};
@@ -952,10 +979,9 @@ SqlResult<SqlModelId> SqlModel<Derived>::Create()
     if (auto result = stmt.Prepare(sqlInsertStmtString); !result)
         return std::unexpected { result.error() };
 
-    SQLSMALLINT parameterIndex = 1;
-    for (auto const* field: m_fields)
+    for (auto const && [parameterIndex, field]: m_fields | std::views::enumerate)
         if (field->IsModified())
-            if (auto result = field->BindInputParameter(parameterIndex++, stmt); !result)
+            if (auto result = field->BindInputParameter(parameterIndex + 1, stmt); !result)
                 return std::unexpected { result.error() };
 
     if (auto result = stmt.Execute(); !result)
@@ -1008,24 +1034,38 @@ SqlResult<void> SqlModel<Derived>::Load(SqlModelId id)
 template <typename Derived>
 SqlResult<void> SqlModel<Derived>::Update()
 {
+    auto sqlColumnsString = detail::StringBuilder {};
+    auto modifiedFields = GetModifiedFields();
+
+    for (SqlModelFieldBase* field: m_fields)
+    {
+        if (!field->IsModified())
+            continue;
+
+        if (!sqlColumnsString.empty())
+            sqlColumnsString << ", ";
+
+        sqlColumnsString << field->Name() << " = ?";
+    }
+
     auto stmt = SqlStatement {};
-    auto columns = std::string {}; // TODO
-#if 0                              // TODO
-    if (auto result = stmt.Prepare("UPDATE ? SET {} WHERE {} = ?", m_tableName, m_primaryKeyName); !result)
-        // TODO: number of "?" must match number of parameters
+
+    if (auto result = stmt.Prepare(
+            std::format("UPDATE {} SET {} WHERE {} = {}", m_tableName, *sqlColumnsString, m_primaryKeyName, m_id.value));
+        !result)
         return result;
 
-    for (auto const* field: m_fields)
-        if (field->IsModified())
-            if (auto result = field->BindInputParameter(stmt); !result)
-                return result;
+    SQLSMALLINT nextColumnIndex = 1;
+    for (auto&& [index, field]: modifiedFields | std::views::enumerate)
+        if (auto result = field->BindInputParameter(index + 1, stmt); !result)
+            return result;
 
     if (auto result = stmt.Execute(); !result)
         return result;
 
-    for (auto& field: m_fields)
-        field.ResetModified();
-#endif
+    for (auto* field: modifiedFields)
+        field->SetModified(false);
+
     return {};
 }
 
@@ -1045,7 +1085,7 @@ template <typename Derived>
 SqlResult<void> SqlModel<Derived>::Destroy()
 {
     auto stmt = SqlStatement {};
-    return stmt.ExecuteDirect(std::format("DELETE FROM {} WHERE {} = {}", m_tableName, m_primaryKeyName, m_id.Value()));
+    return stmt.ExecuteDirect(std::format("DELETE FROM {} WHERE {} = {}", m_tableName, m_primaryKeyName, m_id.value));
 }
 
 // ----------------------------------------------------------------------------------------------------------------

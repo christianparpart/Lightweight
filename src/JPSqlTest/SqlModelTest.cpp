@@ -1,6 +1,3 @@
-// TODO: add std::formatter for SqlModel<T>
-// TODO: add std::formatter for SqlResult<T>
-
 #include "../JPSql/SqlConnection.hpp"
 #include "../JPSql/SqlModel.hpp"
 #include "JPSqlTestUtils.hpp"
@@ -10,6 +7,14 @@
 
 #include <filesystem>
 #include <print>
+
+// TODO:
+//
+// [ ] Add std::formatter for SqlModel<T>
+// [ ] Add std::formatter for SqlResult<T>
+// [ ] Add test for BelongsTo<> (including eager & lazy-loading check)
+// [ ] Add test for HasOne<> (including eager & lazy-loading check)
+// [ ] Add test for HasMany<> (including eager & lazy-loading check)
 
 using namespace std::string_view_literals;
 
@@ -115,8 +120,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
 {
-    REQUIRE(Author::CreateTable());
-    REQUIRE(Book::CreateTable());
+    REQUIRE(CreateSqlTables<Author, Book>());
 
     Author author;
     author.name = "Bjarne Stroustrup";
@@ -139,8 +143,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
 {
-    REQUIRE(Author::CreateTable());
-    REQUIRE(Book::CreateTable());
+    REQUIRE(CreateSqlTables<Author, Book>());
 
     Author author;
     author.name = "Bjarne Stroustrup";
@@ -158,6 +161,47 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
     CHECK(bookLoaded.title == book.title);   // SqlModelField<>
     CHECK(bookLoaded.isbn == book.isbn);     // SqlModelField<>
     CHECK(bookLoaded.author == book.author); // BelongsTo<>
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "Model.Update", "[model]")
+{
+    REQUIRE(CreateSqlTables<Author, Book>());
+
+    Author author;
+    author.name = "Bjarne Stroustrup";
+    REQUIRE(author.Save());
+
+    Book book;
+    book.title = "The C++ Programming Language";
+    book.isbn = "978-0-321-56384-2";
+    book.author = author;
+    REQUIRE(book.Save());
+
+    book.isbn = "978-0-321-958310";
+    REQUIRE(book.Save());
+
+    Book bookRead = Book::Find(book.Id()).value();
+    CHECK(bookRead.Id() == book.Id());
+    CHECK(bookRead.title == book.title);
+    CHECK(bookRead.isbn == book.isbn);
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "Model.Destroy", "[model]")
+{
+    REQUIRE(Author::CreateTable());
+
+    Author author1;
+    author1.name = "Bjarne Stroustrup";
+    REQUIRE(author1.Save());
+    REQUIRE(Author::Count() == 1);
+
+    Author author2;
+    author2.name = "John Doe";
+    REQUIRE(author2.Save());
+    REQUIRE(Author::Count() == 2);
+
+    REQUIRE(author1.Destroy());
+    REQUIRE(Author::Count() == 1);
 }
 
 #if 0
