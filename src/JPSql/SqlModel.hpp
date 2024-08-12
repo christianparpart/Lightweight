@@ -24,6 +24,15 @@
 #include <variant>
 #include <vector>
 
+// Forward declarations
+struct SqlModelBase;
+
+template <typename Derived>
+struct SqlModel;
+
+template <typename... Models>
+SqlResult<void> CreateSqlTables();
+
 template <size_t N>
 struct SqlStringLiteral
 {
@@ -32,7 +41,22 @@ struct SqlStringLiteral
         std::copy_n(str, N, value);
     }
 
+    constexpr std::string_view operator*() const noexcept
+    {
+        return value;
+    }
+
     char value[N];
+};
+
+enum class SqlWhereOperator : uint8_t
+{
+    EQUAL,
+    NOT_EQUAL,
+    LESS_THAN,
+    GREATER_THAN,
+    LESS_OR_EQUAL,
+    GREATER_OR_EQUAL
 };
 
 struct SqlColumnIndex
@@ -84,6 +108,10 @@ struct SqlModelId
 {
     size_t value;
 
+    constexpr size_t operator*() const noexcept
+    {
+        return value;
+    }
     constexpr std::strong_ordering operator<=>(SqlModelId const& other) const noexcept = default;
 };
 
@@ -175,59 +203,6 @@ template <typename T>
 constexpr SqlColumnType SqlColumnTypeOf = detail::SqlColumnTypeOf<T>::value;
 
 #pragma endregion
-
-#pragma region SQL Schema API (research area)
-
-struct SqlColumnSchema
-{
-    // std::string name;
-    SqlColumnType type = SqlColumnType::UNKNOWN;
-    bool isNullable : 1 = false;
-    bool isPrimaryKey : 1 = false;
-    bool isAutoIncrement : 1 = false;
-    bool isUnique : 1 = false;
-    bool isInded : 1 = false;
-    unsigned columnSize = 0;
-};
-
-
-enum class SqlWhereOperator : uint8_t
-{
-    EQUAL,
-    NOT_EQUAL,
-    LESS_THAN,
-    GREATER_THAN,
-    LESS_OR_EQUAL,
-    GREATER_OR_EQUAL
-};
-
-// Loads and represents a table schema from the database
-class SqlTableSchema
-{
-  public:
-    using ColumnList = std::vector<SqlColumnSchema>;
-    SqlTableSchema(std::string tableName, ColumnList columns);
-
-    std::string const& TableName() const noexcept;
-    SqlColumnSchema const& Columns() const noexcept;
-
-    SqlResult<SqlTableSchema> Load(SqlConnection& connection, std::string tableName);
-
-  private:
-    std::string m_tableName;
-    std::vector<SqlColumnSchema> m_columns;
-};
-
-#pragma endregion
-
-// Forward declarations
-struct SqlModelBase;
-
-template <typename Derived>
-struct SqlModel;
-
-template <typename... Models>
-SqlResult<void> CreateSqlTables();
 
 #pragma region SqlModelField<> API
 
@@ -565,27 +540,13 @@ class HasMany: public SqlModelRelation
 
         SqlStatement stmt;
 
-        auto const tableName = Model().TableName(); // TODO: cache schema information once
-        auto const id = m_model->Id().value;
-#if 0 // TODO: enable this instead
-        stmt.Prepare(std::format("SELECT COUNT(*) FROM {} WHERE {} = {}", tableName, ForeignKeyName.value, id))
+        auto const sqlQuery =
+            std::format("SELECT COUNT(*) FROM {} WHERE {} = {}", Model().TableName(), *ForeignKeyName, *m_model->Id());
+
+        return stmt.Prepare(sqlQuery)
             .and_then([&] { return stmt.Execute(); })
             .and_then([&] { return stmt.FetchRow(); })
             .and_then([&] { return stmt.GetColumn<size_t>(1); });
-#else
-        if (auto result =
-                stmt.Prepare(std::format("SELECT COUNT(*) FROM {} WHERE {} = {}", tableName, ForeignKeyName.value, id));
-            !result)
-            return std::unexpected { result.error() };
-
-        if (auto result = stmt.Execute(); !result)
-            return std::unexpected { result.error() };
-
-        if (auto result = stmt.FetchRow(); !result)
-            return std::unexpected { result.error() };
-
-        return stmt.GetColumn<size_t>(1);
-#endif
     }
 
     Model& At(size_t index) noexcept
@@ -607,49 +568,6 @@ class HasMany: public SqlModelRelation
     SqlModelBase* m_model;
     std::vector<Model> m_models;
 };
-
-#if 0 // Builder API
-// This SQL query builder is used to build the queries for the SqlModel.
-namespace SqlQueryBuilder
-{
-
-class Builder
-{
-  public:
-    Builder() = default;
-
-    Builder& Select(const std::string& columns) &&;
-    Builder& Update(const std::string& columns) &&;
-    Builder& Delete() &&;
-    Builder& From(const std::string& table) &&;
-    Builder& Where(const std::string& column, const SqlVariant& value, SqlWhereOperator whereOperator) &&;
-    Builder& OrderBy(const std::string& column, bool ascending = true) &&;
-    Builder& Limit(size_t limit) &&;
-    Builder& Offset(size_t offset) &&;
-
-    std::string Build() const&&;
-
-    class ColumnsBuilder
-    {
-    };
-    class BuilderStart
-    {
-        Columns
-    };
-
-  private:
-    std::string m_query;
-};
-
-SqlQueryBuilder::Selecting Select();
-
-} // namespace SqlQueryBuilder
-
-inline auto testBuildQuery()
-{
-    return SqlQueryBuilder::Builder {}.Select("name").From("persons").Where("id", 1);
-}
-#endif
 
 template <typename Derived>
 struct SqlModel: public SqlModelBase
@@ -709,21 +627,6 @@ struct SqlModel: public SqlModelBase
 
   protected:
     explicit SqlModel(std::string_view tableName, std::string_view primaryKey = "id");
-};
-
-// TODO: Design a model schema registry, such that an instantiation of a model for
-//       regular data use is as efficient as possible.
-class SqlModelSchemaRegistry
-{
-  public:
-    template <typename Model>
-    void RegisterModel()
-    {
-        // TODO: m_modelSchemas.emplace_back(SqlModel<Model>(*this));
-    }
-
-  private:
-    // std::vector<SqlModelSchema> m_modelSchemas;
 };
 
 template <typename Derived>
@@ -1006,7 +909,7 @@ SqlResult<SqlModelId> SqlModel<Derived>::Create()
     if (auto result = stmt.Prepare(sqlInsertStmtString); !result)
         return std::unexpected { result.error() };
 
-    for (auto const && [parameterIndex, field]: m_fields | std::views::enumerate)
+    for (auto const&& [parameterIndex, field]: m_fields | std::views::enumerate)
         if (field->IsModified())
             if (auto result = field->BindInputParameter(parameterIndex + 1, stmt); !result)
                 return std::unexpected { result.error() };
@@ -1077,8 +980,8 @@ SqlResult<void> SqlModel<Derived>::Update()
 
     auto stmt = SqlStatement {};
 
-    if (auto result = stmt.Prepare(
-            std::format("UPDATE {} SET {} WHERE {} = {}", m_tableName, *sqlColumnsString, m_primaryKeyName, m_id.value));
+    if (auto result = stmt.Prepare(std::format(
+            "UPDATE {} SET {} WHERE {} = {}", m_tableName, *sqlColumnsString, m_primaryKeyName, m_id.value));
         !result)
         return result;
 
