@@ -6,11 +6,11 @@
 // but we need to be able to address columns with an unknown name but known index,
 // and we need to be able to deal with tables of unknown column count.
 
-// TODO: Add std::format support for: SqlModel<T>
-// TODO: We might need to differenciate between VARCHAR (std::string) and TEXT (maybe SqlText<std::string>?)
-// TODO: Make logging more useful, adding payload data (similar to ActiveRecord)
-// TODO: remove debug prints
-// TODO: add proper trace logging (like ActiveRecord)
+// TODO: [ ] Add std::format support for: SqlModel<T>
+// TODO: [ ] Differenciate between VARCHAR (std::string) and TEXT (maybe SqlText<std::string>?)
+// TODO: [x] Make logging more useful, adding payload data (similar to ActiveRecord)
+// TODO: [x] remove debug prints
+// TODO: [x] add proper trace logging (like ActiveRecord)
 
 #include "SqlConnection.hpp"
 #include "SqlDataBinder.hpp"
@@ -275,7 +275,7 @@ class SqlModelRelation
 #pragma region SqlModel<> API (SqlModelBase, SqlModel<>)
 
 // Base class for every SqlModel<T>.
-class SqlModelBase
+struct SqlModelBase
 {
   public:
     SqlModelBase(std::string_view tableName, std::string_view primaryKey, SqlModelId id):
@@ -865,6 +865,53 @@ SqlModelBelongsTo<ModelType, TheColumnIndex, TheForeignKeyName, TheRequirement>&
 
 #pragma endregion
 
+class SqlModelQueryLogger
+{
+  public:
+    virtual ~SqlModelQueryLogger() = default;
+
+    using FieldList = std::vector<SqlModelFieldBase*>;
+
+    virtual void QueryStart(std::string_view /*query*/, FieldList const& /*output*/) {};
+    virtual void QueryEnd() {}
+
+    static void Set(SqlModelQueryLogger* next) noexcept
+    {
+        m_instance = next;
+    }
+
+    static SqlModelQueryLogger& Get() noexcept
+    {
+        return *m_instance;
+    }
+
+    static SqlModelQueryLogger* NullLogger() noexcept;
+    static SqlModelQueryLogger* StandardLogger() noexcept;
+
+  private:
+    static SqlModelQueryLogger* m_instance;
+};
+
+namespace detail
+{
+
+struct SqlScopedModelQueryLogger
+{
+    using FieldList = SqlModelQueryLogger::FieldList;
+
+    SqlScopedModelQueryLogger(std::string_view query, FieldList const& output)
+    {
+        SqlModelQueryLogger::Get().QueryStart(query, output);
+    }
+
+    ~SqlScopedModelQueryLogger()
+    {
+        SqlModelQueryLogger::Get().QueryEnd();
+    }
+};
+
+} // namespace detail
+
 #pragma region SqlModel<Derived> implementation
 
 template <typename Derived>
@@ -875,9 +922,11 @@ SqlResult<SqlModelId> SqlModel<Derived>::Create()
 
     auto stmt = SqlStatement {};
 
+    auto const modifiedFields = GetModifiedFields();
+
     detail::StringBuilder sqlColumnsString;
     detail::StringBuilder sqlValuesString;
-    for (auto const* field: m_fields)
+    for (auto const* field: modifiedFields)
     {
         if (!field->IsModified())
         {
@@ -904,15 +953,14 @@ SqlResult<SqlModelId> SqlModel<Derived>::Create()
     auto const sqlInsertStmtString =
         std::format("INSERT INTO {} ({}) VALUES ({})", m_tableName, *sqlColumnsString, *sqlValuesString);
 
-    std::print("Creating model with SQL: {}\n", sqlInsertStmtString);
+    auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlInsertStmtString, modifiedFields);
 
     if (auto result = stmt.Prepare(sqlInsertStmtString); !result)
         return std::unexpected { result.error() };
 
-    for (auto const&& [parameterIndex, field]: m_fields | std::views::enumerate)
-        if (field->IsModified())
-            if (auto result = field->BindInputParameter(parameterIndex + 1, stmt); !result)
-                return std::unexpected { result.error() };
+    for (auto const&& [parameterIndex, field]: modifiedFields | std::views::enumerate)
+        if (auto result = field->BindInputParameter(parameterIndex + 1, stmt); !result)
+            return std::unexpected { result.error() };
 
     if (auto result = stmt.Execute(); !result)
         return std::unexpected { result.error() };
@@ -937,9 +985,12 @@ SqlResult<void> SqlModel<Derived>::Load(SqlModelId id)
 
     SqlStatement stmt;
 
-    if (auto result = stmt.Prepare(
-            std::format("SELECT {} FROM {} WHERE {} = ? LIMIT 1", *sqlColumnsString, m_tableName, m_primaryKeyName));
-        !result)
+    auto const sqlQueryString = std::format(
+        "SELECT {} FROM {} WHERE {} = {} LIMIT 1", *sqlColumnsString, m_tableName, m_primaryKeyName, id.value);
+
+    auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, m_fields);
+
+    if (auto result = stmt.Prepare(sqlQueryString); !result)
         return std::unexpected { result.error() };
 
     if (auto result = stmt.BindInputParameter(1, id); !result)
@@ -980,9 +1031,12 @@ SqlResult<void> SqlModel<Derived>::Update()
 
     auto stmt = SqlStatement {};
 
-    if (auto result = stmt.Prepare(std::format(
-            "UPDATE {} SET {} WHERE {} = {}", m_tableName, *sqlColumnsString, m_primaryKeyName, m_id.value));
-        !result)
+    auto const sqlQueryString =
+        std::format("UPDATE {} SET {} WHERE {} = {}", m_tableName, *sqlColumnsString, m_primaryKeyName, m_id.value);
+
+    auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, modifiedFields);
+
+    if (auto result = stmt.Prepare(sqlQueryString); !result)
         return result;
 
     for (auto const&& [index, field]: modifiedFields | std::views::enumerate)
@@ -1013,8 +1067,9 @@ SqlResult<void> SqlModel<Derived>::Save()
 template <typename Derived>
 SqlResult<void> SqlModel<Derived>::Destroy()
 {
-    auto stmt = SqlStatement {};
-    return stmt.ExecuteDirect(std::format("DELETE FROM {} WHERE {} = {}", m_tableName, m_primaryKeyName, m_id.value));
+    auto const sqlQueryString = std::format("DELETE FROM {} WHERE {} = {}", m_tableName, m_primaryKeyName, m_id.value);
+    auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
+    return SqlStatement {}.ExecuteDirect(sqlQueryString);
 }
 
 #pragma endregion

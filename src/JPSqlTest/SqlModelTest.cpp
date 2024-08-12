@@ -46,6 +46,8 @@ class SqlTestFixture
 
 int main(int argc, char const* argv[])
 {
+    SqlModelQueryLogger::Set(SqlModelQueryLogger::StandardLogger());
+
     return Catch::Session().run(argc, argv);
 }
 

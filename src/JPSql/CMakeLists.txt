@@ -19,6 +19,7 @@ set(HEADER_FILES
 set(SOURCE_FILES
     SqlConnection.cpp
     SqlLogger.cpp
+    SqlModel.cpp
     SqlStatement.cpp
     SqlTransaction.cpp
 )
