@@ -39,17 +39,25 @@ struct StringBuilder
 {
     std::string output;
 
-    std::string operator*() const & noexcept { return std::move(output); }
-    std::string operator*() && noexcept { return std::move(output); }
+    std::string operator*() const& noexcept
+    {
+        return std::move(output);
+    }
+    std::string operator*() && noexcept
+    {
+        return std::move(output);
+    }
 
-    bool empty() const noexcept { return output.empty(); }
+    bool empty() const noexcept
+    {
+        return output.empty();
+    }
 
     template <typename T>
     StringBuilder& operator<<(T&& value)
     {
-        if constexpr (std::is_same_v<T, std::string>
-                   || std::is_same_v<T, std::string_view>
-                   || std::is_same_v<T, char const*>)
+        if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view>
+                      || std::is_same_v<T, char const*>)
             output += value;
         else
             output += std::format("{}", std::forward<T>(value));
@@ -437,7 +445,7 @@ class HasOne final: public SqlModelRelation
     std::optional<Model> m_model;
 };
 
-template <typename Model>
+template <typename Model, SqlStringLiteral ForeignKeyName>
 class HasMany: public SqlModelRelation
 {
   public:
@@ -449,9 +457,10 @@ class HasMany: public SqlModelRelation
         return m_models;
     }
 
-    explicit HasMany(SqlModelBase& registry)
+    explicit HasMany(SqlModelBase& model):
+        m_model { &model }
     {
-        registry.RegisterRelation(*this);
+        model.RegisterRelation(*this);
     }
 
     bool IsLoaded() const noexcept
@@ -460,6 +469,7 @@ class HasMany: public SqlModelRelation
     }
 
     void Load();
+    void Reload();
 
     bool IsEmpty() const noexcept
     {
@@ -467,11 +477,34 @@ class HasMany: public SqlModelRelation
         return m_models.empty();
     }
 
-    size_t Size() const noexcept
+    SqlResult<size_t> Size() const noexcept
     {
-        // TODO: consider simply doing: SELECt COUNT(*) FROM table WHERE foreign_key = ?
-        RequireLoaded();
-        return m_models.size();
+        if (m_loaded)
+            return m_models.size();
+
+        SqlStatement stmt;
+
+        auto const tableName = Model().TableName(); // TODO: cache schema information once
+        auto const id = m_model->Id().value;
+#if 0
+        stmt.Prepare(std::format("SELECT COUNT(*) FROM {} WHERE {} = {}", tableName, ForeignKeyName.value, id))
+            .and_then([&] { return stmt.Execute(); })
+            .and_then([&] { return stmt.FetchRow(); })
+            .and_then([&] { return stmt.GetColumn<size_t>(1); });
+#else
+        if (auto result =
+                stmt.Prepare(std::format("SELECT COUNT(*) FROM {} WHERE {} = {}", tableName, ForeignKeyName.value, id));
+            !result)
+            return std::unexpected { result.error() };
+
+        if (auto result = stmt.Execute(); !result)
+            return std::unexpected { result.error() };
+
+        if (auto result = stmt.FetchRow(); !result)
+            return std::unexpected { result.error() };
+
+        return stmt.GetColumn<size_t>(1);
+#endif
     }
 
     Model& At(size_t index) noexcept
@@ -489,6 +522,7 @@ class HasMany: public SqlModelRelation
     bool RequireLoaded();
 
     bool m_loaded = false;
+    SqlModelBase* m_model;
     std::vector<Model> m_models;
 };
 
@@ -571,6 +605,9 @@ struct SqlModel: public SqlModelBase
     // Retrieves all models of this kind from the database.
     static SqlResult<std::vector<Derived>> All() noexcept;
 
+    // Retrieves the number of models of this kind from the database.
+    static SqlResult<size_t> Count() noexcept;
+
     // Retrieves the model with the given ID from the database.
     static SqlResult<SqlModel> Find(SqlModelId id) noexcept;
 
@@ -611,6 +648,18 @@ template <typename Derived>
 SqlModel<Derived>::SqlModel(std::string_view tableName, std::string_view primaryKey):
     SqlModelBase { tableName, primaryKey, SqlModelId {} }
 {
+}
+
+template <typename Derived>
+SqlResult<size_t> SqlModel<Derived>::Count() noexcept
+{
+    SqlStatement stmt;
+    Derived modelSchema;
+
+    return stmt.Prepare(std::format("SELECT COUNT(*) FROM {}", modelSchema.m_tableName))
+        .and_then([&] { return stmt.Execute(); })
+        .and_then([&] { return stmt.FetchRow(); })
+        .and_then([&] { return stmt.GetColumn<size_t>(1); });
 }
 
 template <typename Derived>
@@ -953,8 +1002,8 @@ SqlResult<void> SqlModel<Derived>::Destroy()
 // ----------------------------------------------------------------------------------------------------------------
 // HasMany<T>
 
-template <typename Model>
-size_t HasMany<Model>::Count() const noexcept
+template <typename Model, SqlStringLiteral ForeignKeyName>
+size_t HasMany<Model, ForeignKeyName>::Count() const noexcept
 {
     if (!m_models.empty())
         return m_models.size();

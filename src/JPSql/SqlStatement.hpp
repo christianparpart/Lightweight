@@ -109,6 +109,7 @@ class SqlStatement final: public SqlDataBinderCallback
                                     std::source_location location = std::source_location::current()) const noexcept;
 
     void PlanPostExecuteCallback(std::function<void()>&& cb) override;
+    void PlanPreProcessOutputColumn(std::function<void()>&& cb) override;
     void PlanPostProcessOutputColumn(std::function<void()>&& cb) override;
     void ProcessPostExecuteCallbacks() noexcept;
 
@@ -121,6 +122,7 @@ class SqlStatement final: public SqlDataBinderCallback
     SQLSMALLINT m_expectedParameterCount {};        // The number of parameters expected by the query
     std::vector<SQLLEN> m_indicators;               // Holds the indicators for the bound output columns
     std::vector<std::function<void()>> m_postExecuteCallbacks;
+    std::vector<std::function<void()>> m_preProcessOutputColumnCallbacks;
     std::vector<std::function<void()>> m_postProcessOutputColumnCallbacks;
 };
 
@@ -266,6 +268,11 @@ inline void SqlStatement::ProcessPostExecuteCallbacks() noexcept
     for (auto& cb: m_postExecuteCallbacks)
         cb();
     m_postExecuteCallbacks.clear();
+}
+
+inline void SqlStatement::PlanPreProcessOutputColumn(std::function<void()>&& cb)
+{
+    m_preProcessOutputColumnCallbacks.emplace_back(std::move(cb));
 }
 
 inline void SqlStatement::PlanPostProcessOutputColumn(std::function<void()>&& cb)

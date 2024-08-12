@@ -1,5 +1,11 @@
+// TODO: add std::formatter for SqlModel<T>
+// TODO: add std::formatter for SqlResult<T>
+
 #include "../JPSql/SqlConnection.hpp"
 #include "../JPSql/SqlModel.hpp"
+
+#include <catch2/catch_session.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
 #include <print>
@@ -10,6 +16,133 @@ struct Person;
 struct Company;
 struct Phone;
 struct Job;
+
+namespace
+{
+
+#if defined(_WIN32) || defined(_WIN64)
+auto constexpr TestSqlDriver = "SQLite3 ODBC Driver"sv;
+#else
+auto constexpr TestSqlDriver = "SQLite3"sv;
+#endif
+
+auto const TestSqlConnectionString = SqlConnectionString {
+    .connectionString = std::format("DRIVER={};Database={}", TestSqlDriver, "file::memory:"),
+};
+
+class SqlTestFixture
+{
+  public:
+    SqlTestFixture()
+    {
+        // (customize or enable if needed)
+        // SqlLogger::SetLogger(SqlLogger::TraceLogger());
+        SqlConnection::SetDefaultConnectInfo(TestSqlConnectionString);
+    }
+
+    ~SqlTestFixture()
+    {
+        // Don't linger pooled idle connections into the next test case
+        SqlConnection::KillAllIdle();
+    }
+};
+} // namespace
+
+int main(int argc, char const* argv[])
+{
+    return Catch::Session().run(argc, argv);
+}
+
+struct Author;
+struct Book;
+
+struct Book: SqlModel<Book>
+{
+    SqlModelField<std::string, 2, "title"> title;
+    SqlModelField<std::string, 3, "isbn"> isbn;
+    SqlModelBelongsTo<Author, 4, "author_id"> author;
+
+    Book():
+        SqlModel { "books" },
+        title { *this },
+        isbn { *this },
+        author { *this }
+    {
+    }
+};
+
+struct Author: SqlModel<Author>
+{
+    SqlModelField<std::string, 2, "name"> name;
+    HasMany<Book, "author_id"> books;
+
+    Author():
+        SqlModel { "authors" },
+        name { *this },
+        books { *this }
+    {
+    }
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "Creations", "[model]")
+{
+    REQUIRE(Author::CreateTable());
+    REQUIRE(Book::CreateTable());
+
+    Author author;
+    author.name = "Bjarne Stroustrup";
+    REQUIRE(author.Save());
+    REQUIRE(author.Id().value == 1);
+    REQUIRE(author.books.Size().value() == 0);
+
+    Book book1;
+    book1.title = "The C++ Programming Language";
+    book1.isbn = "978-0-321-56384-2";
+    book1.author = author;
+    REQUIRE(book1.Save());
+    REQUIRE(book1.Id().value == 1);
+    REQUIRE(Book::Count().value() == 1);
+    REQUIRE(author.books.Size().value() == 1);
+
+    Book book2;
+    book2.title = "A Tour of C++";
+    book2.isbn = "978-0-321-958310";
+    book2.author = author;
+    REQUIRE(book2.Save());
+    REQUIRE(book2.Id().value == 2);
+    REQUIRE(Book::Count().value() == 2);
+    REQUIRE(author.books.Size().value() == 2);
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "Updating", "[model]")
+{
+    REQUIRE(Author::CreateTable());
+    REQUIRE(Book::CreateTable());
+
+    Author author;
+    author.name = "Bjarne Stroustrup";
+    REQUIRE(author.Save());
+
+    Book book1;
+    book1.title = "The C++ Programming Language";
+    book1.isbn = "978-0-321-56384-2";
+    book1.author = author;
+    REQUIRE(book1.Save());
+
+    Book book2;
+    book2.title = "A Tour of C++";
+    book2.isbn = "978-0-321-958310";
+    book2.author = author;
+    REQUIRE(book2.Save());
+
+    book2.title = "A Tour of C++ (2nd Edition)";
+    book2.isbn = "978-0-321-958310-2";
+    REQUIRE(book2.Save());
+
+    // TODO: Book book3 = Book::Find(book2.Id()).value();
+}
+
+#if 0
 
 struct Phone: SqlModel<Phone>
 {
@@ -125,10 +258,6 @@ int main(int argc, char const* argv[])
 
     CreateSqlTables<Company, Person, Phone, Job>().or_else(FatalError);
 
-    // TODO: add std::formatter for SqlModel<T>
-    // TODO: add std::formatter for SqlResult<T>
-    // TODO: optimize HasMany<T>.Size()
-
     Person susi;
     susi.firstName = "Susi";
     susi.lastName = "Hanni-Nanni-Bunny";
@@ -160,6 +289,8 @@ int main(int argc, char const* argv[])
     job.Save().or_else(FatalError); // only the salary field is updated
     std::println("Job Updated: {}", job.Inspect());
 
+    std::println("persons in database: {}", Person::Count().value_or(0));
+
     auto allPersons = Person::All().value();
     std::println("all persons count: {}", allPersons.size());
     for (auto const& person: allPersons)
@@ -167,3 +298,4 @@ int main(int argc, char const* argv[])
 
     return 0;
 }
+#endif

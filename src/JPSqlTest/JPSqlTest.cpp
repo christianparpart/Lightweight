@@ -1,7 +1,7 @@
 #include <JPSql/SqlConnection.hpp>
+#include <JPSql/SqlModel.hpp>
 #include <JPSql/SqlStatement.hpp>
 #include <JPSql/SqlTransaction.hpp>
-#include <JPSql/SqlModel.hpp>
 
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -58,10 +58,8 @@ std::ostream& operator<<(std::ostream& os, SqlResult<T> const& result)
 
 // }}}
 
-int main(int argc, char const* argv[])
+namespace
 {
-    return Catch::Session().run(argc, argv);
-}
 
 class ScopedSqlNullLogger: public SqlLogger
 {
@@ -145,6 +143,13 @@ class SqlTestFixture
         SqlConnection::KillAllIdle();
     }
 };
+
+} // namespace
+
+int main(int argc, char const* argv[])
+{
+    return Catch::Session().run(argc, argv);
+}
 
 TEST_CASE_METHOD(SqlTestFixture, "ServerType")
 {

@@ -258,6 +258,7 @@ class SqlDataBinderCallback
     virtual ~SqlDataBinderCallback() = default;
 
     virtual void PlanPostExecuteCallback(std::function<void()>&&) = 0;
+    virtual void PlanPreProcessOutputColumn(std::function<void()>&&) = 0;
     virtual void PlanPostProcessOutputColumn(std::function<void()>&&) = 0;
 };
 
@@ -375,25 +376,29 @@ struct SqlDataBinder<StringType>
     static SQLRETURN OutputColumn(
         SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
     {
-        {
-            // Ensure we're having sufficient space to store the worst-case scenario of bytes in this column
-            SQLULEN columnSize {};
-            auto const describeResult = SQLDescribeCol(stmt,
-                                                       column,
-                                                       nullptr /*colName*/,
-                                                       0 /*sizeof(colName)*/,
-                                                       nullptr /*&colNameLen*/,
-                                                       nullptr /*&dataType*/,
-                                                       &columnSize,
-                                                       nullptr /*&decimalDigits*/,
-                                                       nullptr /*&nullable*/);
-            if (!SQL_SUCCEEDED(describeResult))
-                return describeResult;
+        // Ensure we're having sufficient space to store the worst-case scenario of bytes in this column
+        SQLULEN columnSize {};
+        auto const describeResult = SQLDescribeCol(stmt,
+                                                   column,
+                                                   nullptr /*colName*/,
+                                                   0 /*sizeof(colName)*/,
+                                                   nullptr /*&colNameLen*/,
+                                                   nullptr /*&dataType*/,
+                                                   &columnSize,
+                                                   nullptr /*&decimalDigits*/,
+                                                   nullptr /*&nullable*/);
+        if (!SQL_SUCCEEDED(describeResult))
+            return describeResult;
 
-            StringTraits::Resize(result, columnSize);
-        }
+        StringTraits::Reserve(result, columnSize); // Must be called now, because otherwise std::string won't do anything
+
+        cb.PlanPreProcessOutputColumn([result, columnSize]() {
+            // Ensure we're having sufficient space to store the worst-case scenario of bytes in this column
+            StringTraits::Reserve(result, columnSize);
+        });
 
         cb.PlanPostProcessOutputColumn([indicator, result]() {
+            // Now resize the string to the actual length of the data
             // NB: If the indicator is greater than the buffer size, we have a truncation.
             auto const bufferSize = StringTraits::Size(result);
             auto const len = std::cmp_greater_equal(*indicator, bufferSize) || *indicator == SQL_NO_TOTAL
