@@ -3,7 +3,6 @@
 
 #include "../JPSql/SqlConnection.hpp"
 #include "../JPSql/SqlModel.hpp"
-
 #include "JPSqlTestUtils.hpp"
 
 #include <catch2/catch_session.hpp>
@@ -21,16 +20,6 @@ struct Job;
 
 namespace
 {
-
-#if defined(_WIN32) || defined(_WIN64)
-auto constexpr TestSqlDriver = "SQLite3 ODBC Driver"sv;
-#else
-auto constexpr TestSqlDriver = "SQLite3"sv;
-#endif
-
-auto const TestSqlConnectionString = SqlConnectionString {
-    .connectionString = std::format("DRIVER={};Database={}", TestSqlDriver, "file::memory:"),
-};
 
 class SqlTestFixture
 {
@@ -78,9 +67,6 @@ struct Book: SqlModel<Book>
         isbn { *this, std::move(other.isbn) },
         author { *this, std::move(other.author) }
     {
-        //title = (other.title);
-        //isbn = (other.isbn);
-        //author = (other.author);
     }
 };
 
@@ -97,7 +83,7 @@ struct Author: SqlModel<Author>
     }
 };
 
-TEST_CASE_METHOD(SqlTestFixture, "Creations", "[model]")
+TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
 {
     REQUIRE(Author::CreateTable());
     REQUIRE(Book::CreateTable());
@@ -127,6 +113,30 @@ TEST_CASE_METHOD(SqlTestFixture, "Creations", "[model]")
     REQUIRE(author.books.Size().value() == 2);
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
+{
+    REQUIRE(Author::CreateTable());
+    REQUIRE(Book::CreateTable());
+
+    Author author;
+    author.name = "Bjarne Stroustrup";
+    REQUIRE(author.Save());
+
+    Book book;
+    book.title = "The C++ Programming Language";
+    book.isbn = "978-0-321-56384-2";
+    book.author = author;
+    REQUIRE(book.Save());
+
+    Book bookLoaded;
+    bookLoaded.Load(book.Id());
+    INFO("Book: " << book.Inspect());
+    CHECK(bookLoaded.Id() == book.Id());
+    CHECK(bookLoaded.title == book.title);
+    CHECK(bookLoaded.isbn == book.isbn);
+    CHECK(bookLoaded.author == book.author);
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
 {
     REQUIRE(Author::CreateTable());
@@ -144,10 +154,10 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
 
     Book bookLoaded = Book::Find(book.Id()).value();
     INFO("Book: " << book.Inspect());
-    CHECK(bookLoaded.Id() == book.Id());
-    CHECK(bookLoaded.title == book.title);
-    CHECK(bookLoaded.isbn == book.isbn);
-    CHECK(bookLoaded.author == book.author);
+    CHECK(bookLoaded.Id() == book.Id());     // primary key
+    CHECK(bookLoaded.title == book.title);   // SqlModelField<>
+    CHECK(bookLoaded.isbn == book.isbn);     // SqlModelField<>
+    CHECK(bookLoaded.author == book.author); // BelongsTo<>
 }
 
 #if 0
@@ -264,11 +274,11 @@ struct Company: SqlModel<Company>
     }
 };
 
-#if defined(_WIN32) || defined(_WIN64)
+    #if defined(_WIN32) || defined(_WIN64)
 auto constexpr TestSqlDriver = "SQLite3 ODBC Driver"sv;
-#else
+    #else
 auto constexpr TestSqlDriver = "SQLite3"sv;
-#endif
+    #endif
 
 auto const TestSqlConnectionString = SqlConnectionString {
     .connectionString = std::format("DRIVER={};Database={}", TestSqlDriver, "file::memory:"),

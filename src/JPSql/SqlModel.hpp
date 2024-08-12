@@ -6,6 +6,9 @@
 // but we need to be able to address columns with an unknown name but known index,
 // and we need to be able to deal with tables of unknown column count.
 
+// TODO: Add std::format support for: SqlModel<T>
+// TODO: We might need to differenciate between VARCHAR (std::string) and TEXT (maybe SqlText<std::string>?)
+
 #include "SqlConnection.hpp"
 #include "SqlDataBinder.hpp"
 #include "SqlStatement.hpp"
@@ -44,6 +47,7 @@ struct StringBuilder
     {
         return std::move(output);
     }
+
     std::string operator*() && noexcept
     {
         return std::move(output);
@@ -311,6 +315,17 @@ class SqlModelBase
     SqlModelFieldBase& GetField(SqlColumnIndex index) noexcept { return *m_fields[index.value]; }
     // clang-format on
 
+    void SetModified(bool value) noexcept
+    {
+        for (auto* field: m_fields)
+            field->SetModified(value);
+    }
+
+    bool IsModified() const noexcept
+    {
+        return std::ranges::any_of(m_fields, [](SqlModelFieldBase* field) { return field->IsModified(); });
+    }
+
     void SortFieldsByIndex() noexcept
     {
         std::sort(m_fields.begin(), m_fields.end(), [](auto a, auto b) { return a->Index() < b->Index(); });
@@ -321,6 +336,7 @@ class SqlModelBase
     std::string_view m_primaryKeyName; // Should not be modified, but we want to allow move semantics
     SqlModelId m_id { std::numeric_limits<size_t>::max() };
 
+    bool m_modified = false;
     std::vector<SqlModelFieldBase*> m_fields;
     std::vector<SqlModelRelation*> m_relations;
 };
@@ -349,46 +365,17 @@ class SqlModelField final: public SqlModelFieldBase
         SqlModelFieldBase {
             registry, TheTableColumnIndex, TheColumnName.value, SqlColumnTypeOf<T>, TheRequirement,
         },
-        m_value { field.Value() }
+        m_value { std::move(field.m_value) }
     {
         registry.RegisterField(*this);
     }
 
-    SqlModelField(SqlModelField&& other):
-        SqlModelFieldBase { std::move(other) },
-        m_value { std::move(other.m_value) }
-    {
-        Model().UnregisterField(other);
-        Model().RegisterField(*this);
-    }
-
-    SqlModelField& operator=(SqlModelField&& other)
-    {
-        if (this != &other)
-        {
-            SqlModelFieldBase::operator=(std::move(other));
-            m_value = std::move(other.m_value);
-        }
-        return *this;
-    }
-
-    SqlModelField& operator=(SqlModelField const& other)
-    {
-        if (this != &other)
-        {
-            SqlModelFieldBase::operator=(std::move(other));
-            m_value = other.m_value;
-        }
-        return *this;
-    }
-
-    SqlModelField(SqlModelField const& other):
-        SqlModelFieldBase { other },
-        m_value { other.m_value }
-    {
-        Model().UnregisterField(other); // ReregisterField(other, *this);
-        Model().RegisterField(*this);
-    }
+    SqlModelField() = delete;
+    SqlModelField(SqlModelField&& other) = delete;
+    SqlModelField& operator=(SqlModelField&& other) = delete;
+    SqlModelField& operator=(SqlModelField const& other) = delete;
+    SqlModelField(SqlModelField const& other) = delete;
+    ~SqlModelField() = default;
 
     // clang-format off
 
@@ -849,8 +836,6 @@ template <typename T,
 SqlResult<void> SqlModelField<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindOutputColumn(
     SqlStatement& stmt)
 {
-    SetModified(false);
-
     return stmt.BindOutputColumn(TheTableColumnIndex, &m_value);
 }
 
@@ -880,8 +865,7 @@ template <typename Model,
 SqlResult<void> SqlModelBelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
     SqlStatement& stmt)
 {
-    return {};
-    (void) stmt; // TODO: return stmt.BindOutputColumn(TheColumnIndex, &m_value.value);
+    return stmt.BindOutputColumn(TheColumnIndex, &m_value.value);
 }
 
 template <typename T,
