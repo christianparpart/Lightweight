@@ -1037,7 +1037,7 @@ SqlResult<void> SqlModel<Derived>::Update()
     auto sqlColumnsString = detail::StringBuilder {};
     auto modifiedFields = GetModifiedFields();
 
-    for (SqlModelFieldBase* field: m_fields)
+    for (SqlModelFieldBase* field: modifiedFields)
     {
         if (!field->IsModified())
             continue;
@@ -1055,8 +1055,7 @@ SqlResult<void> SqlModel<Derived>::Update()
         !result)
         return result;
 
-    SQLSMALLINT nextColumnIndex = 1;
-    for (auto&& [index, field]: modifiedFields | std::views::enumerate)
+    for (auto const&& [index, field]: modifiedFields | std::views::enumerate)
         if (auto result = field->BindInputParameter(index + 1, stmt); !result)
             return result;
 
