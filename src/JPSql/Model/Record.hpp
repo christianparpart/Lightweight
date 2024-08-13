@@ -26,6 +26,7 @@ enum class SqlWhereOperator : uint8_t
 template <typename Derived>
 struct Record: public AbstractRecord
 {
+  protected:
     Record() = delete;
     Record(Record&&) = delete;
     Record& operator=(Record&&) = delete;
@@ -33,6 +34,7 @@ struct Record: public AbstractRecord
     Record& operator=(Record const&) = delete;
     ~Record() = default;
 
+  public:
     // clang-format off
     enum MoveConstructor { ExplicitMove };
     // clang-format on
@@ -125,9 +127,7 @@ SqlResult<Derived> Record<Derived>::Find(RecordId id)
     static_assert(std::is_move_constructible_v<Derived>,
                   "The model `Derived` must be move constructible for Find() to return the model.");
     Derived model;
-    model.Load(id);
-    std::println("Loaded model: {}", model.Inspect());
-    return { std::move(model) };
+    return model.Load(id).and_then([&]() -> SqlResult<Derived> { return { std::move(model) }; });
 }
 
 template <typename Derived>
@@ -142,13 +142,13 @@ SqlResult<std::vector<Derived>> Record<Derived>::All() noexcept
     Derived const modelSchema;
 
     detail::StringBuilder sqlColumnsString;
-    sqlColumnsString << modelSchema.m_primaryKeyName;
+    sqlColumnsString << modelSchema.PrimaryKeyName();
     for (AbstractField const* field: modelSchema.m_fields)
         sqlColumnsString << ", " << field->Name();
 
     SqlStatement stmt;
 
-    auto const sqlQueryString = std::format("SELECT {} FROM {}", *sqlColumnsString, modelSchema.m_tableName);
+    auto const sqlQueryString = std::format("SELECT {} FROM {}", *sqlColumnsString, modelSchema.TableName());
 
     auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
 
@@ -211,9 +211,9 @@ std::string Record<Derived>::CreateTableString(SqlServerType serverType) noexcep
     // TODO: verify that the primary key is the first field
     // TODO: verify that the primary key is not nullable
 
-    sql << "CREATE TABLE IF NOT EXISTS " << model.m_tableName << " (\n";
+    sql << "CREATE TABLE IF NOT EXISTS " << model.TableName() << " (\n";
 
-    sql << "    " << model.m_primaryKeyName << " " << traits.PrimaryKeyAutoIncrement << ",\n";
+    sql << "    " << model.PrimaryKeyName() << " " << traits.PrimaryKeyAutoIncrement << ",\n";
 
     for (auto const* field: model.m_fields)
     {
@@ -260,7 +260,7 @@ SqlResult<RecordId> Record<Derived>::Create()
             // if (field->IsNull() && field->IsRequired())
             //{
             //     SqlLogger::GetLogger().OnWarning( // TODO
-            //         std::format("Model required field not given: {}.{}", m_tableName, field->Name()));
+            //         std::format("Model required field not given: {}.{}", TableName(), field->Name()));
             //     return std::unexpected { SqlError::FAILURE }; // TODO: return
             //     SqlError::MODEL_REQUIRED_FIELD_NOT_GIVEN;
             // }
@@ -278,7 +278,7 @@ SqlResult<RecordId> Record<Derived>::Create()
     }
 
     auto const sqlInsertStmtString =
-        std::format("INSERT INTO {} ({}) VALUES ({})", m_tableName, *sqlColumnsString, *sqlValuesString);
+        std::format("INSERT INTO {} ({}) VALUES ({})", TableName(), *sqlColumnsString, *sqlValuesString);
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlInsertStmtString, modifiedFields);
 
@@ -313,7 +313,7 @@ SqlResult<void> Record<Derived>::Load(RecordId id)
     SqlStatement stmt;
 
     auto const sqlQueryString = std::format(
-        "SELECT {} FROM {} WHERE {} = {} LIMIT 1", *sqlColumnsString, m_tableName, m_primaryKeyName, id.value);
+        "SELECT {} FROM {} WHERE {} = {} LIMIT 1", *sqlColumnsString, TableName(), PrimaryKeyName(), id);
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, m_fields);
 
@@ -359,7 +359,7 @@ SqlResult<void> Record<Derived>::Update()
     auto stmt = SqlStatement {};
 
     auto const sqlQueryString =
-        std::format("UPDATE {} SET {} WHERE {} = {}", m_tableName, *sqlColumnsString, m_primaryKeyName, m_id.value);
+        std::format("UPDATE {} SET {} WHERE {} = {}", TableName(), *sqlColumnsString, PrimaryKeyName(), m_id);
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, modifiedFields);
 
