@@ -61,7 +61,7 @@ struct Book: Model::Record<Book>
     }
 
     Book(Book&& other) noexcept:
-        Record { "books" },
+        Record { ExplicitMove, std::move(other) },
         title { *this, std::move(other.title) },
         isbn { *this, std::move(other.isbn) },
         author { *this, std::move(other.author) }
@@ -265,6 +265,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.ColumnTypes", "[model]")
     record.stringColumn = "Hello";
     record.textColumn = SqlText { ", World!" };
     REQUIRE(record.Save());
+
 
     ColumnTypesRecord record2 = ColumnTypesRecord::Find(record.Id()).value();
     CHECK(record2.stringColumn == record.stringColumn);

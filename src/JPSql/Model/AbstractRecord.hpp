@@ -31,7 +31,7 @@ struct AbstractRecord
 
     AbstractRecord() = delete;
     AbstractRecord(AbstractRecord const&) = default;
-    AbstractRecord(AbstractRecord&& other) = delete;
+    AbstractRecord(AbstractRecord&& other) = default;
     AbstractRecord& operator=(AbstractRecord const&) = delete;
     AbstractRecord& operator=(AbstractRecord&&) = delete;
     ~AbstractRecord() = default;

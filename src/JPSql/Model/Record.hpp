@@ -30,8 +30,17 @@ struct Record: public AbstractRecord
     Record(Record&&) = delete;
     Record& operator=(Record&&) = delete;
     Record(Record const&) = default;
-    Record& operator=(Record const&) = default;
+    Record& operator=(Record const&) = delete;
     ~Record() = default;
+
+    // clang-format off
+    enum MoveConstructor { ExplicitMove };
+    // clang-format on
+
+    Record(MoveConstructor /*really move*/, Record&& other):
+        AbstractRecord { std::move(other) }
+    {
+    }
 
     // Returns a human readable string representation of this model.
     std::string Inspect() const noexcept;
