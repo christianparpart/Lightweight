@@ -189,6 +189,12 @@ std::string Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::Inspec
         result << std::quoted(m_value);
         return std::move(result.str());
     }
+    if constexpr (std::is_same_v<T, SqlText>)
+    {
+        std::stringstream result;
+        result << std::quoted(m_value.value);
+        return std::move(result.str());
+    }
     else if constexpr (std::is_same_v<T, SqlDate>)
         return std::format("\"{}\"", m_value.value);
     else if constexpr (std::is_same_v<T, SqlTime>)

@@ -61,7 +61,7 @@ struct Book: Model::Record<Book>
     }
 
     Book(Book&& other) noexcept:
-        Record { std::move(other) },
+        Record { "books" },
         title { *this, std::move(other.title) },
         isbn { *this, std::move(other.isbn) },
         author { *this, std::move(other.author) }
@@ -82,7 +82,7 @@ struct Author: Model::Record<Author>
     }
 
     Author(Author&& other) noexcept:
-        Record { std::move(other) },
+        Record { "authors" },
         name { *this, std::move(other.name) },
         books { *this }
     {
@@ -233,3 +233,40 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.All", "[model]")
     CHECK(authors[3].name == author4.name);
 }
 
+struct ColumnTypesRecord: Model::Record<ColumnTypesRecord>
+{
+    Model::Field<std::string, 2, "the_string"> stringColumn;
+    Model::Field<SqlText, 3, "the_text"> textColumn;
+
+    ColumnTypesRecord():
+        Record { "column_types" },
+        stringColumn { *this },
+        textColumn { *this }
+    {
+    }
+
+    #if 1
+    // TODO: Ensure that (if this is not provided), the compiler will fail in Find() and All() calls (static_assert)
+    // This requires the parent class to not have a move constructor though.
+    ColumnTypesRecord(ColumnTypesRecord&& other) noexcept:
+        Record { "column_types" },
+        stringColumn { *this, std::move(other.stringColumn) },
+        textColumn { *this, std::move(other.textColumn) }
+    {
+    }
+    #endif
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "Model.ColumnTypes", "[model]")
+{
+    REQUIRE(ColumnTypesRecord::CreateTable());
+
+    ColumnTypesRecord record;
+    record.stringColumn = "Hello";
+    record.textColumn = SqlText { ", World!" };
+    REQUIRE(record.Save());
+
+    ColumnTypesRecord record2 = ColumnTypesRecord::Find(record.Id()).value();
+    CHECK(record2.stringColumn == record.stringColumn);
+    CHECK(record2.textColumn == record.textColumn);
+}

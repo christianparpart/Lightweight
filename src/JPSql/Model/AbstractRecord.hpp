@@ -29,17 +29,11 @@ struct AbstractRecord
     {
     }
 
-    AbstractRecord(AbstractRecord&& other) noexcept:
-        m_tableName { other.m_tableName },
-        m_primaryKeyName { other.m_primaryKeyName },
-        m_id { other.m_id }
-    {
-    }
-
     AbstractRecord() = delete;
     AbstractRecord(AbstractRecord const&) = default;
+    AbstractRecord(AbstractRecord&& other) = delete;
     AbstractRecord& operator=(AbstractRecord const&) = delete;
-    AbstractRecord& operator=(AbstractRecord&&) = default;
+    AbstractRecord& operator=(AbstractRecord&&) = delete;
     ~AbstractRecord() = default;
 
     // clang-format off

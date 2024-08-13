@@ -14,6 +14,7 @@ enum class ColumnType : uint8_t
 {
     UNKNOWN,
     STRING,
+    TEXT,
     BOOLEAN,
     INTEGER,
     REAL,
@@ -28,6 +29,8 @@ constexpr std::string_view ColumnTypeName(ColumnType value) noexcept
     switch (value)
     {
         case ColumnType::STRING:
+            return "VARCHAR";
+        case ColumnType::TEXT:
             return "TEXT";
         case ColumnType::BOOLEAN:
             return "BOOLEAN";
@@ -54,6 +57,7 @@ struct ColumnTypeOf;
 
 // clang-format off
 template <> struct ColumnTypeOf<std::string> { static constexpr ColumnType value = ColumnType::STRING; };
+template <> struct ColumnTypeOf<SqlText> { static constexpr ColumnType value = ColumnType::TEXT; };
 template <> struct ColumnTypeOf<bool> { static constexpr ColumnType value = ColumnType::BOOLEAN; };
 template <> struct ColumnTypeOf<int> { static constexpr ColumnType value = ColumnType::INTEGER; };
 template <> struct ColumnTypeOf<unsigned int> { static constexpr ColumnType value = ColumnType::INTEGER; };

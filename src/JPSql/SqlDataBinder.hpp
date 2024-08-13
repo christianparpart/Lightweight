@@ -29,6 +29,27 @@ struct SqlTrimmedString
     std::strong_ordering operator<=>(SqlTrimmedString const&) const noexcept = default;
 };
 
+// Represents a TEXT field in a SQL database.
+//
+// This is used for large texts, e.g. up to 65k characters.
+struct SqlText
+{
+    using value_type = std::string;
+
+    value_type value;
+
+    std::strong_ordering operator<=>(SqlText const&) const noexcept = default;
+};
+
+template <>
+struct std::formatter<SqlText> : std::formatter<std::string>
+{
+    auto format(SqlText const& text, format_context& ctx) const -> format_context::iterator
+    {
+        return std::formatter<std::string>::format(text.value, ctx);
+    }
+};
+
 // Helper struct to store a timestamp that should be automatically converted to/from a SQL_TIMESTAMP_STRUCT.
 struct SqlTimestamp
 {
@@ -313,15 +334,17 @@ struct SqlOutputStringTraits<std::string>
     {
         return str->data();
     }
-
     static char* Data(std::string* str) noexcept
     {
         return str->data();
     }
-
     static SQLULEN Size(std::string const* str) noexcept
     {
         return str->size();
+    }
+    static void Clear(std::string* str) noexcept
+    {
+        str->clear();
     }
 
     static void Reserve(std::string* str, size_t capacity) noexcept
@@ -337,11 +360,21 @@ struct SqlOutputStringTraits<std::string>
         if (indicator > 0)
             str->resize(indicator);
     }
+};
 
-    static void Clear(std::string* str) noexcept
-    {
-        str->clear();
-    }
+template <>
+struct SqlOutputStringTraits<SqlText>
+{
+    using Traits = SqlOutputStringTraits<typename SqlText::value_type>;
+
+    // clang-format off
+    static char const* Data(SqlText const* str) noexcept { return Traits::Data(&str->value); }
+    static char* Data(SqlText* str) noexcept { return Traits::Data(&str->value); }
+    static SQLULEN Size(SqlText const* str) noexcept { return Traits::Size(&str->value); }
+    static void Clear(SqlText* str) noexcept { Traits::Clear(&str->value); }
+    static void Reserve(SqlText* str, size_t capacity) noexcept { Traits::Reserve(&str->value, capacity); }
+    static void Resize(SqlText* str, SQLLEN indicator) noexcept { Traits::Resize(&str->value, indicator); }
+    // clang-format on
 };
 
 // clang-format off
@@ -392,12 +425,13 @@ struct SqlDataBinder<StringType>
         if (!SQL_SUCCEEDED(describeResult))
             return describeResult;
 
-        StringTraits::Reserve(result, columnSize); // Must be called now, because otherwise std::string won't do anything
+        StringTraits::Reserve(result,
+                              columnSize); // Must be called now, because otherwise std::string won't do anything
 
-        //cb.PlanPreProcessOutputColumn([result, columnSize]() {
-        //    // Ensure we're having sufficient space to store the worst-case scenario of bytes in this column
-        //    StringTraits::Reserve(result, columnSize);
-        //});
+        // cb.PlanPreProcessOutputColumn([result, columnSize]() {
+        //     // Ensure we're having sufficient space to store the worst-case scenario of bytes in this column
+        //     StringTraits::Reserve(result, columnSize);
+        // });
 
         cb.PlanPostProcessOutputColumn([indicator, result]() {
             // Now resize the string to the actual length of the data
@@ -731,22 +765,31 @@ struct SqlDataBinder<SqlVariant>
 
 template <typename T>
 concept SqlInputParameterBinder = requires(SQLHSTMT hStmt, SQLUSMALLINT column, T const& value) {
-    { SqlDataBinder<T>::InputParameter(hStmt, column, value) } -> std::same_as<SQLRETURN>;
+    {
+        SqlDataBinder<T>::InputParameter(hStmt, column, value)
+    } -> std::same_as<SQLRETURN>;
 };
 
 template <typename T>
 concept SqlOutputColumnBinder =
     requires(SQLHSTMT hStmt, SQLUSMALLINT column, T* result, SQLLEN* indicator, SqlDataBinderCallback& cb) {
-        { SqlDataBinder<T>::OutputColumn(hStmt, column, result, indicator, cb) } -> std::same_as<SQLRETURN>;
+        {
+            SqlDataBinder<T>::OutputColumn(hStmt, column, result, indicator, cb)
+        } -> std::same_as<SQLRETURN>;
     };
 
 template <typename T>
 concept SqlInputParameterBatchBinder =
     requires(SQLHSTMT hStmt, SQLUSMALLINT column, std::ranges::range_value_t<T>* result) {
-        { SqlDataBinder<std::ranges::range_value_t<T>>::InputParameter( hStmt, column, std::declval<std::ranges::range_value_t<T>>()) } -> std::same_as<SQLRETURN>;
+        {
+            SqlDataBinder<std::ranges::range_value_t<T>>::InputParameter(
+                hStmt, column, std::declval<std::ranges::range_value_t<T>>())
+        } -> std::same_as<SQLRETURN>;
     };
 
 template <typename T>
 concept SqlGetColumnNativeType = requires(SQLHSTMT hStmt, SQLUSMALLINT column, T* result, SQLLEN* indicator) {
-    { SqlDataBinder<T>::GetColumn(hStmt, column, result, indicator) } -> std::same_as<SQLRETURN>;
+    {
+        SqlDataBinder<T>::GetColumn(hStmt, column, result, indicator)
+    } -> std::same_as<SQLRETURN>;
 };

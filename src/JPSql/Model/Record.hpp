@@ -26,6 +26,13 @@ enum class SqlWhereOperator : uint8_t
 template <typename Derived>
 struct Record: public AbstractRecord
 {
+    Record() = delete;
+    Record(Record&&) = delete;
+    Record& operator=(Record&&) = delete;
+    Record(Record const&) = default;
+    Record& operator=(Record const&) = default;
+    ~Record() = default;
+
     // Returns a human readable string representation of this model.
     std::string Inspect() const noexcept;
 
@@ -106,6 +113,8 @@ SqlResult<size_t> Record<Derived>::Count() noexcept
 template <typename Derived>
 SqlResult<Derived> Record<Derived>::Find(RecordId id)
 {
+    static_assert(std::is_move_constructible_v<Derived>,
+                  "The model `Derived` must be move constructible for Find() to return the model.");
     Derived model;
     model.Load(id);
     std::println("Loaded model: {}", model.Inspect());
@@ -218,7 +227,9 @@ template <typename Derived>
 SqlResult<void> Record<Derived>::CreateTable() noexcept
 {
     auto stmt = SqlStatement {};
-    return stmt.ExecuteDirect(CreateTableString(stmt.Connection().ServerType()));
+    auto const sqlQueryString = CreateTableString(stmt.Connection().ServerType());
+    auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
+    return stmt.ExecuteDirect(sqlQueryString);
 }
 
 template <typename Derived>

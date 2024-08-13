@@ -3,7 +3,7 @@
 The JPSql Model API is a lightweight ORM that allows you to interact with your database using a simple and intuitive API.
 It is designed to be easy to use while being as efficient as possible.
 
-This API was inspired by **Active Record** from Ruby on Rails.
+This API was inspired by **Active Record** pattern and API from Ruby on Rails.
 
 ## Features
 
@@ -56,6 +56,23 @@ void demo()
 }
 ```
 
+## TODO: Open Refactors
+
+- [ ] Reintroduce `Model::Record<T, TableName, PrimaryKeyType, PrimaryKeyName>`
+- [ ] Support (join) Associations (https://guides.rubyonrails.org/association_basics.html) (e.g. `Author::All().Join<Book>().Where<Book::isbn == "978-0-321-56384-2"`) (may need some higher level query builder)
+- [ ] Consider changing `SqlVariant` into a wrapped `std::variant` to allow convenient conversions between types (e.g. `SqlVariant v = 42; v.ToInt() == 42; v.As<int>() == 42; v.As<std::string>() == "42";`)
+
+## TODO: Associations
+
+See: https://guides.rubyonrails.org/association_basics.html
+
+- [x] `BelongsTo<T>` (basic foreign key support)
+- [ ] `BelongsTo<T>` (support self-joinings)
+- [ ] `HasOne<T>`
+- [ ] `HasMany<T>`
+- [ ] `HasOneThrough<T>`
+- [ ] `HasManyThrough<T>`
+
 ## Open TODOs
 
 - [ ] [JPSql] Add custom type `SqlText` for `TEXT` fields
@@ -67,6 +84,6 @@ void demo()
 - [ ] Add test for `HasOne<>` (including eager & lazy-loading check)
 - [ ] Add test for `HasMany<>` (including eager & lazy-loading check)
 - [ ] Differenciate between VARCHAR (std::string) and TEXT (maybe SqlText<std::string>?)
-- [x] Make logging more useful, adding payload data (similar to ActiveRecord)
+- [x] Make logging more useful, adding payload data
 - [x] remove debug prints
-- [x] add proper trace logging (like ActiveRecord)
+- [x] add proper trace logging

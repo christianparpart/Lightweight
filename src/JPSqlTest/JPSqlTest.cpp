@@ -479,6 +479,36 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
     }
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlText")
+{
+    auto stmt = SqlStatement {};
+    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT NOT NULL)"));
+
+    using namespace std::chrono_literals;
+    auto const expectedValue = SqlText { "Hello, World!" };
+
+    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
+    REQUIRE(stmt.Execute(expectedValue));
+
+    SECTION("check custom type handling for explicitly fetched output columns")
+    {
+        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Timestamps"));
+        REQUIRE(stmt.FetchRow());
+        auto const actualValue = stmt.GetColumn<SqlText>(1).value();
+        REQUIRE(actualValue == expectedValue);
+    }
+
+    SECTION("check custom type handling for bound output columns")
+    {
+        REQUIRE(stmt.Prepare("SELECT Value FROM Timestamps"));
+        auto actualValue = SqlText {};
+        REQUIRE(stmt.BindOutputColumns(&actualValue));
+        REQUIRE(stmt.Execute());
+        REQUIRE(stmt.FetchRow());
+        REQUIRE(actualValue == expectedValue);
+    }
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: timestamp")
 {
     auto stmt = SqlStatement {};
