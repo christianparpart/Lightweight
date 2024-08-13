@@ -374,7 +374,7 @@ TEST_CASE_METHOD(SqlTestFixture, "GetColumn in-place store variant")
     REQUIRE(stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees"));
     REQUIRE(stmt.FetchRow());
 
-    REQUIRE(stmt.GetColumn<std::string>(1).value() == "Alice");
+    CHECK(stmt.GetColumn<std::string>(1).value() == "Alice");
 
     SqlVariant lastName;
     REQUIRE(stmt.GetColumn(2, &lastName));
@@ -391,7 +391,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate")
     REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NOT NULL)"));
 
     using namespace std::chrono_literals;
-    auto const expected = SqlDate { std::chrono::year_month_day { 2017y, std::chrono::August, 16d } };
+    auto const expected = SqlDate { 2017y, std::chrono::August, 16d };
 
     REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
     REQUIRE(stmt.Execute(expected));
@@ -399,7 +399,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate")
     REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
     REQUIRE(stmt.FetchRow());
     auto const actual = stmt.GetColumn<SqlVariant>(1).value();
-    REQUIRE(std::get<SqlDate>(actual) == expected);
+    CHECK(std::get<SqlDate>(actual) == expected);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
@@ -416,7 +416,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
     REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
     REQUIRE(stmt.FetchRow());
     auto const actual = stmt.GetColumn<SqlVariant>(1).value();
-    REQUIRE(std::get<SqlTime>(actual) == expected);
+    CHECK(std::get<SqlTime>(actual) == expected);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTimestamp")
@@ -433,7 +433,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTimestamp")
     REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
     REQUIRE(stmt.FetchRow());
     auto const actual = stmt.GetColumn<SqlVariant>(1).value();
-    REQUIRE(std::get<SqlTimestamp>(actual) == expected);
+    CHECK(std::get<SqlTimestamp>(actual) == expected);
 }
 
 static std::string MakeLargeText(size_t size)
@@ -455,7 +455,7 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
     {
         REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Text"));
         REQUIRE(stmt.FetchRow());
-        REQUIRE(stmt.GetColumn<std::string>(1).value() == expectedText);
+        CHECK(stmt.GetColumn<std::string>(1).value() == expectedText);
     }
 
     SECTION("check handling for explicitly fetched output columns (in-place store)")
@@ -464,7 +464,7 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
         REQUIRE(stmt.FetchRow());
         std::string actualText;
         REQUIRE(stmt.GetColumn(1, &actualText));
-        REQUIRE(actualText == expectedText);
+        CHECK(actualText == expectedText);
     }
 
     SECTION("check handling for bound output columns")
@@ -475,7 +475,7 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
         REQUIRE(stmt.Execute());
         REQUIRE(stmt.FetchRow());
         REQUIRE(actualText.size() == expectedText.size());
-        REQUIRE(actualText == expectedText);
+        CHECK(actualText == expectedText);
     }
 }
 
@@ -492,20 +492,50 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlText")
 
     SECTION("check custom type handling for explicitly fetched output columns")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Timestamps"));
+        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
         REQUIRE(stmt.FetchRow());
         auto const actualValue = stmt.GetColumn<SqlText>(1).value();
-        REQUIRE(actualValue == expectedValue);
+        CHECK(actualValue == expectedValue);
     }
 
     SECTION("check custom type handling for bound output columns")
     {
-        REQUIRE(stmt.Prepare("SELECT Value FROM Timestamps"));
+        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
         auto actualValue = SqlText {};
         REQUIRE(stmt.BindOutputColumns(&actualValue));
         REQUIRE(stmt.Execute());
         REQUIRE(stmt.FetchRow());
-        REQUIRE(actualValue == expectedValue);
+        CHECK(actualValue == expectedValue);
+    }
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDateTime")
+{
+    auto stmt = SqlStatement {};
+    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value DATETIME NOT NULL)"));
+
+    using namespace std::chrono_literals;
+    auto const expectedValue = SqlDateTime(2017y, std::chrono::August, 16d, 17h, 30min, 45s);
+
+    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
+    REQUIRE(stmt.Execute(expectedValue));
+
+    SECTION("check custom type handling for explicitly fetched output columns")
+    {
+        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        REQUIRE(stmt.FetchRow());
+        auto const actualValue = stmt.GetColumn<SqlDateTime>(1).value();
+        CHECK(actualValue == expectedValue);
+    }
+
+    SECTION("check custom type handling for bound output columns")
+    {
+        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        auto actualValue = SqlDateTime {};
+        REQUIRE(stmt.BindOutputColumns(&actualValue));
+        REQUIRE(stmt.Execute());
+        REQUIRE(stmt.FetchRow());
+        CHECK(actualValue == expectedValue);
     }
 }
 

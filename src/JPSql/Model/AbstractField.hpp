@@ -2,6 +2,7 @@
 
 #include "../SqlError.hpp"
 #include "ColumnType.hpp"
+#include "Detail.hpp"
 
 #include <string_view>
 
@@ -20,6 +21,11 @@ constexpr inline FieldValueRequirement SqlNullable = FieldValueRequirement::NULL
 constexpr inline FieldValueRequirement SqlNotNullable = FieldValueRequirement::NULLABLE;
 
 struct AbstractRecord;
+
+struct SqlColumnNameView
+{
+    std::string_view name;
+};
 
 // Base class for all fields in a table row (Record).
 class AbstractField
@@ -55,7 +61,7 @@ class AbstractField
     bool IsModified() const noexcept { return m_modified; }
     void SetModified(bool value) noexcept { m_modified = value; }
     SQLSMALLINT Index() const noexcept { return m_index; }
-    std::string_view Name() const noexcept { return m_name; }
+    SqlColumnNameView Name() const noexcept { return m_name; }
     ColumnType Type() const noexcept { return m_type; }
     bool IsNullable() const noexcept { return m_requirement == FieldValueRequirement::NULLABLE; }
     bool IsRequired() const noexcept { return m_requirement == FieldValueRequirement::NOT_NULL; }
@@ -64,7 +70,7 @@ class AbstractField
   private:
     AbstractRecord* m_record;
     SQLSMALLINT m_index;
-    std::string_view m_name;
+    SqlColumnNameView m_name;
     ColumnType m_type;
     FieldValueRequirement m_requirement;
     bool m_modified = false;

@@ -56,7 +56,7 @@ class StandardQueryLogger: public QueryLogger
         {
             if (!output.empty())
                 output << ", ";
-            output << field->Name() << '=' << field->InspectValue();
+            output << field->Name().name << '=' << field->InspectValue();
         }
 
         std::println("[{}]{} {} WITH [{}]", durationStr, rowCountStr, m_query, *output);

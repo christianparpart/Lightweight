@@ -21,6 +21,7 @@ enum class ColumnType : uint8_t
     BLOB,
     DATE,
     TIME,
+    DATETIME,
     TIMESTAMP,
 };
 
@@ -44,6 +45,8 @@ constexpr std::string_view ColumnTypeName(ColumnType value) noexcept
             return "DATE";
         case ColumnType::TIME:
             return "TIME";
+        case ColumnType::DATETIME:
+            return "DATETIME";
         case ColumnType::TIMESTAMP:
             return "TIMESTAMP";
     }
@@ -69,6 +72,7 @@ template <> struct ColumnTypeOf<float> { static constexpr ColumnType value = Col
 template <> struct ColumnTypeOf<double> { static constexpr ColumnType value = ColumnType::REAL; };
 template <> struct ColumnTypeOf<SqlDate> { static constexpr ColumnType value = ColumnType::DATE; };
 template <> struct ColumnTypeOf<SqlTime> { static constexpr ColumnType value = ColumnType::TIME; };
+template <> struct ColumnTypeOf<SqlDateTime> { static constexpr ColumnType value = ColumnType::DATETIME; };
 template <> struct ColumnTypeOf<SqlTimestamp> { static constexpr ColumnType value = ColumnType::TIMESTAMP; };
 template <> struct ColumnTypeOf<RecordId> { static constexpr ColumnType value = ColumnType::INTEGER; };
 // clang-format on

@@ -217,7 +217,7 @@ std::string Record<Derived>::CreateTableString(SqlServerType serverType) noexcep
 
     for (auto const* field: model.m_fields)
     {
-        sql << "    " << field->Name() << " " << ColumnTypeName(field->Type());
+        sql << "    \"" << field->Name() << "\" " << ColumnTypeName(field->Type());
         if (field->IsNullable())
             sql << " NULL";
         else
@@ -273,7 +273,7 @@ SqlResult<RecordId> Record<Derived>::Create()
             sqlValuesString << ", ";
         }
 
-        sqlColumnsString << field->Name(); // TODO: quote column name
+        sqlColumnsString << field->Name();
         sqlValuesString << "?";
     }
 
@@ -312,8 +312,8 @@ SqlResult<void> Record<Derived>::Load(RecordId id)
 
     SqlStatement stmt;
 
-    auto const sqlQueryString = std::format(
-        "SELECT {} FROM {} WHERE {} = {} LIMIT 1", *sqlColumnsString, TableName(), PrimaryKeyName(), id);
+    auto const sqlQueryString =
+        std::format("SELECT {} FROM {} WHERE {} = {} LIMIT 1", *sqlColumnsString, TableName(), PrimaryKeyName(), id);
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, m_fields);
 

@@ -42,7 +42,7 @@ struct SqlText
 };
 
 template <>
-struct std::formatter<SqlText> : std::formatter<std::string>
+struct std::formatter<SqlText>: std::formatter<std::string>
 {
     auto format(SqlText const& text, format_context& ctx) const -> format_context::iterator
     {
@@ -53,6 +53,11 @@ struct std::formatter<SqlText> : std::formatter<std::string>
 // Helper struct to store a timestamp that should be automatically converted to/from a SQL_TIMESTAMP_STRUCT.
 struct SqlTimestamp
 {
+    static SqlTimestamp Now() noexcept
+    {
+        return SqlTimestamp { std::chrono::system_clock::now() };
+    }
+
     SqlTimestamp() noexcept = default;
     SqlTimestamp(SqlTimestamp&&) noexcept = default;
     SqlTimestamp& operator=(SqlTimestamp&&) noexcept = default;
@@ -131,6 +136,74 @@ struct SqlTimestamp
     SQLLEN sqlIndicator {};
 };
 
+struct SqlDateTime
+{
+    static SqlDateTime Now() noexcept
+    {
+        return SqlDateTime { std::chrono::system_clock::now() };
+    }
+
+    SqlDateTime() noexcept = default;
+    SqlDateTime(SqlDateTime&&) noexcept = default;
+    SqlDateTime& operator=(SqlDateTime&&) noexcept = default;
+    SqlDateTime(SqlDateTime const&) noexcept = default;
+    SqlDateTime& operator=(SqlDateTime const& other) noexcept = default;
+    ~SqlDateTime() noexcept = default;
+
+    bool operator==(SqlDateTime const& other) const noexcept
+    {
+        return value == other.value;
+    }
+
+    bool operator!=(SqlDateTime const& other) const noexcept
+    {
+        return !(*this == other);
+    }
+
+    SqlDateTime(std::chrono::year_month_day ymd, std::chrono::hh_mm_ss<std::chrono::microseconds> time) noexcept:
+        SqlDateTime(std::chrono::system_clock::from_time_t(std::chrono::system_clock::to_time_t(
+            std::chrono::sys_days { ymd } + time.hours() + time.minutes() + time.seconds())))
+    {
+    }
+
+    SqlDateTime(std::chrono::year year,
+                std::chrono::month month,
+                std::chrono::day day,
+                std::chrono::hours hour,
+                std::chrono::minutes minute,
+                std::chrono::seconds second,
+                std::chrono::microseconds microsecond = std::chrono::microseconds { 0 }) noexcept:
+        SqlDateTime(std::chrono::year_month_day { year, month, day },
+                    std::chrono::hh_mm_ss<std::chrono::microseconds> { hour + minute + second + microsecond })
+    {
+    }
+
+    SqlDateTime(std::chrono::system_clock::time_point value) noexcept:
+        value { value },
+        sqlValue { SqlDateTime::ConvertToSqlValue(value) }
+    {
+    }
+
+    operator std::chrono::system_clock::time_point() const noexcept
+    {
+        return value;
+    }
+
+    static SQL_TIMESTAMP_STRUCT ConvertToSqlValue(std::chrono::system_clock::time_point value) noexcept
+    {
+        return SqlTimestamp::ConvertToSqlValue(value);
+    }
+
+    static std::chrono::system_clock::time_point ConvertToNative(SQL_TIMESTAMP_STRUCT const& time) noexcept
+    {
+        return SqlTimestamp::ConvertToNative(time);
+    }
+
+    std::chrono::system_clock::time_point value;
+    SQL_TIMESTAMP_STRUCT sqlValue {};
+    SQLLEN sqlIndicator {};
+};
+
 namespace detail
 {
 
@@ -177,6 +250,11 @@ struct SqlDate
     SqlDate(std::chrono::year_month_day value) noexcept:
         value { value },
         sqlValue { SqlDate::ConvertToSqlValue(value) }
+    {
+    }
+
+    SqlDate(std::chrono::year year, std::chrono::month month, std::chrono::day day) noexcept:
+        SqlDate(std::chrono::year_month_day { year, month, day })
     {
     }
 
@@ -267,8 +345,10 @@ using SqlVariant = std::variant<std::monostate,
                                 float,
                                 double,
                                 std::string,
+                                SqlText,
                                 SqlDate,
                                 SqlTime,
+                                SqlDateTime,
                                 SqlTimestamp>;
 
 // Callback interface for SqlDataBinder to allow post-processing of output columns.
@@ -673,6 +753,40 @@ struct SqlDataBinder<SqlTimestamp>
     }
 
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlTimestamp* result, SQLLEN* indicator) noexcept
+    {
+        return SqlDataBinder<std::chrono::system_clock::time_point>::GetColumn(stmt, column, &result->value, indicator);
+    }
+};
+
+template <>
+struct SqlDataBinder<SqlDateTime>
+{
+    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime const& value) noexcept
+    {
+        const_cast<SqlDateTime&>(value).sqlIndicator = sizeof(value.sqlValue);
+
+        return SQLBindParameter(stmt,
+                                column,
+                                SQL_PARAM_INPUT,
+                                SQL_C_TYPE_TIMESTAMP,
+                                SQL_TYPE_TIMESTAMP,
+                                27,
+                                7,
+                                (SQLPOINTER) &value.sqlValue,
+                                0,
+                                &const_cast<SqlDateTime&>(value).sqlIndicator);
+    }
+
+    static SQLRETURN OutputColumn(
+        SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
+    {
+        *indicator = sizeof(result->sqlValue);
+        cb.PlanPostProcessOutputColumn(
+            [indicator, result]() { result->value = SqlDateTime::ConvertToNative(result->sqlValue); });
+        return SQLBindCol(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, 0, indicator);
+    }
+
+    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime* result, SQLLEN* indicator) noexcept
     {
         return SqlDataBinder<std::chrono::system_clock::time_point>::GetColumn(stmt, column, &result->value, indicator);
     }

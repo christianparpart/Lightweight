@@ -15,27 +15,6 @@ struct Company;
 struct Phone;
 struct Job;
 
-namespace
-{
-
-class SqlTestFixture
-{
-  public:
-    SqlTestFixture()
-    {
-        // (customize or enable if needed)
-        // SqlLogger::SetLogger(SqlLogger::TraceLogger());
-        SqlConnection::SetDefaultConnectInfo(TestSqlConnectionString);
-    }
-
-    ~SqlTestFixture()
-    {
-        // Don't linger pooled idle connections into the next test case
-        SqlConnection::KillAllIdle();
-    }
-};
-} // namespace
-
 int main(int argc, char const* argv[])
 {
     Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
@@ -53,7 +32,7 @@ struct Book: Model::Record<Book>
     Model::BelongsTo<Author, 4, "author_id"> author;
 
     Book():
-        Record { "books" },
+        Record { "books", "id" },
         title { *this },
         isbn { *this },
         author { *this }
@@ -245,7 +224,7 @@ struct ColumnTypesRecord: Model::Record<ColumnTypesRecord>
     {
     }
 
-    #if 1
+#if 1
     // TODO: Ensure that (if this is not provided), the compiler will fail in Find() and All() calls (static_assert)
     // This requires the parent class to not have a move constructor though.
     ColumnTypesRecord(ColumnTypesRecord&& other) noexcept:
@@ -254,7 +233,7 @@ struct ColumnTypesRecord: Model::Record<ColumnTypesRecord>
         textColumn { *this, std::move(other.textColumn) }
     {
     }
-    #endif
+#endif
 };
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.ColumnTypes", "[model]")
@@ -265,7 +244,6 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.ColumnTypes", "[model]")
     record.stringColumn = "Hello";
     record.textColumn = SqlText { ", World!" };
     REQUIRE(record.Save());
-
 
     ColumnTypesRecord record2 = ColumnTypesRecord::Find(record.Id()).value();
     CHECK(record2.stringColumn == record.stringColumn);

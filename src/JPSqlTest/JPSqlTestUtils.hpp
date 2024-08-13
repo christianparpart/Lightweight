@@ -7,6 +7,7 @@
 
 #include <format>
 #include <ostream>
+#include <string_view>
 
 // Refer to an in-memory SQLite database (and assuming the sqliteodbc driver is installed)
 // See:
@@ -52,6 +53,34 @@ class ScopedSqlNullLogger: public SqlLogger
     void OnExecute() override {}
     void OnExecuteBatch() override {}
     void OnFetchedRow() override {}
+};
+
+class SqlTestFixture
+{
+  public:
+    SqlTestFixture()
+    {
+        SqlConnection::SetDefaultConnectInfo(TestSqlConnectionString);
+    }
+
+    virtual ~SqlTestFixture()
+    {
+        SqlConnection::KillAllIdle();
+    }
+};
+
+class SqlModelTestFixture: public SqlTestFixture
+{
+  public:
+    SqlModelTestFixture()
+    {
+        SqlLogger::SetLogger(SqlLogger::TraceLogger());
+    }
+
+    ~SqlModelTestFixture() override
+    {
+        SqlLogger::SetLogger(SqlLogger::StandardLogger());
+    }
 };
 
 // {{{ ostream support for JPSql, for debugging purposes

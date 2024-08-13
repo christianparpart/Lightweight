@@ -27,12 +27,12 @@ template <typename T,
 class Field final: public AbstractField
 {
   public:
-    explicit Field(AbstractRecord& registry):
+    explicit Field(AbstractRecord& record):
         AbstractField {
-            registry, TheTableColumnIndex, TheColumnName.value, ColumnTypeOf<T>, TheRequirement,
+            record, TheTableColumnIndex, TheColumnName.value, ColumnTypeOf<T>, TheRequirement,
         }
     {
-        registry.RegisterField(*this);
+        record.RegisterField(*this);
     }
 
     Field(Field const& other):
@@ -44,13 +44,13 @@ class Field final: public AbstractField
         GetRecord().RegisterField(*this);
     }
 
-    explicit Field(AbstractRecord& registry, Field&& field):
+    explicit Field(AbstractRecord& record, Field&& field):
         AbstractField {
-            registry, TheTableColumnIndex, TheColumnName.value, ColumnTypeOf<T>, TheRequirement,
+            record, TheTableColumnIndex, TheColumnName.value, ColumnTypeOf<T>, TheRequirement,
         },
         m_value { std::move(field.m_value) }
     {
-        registry.RegisterField(*this);
+        record.RegisterField(*this);
     }
 
     Field() = delete;
@@ -98,12 +98,12 @@ template <typename ModelType,
 class BelongsTo final: public AbstractField
 {
   public:
-    explicit BelongsTo(AbstractRecord& registry):
+    explicit BelongsTo(AbstractRecord& record):
         AbstractField {
-            registry, TheColumnIndex, TheForeignKeyName.value, ColumnTypeOf<RecordId>, TheRequirement,
+            record, TheColumnIndex, TheForeignKeyName.value, ColumnTypeOf<RecordId>, TheRequirement,
         }
     {
-        registry.RegisterField(*this);
+        record.RegisterField(*this);
     }
 
     BelongsTo(BelongsTo const& other):
@@ -120,11 +120,11 @@ class BelongsTo final: public AbstractField
         // TODO?: GetRecord().UnregisterField(*this);
     }
 
-    explicit BelongsTo(AbstractRecord& registry, BelongsTo&& other):
+    explicit BelongsTo(AbstractRecord& record, BelongsTo&& other):
         AbstractField { std::move(other) },
         m_value { other.m_value }
     {
-        registry.RegisterField(*this);
+        record.RegisterField(*this);
     }
 
     BelongsTo& operator=(RecordId modelId) noexcept;
@@ -198,6 +198,8 @@ std::string Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::Inspec
     else if constexpr (std::is_same_v<T, SqlDate>)
         return std::format("\"{}\"", m_value.value);
     else if constexpr (std::is_same_v<T, SqlTime>)
+        return std::format("\"{}\"", m_value.value);
+    else if constexpr (std::is_same_v<T, SqlDateTime>)
         return std::format("\"{}\"", m_value.value);
     else if constexpr (std::is_same_v<T, SqlTimestamp>)
         return std::format("\"{}\"", m_value.value);
