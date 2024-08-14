@@ -217,7 +217,7 @@ std::string Record<Derived>::CreateTableString(SqlServerType serverType) noexcep
 
     for (auto const* field: model.m_fields)
     {
-        sql << "    \"" << field->Name() << "\" " << ColumnTypeName(field->Type());
+        sql << "    " << field->Name() << " " << ColumnTypeName(field->Type());
         if (field->IsNullable())
             sql << " NULL";
         else

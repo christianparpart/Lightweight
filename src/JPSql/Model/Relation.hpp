@@ -33,7 +33,7 @@ template <typename Model, StringLiteral ForeignKeyName>
 class HasMany: public Relation
 {
   public:
-    size_t Count() const noexcept;
+    SqlResult<size_t> Count() const noexcept;
 
     std::vector<Model>& All() noexcept
     {
@@ -100,7 +100,7 @@ class HasMany: public Relation
 #pragma region HasMany<> implementation
 
 template <typename Model, StringLiteral ForeignKeyName>
-size_t HasMany<Model, ForeignKeyName>::Count() const noexcept
+SqlResult<size_t> HasMany<Model, ForeignKeyName>::Count() const noexcept
 {
     if (!m_models.empty())
         return m_models.size();

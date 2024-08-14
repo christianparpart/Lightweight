@@ -3,9 +3,9 @@
 #include "../SqlDataBinder.hpp"
 #include "RecordId.hpp"
 
-#include <string_view>
-#include <string>
 #include <cstdint>
+#include <string>
+#include <string_view>
 
 namespace Model
 {
@@ -49,16 +49,18 @@ constexpr std::string_view ColumnTypeName(ColumnType value) noexcept
             return "DATETIME";
         case ColumnType::TIMESTAMP:
             return "TIMESTAMP";
+        case ColumnType::UNKNOWN:
+            break;
     }
     return "UNKNOWN";
 }
 
 namespace detail
 {
-template <typename>
-struct ColumnTypeOf;
+    template <typename>
+    struct ColumnTypeOf;
 
-// clang-format off
+    // clang-format off
 template <> struct ColumnTypeOf<std::string> { static constexpr ColumnType value = ColumnType::STRING; };
 template <> struct ColumnTypeOf<SqlText> { static constexpr ColumnType value = ColumnType::TEXT; };
 template <> struct ColumnTypeOf<bool> { static constexpr ColumnType value = ColumnType::BOOLEAN; };
@@ -75,7 +77,7 @@ template <> struct ColumnTypeOf<SqlTime> { static constexpr ColumnType value = C
 template <> struct ColumnTypeOf<SqlDateTime> { static constexpr ColumnType value = ColumnType::DATETIME; };
 template <> struct ColumnTypeOf<SqlTimestamp> { static constexpr ColumnType value = ColumnType::TIMESTAMP; };
 template <> struct ColumnTypeOf<RecordId> { static constexpr ColumnType value = ColumnType::INTEGER; };
-// clang-format on
+    // clang-format on
 } // namespace detail
 
 template <typename T>

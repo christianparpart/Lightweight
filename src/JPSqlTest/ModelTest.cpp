@@ -18,6 +18,7 @@ struct Job;
 int main(int argc, char const* argv[])
 {
     Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
+    SqlLogger::SetLogger(SqlLogger::TraceLogger());
 
     return Catch::Session().run(argc, argv);
 }

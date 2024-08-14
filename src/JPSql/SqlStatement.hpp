@@ -179,7 +179,7 @@ template <SqlInputParameterBinder Arg>
 [[nodiscard]] SqlResult<void> SqlStatement::BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg) noexcept
 {
     // tell Execute() that we don't know the expected count
-    m_expectedParameterCount = (std::numeric_limits<size_t>::max)();
+    m_expectedParameterCount = (std::numeric_limits<decltype(m_expectedParameterCount)>::max)();
     return UpdateLastError(SqlDataBinder<Arg>::InputParameter(m_hStmt, columnIndex, arg));
 }
 
@@ -190,7 +190,8 @@ template <SqlInputParameterBinder... Args>
     // such that we can call SQLBindParameter() without needing to copy it.
     // The memory region behind the input parameter must exist until the SQLExecute() call.
 
-    if (!(m_expectedParameterCount == std::numeric_limits<size_t>::max() && sizeof...(args) == 0)
+    if (!(m_expectedParameterCount == std::numeric_limits<decltype(m_expectedParameterCount)>::max()
+          && sizeof...(args) == 0)
         && !(m_expectedParameterCount == sizeof...(args)))
         return std::unexpected { SqlError::INVALID_ARGUMENT };
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../JpSql/SqlDataBinder.hpp"
+#include "../../JPSql/SqlDataBinder.hpp"
 
 #include <format>
 
@@ -10,7 +10,7 @@ namespace Model
 // Represents a unique identifier of a specific record in a table.
 struct RecordId
 {
-    size_t value;
+    unsigned long long value;
 
     constexpr size_t operator*() const noexcept
     {
@@ -20,27 +20,27 @@ struct RecordId
     constexpr std::strong_ordering operator<=>(RecordId const& other) const noexcept = default;
 };
 
+} // namespace Model
+
 template <>
-struct SqlDataBinder<RecordId>
+struct SqlDataBinder<Model::RecordId>
 {
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLSMALLINT column, RecordId const& value)
+    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLSMALLINT column, Model::RecordId const& value)
     {
         return SqlDataBinder<decltype(value.value)>::InputParameter(stmt, column, value.value);
     }
 
     static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLSMALLINT column, RecordId* result, SQLLEN* indicator, SqlDataBinderCallback& cb)
+        SQLHSTMT stmt, SQLSMALLINT column, Model::RecordId* result, SQLLEN* indicator, SqlDataBinderCallback& cb)
     {
         return SqlDataBinder<decltype(result->value)>::OutputColumn(stmt, column, &result->value, indicator, cb);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLSMALLINT column, RecordId* result, SQLLEN* indicator)
+    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLSMALLINT column, Model::RecordId* result, SQLLEN* indicator)
     {
         return SqlDataBinder<decltype(result->value)>::GetColumn(stmt, column, &result->value, indicator);
     }
 };
-
-} // namespace Model
 
 template <>
 struct std::formatter<Model::RecordId>: std::formatter<size_t>

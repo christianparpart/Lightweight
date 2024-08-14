@@ -4,9 +4,27 @@
 #include "ColumnType.hpp"
 #include "Detail.hpp"
 
+#include <format>
 #include <string_view>
 
 class SqlStatement;
+
+namespace Model
+{
+struct SqlColumnNameView
+{
+    std::string_view name;
+};
+} // namespace Model
+
+template <>
+struct std::formatter<Model::SqlColumnNameView>: std::formatter<std::string_view>
+{
+    auto format(Model::SqlColumnNameView const& column, format_context& ctx) const -> format_context::iterator
+    {
+        return std::formatter<string_view>::format(column.name, ctx);
+    }
+};
 
 namespace Model
 {
@@ -21,11 +39,6 @@ constexpr inline FieldValueRequirement SqlNullable = FieldValueRequirement::NULL
 constexpr inline FieldValueRequirement SqlNotNullable = FieldValueRequirement::NULLABLE;
 
 struct AbstractRecord;
-
-struct SqlColumnNameView
-{
-    std::string_view name;
-};
 
 // Base class for all fields in a table row (Record).
 class AbstractField
