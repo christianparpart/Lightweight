@@ -18,11 +18,11 @@ struct SqlColumnNameView
 } // namespace Model
 
 template <>
-struct std::formatter<Model::SqlColumnNameView>: std::formatter<std::string_view>
+struct std::formatter<Model::SqlColumnNameView>: std::formatter<std::string>
 {
     auto format(Model::SqlColumnNameView const& column, format_context& ctx) const -> format_context::iterator
     {
-        return std::formatter<string_view>::format(column.name, ctx);
+        return std::formatter<string>::format(std::format("\"{}\"", column.name), ctx);
     }
 };
 

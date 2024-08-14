@@ -186,23 +186,23 @@ std::string Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::Inspec
     if constexpr (std::is_same_v<T, std::string>)
     {
         std::stringstream result;
-        result << std::quoted(m_value);
-        return std::move(result.str());
+        result << std::quoted(m_value, '\'');
+        return result.str();
     }
     if constexpr (std::is_same_v<T, SqlText>)
     {
         std::stringstream result;
-        result << std::quoted(m_value.value);
-        return std::move(result.str());
+        result << std::quoted(m_value.value, '\'');
+        return result.str();
     }
     else if constexpr (std::is_same_v<T, SqlDate>)
-        return std::format("\"{}\"", m_value.value);
+        return std::format("\'{}\'", m_value.value);
     else if constexpr (std::is_same_v<T, SqlTime>)
-        return std::format("\"{}\"", m_value.value);
+        return std::format("\'{}\'", m_value.value);
     else if constexpr (std::is_same_v<T, SqlDateTime>)
-        return std::format("\"{}\"", m_value.value);
+        return std::format("\'{}\'", m_value.value);
     else if constexpr (std::is_same_v<T, SqlTimestamp>)
-        return std::format("\"{}\"", m_value.value);
+        return std::format("\'{}\'", m_value.value);
     else
         return std::format("{}", m_value);
 }
