@@ -37,7 +37,11 @@ class Field final: public AbstractField
 
     Field(Field const& other):
         AbstractField {
-            const_cast<Field&>(other).GetRecord(), TheTableColumnIndex, TheColumnName.value, ColumnTypeOf<T>, TheRequirement,
+            const_cast<Field&>(other).GetRecord(),
+            TheTableColumnIndex,
+            TheColumnName.value,
+            ColumnTypeOf<T>,
+            TheRequirement,
         },
         m_value { other.m_value }
     {
@@ -85,6 +89,7 @@ class Field final: public AbstractField
     std::string InspectValue() const override;
     SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
     SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
+    SqlResult<void> BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;
 
   private:
     T m_value {};
@@ -108,7 +113,11 @@ class BelongsTo final: public AbstractField
 
     BelongsTo(BelongsTo const& other):
         AbstractField {
-            const_cast<BelongsTo&>(other).GetRecord(), TheColumnIndex, TheForeignKeyName.value, ColumnTypeOf<RecordId>, TheRequirement,
+            const_cast<BelongsTo&>(other).GetRecord(),
+            TheColumnIndex,
+            TheForeignKeyName.value,
+            ColumnTypeOf<RecordId>,
+            TheRequirement,
         },
         m_value { other.m_value }
     {
@@ -139,6 +148,7 @@ class BelongsTo final: public AbstractField
     std::string InspectValue() const override;
     SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
     SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
+    SqlResult<void> BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;
 
     auto operator<=>(BelongsTo const& other) const noexcept
     {
@@ -226,6 +236,16 @@ SqlResult<void> Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::Bi
     return stmt.BindOutputColumn(TheTableColumnIndex, &m_value);
 }
 
+template <typename T,
+          SQLSMALLINT TheTableColumnIndex,
+          StringLiteral TheColumnName,
+          FieldValueRequirement TheRequirement>
+SqlResult<void> Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindOutputColumn(SQLSMALLINT outputIndex,
+                                                                                               SqlStatement& stmt)
+{
+    return stmt.BindOutputColumn(outputIndex, &m_value);
+}
+
 #pragma endregion
 
 #pragma region BelongsTo<> implementation
@@ -284,6 +304,16 @@ SqlResult<void> BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequireme
     SqlStatement& stmt)
 {
     return stmt.BindOutputColumn(TheColumnIndex, &m_value.value);
+}
+
+template <typename Model,
+          SQLSMALLINT TheColumnIndex,
+          StringLiteral TheForeignKeyName,
+          FieldValueRequirement TheRequirement>
+SqlResult<void> BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
+    SQLSMALLINT outputIndex, SqlStatement& stmt)
+{
+    return stmt.BindOutputColumn(outputIndex, &m_value.value);
 }
 
 #pragma endregion

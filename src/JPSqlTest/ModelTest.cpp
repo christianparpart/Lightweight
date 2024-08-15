@@ -254,7 +254,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.ColumnTypes", "[model]")
 struct Employee: Model::Record<Employee>
 {
     Model::Field<std::string, 2, "name"> name;
-    Model::Field<bool, 2, "is_senior"> isSenior;
+    Model::Field<bool, 3, "is_senior"> isSenior;
 
     Employee():
         Record { "employees" },
@@ -290,11 +290,9 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Where", "[model]")
     employee3.isSenior = true;
     REQUIRE(employee3.Save());
 
-    auto employees = Employee::Where("is_senior", true).value();
+    auto employees = Employee::Where("is_senior"sv, true).value();
     for (const auto& employee: employees)
-    {
-        INFO("Employee: " << employee.Inspect());
-    }
+        std::println("Employee: {}", employee.Inspect()); // FIXME: breaks due to field name being NULL
     REQUIRE(employees.size() == 2);
     CHECK(employees[0].Id() == employee2.Id());
     CHECK(employees[0].name == employee2.name);

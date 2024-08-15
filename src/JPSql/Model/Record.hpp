@@ -451,6 +451,7 @@ SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnNa
             break;
 
         scopedModelSqlLogger += record;
+        std::println("Received row: {}", record.Inspect());
 
         allModels.emplace_back(std::move(record));
     }

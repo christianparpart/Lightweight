@@ -67,6 +67,7 @@ class AbstractField
     virtual std::string InspectValue() const = 0;
     virtual SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const = 0;
     virtual SqlResult<void> BindOutputColumn(SqlStatement& stmt) = 0;
+    virtual SqlResult<void> BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt) = 0;
 
     // clang-format off
     AbstractRecord& GetRecord() noexcept { return *m_record; }

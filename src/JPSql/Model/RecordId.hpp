@@ -44,7 +44,7 @@ struct SqlDataBinder<Model::RecordId>
 };
 
 template <>
-struct std::formatter<Model::RecordId>: std::formatter<size_t>
+struct std::formatter<Model::RecordId>: std::formatter<unsigned long long>
 {
     auto format(Model::RecordId id, format_context& ctx) const -> format_context::iterator
     {

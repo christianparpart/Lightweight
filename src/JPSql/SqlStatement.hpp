@@ -190,7 +190,7 @@ template <SqlInputParameterBinder... Args>
     // such that we can call SQLBindParameter() without needing to copy it.
     // The memory region behind the input parameter must exist until the SQLExecute() call.
 
-    if (!(m_expectedParameterCount == std::numeric_limits<decltype(m_expectedParameterCount)>::max()
+    if (!(m_expectedParameterCount == (std::numeric_limits<decltype(m_expectedParameterCount)>::max)()
           && sizeof...(args) == 0)
         && !(m_expectedParameterCount == sizeof...(args)))
         return std::unexpected { SqlError::INVALID_ARGUMENT };
