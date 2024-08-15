@@ -8,75 +8,58 @@
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-struct Appointment;
-struct Patient;
+struct Artist;
+struct Track;
+struct Publisher;
 
-struct Doctor: Model::Record<Doctor>
+struct Artist: Model::Record<Artist>
 {
     Model::Field<std::string, 2, "name"> name;
-    Model::HasMany<Appointment, "doctor_id"> appointments;
+    Model::HasMany<Track, "artist_id"> tracks;
 
-    Doctor():
-        Record { "doctors" },
+    Artist():
+        Record { "artists" },
         name { *this },
-        appointments { *this }
-    {
-    }
-
-    // Model::HasManyThrough<Patient, Appointment, "doctor_id", "patient_id"> patients;
-    //
-    // This translates to the following JOIN query:
-    // SELECT patients.* FROM patients JOIN appointments ON patients.id = appointments.patient_id WHERE
-    // appointments.doctor_id = ? Or: SELECT * FROM patients WHERE id IN (SELECT patient_id FROM appointments WHERE
-    // doctor_id = ?)
-};
-
-struct Appointment: Model::Record<Appointment>
-{
-    Model::Field<SqlDateTime, 3, "when"> when;
-    Model::BelongsTo<Patient, 4, "patient_id"> patient;
-
-    Appointment():
-        Record { "appointments" },
-        when { *this },
-        patient { *this }
+        tracks { *this }
     {
     }
 };
 
-struct Patient: Model::Record<Patient>
+struct Track: Model::Record<Track>
 {
-    Model::Field<std::string, 2, "name"> name;
-    Model::HasMany<Appointment, "patient_id"> appointments;
+    Model::Field<std::string, 2, "title"> title;
+    Model::BelongsTo<Artist, 3, "artist_id"> artist;
 
-    Patient():
-        Record { "patients" },
-        name { *this },
-        appointments { *this }
+    Track():
+        Record { "tracks" },
+        title { *this },
+        artist { *this }
     {
     }
 };
 
 TEST_CASE_METHOD(SqlModelTestFixture, "Model.BelongsTo", "[model]")
 {
-    REQUIRE(Doctor::CreateTable());
-    REQUIRE(Appointment::CreateTable());
-    REQUIRE(Patient::CreateTable());
+    REQUIRE(Artist::CreateTable());
+    REQUIRE(Track::CreateTable());
 
-    Doctor doctor;
-    doctor.name = "Dr. House";
-    REQUIRE(doctor.Save());
+    Artist artist;
+    artist.name = "Snoop Dog";
+    REQUIRE(artist.Save());
 
-    Patient patient;
-    patient.name = "John Doe";
-    REQUIRE(patient.Save());
+    Track track1;
+    track1.title = "Wuff";
+    track1.artist = artist;
+    REQUIRE(track1.Save());
 
-    Appointment appointment;
-    appointment.when = SqlDateTime::Now();
-    appointment.patient = patient.Id();
-    REQUIRE(appointment.Save());
+    Track track2;
+    track2.title = "Paff Dog";
+    track2.artist = artist;
+    REQUIRE(track2.Save());
 
-//    auto const fetchedAppointment = Appointment::Find(appointment.Id());
-//    REQUIRE(fetchedAppointment);
-//    REQUIRE(fetchedAppointment->patient == patient.Id());
+    REQUIRE(artist.tracks.IsLoaded() == false);
+    REQUIRE(artist.tracks.IsEmpty().value() == false);
+    REQUIRE(artist.tracks.Count() == 2);
+    // TODO: REQUIRE(artist.tracks.Load());
+    // TODO: REQUIRE(artist.tracks.IsLoaded() == true);
 }

@@ -83,13 +83,14 @@ struct Record: public AbstractRecord
     // Retrieves the number of models of this kind from the database.
     static SqlResult<size_t> Count() noexcept;
 
-    static SqlResult<std::vector<Record>> Where(SqlColumnIndex columnIndex,
-                                                const SqlVariant& value,
-                                                SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
+    static SqlResult<std::vector<Derived>> Where(SqlColumnIndex columnIndex,
+                                                 const SqlVariant& value,
+                                                 SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
 
-    static SqlResult<std::vector<Record>> Where(const std::string& columnName,
-                                                const SqlVariant& value,
-                                                SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
+    template <typename Value>
+    static SqlResult<std::vector<Derived>> Where(std::string_view columnName,
+                                                 Value const& value,
+                                                 SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
 
     // Returns the SQL string to create the table for this model.
     static std::string CreateTableString(SqlServerType serverType) noexcept;
@@ -397,6 +398,67 @@ SqlResult<void> Record<Derived>::Destroy()
     auto const sqlQueryString = std::format("DELETE FROM {} WHERE {} = {}", m_tableName, m_primaryKeyName, *m_id);
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
     return SqlStatement {}.ExecuteDirect(sqlQueryString);
+}
+
+template <typename Derived>
+template <typename Value>
+SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnName,
+                                                       Value const& value,
+                                                       SqlWhereOperator whereOperator) noexcept
+{
+    // return Where(Derived::FieldIndex(columnName), value, whereOperator);
+    std::vector<Derived> allModels;
+
+    Derived modelSchema;
+
+    detail::StringBuilder sqlColumnsString;
+    sqlColumnsString << modelSchema.PrimaryKeyName();
+    for (AbstractField const* field: modelSchema.m_fields)
+        sqlColumnsString << ", " << field->Name();
+
+    SqlStatement stmt;
+
+    auto const sqlQueryString = std::format("SELECT {} FROM {} WHERE {} = ?",
+                                            *sqlColumnsString,
+                                            modelSchema.TableName(),
+                                            columnName // TODO: quote column name
+                                            // TODO: whereOperator
+                                            );
+
+    auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
+
+    if (auto result = stmt.Prepare(sqlQueryString); !result)
+        return std::unexpected { result.error() };
+
+    if (auto result = stmt.BindInputParameter(1, value); !result)
+        return std::unexpected { result.error() };
+
+    if (auto result = stmt.Execute(); !result)
+        return std::unexpected { result.error() };
+
+    while (true)
+    {
+        Derived record;
+
+        if (auto result = stmt.BindOutputColumn(1, &record.m_id.value); !result)
+            return std::unexpected { result.error() };
+
+        for (AbstractField* field: record.m_fields)
+            if (auto result = field->BindOutputColumn(stmt); !result)
+                return std::unexpected { result.error() };
+
+        if (auto result = stmt.FetchRow(); !result)
+            break;
+
+        scopedModelSqlLogger += record;
+
+        allModels.emplace_back(std::move(record));
+    }
+
+    if (stmt.LastError() != SqlError::NO_DATA_FOUND)
+        return std::unexpected { stmt.LastError() };
+
+    return { std::move(allModels) };
 }
 
 #pragma endregion

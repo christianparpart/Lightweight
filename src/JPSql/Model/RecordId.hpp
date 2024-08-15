@@ -10,9 +10,10 @@ namespace Model
 // Represents a unique identifier of a specific record in a table.
 struct RecordId
 {
-    unsigned long long value;
+    using InnerType = unsigned long long;
+    InnerType value;
 
-    constexpr size_t operator*() const noexcept
+    constexpr InnerType operator*() const noexcept
     {
         return value;
     }

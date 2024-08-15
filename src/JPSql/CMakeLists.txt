@@ -17,7 +17,6 @@ set(HEADER_FILES
     Model/ColumnType.hpp
     Model/Detail.hpp
     Model/Logger.hpp
-    Model/ModelId.hpp
     Model/Record.hpp
     Model/Relation.hpp
     Model/StringLiteral.hpp

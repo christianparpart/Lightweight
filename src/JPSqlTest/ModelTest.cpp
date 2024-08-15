@@ -26,6 +26,26 @@ int main(int argc, char const* argv[])
 struct Author;
 struct Book;
 
+struct Author: Model::Record<Author>
+{
+    Model::Field<std::string, 2, "name"> name;
+    Model::HasMany<Book, "author_id"> books;
+
+    Author():
+        Record { "authors" },
+        name { *this },
+        books { *this }
+    {
+    }
+
+    Author(Author&& other) noexcept:
+        Record { ExplicitMove, std::move(other) },
+        name { *this, std::move(other.name) },
+        books { *this }
+    {
+    }
+};
+
 struct Book: Model::Record<Book>
 {
     Model::Field<std::string, 2, "title"> title;
@@ -49,26 +69,6 @@ struct Book: Model::Record<Book>
     }
 };
 
-struct Author: Model::Record<Author>
-{
-    Model::Field<std::string, 2, "name"> name;
-    Model::HasMany<Book, "author_id"> books;
-
-    Author():
-        Record { "authors" },
-        name { *this },
-        books { *this }
-    {
-    }
-
-    Author(Author&& other) noexcept:
-        Record { "authors" },
-        name { *this, std::move(other.name) },
-        books { *this }
-    {
-    }
-};
-
 TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
 {
     REQUIRE(Author::CreateTable());
@@ -78,7 +78,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
     author.name = "Bjarne Stroustrup";
     REQUIRE(author.Save());
     REQUIRE(author.Id().value == 1);
-    REQUIRE(author.books.Size().value() == 0);
+    REQUIRE(author.books.Count().value() == 0);
 
     Book book1;
     book1.title = "The C++ Programming Language";
@@ -87,7 +87,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
     REQUIRE(book1.Save());
     REQUIRE(book1.Id().value == 1);
     REQUIRE(Book::Count().value() == 1);
-    REQUIRE(author.books.Size().value() == 1);
+    REQUIRE(author.books.Count().value() == 1);
 
     Book book2;
     book2.title = "A Tour of C++";
@@ -96,7 +96,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
     REQUIRE(book2.Save());
     REQUIRE(book2.Id().value == 2);
     REQUIRE(Book::Count().value() == 2);
-    REQUIRE(author.books.Size().value() == 2);
+    REQUIRE(author.books.Count().value() == 2);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
@@ -229,7 +229,7 @@ struct ColumnTypesRecord: Model::Record<ColumnTypesRecord>
     // TODO: Ensure that (if this is not provided), the compiler will fail in Find() and All() calls (static_assert)
     // This requires the parent class to not have a move constructor though.
     ColumnTypesRecord(ColumnTypesRecord&& other) noexcept:
-        Record { "column_types" },
+        Record { ExplicitMove, std::move(other) },
         stringColumn { *this, std::move(other.stringColumn) },
         textColumn { *this, std::move(other.textColumn) }
     {
@@ -249,4 +249,55 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.ColumnTypes", "[model]")
     ColumnTypesRecord record2 = ColumnTypesRecord::Find(record.Id()).value();
     CHECK(record2.stringColumn == record.stringColumn);
     CHECK(record2.textColumn == record.textColumn);
+}
+
+struct Employee: Model::Record<Employee>
+{
+    Model::Field<std::string, 2, "name"> name;
+    Model::Field<bool, 2, "is_senior"> isSenior;
+
+    Employee():
+        Record { "employees" },
+        name { *this },
+        isSenior { *this }
+    {
+    }
+
+    Employee(Employee&& other) noexcept:
+        Record { ExplicitMove, std::move(other) },
+        name { *this, std::move(other.name) },
+        isSenior { *this, std::move(other.isSenior) }
+    {
+    }
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "Model.Where", "[model]")
+{
+    REQUIRE(Employee::CreateTable());
+
+    Employee employee1;
+    employee1.name = "John Doe";
+    employee1.isSenior = false;
+    REQUIRE(employee1.Save());
+
+    Employee employee2;
+    employee2.name = "Jane Doe";
+    employee2.isSenior = true;
+    REQUIRE(employee2.Save());
+
+    Employee employee3;
+    employee3.name = "John Smith";
+    employee3.isSenior = true;
+    REQUIRE(employee3.Save());
+
+    auto employees = Employee::Where("is_senior", true).value();
+    for (const auto& employee: employees)
+    {
+        INFO("Employee: " << employee.Inspect());
+    }
+    REQUIRE(employees.size() == 2);
+    CHECK(employees[0].Id() == employee2.Id());
+    CHECK(employees[0].name == employee2.name);
+    CHECK(employees[1].Id() == employee3.Id());
+    CHECK(employees[1].name == employee3.name);
 }
