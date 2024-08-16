@@ -17,10 +17,23 @@ struct Job;
 
 int main(int argc, char const* argv[])
 {
-    Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
-    SqlLogger::SetLogger(SqlLogger::TraceLogger());
+    int i = 1;
+    for (; i < argc; ++i)
+    {
+        if (argv[i] == "--trace-model"sv)
+            Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
+        else if (argv[i] == "--trace-sql"sv)
+            SqlLogger::SetLogger(SqlLogger::TraceLogger());
+        else if (argv[i] == "--help"sv)
+        {
+            std::println("{} [--trace-model] [--trace-sql] [--] ...", argv[0]);
+            return EXIT_SUCCESS;
+        }
+        else if (argv[i] == "--"sv)
+            continue;
+    }
 
-    return Catch::Session().run(argc, argv);
+    return Catch::Session().run(argc - (i - 1), argv + (i - 1));
 }
 
 struct Author;
@@ -322,8 +335,8 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Where", "[model]")
     REQUIRE(employee3.Save());
 
     auto employees = Employee::Where("is_senior"sv, true).value();
-    // for (const auto& employee: employees)
-    //     std::println("Employee: {}", employee.Inspect()); // FIXME: breaks due to field name being NULL
+    for (const auto& employee: employees)
+        std::println("Employee: {}", employee.Inspect()); // FIXME: breaks due to field name being NULL
     REQUIRE(employees.size() == 2);
     CHECK(employees[0].Id() == employee2.Id());
     CHECK(employees[0].name == employee2.name);

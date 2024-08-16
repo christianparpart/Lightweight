@@ -5,6 +5,7 @@
 #include "Field.hpp"
 #include "Logger.hpp"
 
+#include <array>
 #include <limits>
 #include <ranges>
 #include <string_view>
@@ -18,10 +19,26 @@ enum class SqlWhereOperator : uint8_t
     EQUAL,
     NOT_EQUAL,
     LESS_THAN,
-    GREATER_THAN,
     LESS_OR_EQUAL,
+    GREATER_THAN,
     GREATER_OR_EQUAL
 };
+
+constexpr std::string_view sqlOperatorString(SqlWhereOperator value) noexcept
+{
+    using namespace std::string_view_literals;
+
+    auto constexpr mappings = std::array {
+        "="sv, "!="sv, "<"sv, "<="sv, ">"sv, ">="sv,
+    };
+
+    std::string_view result;
+
+    if (std::to_underlying(value) < mappings.size())
+        result = mappings[std::to_underlying(value)];
+
+    return result;
+}
 
 template <typename Derived>
 struct Record: public AbstractRecord
@@ -406,7 +423,6 @@ SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnNa
     static_assert(std::is_move_constructible_v<Derived>,
                   "The model `Derived` must be move constructible for Where() to return the models.");
 
-    // return Where(Derived::FieldIndex(columnName), value, whereOperator);
     std::vector<Derived> allModels;
 
     Derived modelSchema;
@@ -418,12 +434,11 @@ SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnNa
 
     SqlStatement stmt;
 
-    auto const sqlQueryString = std::format("SELECT {} FROM {} WHERE {} = ?",
+    auto const sqlQueryString = std::format("SELECT {} FROM {} WHERE \"{}\" {} ?",
                                             *sqlColumnsString,
                                             modelSchema.TableName(),
-                                            columnName // TODO: quote column name
-                                                       // TODO: whereOperator
-    );
+                                            columnName,
+                                            sqlOperatorString(whereOperator));
 
     auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
 
@@ -451,7 +466,6 @@ SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnNa
             break;
 
         scopedModelSqlLogger += record;
-        std::println("Received row: {}", record.Inspect());
 
         allModels.emplace_back(std::move(record));
     }

@@ -389,13 +389,13 @@ struct SqlSimpleDataBinder
 };
 
 template <> struct SqlDataBinder<bool>: SqlSimpleDataBinder<bool, SQL_BIT, SQL_BIT> {};
-template <> struct SqlDataBinder<short>: SqlSimpleDataBinder<short, SQL_C_SSHORT, SQL_SMALLINT> {};
-template <> struct SqlDataBinder<unsigned short>: SqlSimpleDataBinder<unsigned short, SQL_C_USHORT, SQL_SMALLINT> {};
-template <> struct SqlDataBinder<int>: SqlSimpleDataBinder<int, SQL_C_SLONG, SQL_INTEGER> {};
-template <> struct SqlDataBinder<unsigned int>: SqlSimpleDataBinder<unsigned int, SQL_C_ULONG, SQL_INTEGER> {};
-template <> struct SqlDataBinder<long long>: SqlSimpleDataBinder<long long, SQL_C_SBIGINT, SQL_BIGINT> {};
-template <> struct SqlDataBinder<unsigned long long>: SqlSimpleDataBinder<unsigned long long, SQL_C_UBIGINT, SQL_BIGINT> {};
-template <> struct SqlDataBinder<size_t>: SqlSimpleDataBinder<size_t, SQL_C_UBIGINT, SQL_BIGINT> {};
+template <> struct SqlDataBinder<char>: SqlSimpleDataBinder<char, SQL_C_CHAR, SQL_CHAR> {};
+template <> struct SqlDataBinder<int16_t>: SqlSimpleDataBinder<int16_t, SQL_C_SSHORT, SQL_SMALLINT> {};
+template <> struct SqlDataBinder<uint16_t>: SqlSimpleDataBinder<uint16_t, SQL_C_USHORT, SQL_SMALLINT> {};
+template <> struct SqlDataBinder<int32_t>: SqlSimpleDataBinder<int32_t, SQL_C_SLONG, SQL_INTEGER> {};
+template <> struct SqlDataBinder<uint32_t>: SqlSimpleDataBinder<uint32_t, SQL_C_ULONG, SQL_INTEGER> {};
+template <> struct SqlDataBinder<int64_t>: SqlSimpleDataBinder<int64_t, SQL_C_SBIGINT, SQL_BIGINT> {};
+template <> struct SqlDataBinder<uint64_t>: SqlSimpleDataBinder<uint64_t, SQL_C_UBIGINT, SQL_BIGINT> {};
 template <> struct SqlDataBinder<float>: SqlSimpleDataBinder<float, SQL_C_FLOAT, SQL_REAL> {};
 template <> struct SqlDataBinder<double>: SqlSimpleDataBinder<double, SQL_C_DOUBLE, SQL_DOUBLE> {};
 // clang-format on

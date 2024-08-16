@@ -74,12 +74,10 @@ class SqlModelTestFixture: public SqlTestFixture
   public:
     SqlModelTestFixture()
     {
-        SqlLogger::SetLogger(SqlLogger::TraceLogger());
     }
 
     ~SqlModelTestFixture() override
     {
-        SqlLogger::SetLogger(SqlLogger::StandardLogger());
     }
 };
 
