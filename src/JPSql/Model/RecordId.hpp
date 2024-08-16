@@ -44,10 +44,10 @@ struct SqlDataBinder<Model::RecordId>
 };
 
 template <>
-struct std::formatter<Model::RecordId>: std::formatter<unsigned long long>
+struct std::formatter<Model::RecordId>: std::formatter<Model::RecordId::InnerType>
 {
     auto format(Model::RecordId id, format_context& ctx) const -> format_context::iterator
     {
-        return formatter<unsigned long long>::format(id.value, ctx);
+        return formatter<Model::RecordId::InnerType>::format(id.value, ctx);
     }
 };

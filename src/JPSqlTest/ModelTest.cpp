@@ -24,14 +24,22 @@ int main(int argc, char const* argv[])
             Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
         else if (argv[i] == "--trace-sql"sv)
             SqlLogger::SetLogger(SqlLogger::TraceLogger());
-        else if (argv[i] == "--help"sv)
+        else if (argv[i] == "--help"sv || argv[i] == "-h"sv)
         {
-            std::println("{} [--trace-model] [--trace-sql] [--] ...", argv[0]);
+            std::println("{} [--trace-model] [--trace-sql] [[--] [Catch2 flags ...]]", argv[0]);
             return EXIT_SUCCESS;
         }
         else if (argv[i] == "--"sv)
-            continue;
+        {
+            ++i;
+            break;
+        }
+        else
+            break;
     }
+
+    if (i < argc)
+        argv[i - 1] = argv[0];
 
     return Catch::Session().run(argc - (i - 1), argv + (i - 1));
 }
