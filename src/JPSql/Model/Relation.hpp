@@ -39,6 +39,14 @@ class HasMany: public Relation
         model.RegisterRelation(*this);
     }
 
+    HasMany(AbstractRecord& model, HasMany&& other) noexcept:
+        m_loaded { other.m_loaded },
+        m_model { other.m_model },
+        m_models { std::move(other.m_models) }
+    {
+        other.m_model = nullptr;
+    }
+
     SqlResult<bool> IsEmpty() const noexcept;
     SqlResult<size_t> Count() const noexcept;
 

@@ -48,6 +48,6 @@ struct std::formatter<Model::RecordId>: std::formatter<unsigned long long>
 {
     auto format(Model::RecordId id, format_context& ctx) const -> format_context::iterator
     {
-        return formatter<size_t>::format(id.value, ctx);
+        return formatter<unsigned long long>::format(id.value, ctx);
     }
 };

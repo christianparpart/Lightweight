@@ -7,6 +7,7 @@
 #include "RecordId.hpp"
 #include "StringLiteral.hpp"
 
+#include <cassert>
 #include <string_view>
 
 namespace Model
@@ -21,8 +22,8 @@ struct Record;
 // If either name or index are not known at compile time, leave them at their default values,
 // but at least one of them msut be known.
 template <typename T,
-          SQLSMALLINT TheTableColumnIndex = 0,
-          StringLiteral TheColumnName = "",
+          SQLSMALLINT TheTableColumnIndex,
+          StringLiteral TheColumnName,
           FieldValueRequirement TheRequirement = FieldValueRequirement::NOT_NULL>
 class Field final: public AbstractField
 {
@@ -48,13 +49,10 @@ class Field final: public AbstractField
         GetRecord().RegisterField(*this);
     }
 
-    explicit Field(AbstractRecord& record, Field&& field):
-        AbstractField {
-            record, TheTableColumnIndex, TheColumnName.value, ColumnTypeOf<T>, TheRequirement,
-        },
-        m_value { std::move(field.m_value) }
+    Field(AbstractRecord& record, Field&& other):
+        AbstractField { std::move(static_cast<AbstractField&&>(other)) },
+        m_value { std::move(other.m_value) }
     {
-        field.GetRecord().UnregisterField(*this);
         record.RegisterField(*this);
     }
 
@@ -91,6 +89,12 @@ class Field final: public AbstractField
     SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
     SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
     SqlResult<void> BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;
+
+    void LoadValueFrom(AbstractField& other) override
+    {
+        assert(Type() == other.Type());
+        m_value = std::move(static_cast<Field&>(other).m_value);
+    }
 
   private:
     T m_value {};
@@ -150,6 +154,12 @@ class BelongsTo final: public AbstractField
     SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
     SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
     SqlResult<void> BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;
+
+    void LoadValueFrom(AbstractField& other) override
+    {
+        assert(Type() == other.Type());
+        m_value = std::move(static_cast<BelongsTo&>(other).m_value);
+    }
 
     auto operator<=>(BelongsTo const& other) const noexcept
     {

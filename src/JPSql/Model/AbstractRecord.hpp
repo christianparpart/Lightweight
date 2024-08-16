@@ -23,17 +23,17 @@ struct AbstractRecord
 {
   public:
     AbstractRecord(std::string_view tableName, std::string_view primaryKey, RecordId id):
-        m_data { std::make_unique<Data>(Data {
-            .tableName { tableName },
-            .primaryKeyName { primaryKey },
-            .id { id },
-        }) }
+        m_data { std::make_unique<Data>(tableName, primaryKey, id) }
     {
     }
 
     AbstractRecord() = delete;
     AbstractRecord(AbstractRecord const&) = delete;
-    AbstractRecord(AbstractRecord&& other) = default;
+    AbstractRecord(AbstractRecord&& other) noexcept:
+        AbstractRecord { other.m_data->tableName, other.m_data->primaryKeyName, other.m_data->id }
+    {
+    }
+
     AbstractRecord& operator=(AbstractRecord const&) = delete;
     AbstractRecord& operator=(AbstractRecord&&) = delete;
     ~AbstractRecord() = default;
@@ -74,7 +74,10 @@ struct AbstractRecord
 
     [[nodiscard]] FieldList GetModifiedFields() const noexcept;
 
-    [[nodiscard]] FieldList const& AllFields() const noexcept { return m_data->fields; }
+    [[nodiscard]] FieldList const& AllFields() const noexcept
+    {
+        return m_data->fields;
+    }
 
   protected:
     struct Data

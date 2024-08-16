@@ -26,6 +26,41 @@ int main(int argc, char const* argv[])
 struct Author;
 struct Book;
 
+TEST_CASE_METHOD(SqlTestFixture, "Model.Move", "[model]")
+{
+    struct MovableRecord: public Model::Record<MovableRecord>
+    {
+        Model::Field<std::string, 2, "name"> name;
+
+        MovableRecord():
+            Record { "movables" },
+            name { *this }
+        {
+        }
+
+        MovableRecord(MovableRecord&& other):
+            Record { std::move(other) },
+            name { *this, std::move(other.name) }
+        {
+        }
+    };
+
+    // Ensure move constructor is working as expected.
+    // Inspect() touches the most internal data structures, so we use this call to verify.
+
+    REQUIRE(MovableRecord::CreateTable());
+
+    MovableRecord record;
+    record.name = "Foxy Fox";
+    record.Save();
+    auto const originalText = record.Inspect();
+    INFO("Original: " << originalText);
+
+    MovableRecord movedRecord(std::move(record));
+    auto const movedText = movedRecord.Inspect();
+    REQUIRE(movedText == originalText);
+}
+
 struct Author: Model::Record<Author>
 {
     Model::Field<std::string, 2, "name"> name;
@@ -37,7 +72,13 @@ struct Author: Model::Record<Author>
         books { *this }
     {
     }
-    Author(Author&&) = default;
+
+    Author(Author&& other):
+        Record { std::move(other) },
+        name { *this, std::move(other.name) },
+        books { *this, std::move(other.books) }
+    {
+    }
 };
 
 struct Book: Model::Record<Book>
@@ -51,6 +92,14 @@ struct Book: Model::Record<Book>
         title { *this },
         isbn { *this },
         author { *this }
+    {
+    }
+
+    Book(Book&& other):
+        Record { std::move(other) },
+        title { *this, std::move(other.title) },
+        isbn { *this, std::move(other.isbn) },
+        author { *this, std::move(other.author) }
     {
     }
 };
@@ -83,35 +132,6 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
     REQUIRE(book2.Id().value == 2);
     REQUIRE(Book::Count().value() == 2);
     REQUIRE(author.books.Count().value() == 2);
-}
-
-struct MovableRecord: public Model::Record<MovableRecord>
-{
-    Model::Field<std::string> name;
-
-    MovableRecord():
-        Record { "movables" },
-        name { *this }
-    {
-    }
-    MovableRecord(MovableRecord&&) = default;
-};
-
-TEST_CASE_METHOD(SqlTestFixture, "Model.Move", "[model]")
-{
-    // Ensure move constructor is working as expected.
-    // Inspect() touches the most internal data structures, so we use this call to verify.
-
-    REQUIRE(MovableRecord::CreateTable());
-
-    MovableRecord record;
-    record.name = "Foxy Fox";
-    record.Save();
-    auto const originalText = record.Inspect();
-
-    MovableRecord movedRecord(std::move(record));
-    auto const movedText = movedRecord.Inspect();
-    REQUIRE(movedText == originalText);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
@@ -239,6 +259,13 @@ struct ColumnTypesRecord: Model::Record<ColumnTypesRecord>
         textColumn { *this }
     {
     }
+
+    ColumnTypesRecord(ColumnTypesRecord&& other):
+        Record { std::move(other) },
+        stringColumn { *this, std::move(other.stringColumn) },
+        textColumn { *this, std::move(other.textColumn) }
+    {
+    }
 };
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.ColumnTypes", "[model]")
@@ -264,6 +291,13 @@ struct Employee: Model::Record<Employee>
         Record { "employees" },
         name { *this },
         isSenior { *this }
+    {
+    }
+
+    Employee(Employee&& other):
+        Record { std::move(other) },
+        name { *this, std::move(other.name) },
+        isSenior { *this, std::move(other.isSenior) }
     {
     }
 };

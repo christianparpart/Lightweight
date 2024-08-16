@@ -68,10 +68,12 @@ class AbstractField
     virtual SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const = 0;
     virtual SqlResult<void> BindOutputColumn(SqlStatement& stmt) = 0;
     virtual SqlResult<void> BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt) = 0;
+    virtual void LoadValueFrom(AbstractField& other) = 0;
 
     // clang-format off
     AbstractRecord& GetRecord() noexcept { return *m_record; }
     AbstractRecord const& GetRecord() const noexcept { return *m_record; }
+    void SetRecord(AbstractRecord& record) noexcept { m_record = &record; }
     bool IsModified() const noexcept { return m_modified; }
     void SetModified(bool value) noexcept { m_modified = value; }
     SQLSMALLINT Index() const noexcept { return m_index; }

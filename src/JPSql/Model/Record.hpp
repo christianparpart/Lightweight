@@ -30,9 +30,13 @@ struct Record: public AbstractRecord
     Record() = delete;
     Record(Record const&) = default;
     Record& operator=(Record const&) = delete;
-    Record(Record&&) = default;
     Record& operator=(Record&&) = default;
     ~Record() = default;
+
+    Record(Record&& other) noexcept:
+        AbstractRecord(std::move(other))
+    {
+    }
 
     // Returns a human readable string representation of this model.
     std::string Inspect() const noexcept;
@@ -399,6 +403,9 @@ SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnNa
                                                        Value const& value,
                                                        SqlWhereOperator whereOperator) noexcept
 {
+    static_assert(std::is_move_constructible_v<Derived>,
+                  "The model `Derived` must be move constructible for Where() to return the models.");
+
     // return Where(Derived::FieldIndex(columnName), value, whereOperator);
     std::vector<Derived> allModels;
 
@@ -415,7 +422,7 @@ SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnNa
                                             *sqlColumnsString,
                                             modelSchema.TableName(),
                                             columnName // TODO: quote column name
-                                            // TODO: whereOperator
+                                                       // TODO: whereOperator
     );
 
     auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
