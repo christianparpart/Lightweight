@@ -23,41 +23,45 @@ struct AbstractRecord
 {
   public:
     AbstractRecord(std::string_view tableName, std::string_view primaryKey, RecordId id):
-        m_tableName { tableName },
-        m_primaryKeyName { primaryKey },
-        m_id { id }
+        m_data { std::make_unique<Data>(Data {
+            .tableName { tableName },
+            .primaryKeyName { primaryKey },
+            .id { id },
+        }) }
     {
     }
 
     AbstractRecord() = delete;
-    AbstractRecord(AbstractRecord const&) = default;
+    AbstractRecord(AbstractRecord const&) = delete;
     AbstractRecord(AbstractRecord&& other) = default;
     AbstractRecord& operator=(AbstractRecord const&) = delete;
     AbstractRecord& operator=(AbstractRecord&&) = delete;
     ~AbstractRecord() = default;
 
     // clang-format off
-    std::string_view TableName() const noexcept { return m_tableName; }
-    std::string_view PrimaryKeyName() const noexcept { return m_primaryKeyName; }
-    RecordId Id() const noexcept { return m_id; }
+    std::string_view TableName() const noexcept { return m_data->tableName; }
+    std::string_view PrimaryKeyName() const noexcept { return m_data->primaryKeyName; }
+    RecordId Id() const noexcept { return m_data->id; }
 
-    void RegisterField(AbstractField& field) noexcept { m_fields.push_back(&field); }
+    void RegisterField(AbstractField& field) noexcept { m_data->fields.push_back(&field); }
 
     void UnregisterField(AbstractField const& field) noexcept
     {
+        if (!m_data)
+            return;
         // remove field by rotating it to the end and then popping it
-        auto it = std::ranges::find(m_fields, &field);
-        if (it != m_fields.end())
+        auto it = std::ranges::find(m_data->fields, &field);
+        if (it != m_data->fields.end())
         {
-            std::rotate(it, std::next(it), m_fields.end());
-            m_fields.pop_back();
+            std::rotate(it, std::next(it), m_data->fields.end());
+            m_data->fields.pop_back();
         }
     }
 
-    void RegisterRelation(Relation& relation) noexcept { m_relations.push_back(&relation); }
+    void RegisterRelation(Relation& relation) noexcept { m_data->relations.push_back(&relation); }
 
-    AbstractField const& GetField(SqlColumnIndex index) const noexcept { return *m_fields[index.value]; }
-    AbstractField& GetField(SqlColumnIndex index) noexcept { return *m_fields[index.value]; }
+    AbstractField const& GetField(SqlColumnIndex index) const noexcept { return *m_data->fields[index.value]; }
+    AbstractField& GetField(SqlColumnIndex index) noexcept { return *m_data->fields[index.value]; }
     // clang-format on
 
     void SetModified(bool value) noexcept;
@@ -68,16 +72,22 @@ struct AbstractRecord
 
     using FieldList = std::vector<AbstractField*>;
 
-    FieldList GetModifiedFields() const noexcept;
+    [[nodiscard]] FieldList GetModifiedFields() const noexcept;
+
+    [[nodiscard]] FieldList const& AllFields() const noexcept { return m_data->fields; }
 
   protected:
-    std::string_view m_tableName;      // Should be const, but we want to allow move semantics
-    std::string_view m_primaryKeyName; // Should be const, but we want to allow move semantics
-    RecordId m_id {};
+    struct Data
+    {
+        std::string_view tableName;      // Should be const, but we want to allow move semantics
+        std::string_view primaryKeyName; // Should be const, but we want to allow move semantics
+        RecordId id {};
 
-    bool m_modified = false;
-    FieldList m_fields;
-    std::vector<Relation*> m_relations;
+        bool modified = false;
+        FieldList fields;
+        std::vector<Relation*> relations;
+    };
+    std::unique_ptr<Data> m_data;
 };
 
 } // namespace Model

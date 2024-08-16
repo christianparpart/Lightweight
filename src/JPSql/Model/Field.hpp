@@ -54,6 +54,7 @@ class Field final: public AbstractField
         },
         m_value { std::move(field.m_value) }
     {
+        field.GetRecord().UnregisterField(*this);
         record.RegisterField(*this);
     }
 
