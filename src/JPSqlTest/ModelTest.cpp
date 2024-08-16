@@ -336,7 +336,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Where", "[model]")
 
     auto employees = Employee::Where("is_senior"sv, true).value();
     for (const auto& employee: employees)
-        std::println("Employee: {}", employee.Inspect()); // FIXME: breaks due to field name being NULL
+        INFO("Employee: {}" << employee.Inspect()); // FIXME: breaks due to field name being NULL
     REQUIRE(employees.size() == 2);
     CHECK(employees[0].Id() == employee2.Id());
     CHECK(employees[0].name == employee2.name);

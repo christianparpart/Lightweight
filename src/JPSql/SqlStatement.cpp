@@ -64,29 +64,29 @@ SqlResult<size_t> SqlStatement::NumColumnsAffected() const noexcept
 }
 
 // Retrieves the last insert ID of the last query's primary key.
-SqlResult<unsigned long long> SqlStatement::LastInsertId() noexcept
+SqlResult<size_t> SqlStatement::LastInsertId() noexcept
 {
     switch (m_connection->ServerType())
     {
         case SqlServerType::MICROSOFT_SQL:
             return ExecuteDirect("SELECT @@IDENTITY;").and_then([&] { return FetchRow(); }).and_then([&] {
-                return GetColumn<unsigned long long>(1);
+                return GetColumn<size_t>(1);
             });
         case SqlServerType::POSTGRESQL:
             return ExecuteDirect("SELECT lastval();").and_then([&] { return FetchRow(); }).and_then([&] {
-                return GetColumn<unsigned long long>(1);
+                return GetColumn<size_t>(1);
             });
         case SqlServerType::ORACLE:
             return ExecuteDirect("SELECT LAST_INSERT_ID() FROM DUAL;")
                 .and_then([&] { return FetchRow(); })
-                .and_then([&] { return GetColumn<unsigned long long>(1); });
+                .and_then([&] { return GetColumn<size_t>(1); });
         case SqlServerType::SQLITE:
             return ExecuteDirect("SELECT last_insert_rowid();").and_then([&] { return FetchRow(); }).and_then([&] {
-                return GetColumn<unsigned long long>(1);
+                return GetColumn<size_t>(1);
             });
         case SqlServerType::MYSQL:
             return ExecuteDirect("SELECT LAST_INSERT_ID();").and_then([&] { return FetchRow(); }).and_then([&] {
-                return GetColumn<unsigned long long>(1);
+                return GetColumn<size_t>(1);
             });
         case SqlServerType::UNKNOWN:
             return 0;

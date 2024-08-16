@@ -91,7 +91,7 @@ class SqlStatement final: public SqlDataBinderCallback
     [[nodiscard]] SqlResult<size_t> NumColumnsAffected() const noexcept;
 
     // Retrieves the last insert ID of the last query's primary key.
-    [[nodiscard]] SqlResult<unsigned long long> LastInsertId() noexcept;
+    [[nodiscard]] SqlResult<size_t> LastInsertId() noexcept;
 
     // Fetches the next row of the result set.
     [[nodiscard]] SqlResult<void> FetchRow() noexcept;
