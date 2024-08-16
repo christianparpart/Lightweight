@@ -101,7 +101,7 @@ class Field final: public AbstractField
 };
 
 // Represents a column in a table that is a foreign key to another table.
-template <typename ModelType,
+template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement = FieldValueRequirement::NOT_NULL>
@@ -142,10 +142,10 @@ class BelongsTo final: public AbstractField
     }
 
     BelongsTo& operator=(RecordId modelId) noexcept;
-    BelongsTo& operator=(Record<ModelType> const& model) noexcept;
+    BelongsTo& operator=(OtherRecord const& model) noexcept;
 
-    ModelType* operator->() noexcept; // TODO
-    ModelType& operator*() noexcept;  // TODO
+    OtherRecord* operator->() noexcept; // TODO
+    OtherRecord& operator*() noexcept;  // TODO
 
     constexpr static inline SQLSMALLINT ColumnIndex { TheColumnIndex };
     constexpr static inline std::string_view ColumnName { TheForeignKeyName.value };
@@ -180,6 +180,76 @@ class BelongsTo final: public AbstractField
 
   private:
     RecordId m_value {};
+};
+
+// Represents
+template <typename OtherRecord, SQLSMALLINT TheColumnIndex, StringLiteral TheForeignKeyName>
+class HasOne final: public AbstractField
+{
+  public:
+    explicit HasOne(AbstractRecord& record):
+        AbstractField {
+            record, TheColumnIndex, TheForeignKeyName.value, ColumnTypeOf<RecordId>, FieldValueRequirement::NULLABLE,
+        }
+    {
+        record.RegisterField(*this);
+    }
+
+    explicit HasOne(AbstractRecord& record, HasOne&& other):
+        AbstractField { std::move(other) },
+        m_value { std::move(other.m_value) },
+        m_otherRecord { std::move(other.m_otherRecord) }
+    {
+        record.RegisterField(*this);
+    }
+
+    HasOne& operator=(RecordId other) noexcept; // TODO
+    HasOne& operator=(OtherRecord const& other) noexcept; // TODO
+
+    OtherRecord& operator*() noexcept
+    {
+        RequireLoaded();
+        return *m_otherRecord;
+    }
+
+    OtherRecord* operator->() noexcept
+    {
+        RequireLoaded();
+        return &*m_otherRecord;
+    }
+
+    bool IsLoaded() const noexcept
+    {
+        return m_otherRecord.has_value();
+    }
+
+    SqlResult<void> Load() noexcept
+    {
+        if (m_otherRecord)
+            return {};
+
+        return OtherRecord::Find(TheColumnIndex, m_record->Id())
+            .and_then([&](auto&& model) -> SqlResult<void> {
+                m_otherRecord = std::move(model);
+                return {};
+            });
+    }
+
+    SqlResult<void> Reload()
+    {
+        m_otherRecord.reset();
+        return Load();
+    }
+
+  private:
+    void RequireLoaded() noexcept
+    {
+        if (!m_otherRecord)
+            Load();
+    }
+
+    RecordId m_value {};
+    std::optional<OtherRecord> m_otherRecord;
 };
 
 #pragma region Field<> implementation
@@ -273,15 +343,15 @@ BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator=(R
     return *this;
 }
 
-template <typename ModelType,
+template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-BelongsTo<ModelType, TheColumnIndex, TheForeignKeyName, TheRequirement>& BelongsTo<
-    ModelType,
+BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>& BelongsTo<
+    OtherRecord,
     TheColumnIndex,
     TheForeignKeyName,
-    TheRequirement>::operator=(Record<ModelType> const& model) noexcept
+    TheRequirement>::operator=(OtherRecord const& model) noexcept
 {
     SetModified(true);
     m_value = model.Id();
