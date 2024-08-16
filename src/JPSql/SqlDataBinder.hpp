@@ -366,7 +366,10 @@ class SqlDataBinderCallback
 };
 
 template <typename>
-struct SqlDataBinder;
+struct SqlDataBinder
+{
+    static_assert(false, "No SQL data binder available for this type.");
+};
 
 // clang-format off
 template <typename T, SQLSMALLINT TheCType, SQLINTEGER TheSqlType>
@@ -394,6 +397,8 @@ template <> struct SqlDataBinder<int16_t>: SqlSimpleDataBinder<int16_t, SQL_C_SS
 template <> struct SqlDataBinder<uint16_t>: SqlSimpleDataBinder<uint16_t, SQL_C_USHORT, SQL_SMALLINT> {};
 template <> struct SqlDataBinder<int32_t>: SqlSimpleDataBinder<int32_t, SQL_C_SLONG, SQL_INTEGER> {};
 template <> struct SqlDataBinder<uint32_t>: SqlSimpleDataBinder<uint32_t, SQL_C_ULONG, SQL_INTEGER> {};
+template <> struct SqlDataBinder<long long>: SqlSimpleDataBinder<long long, SQL_C_SBIGINT, SQL_BIGINT> {};
+template <> struct SqlDataBinder<unsigned long long>: SqlSimpleDataBinder<unsigned long long, SQL_C_UBIGINT, SQL_BIGINT> {};
 template <> struct SqlDataBinder<int64_t>: SqlSimpleDataBinder<int64_t, SQL_C_SBIGINT, SQL_BIGINT> {};
 template <> struct SqlDataBinder<uint64_t>: SqlSimpleDataBinder<uint64_t, SQL_C_UBIGINT, SQL_BIGINT> {};
 template <> struct SqlDataBinder<float>: SqlSimpleDataBinder<float, SQL_C_FLOAT, SQL_REAL> {};
@@ -880,17 +885,13 @@ struct SqlDataBinder<SqlVariant>
 
 template <typename T>
 concept SqlInputParameterBinder = requires(SQLHSTMT hStmt, SQLUSMALLINT column, T const& value) {
-    {
-        SqlDataBinder<T>::InputParameter(hStmt, column, value)
-    } -> std::same_as<SQLRETURN>;
+    { SqlDataBinder<T>::InputParameter(hStmt, column, value) } -> std::same_as<SQLRETURN>;
 };
 
 template <typename T>
 concept SqlOutputColumnBinder =
     requires(SQLHSTMT hStmt, SQLUSMALLINT column, T* result, SQLLEN* indicator, SqlDataBinderCallback& cb) {
-        {
-            SqlDataBinder<T>::OutputColumn(hStmt, column, result, indicator, cb)
-        } -> std::same_as<SQLRETURN>;
+        { SqlDataBinder<T>::OutputColumn(hStmt, column, result, indicator, cb) } -> std::same_as<SQLRETURN>;
     };
 
 template <typename T>
@@ -904,7 +905,5 @@ concept SqlInputParameterBatchBinder =
 
 template <typename T>
 concept SqlGetColumnNativeType = requires(SQLHSTMT hStmt, SQLUSMALLINT column, T* result, SQLLEN* indicator) {
-    {
-        SqlDataBinder<T>::GetColumn(hStmt, column, result, indicator)
-    } -> std::same_as<SQLRETURN>;
+    { SqlDataBinder<T>::GetColumn(hStmt, column, result, indicator) } -> std::same_as<SQLRETURN>;
 };
