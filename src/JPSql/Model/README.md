@@ -62,28 +62,22 @@ void demo()
 - [ ] Support (join) Associations (https://guides.rubyonrails.org/association_basics.html) (e.g. `Author::All().Join<Book>().Where<Book::isbn == "978-0-321-56384-2"`) (may need some higher level query builder)
 - [ ] Consider changing `SqlVariant` into a wrapped `std::variant` to allow convenient conversions between types (e.g. `SqlVariant v = 42; v.ToInt() == 42; v.As<int>() == 42; v.As<std::string>() == "42";`)
 
-## TODO: Associations
-
-See: https://guides.rubyonrails.org/association_basics.html
-
-- [x] `BelongsTo<T>` (basic foreign key support)
-- [ ] `BelongsTo<T>` (support self-joinings)
-- [ ] `HasOne<T>`
-- [ ] `HasMany<T>`
-- [ ] `HasOneThrough<T>`
-- [ ] `HasManyThrough<T>`
-
 ## Open TODOs
 
-- [ ] [JPSql] Add custom type `SqlText` for `TEXT` fields
+- [x] [JPSql] Add custom type `SqlText` for `TEXT` fields
 - [ ] [JPSql] Add custom type `SqlFixedString` for `CHAR(N)` fields
 - [ ] Add custom type `LegacyPrimaryKey` which does not make use of `AUTOINCREMENT` but auto-increments by first selecting the max value and incrementing it by one
 - [ ] Add test case for `LegacyPrimaryKey` (also to demonstrate how to use it)
 - [ ] Add std::formatter for `Record<T>`
-- [ ] Add test for `BelongsTo<>` (including eager & lazy-loading check)
-- [ ] Add test for `HasOne<>` (including eager & lazy-loading check)
-- [ ] Add test for `HasMany<>` (including eager & lazy-loading check)
-- [ ] Differenciate between VARCHAR (std::string) and TEXT (maybe SqlText<std::string>?)
+- [x] Add test for `BelongsTo<>` (including eager & lazy-loading check)
+- [x] Add test for `HasOne<>` (including eager & lazy-loading check)
+- [x] Add test for `HasMany<>` (including eager & lazy-loading check)
+- [x] Differenciate between VARCHAR (`std::string`) and TEXT (maybe `SqlText<std::string>`?)
 - [x] Make logging more useful, adding payload data
 - [x] remove debug prints
 - [x] add proper trace logging
+- [ ] Add `HasManyThrough<>` association
+- [ ] Add `HasOneThrough<>` association
+- [ ] Add `HasAndBelongsToMany<>` association
+- [ ] Add SQL query caching
+- [ ] Add lazy loading constraints (e.g. `Book::All().Where<Book::author_id == 1>`)
