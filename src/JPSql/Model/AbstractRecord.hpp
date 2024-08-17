@@ -38,6 +38,9 @@ struct AbstractRecord
     AbstractRecord& operator=(AbstractRecord&&) = delete;
     ~AbstractRecord() = default;
 
+    // Returns a human readable string representation of this model.
+    std::string Inspect() const noexcept;
+
     // clang-format off
     std::string_view TableName() const noexcept { return m_data->tableName; }
     std::string_view PrimaryKeyName() const noexcept { return m_data->primaryKeyName; }
@@ -91,3 +94,13 @@ struct AbstractRecord
 };
 
 } // namespace Model
+
+template <typename D>
+    requires std::derived_from<D, Model::AbstractRecord>
+struct std::formatter<D>: std::formatter<std::string>
+{
+    auto format(D const& record, format_context& ctx) const -> format_context::iterator
+    {
+        return formatter<string>::format(record.Inspect(), ctx);
+    }
+};

@@ -180,6 +180,9 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
     REQUIRE(book2.Id().value == 2);
     REQUIRE(Book::Count().value() == 2);
     REQUIRE(author.books.Count().value() == 2);
+
+    // Also take the chance to ensure the formatter works.
+    REQUIRE(std::format("{}", author) == author.Inspect());
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
@@ -198,7 +201,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
 
     Book bookLoaded;
     bookLoaded.Load(book.Id());
-    INFO("Book: " << book.Inspect());
+    INFO("Book: " << book);
     CHECK(bookLoaded.Id() == book.Id());
     CHECK(bookLoaded.title == book.title);
     CHECK(bookLoaded.isbn == book.isbn);
@@ -220,7 +223,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
     REQUIRE(book.Save());
 
     Book bookLoaded = Book::Find(book.Id()).value();
-    INFO("Book: " << book.Inspect());
+    INFO("Book: " << book);
     CHECK(bookLoaded.Id() == book.Id());     // primary key
     CHECK(bookLoaded.title == book.title);   // Field<>
     CHECK(bookLoaded.isbn == book.isbn);     // Field<>
@@ -371,7 +374,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Where", "[model]")
 
     auto employees = Employee::Where("is_senior"sv, true).value();
     for (const auto& employee: employees)
-        INFO("Employee: {}" << employee.Inspect()); // FIXME: breaks due to field name being NULL
+        INFO("Employee: {}" << employee); // FIXME: breaks due to field name being NULL
     REQUIRE(employees.size() == 2);
     CHECK(employees[0].Id() == employee2.Id());
     CHECK(employees[0].name == employee2.name);

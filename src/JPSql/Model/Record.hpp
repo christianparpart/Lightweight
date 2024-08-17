@@ -42,7 +42,7 @@ constexpr std::string_view sqlOperatorString(SqlWhereOperator value) noexcept
 }
 
 template <typename Derived>
-struct Record: public AbstractRecord
+struct Record: AbstractRecord
 {
   public:
     Record() = delete;
@@ -55,9 +55,6 @@ struct Record: public AbstractRecord
         AbstractRecord(std::move(other))
     {
     }
-
-    // Returns a human readable string representation of this model.
-    std::string Inspect() const noexcept;
 
     // Creates (or recreates a copy of) the model in the database.
     SqlResult<RecordId> Create();
@@ -121,7 +118,7 @@ struct Record: public AbstractRecord
     explicit Record(std::string_view tableName, std::string_view primaryKey = "id");
 };
 
-#pragma region Record<> implementation
+// {{{ Record<> implementation
 
 template <typename Derived>
 Record<Derived>::Record(std::string_view tableName, std::string_view primaryKey):
@@ -211,25 +208,6 @@ SqlResult<std::vector<Derived>> Record<Derived>::All() noexcept
         return std::unexpected { stmt.LastError() };
 
     return { std::move(allModels) };
-}
-
-template <typename Derived>
-std::string Record<Derived>::Inspect() const noexcept
-{
-    if (!m_data)
-        return "UNAVAILABLE";
-
-    detail::StringBuilder result;
-
-    // Reserve enough space for the output string (This is merely a guess, but it's better than nothing)
-    result.output.reserve(TableName().size() + AllFields().size() * 32);
-
-    result << "#<" << TableName() << ": id=" << Id().value;
-    for (auto const* field: AllFields())
-        result << ", " << field->Name() << "=" << field->InspectValue();
-    result << ">";
-
-    return std::move(*result);
 }
 
 template <typename Derived>
@@ -358,8 +336,8 @@ SqlResult<void> Record<Derived>::Load(ColumnName const& columnName, T const& val
 
     SqlStatement stmt;
 
-    auto const sqlQueryString =
-        std::format("SELECT {} FROM \"{}\" WHERE \"{}\" = {} LIMIT 1", *sqlColumnsString, TableName(), columnName, value);
+    auto const sqlQueryString = std::format(
+        "SELECT {} FROM \"{}\" WHERE \"{}\" = {} LIMIT 1", *sqlColumnsString, TableName(), columnName, value);
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, AllFields());
 
@@ -507,6 +485,6 @@ SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnNa
     return { std::move(allModels) };
 }
 
-#pragma endregion
+// }}}
 
 } // namespace Model

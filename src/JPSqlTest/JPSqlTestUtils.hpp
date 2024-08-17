@@ -87,6 +87,11 @@ inline std::ostream& operator<<(std::ostream& os, Model::RecordId value)
     return os << "ModelId { " << value.value << " }";
 }
 
+inline std::ostream& operator<<(std::ostream& os, Model::AbstractRecord const& value)
+{
+    return os << std::format("{}", value);
+}
+
 inline std::ostream& operator<<(std::ostream& os, SqlResult<void> const& result)
 {
     if (result)

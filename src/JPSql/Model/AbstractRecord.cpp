@@ -3,10 +3,30 @@
 #include "AbstractRecord.hpp"
 
 #include <algorithm>
+#include <format>
 #include <ranges>
+#include <string>
 
 namespace Model
 {
+
+std::string AbstractRecord::Inspect() const noexcept
+{
+    if (!m_data)
+        return "UNAVAILABLE";
+
+    detail::StringBuilder result;
+
+    // Reserve enough space for the output string (This is merely a guess, but it's better than nothing)
+    result.output.reserve(TableName().size() + AllFields().size() * 32);
+
+    result << "#<" << TableName() << ": id=" << Id().value;
+    for (auto const* field: AllFields())
+        result << ", " << field->Name() << "=" << field->InspectValue();
+    result << ">";
+
+    return *result;
+}
 
 void AbstractRecord::SetModified(bool value) noexcept
 {

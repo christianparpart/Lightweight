@@ -65,10 +65,7 @@ void demo()
 ## Open TODOs
 
 - [x] [JPSql] Add custom type `SqlText` for `TEXT` fields
-- [ ] [JPSql] Add custom type `SqlFixedString` for `CHAR(N)` fields
-- [ ] Add custom type `LegacyPrimaryKey` which does not make use of `AUTOINCREMENT` but auto-increments by first selecting the max value and incrementing it by one
-- [ ] Add test case for `LegacyPrimaryKey` (also to demonstrate how to use it)
-- [ ] Add std::formatter for `Record<T>`
+- [x] Add std::formatter for `Record<T>`
 - [x] Add test for `BelongsTo<>` (including eager & lazy-loading check)
 - [x] Add test for `HasOne<>` (including eager & lazy-loading check)
 - [x] Add test for `HasMany<>` (including eager & lazy-loading check)
@@ -80,4 +77,5 @@ void demo()
 - [ ] Add `HasOneThrough<>` association
 - [ ] Add `HasAndBelongsToMany<>` association
 - [ ] Add SQL query caching
-- [ ] Add lazy loading constraints (e.g. `Book::All().Where<Book::author_id == 1>`)
+- [ ] Add lazy loading constraints (e.g. something similar to `Book::All().Where<Book::author_id == 1>`)
+- [ ] Add ability to configure PK's auto-increment to be server-side (default) vs client-side. this must be a compile-time option (via template parameter)
