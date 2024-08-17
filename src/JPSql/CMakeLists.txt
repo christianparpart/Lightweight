@@ -14,6 +14,9 @@ set(HEADER_FILES
     SqlError.hpp
     SqlLogger.hpp
     SqlStatement.hpp
+    Model/Associations/BelongsTo.hpp
+    Model/Associations/HasOne.hpp
+    Model/Associations/HasMany.hpp
     Model/ColumnType.hpp
     Model/Detail.hpp
     Model/Logger.hpp
@@ -30,7 +33,6 @@ set(SOURCE_FILES
     SqlTransaction.cpp
     Model/AbstractRecord.cpp
     Model/Logger.cpp
-    Model/Record.cpp
 )
 
 add_library(JPSql STATIC)
