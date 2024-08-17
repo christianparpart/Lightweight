@@ -64,6 +64,9 @@ struct Record: public AbstractRecord
     // Reads the model from the database by given model ID.
     SqlResult<void> Load(RecordId id);
 
+    template <typename ColumnName, typename T>
+    SqlResult<void> Load(ColumnName const& columnName, T const& value) noexcept;
+
     // Updates the model in the database.
     SqlResult<void> Update();
 
@@ -86,7 +89,7 @@ struct Record: public AbstractRecord
     static SqlResult<Derived> Find(RecordId id);
 
     template <typename ColumnName, typename T>
-    static SqlResult<Derived> FindBy(ColumnName const& columnName, T const& value) noexcept;
+    static SqlResult<Derived> FindBy(ColumnName const& columnName, T const& value);
 
     // Retrieves all models of this kind from the database.
     static SqlResult<std::vector<Derived>> All() noexcept;
@@ -140,6 +143,16 @@ SqlResult<Derived> Record<Derived>::Find(RecordId id)
                   "The model `Derived` must be move constructible for Find() to return the model.");
     Derived model;
     return model.Load(id).and_then([&]() -> SqlResult<Derived> { return { std::move(model) }; });
+}
+
+template <typename Derived>
+template <typename ColumnName, typename T>
+SqlResult<Derived> Record<Derived>::FindBy(ColumnName const& columnName, T const& value)
+{
+    static_assert(std::is_move_constructible_v<Derived>,
+                  "The model `Derived` must be move constructible for Find() to return the model.");
+    Derived model;
+    return model.Load(columnName, value).and_then([&]() -> SqlResult<Derived> { return { std::move(model) }; });
 }
 
 template <typename Derived>
@@ -320,6 +333,13 @@ SqlResult<RecordId> Record<Derived>::Create()
 template <typename Derived>
 SqlResult<void> Record<Derived>::Load(RecordId id)
 {
+    return Load(PrimaryKeyName(), id);
+}
+
+template <typename Derived>
+template <typename ColumnName, typename T>
+SqlResult<void> Record<Derived>::Load(ColumnName const& columnName, T const& value) noexcept
+{
     detail::StringBuilder sqlColumnsString;
     sqlColumnsString << PrimaryKeyName();
     for (AbstractField const* field: AllFields())
@@ -328,14 +348,14 @@ SqlResult<void> Record<Derived>::Load(RecordId id)
     SqlStatement stmt;
 
     auto const sqlQueryString =
-        std::format("SELECT {} FROM {} WHERE {} = {} LIMIT 1", *sqlColumnsString, TableName(), PrimaryKeyName(), id);
+        std::format("SELECT {} FROM \"{}\" WHERE \"{}\" = {} LIMIT 1", *sqlColumnsString, TableName(), columnName, value);
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, AllFields());
 
     if (auto result = stmt.Prepare(sqlQueryString); !result)
         return std::unexpected { result.error() };
 
-    if (auto result = stmt.BindInputParameter(1, id); !result)
+    if (auto result = stmt.BindInputParameter(1, value); !result)
         return std::unexpected { result.error() };
 
     if (auto result = stmt.BindOutputColumn(1, &m_data->id.value); !result)

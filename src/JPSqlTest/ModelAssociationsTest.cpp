@@ -36,13 +36,11 @@ struct Track: Model::Record<Track>
 {
     Model::Field<std::string, 2, "title"> title;
     Model::BelongsTo<Artist, 3, "artist_id"> artist;
-    //Model::HasOne<Artist, 4, "featured_artist_id"> featuredArtist;
 
     Track():
         Record { "tracks" },
         title { *this },
         artist { *this }
-        // , featuredArtist { *this }
     {
     }
 
@@ -50,10 +48,26 @@ struct Track: Model::Record<Track>
         Record { std::move(other) },
         title { *this, std::move(other.title) },
         artist { *this, std::move(other.artist) }
-        //, featuredArtist { *this, std::move(other.featuredArtist) }
     {
     }
 };
+
+TEST_CASE_METHOD(SqlModelTestFixture, "Model.BelongsTo", "[model]")
+{
+    REQUIRE(Artist::CreateTable());
+    REQUIRE(Track::CreateTable());
+
+    Artist artist;
+    artist.name = "Snoop Dog";
+    REQUIRE(artist.Save());
+
+    Track track1;
+    track1.title = "Wuff";
+    track1.artist = artist; // track1 "BelongsTo" artist
+    REQUIRE(track1.Save());
+
+    CHECK(track1.artist->Inspect() == artist.Inspect());
+}
 
 TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasMany", "[model]")
 {
@@ -86,24 +100,63 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasMany", "[model]")
 
 TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasOne", "[model]")
 {
-    REQUIRE(Artist::CreateTable());
-    REQUIRE(Track::CreateTable());
+    struct Suppliers;
+    struct Account;
 
-    Artist artist;
-    artist.name = "Snoop Dog";
-    REQUIRE(artist.Save());
+    struct Suppliers: Model::Record<Suppliers>
+    {
+        Model::Field<std::string, 2, "name"> name;
+        Model::HasOne<Account, "supplier_id"> account;
 
-    Artist featuredArtist;
-    featuredArtist.name = "Snoop Dog";
-    REQUIRE(featuredArtist.Save());
+        Suppliers():
+            Record { "suppliers" },
+            name { *this },
+            account { *this }
+        {
+        }
 
-    // Track track1;
-    // track1.title = "Wuff";
-    // track1.artist = artist;
-    // track1.featuredArtist = featuredArtist;
-    // REQUIRE(track1.Save());
+        Suppliers(Suppliers&& other) noexcept:
+            Record { std::move(other) },
+            name { *this, std::move(other.name) },
+            account { *this, std::move(other.account) }
+        {
+        }
+    };
 
-    // REQUIRE(track1.featuredArtist.IsLoaded() == false);
-    // REQUIRE(track1.featuredArtist->Inspect() == featuredArtist.Inspect());
-    // REQUIRE(track1.featuredArtist.IsLoaded() == true);
+    struct Account: Model::Record<Account>
+    {
+        Model::Field<std::string, 2, "iban"> iban;
+        Model::BelongsTo<Suppliers, 3, "supplier_id"> supplier;
+
+        Account():
+            Record { "accounts" },
+            iban { *this },
+            supplier { *this }
+        {
+        }
+
+        Account(Account&& other) noexcept:
+            Record { std::move(other) },
+            iban { *this, std::move(other.iban) },
+            supplier { *this, std::move(other.supplier) }
+        {
+        }
+    };
+
+    REQUIRE(Suppliers::CreateTable());
+    REQUIRE(Account::CreateTable());
+
+    Suppliers supplier;
+    supplier.name = "Supplier";
+    REQUIRE(supplier.Save());
+
+    Account account;
+    account.iban = "DE123456789";
+    account.supplier = supplier;
+    REQUIRE(account.Save());
+
+    REQUIRE(supplier.account.IsLoaded() == false);
+    REQUIRE(supplier.account.Load());
+    REQUIRE(supplier.account.IsLoaded() == true);
+    REQUIRE(supplier.account->Inspect() == account.Inspect());
 }

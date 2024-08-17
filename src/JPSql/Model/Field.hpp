@@ -25,7 +25,7 @@ template <typename T,
           SQLSMALLINT TheTableColumnIndex,
           StringLiteral TheColumnName,
           FieldValueRequirement TheRequirement = FieldValueRequirement::NOT_NULL>
-class Field final: public AbstractField
+class Field: public AbstractField
 {
   public:
     explicit Field(AbstractRecord& record):
@@ -129,23 +129,20 @@ class BelongsTo final: public AbstractField
         GetRecord().RegisterField(*this);
     }
 
-    ~BelongsTo()
-    {
-        // TODO?: GetRecord().UnregisterField(*this);
-    }
-
     explicit BelongsTo(AbstractRecord& record, BelongsTo&& other):
-        AbstractField { std::move(other) },
-        m_value { other.m_value }
+        AbstractField { std::move(static_cast<AbstractField&&>(other)) },
+        m_value { std::move(other.m_value) }
     {
         record.RegisterField(*this);
     }
 
+    ~BelongsTo() = default;
+
     BelongsTo& operator=(RecordId modelId) noexcept;
     BelongsTo& operator=(OtherRecord const& model) noexcept;
 
-    OtherRecord* operator->() noexcept; // TODO
-    OtherRecord& operator*() noexcept;  // TODO
+    OtherRecord* operator->() noexcept;
+    OtherRecord& operator*() noexcept;
 
     constexpr static inline SQLSMALLINT ColumnIndex { TheColumnIndex };
     constexpr static inline std::string_view ColumnName { TheForeignKeyName.value };
@@ -159,6 +156,7 @@ class BelongsTo final: public AbstractField
     {
         assert(Type() == other.Type());
         m_value = std::move(static_cast<BelongsTo&>(other).m_value);
+        m_otherRecord.reset();
     }
 
     auto operator<=>(BelongsTo const& other) const noexcept
@@ -178,67 +176,16 @@ class BelongsTo final: public AbstractField
         return m_value == other.m_value;
     }
 
-  private:
-    RecordId m_value {};
-};
-
-// Represents
-template <typename OtherRecord, SQLSMALLINT TheColumnIndex, StringLiteral TheForeignKeyName>
-class HasOne final: public AbstractField
-{
-  public:
-    explicit HasOne(AbstractRecord& record):
-        AbstractField {
-            record, TheColumnIndex, TheForeignKeyName.value, ColumnTypeOf<RecordId>, FieldValueRequirement::NULLABLE,
-        }
-    {
-        record.RegisterField(*this);
-    }
-
-    explicit HasOne(AbstractRecord& record, HasOne&& other):
-        AbstractField { std::move(other) },
-        m_value { std::move(other.m_value) },
-        m_otherRecord { std::move(other.m_otherRecord) }
-    {
-        record.RegisterField(*this);
-    }
-
-    HasOne& operator=(RecordId other) noexcept; // TODO
-    HasOne& operator=(OtherRecord const& other) noexcept; // TODO
-
-    OtherRecord& operator*() noexcept
-    {
-        RequireLoaded();
-        return *m_otherRecord;
-    }
-
-    OtherRecord* operator->() noexcept
-    {
-        RequireLoaded();
-        return &*m_otherRecord;
-    }
-
-    bool IsLoaded() const noexcept
-    {
-        return m_otherRecord.has_value();
-    }
-
     SqlResult<void> Load() noexcept
     {
         if (m_otherRecord)
             return {};
 
-        return OtherRecord::Find(TheColumnIndex, m_record->Id())
-            .and_then([&](auto&& model) -> SqlResult<void> {
-                m_otherRecord = std::move(model);
+        return OtherRecord::Find(m_value)
+            .and_then([&](auto&& otherRecord) -> SqlResult<void> {
+                m_otherRecord.emplace(std::move(otherRecord));
                 return {};
             });
-    }
-
-    SqlResult<void> Reload()
-    {
-        m_otherRecord.reset();
-        return Load();
     }
 
   private:
@@ -358,40 +305,60 @@ BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>& Belon
     return *this;
 }
 
-template <typename Model,
+template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-std::string BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::InspectValue() const
+OtherRecord* BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator->() noexcept
+{
+    RequireLoaded();
+    return &*m_otherRecord;
+}
+
+template <typename OtherRecord,
+          SQLSMALLINT TheColumnIndex,
+          StringLiteral TheForeignKeyName,
+          FieldValueRequirement TheRequirement>
+OtherRecord& BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator*() noexcept
+{
+    RequireLoaded();
+    return *m_otherRecord;
+}
+
+template <typename OtherRecord,
+          SQLSMALLINT TheColumnIndex,
+          StringLiteral TheForeignKeyName,
+          FieldValueRequirement TheRequirement>
+std::string BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::InspectValue() const
 {
     return std::to_string(m_value.value);
 }
 
-template <typename Model,
+template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-SqlResult<void> BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindInputParameter(
+SqlResult<void> BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindInputParameter(
     SQLSMALLINT parameterIndex, SqlStatement& stmt) const
 {
     return stmt.BindInputParameter(parameterIndex, m_value.value);
 }
 
-template <typename Model,
+template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-SqlResult<void> BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
+SqlResult<void> BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
     SqlStatement& stmt)
 {
     return stmt.BindOutputColumn(TheColumnIndex, &m_value.value);
 }
 
-template <typename Model,
+template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-SqlResult<void> BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
+SqlResult<void> BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
     SQLSMALLINT outputIndex, SqlStatement& stmt)
 {
     return stmt.BindOutputColumn(outputIndex, &m_value.value);
