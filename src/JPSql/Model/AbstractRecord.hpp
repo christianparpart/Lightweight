@@ -11,7 +11,6 @@ namespace Model
 {
 
 class AbstractField;
-class Relation;
 
 struct SqlColumnIndex
 {
@@ -58,8 +57,6 @@ struct AbstractRecord
         }
     }
 
-    void RegisterRelation(Relation& relation) noexcept { m_data->relations.push_back(&relation); }
-
     AbstractField const& GetField(SqlColumnIndex index) const noexcept { return *m_data->fields[index.value]; }
     AbstractField& GetField(SqlColumnIndex index) noexcept { return *m_data->fields[index.value]; }
     // clang-format on
@@ -88,7 +85,6 @@ struct AbstractRecord
 
         bool modified = false;
         FieldList fields;
-        std::vector<Relation*> relations;
     };
     std::unique_ptr<Data> m_data;
 };
