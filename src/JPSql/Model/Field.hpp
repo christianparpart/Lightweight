@@ -8,6 +8,7 @@
 #include "StringLiteral.hpp"
 
 #include <cassert>
+#include <memory>
 #include <string_view>
 
 namespace Model
@@ -183,7 +184,7 @@ class BelongsTo final: public AbstractField
 
         return OtherRecord::Find(m_value)
             .and_then([&](auto&& otherRecord) -> SqlResult<void> {
-                m_otherRecord.emplace(std::move(otherRecord));
+                m_otherRecord = std::make_shared<OtherRecord>(std::move(otherRecord));
                 return {};
             });
     }
@@ -196,7 +197,10 @@ class BelongsTo final: public AbstractField
     }
 
     RecordId m_value {};
-    std::optional<OtherRecord> m_otherRecord;
+    std::shared_ptr<OtherRecord> m_otherRecord;
+
+    // We decided to use shared_ptr here, because we do not want to require to know the size of the OtherRecord
+    // at declaration time.
 };
 
 #pragma region Field<> implementation
