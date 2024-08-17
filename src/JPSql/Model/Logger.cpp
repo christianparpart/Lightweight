@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Detail.hpp"
 #include "Field.hpp"
 #include "Logger.hpp"

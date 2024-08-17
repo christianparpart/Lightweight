@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "AbstractField.hpp"
 #include "AbstractRecord.hpp"
 

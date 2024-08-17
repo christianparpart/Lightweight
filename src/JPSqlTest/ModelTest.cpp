@@ -1,7 +1,4 @@
-#include "../JPSql/Model/Logger.hpp"
-#include "../JPSql/Model/Record.hpp"
-#include "../JPSql/Model/Relation.hpp"
-#include "../JPSql/Model/Utils.hpp"
+#include "../JPSql/Model.hpp"
 #include "../JPSql/SqlConnection.hpp"
 #include "JPSqlTestUtils.hpp"
 
