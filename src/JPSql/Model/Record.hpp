@@ -65,6 +65,10 @@ struct Record: public AbstractRecord
     // Reads the model from the database by given model ID.
     SqlResult<void> Load(RecordId id);
 
+    // Re-reads the model from the database.
+    SqlResult<void> Reload();
+
+    // Reads the model from the database by given column name and value.
     template <typename ColumnName, typename T>
     SqlResult<void> Load(ColumnName const& columnName, T const& value) noexcept;
 
@@ -335,6 +339,12 @@ template <typename Derived>
 SqlResult<void> Record<Derived>::Load(RecordId id)
 {
     return Load(PrimaryKeyName(), id);
+}
+
+template <typename Derived>
+SqlResult<void> Record<Derived>::Reload()
+{
+    return Load(PrimaryKeyName(), Id());
 }
 
 template <typename Derived>

@@ -79,6 +79,36 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Move", "[model]")
     REQUIRE(movedText == originalText);
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "Model.Field: SqlTrimmedString", "[model]")
+{
+    struct TrimmedStringRecord: Model::Record<TrimmedStringRecord>
+    {
+        Model::Field<SqlTrimmedString, 2, "name"> name;
+
+        TrimmedStringRecord():
+            Record { "trimmed_strings" },
+            name { *this }
+        {
+        }
+
+        TrimmedStringRecord(TrimmedStringRecord&& other):
+            Record { std::move(other) },
+            name { *this, std::move(other.name) }
+        {
+        }
+    };
+
+    REQUIRE(TrimmedStringRecord::CreateTable());
+
+    TrimmedStringRecord record;
+    record.name = SqlTrimmedString { "  Hello, World!  " };
+    REQUIRE(record.Save());
+
+    REQUIRE(record.Reload()); // Ensure we fetch name from the database and got trimmed on fetch.
+
+    CHECK(record.name == SqlTrimmedString { "  Hello, World!" });
+}
+
 struct Author: Model::Record<Author>
 {
     Model::Field<std::string, 2, "name"> name;

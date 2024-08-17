@@ -29,6 +29,15 @@ struct SqlTrimmedString
     std::strong_ordering operator<=>(SqlTrimmedString const&) const noexcept = default;
 };
 
+template <>
+struct std::formatter<SqlTrimmedString>: std::formatter<std::string>
+{
+    auto format(SqlTrimmedString const& text, format_context& ctx) const -> format_context::iterator
+    {
+        return std::formatter<std::string>::format(text.value, ctx);
+    }
+};
+
 // Represents a TEXT field in a SQL database.
 //
 // This is used for large texts, e.g. up to 65k characters.
@@ -613,6 +622,11 @@ struct SqlDataBinder<SqlTrimmedString>
         while (n > 0 && std::isspace((*boundOutputString)[n - 1]))
             --n;
         StringTraits::Resize(boundOutputString, n);
+    }
+
+    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlTrimmedString const& value) noexcept
+    {
+        return SqlDataBinder<InnerStringType>::InputParameter(stmt, column, value.value);
     }
 
     static SQLRETURN OutputColumn(SQLHSTMT stmt,

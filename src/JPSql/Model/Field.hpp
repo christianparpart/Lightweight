@@ -76,6 +76,9 @@ class Field: public AbstractField
     template <typename U, SQLSMALLINT I, StringLiteral N, FieldValueRequirement R>
     auto operator!=(Field<U, I, N, R> const& other) const noexcept { return m_value != other.m_value; }
 
+    bool operator==(T const& other) const noexcept { return m_value == other; }
+    bool operator!=(T const& other) const noexcept { return m_value != other; }
+
     T const& Value() const noexcept { return m_value; }
     void SetData(T&& value) { SetModified(true); m_value = std::move(value); }
     void SetNull() { SetModified(true); m_value = T {}; }
@@ -130,7 +133,13 @@ std::string Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::Inspec
         result << std::quoted(m_value, '\'');
         return result.str();
     }
-    if constexpr (std::is_same_v<T, SqlText>)
+    else if constexpr (std::is_same_v<T, SqlTrimmedString>)
+    {
+        std::stringstream result;
+        result << std::quoted(m_value.value, '\'');
+        return result.str();
+    }
+    else if constexpr (std::is_same_v<T, SqlText>)
     {
         std::stringstream result;
         result << std::quoted(m_value.value, '\'');
