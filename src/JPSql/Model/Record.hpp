@@ -78,6 +78,14 @@ struct Record: AbstractRecord
     // Deletes the model from the database.
     SqlResult<void> Destroy();
 
+    // TODO:
+    // template <typename OtherRecord> static ModelQueryBuilder<Derived, OtherRecord> Joins() noexcept; // TODO
+    //
+    // static ModelQueryBuilder<Derived> Where(std::string_view condition) noexcept;
+    //
+    // template <typename... JoinModel>
+    // static DynamicRecord<JoinModel...> Joins(); // TODO
+
     // Updates all models with the given changes in the modelChanges model.
     static SqlResult<void> UpdateAll(Derived const& modelChanges) noexcept;
 
