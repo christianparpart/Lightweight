@@ -642,3 +642,25 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: time")
         REQUIRE(actual == expected);
     }
 }
+
+// TODO: do we want this? LIKE THAT?
+// #include <JPSql/SqlQueryBuilder.hpp>
+// TEST_CASE_METHOD(SqlTestFixture, "SqlBasicQueryBuilder")
+// {
+// //     auto stmt = SqlStatement {};
+// //     REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT NOT NULL, Number INTEGER NOT NULL)"));
+// //     REQUIRE(stmt.Prepare("INSERT INTO Test (Value, Number) VALUES (?, ?)"));
+// //     REQUIRE(stmt.Execute("Alice", 42));
+// //     REQUIRE(stmt.Execute("Bob", 43));
+// //     REQUIRE(stmt.Execute("Charlie", 44));
+// //     REQUIRE(stmt.Execute("David", 45));
+//
+//     CHECK(SqlBasicQueryBuilder::From("Test").Select("*").Where("Number", 43).First()
+//           == "SELECT * FROM \"Test\" WHERE \"Number\" = ? LIMIT 1");
+//
+//     CHECK(SqlBasicQueryBuilder::From("Test").Select("foo").Where("Number", 43).First()
+//           == "SELECT \"foo\" FROM \"Test\" WHERE \"Number\" = ? LIMIT 1");
+//
+//     CHECK(SqlBasicQueryBuilder::From("Test").Select("foo", "bar").Where("Number", 43).First()
+//           == "SELECT \"foo\", \"bar\" FROM \"Test\" WHERE \"Number\" = ? LIMIT 1");
+// }

@@ -35,6 +35,8 @@ class SqlStatement final: public SqlDataBinderCallback
     // Construct a new SqlStatement object, using a new connection, and connect to the default database.
     SqlStatement() noexcept;
 
+    SqlStatement(SqlStatement&&) noexcept = default;
+
     // Construct a new SqlStatement object, using the given connection.
     SqlStatement(SqlConnection& relatedConnection) noexcept;
 

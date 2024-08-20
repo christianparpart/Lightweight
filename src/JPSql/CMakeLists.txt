@@ -9,14 +9,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 set(HEADER_FILES
-    SqlConcepts.hpp
-    SqlConnection.hpp
-    SqlError.hpp
-    SqlLogger.hpp
-    SqlStatement.hpp
     Model/Associations/BelongsTo.hpp
-    Model/Associations/HasOne.hpp
     Model/Associations/HasMany.hpp
+    Model/Associations/HasOne.hpp
     Model/ColumnType.hpp
     Model/Detail.hpp
     Model/Logger.hpp
@@ -24,15 +19,20 @@ set(HEADER_FILES
     Model/Relation.hpp
     Model/StringLiteral.hpp
     Model/Utils.hpp
+    SqlConcepts.hpp
+    SqlConnection.hpp
+    SqlError.hpp
+    SqlLogger.hpp
+    SqlStatement.hpp
 )
 
 set(SOURCE_FILES
+    Model/AbstractRecord.cpp
+    Model/Logger.cpp
     SqlConnection.cpp
     SqlLogger.cpp
     SqlStatement.cpp
     SqlTransaction.cpp
-    Model/AbstractRecord.cpp
-    Model/Logger.cpp
 )
 
 add_library(JPSql STATIC)
