@@ -12,11 +12,9 @@ if(NOT WIN32)
     find_package(SQLite3 REQUIRED)
     include_directories(${SQLITE3_INCLUDE_DIR})
 
-    # find unixodbc via pkg-config
+    # find unixODBC via pkg-config
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(ODBC REQUIRED IMPORTED_TARGET odbc)
-    include_directories(${ODBC_INCLUDE_DIRS})
-    link_directories(${ODBC_LIBRARY_DIRS})
+    pkg_check_modules(ODBC REQUIRED odbc)
 endif()
 
 set(HEADER_FILES
@@ -66,16 +64,14 @@ if(MSVC)
     target_compile_options(JPSql PRIVATE /W4 /WX)
     target_link_libraries(JPSql PUBLIC odbc32)
 else()
+    target_compile_options(JPSql PUBLIC ${ODBC_CFLAGS})
+    target_link_libraries(JPSql PUBLIC ${ODBC_LDFLAGS})
+
     target_compile_options(JPSql PRIVATE -Wall -Wextra -pedantic -Werror)
-    #target_link_libraries(JPSql PUBLIC unixodbc) # unixODBC::unixODBC
+
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_link_libraries(JPSql PUBLIC stdc++exp) # GCC >= 14
     endif()
-endif()
-
-if(NOT WIN32)
-    target_link_libraries(JPSql ${SQLITE3_LIBRARY})
-    target_link_libraries(JPSql ${odbc_LIBRARY})
 endif()
 
 enable_testing()
@@ -83,13 +79,17 @@ find_package(Catch2 REQUIRED)
 
 add_executable(JPSqlTest)
 target_compile_features(JPSqlTest PUBLIC cxx_std_23)
-target_link_libraries(JPSqlTest PRIVATE JPSql::JPSql Catch2::Catch2)
+set(TEST_LIBRARIES Catch2::Catch2 JPSql::JPSql)
+if(NOT MSVC)
+    set(TEST_LIBRARIES ${TEST_LIBRARIES} odbc ${SQLITE3_LIBRARY}) # FIXME: should be PkgConfig::ODBC in JPSql target already
+endif()
+target_link_libraries(JPSqlTest PRIVATE ${TEST_LIBRARIES})
 target_sources(JPSqlTest PRIVATE ../JPSqlTest/JPSqlTest.cpp)
 add_test(NAME JPSqlTest COMMAND JPSqlTest)
 
 add_executable(JPSqlModelTest)
 target_compile_features(JPSqlModelTest PUBLIC cxx_std_23)
-target_link_libraries(JPSqlModelTest PRIVATE JPSql::JPSql Catch2::Catch2)
+target_link_libraries(JPSqlModelTest PRIVATE ${TEST_LIBRARIES})
 target_sources(JPSqlModelTest PRIVATE
     ../JPSqlTest/ModelTest.cpp
     ../JPSqlTest/ModelAssociationsTest.cpp
