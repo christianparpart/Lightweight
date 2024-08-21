@@ -8,6 +8,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
+if(NOT WIN32)
+    find_package(SQLite3 REQUIRED)
+    include_directories(${SQLITE3_INCLUDE_DIR})
+
+    # find unixodbc via pkg-config
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(ODBC REQUIRED IMPORTED_TARGET odbc)
+    include_directories(${ODBC_INCLUDE_DIRS})
+    link_directories(${ODBC_LIBRARY_DIRS})
+endif()
+
 set(HEADER_FILES
     Model/Associations/BelongsTo.hpp
     Model/Associations/HasMany.hpp
@@ -41,8 +52,6 @@ target_compile_features(JPSql PUBLIC cxx_std_23)
 target_sources(JPSql PRIVATE ${SOURCE_FILES})
 # target_sources(JPSql PUBLIC ${HEADER_FILES})
 
-# find_package(unixODBC REQUIRED)
-
 if(CLANG_TIDY_EXE)
     set_target_properties(JPSql PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
 endif()
@@ -58,10 +67,15 @@ if(MSVC)
     target_link_libraries(JPSql PUBLIC odbc32)
 else()
     target_compile_options(JPSql PRIVATE -Wall -Wextra -pedantic -Werror)
-    target_link_libraries(JPSql PUBLIC odbc) # unixODBC::unixODBC
+    #target_link_libraries(JPSql PUBLIC unixodbc) # unixODBC::unixODBC
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_link_libraries(JPSql PUBLIC stdc++exp) # GCC >= 14
     endif()
+endif()
+
+if(NOT WIN32)
+    target_link_libraries(JPSql ${SQLITE3_LIBRARY})
+    target_link_libraries(JPSql ${odbc_LIBRARY})
 endif()
 
 enable_testing()

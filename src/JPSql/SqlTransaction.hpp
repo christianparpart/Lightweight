@@ -47,7 +47,6 @@ class SqlTransaction
 
   private:
     SQLHDBC m_hDbc;
-    mutable SqlError m_lastError {};
     bool m_done { false };
     SqlTransactionMode m_defaultMode;
 };

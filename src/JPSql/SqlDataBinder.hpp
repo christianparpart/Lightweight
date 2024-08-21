@@ -6,6 +6,7 @@
 
 #include "SqlLogger.hpp"
 
+#include <charconv>
 #include <chrono>
 #include <compare>
 #include <cstring>
@@ -410,9 +411,12 @@ template <> struct SqlDataBinder<int64_t>: SqlSimpleDataBinder<int64_t, SQL_C_SB
 template <> struct SqlDataBinder<uint64_t>: SqlSimpleDataBinder<uint64_t, SQL_C_UBIGINT, SQL_BIGINT> {};
 template <> struct SqlDataBinder<float>: SqlSimpleDataBinder<float, SQL_C_FLOAT, SQL_REAL> {};
 template <> struct SqlDataBinder<double>: SqlSimpleDataBinder<double, SQL_C_DOUBLE, SQL_DOUBLE> {};
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__APPLE__)
 template <> struct SqlDataBinder<long long>: SqlSimpleDataBinder<long long, SQL_C_SBIGINT, SQL_BIGINT> {};
 template <> struct SqlDataBinder<unsigned long long>: SqlSimpleDataBinder<unsigned long long, SQL_C_UBIGINT, SQL_BIGINT> {};
+#endif
+#if defined(__APPLE__) // size_t is a different type on macOS
+template <> struct SqlDataBinder<std::size_t>: SqlSimpleDataBinder<std::size_t, SQL_C_SBIGINT, SQL_BIGINT> {};
 #endif
 // clang-format on
 
@@ -678,10 +682,10 @@ struct SqlDataBinder<SqlDate>
     }
 
     static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLUSMALLINT column, SqlDate* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
+        SQLHSTMT stmt, SQLUSMALLINT column, SqlDate* result, SQLLEN* /*indicator*/, SqlDataBinderCallback& cb) noexcept
     {
-        cb.PlanPostProcessOutputColumn(
-            [indicator, result]() { result->value = SqlDate::ConvertToNative(result->sqlValue); });
+        // TODO: handle indicator to check for NULL values
+        cb.PlanPostProcessOutputColumn([result]() { result->value = SqlDate::ConvertToNative(result->sqlValue); });
         return SQLBindCol(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), nullptr);
     }
 
@@ -713,10 +717,10 @@ struct SqlDataBinder<SqlTime>
     }
 
     static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLUSMALLINT column, SqlTime* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
+        SQLHSTMT stmt, SQLUSMALLINT column, SqlTime* result, SQLLEN* /*indicator*/, SqlDataBinderCallback& cb) noexcept
     {
-        cb.PlanPostProcessOutputColumn(
-            [indicator, result]() { result->value = SqlTime::ConvertToNative(result->sqlValue); });
+        // TODO: handle indicator to check for NULL values
+        cb.PlanPostProcessOutputColumn([result]() { result->value = SqlTime::ConvertToNative(result->sqlValue); });
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), nullptr);
     }
 
@@ -770,7 +774,7 @@ struct SqlDataBinder<SqlTimestamp>
     {
         *indicator = sizeof(result->sqlValue);
         cb.PlanPostProcessOutputColumn(
-            [indicator, result]() { result->value = SqlTimestamp::ConvertToNative(result->sqlValue); });
+            [result]() { result->value = SqlTimestamp::ConvertToNative(result->sqlValue); });
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, 0, indicator);
     }
 
@@ -802,9 +806,10 @@ struct SqlDataBinder<SqlDateTime>
     static SQLRETURN OutputColumn(
         SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
     {
+        // TODO: handle indicator to check for NULL values
         *indicator = sizeof(result->sqlValue);
         cb.PlanPostProcessOutputColumn(
-            [indicator, result]() { result->value = SqlDateTime::ConvertToNative(result->sqlValue); });
+            [result]() { result->value = SqlDateTime::ConvertToNative(result->sqlValue); });
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, 0, indicator);
     }
 
