@@ -8,6 +8,15 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
+if(NOT WIN32)
+    find_package(SQLite3 REQUIRED)
+    include_directories(${SQLITE3_INCLUDE_DIR})
+
+    # find unixODBC via pkg-config
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(ODBC REQUIRED odbc)
+endif()
+
 set(HEADER_FILES
     Model/Associations/BelongsTo.hpp
     Model/Associations/HasMany.hpp
@@ -41,8 +50,6 @@ target_compile_features(JPSql PUBLIC cxx_std_23)
 target_sources(JPSql PRIVATE ${SOURCE_FILES})
 # target_sources(JPSql PUBLIC ${HEADER_FILES})
 
-# find_package(unixODBC REQUIRED)
-
 if(CLANG_TIDY_EXE)
     set_target_properties(JPSql PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
 endif()
@@ -57,8 +64,11 @@ if(MSVC)
     target_compile_options(JPSql PRIVATE /W4 /WX)
     target_link_libraries(JPSql PUBLIC odbc32)
 else()
+    target_compile_options(JPSql PUBLIC ${ODBC_CFLAGS})
+    target_link_libraries(JPSql PUBLIC ${ODBC_LDFLAGS})
+
     target_compile_options(JPSql PRIVATE -Wall -Wextra -pedantic -Werror)
-    target_link_libraries(JPSql PUBLIC odbc) # unixODBC::unixODBC
+
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_link_libraries(JPSql PUBLIC stdc++exp) # GCC >= 14
     endif()
@@ -69,13 +79,17 @@ find_package(Catch2 REQUIRED)
 
 add_executable(JPSqlTest)
 target_compile_features(JPSqlTest PUBLIC cxx_std_23)
-target_link_libraries(JPSqlTest PRIVATE JPSql::JPSql Catch2::Catch2)
+set(TEST_LIBRARIES Catch2::Catch2 JPSql::JPSql)
+if(NOT MSVC)
+    set(TEST_LIBRARIES ${TEST_LIBRARIES} odbc ${SQLITE3_LIBRARY}) # FIXME: should be PkgConfig::ODBC in JPSql target already
+endif()
+target_link_libraries(JPSqlTest PRIVATE ${TEST_LIBRARIES})
 target_sources(JPSqlTest PRIVATE ../JPSqlTest/JPSqlTest.cpp)
 add_test(NAME JPSqlTest COMMAND JPSqlTest)
 
 add_executable(JPSqlModelTest)
 target_compile_features(JPSqlModelTest PUBLIC cxx_std_23)
-target_link_libraries(JPSqlModelTest PRIVATE JPSql::JPSql Catch2::Catch2)
+target_link_libraries(JPSqlModelTest PRIVATE ${TEST_LIBRARIES})
 target_sources(JPSqlModelTest PRIVATE
     ../JPSqlTest/ModelTest.cpp
     ../JPSqlTest/ModelAssociationsTest.cpp

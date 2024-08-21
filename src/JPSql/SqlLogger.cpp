@@ -6,8 +6,11 @@
 #include <format>
 #include <print>
 #include <ranges>
-#include <stacktrace>
 #include <version>
+
+#if __has_include(<stacktrace>)
+    #include <stacktrace>
+#endif
 
 #if defined(_MSC_VER)
     // Disable warning C4996: This function or variable may be unsafe.
@@ -28,7 +31,14 @@ std::string ConnectInfoLogString(SqlConnectInfo const& info)
             else if constexpr (std::is_same_v<T, SqlConnectionDataSource>)
                 return std::format("{}@{}", info.username, info.datasource);
             else
+            {
+#if defined(__APPLE__)
+                // Apple Clang runs in here, even though all cases are covered.
+                std::unreachable();
+#else
                 static_assert(false, "non-exhaustive visitor!");
+#endif
+            }
         },
         info);
 }
@@ -92,9 +102,11 @@ class SqlTraceLogger: public SqlStandardLogger
         WriteMessage("  Source: {}:{}", sourceLocation.file_name(), sourceLocation.line());
         WriteMessage("  Stack trace:");
 
+#if __has_include(<stacktrace>)
         auto stackTrace = std::stacktrace::current(1, 25);
         for (std::size_t const i: std::views::iota(std::size_t(0), stackTrace.size()))
             WriteMessage("    [{:>2}] {}", i, stackTrace[i]);
+#endif
     }
 
     void OnConnectionOpened(SqlConnection const& connection) override
