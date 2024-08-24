@@ -79,6 +79,8 @@
         { "name": "windows-cl-release", "configurePreset": "windows-cl-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
         { "name": "windows-clangcl-debug", "configurePreset": "windows-clangcl-debug", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
         { "name": "windows-clangcl-release", "configurePreset": "windows-clangcl-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
+        { "name": "linux-gcc-debug", "configurePreset": "linux-gcc-debug", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
+        { "name": "linux-gcc-release", "configurePreset": "linux-gcc-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
         { "name": "linux-clang-debug", "configurePreset": "linux-clang-debug", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
         { "name": "linux-clang-release", "configurePreset": "linux-clang-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } }
     ]
