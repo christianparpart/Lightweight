@@ -1,3 +1,4 @@
+#include "../JPSql/SqlScopedTraceLogger.hpp"
 #include "JPSqlTestUtils.hpp"
 
 #include <JPSql/SqlConnection.hpp>
@@ -68,6 +69,74 @@ class SqlTestFixture
 int main(int argc, char const* argv[])
 {
     return Catch::Session().run(argc, argv);
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear")
+{
+    SqlFixedString<8> str;
+
+    REQUIRE(str.size() == 0);
+    REQUIRE(str.empty());
+
+    str.resize(1, 'x');
+    REQUIRE(!str.empty());
+    REQUIRE(str.size() == 1);
+    REQUIRE(str == "x");
+
+    str.resize(4, 'y');
+    REQUIRE(str.size() == 4);
+    REQUIRE(str == "xyyy");
+
+    // one-off overflow truncates
+    str.resize(9, 'z');
+    REQUIRE(str.size() == 8);
+    REQUIRE(str == "xyyyzzzz");
+
+    // resize down
+    str.resize(2);
+    REQUIRE(str.size() == 2);
+    REQUIRE(str == "xy");
+
+    str.clear();
+    REQUIRE(str.size() == 0);
+    REQUIRE(str == "");
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: push_back and pop_back")
+{
+    SqlFixedString<2> str;
+
+    str.push_back('a');
+    str.push_back('b');
+    REQUIRE(str == "ab");
+
+    // overflow: no-op (truncates)
+    str.push_back('c');
+    REQUIRE(str == "ab");
+
+    str.pop_back();
+    REQUIRE(str == "a");
+
+    str.pop_back();
+    REQUIRE(str == "");
+
+    // no-op
+    str.pop_back();
+    REQUIRE(str == "");
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: assign")
+{
+    SqlFixedString<12> str;
+    str.assign("Hello, World");
+    REQUIRE(str == "Hello, World");
+    // str.assign("Hello, World!"); <-- would fail due to static_assert
+    str.assign("Hello, World!"sv);
+    REQUIRE(str == "Hello, World");
+
+    str = "Something";
+    REQUIRE(str == "Something");
+    // str = ("Hello, World!"); // <-- would fail due to static_assert
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "ServerType")
@@ -214,7 +283,7 @@ TEST_CASE_METHOD(SqlTestFixture, "FetchRow can auto-trim string if requested")
     REQUIRE(!stmt.FetchRow());
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "batch insert")
+TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatch")
 {
     auto stmt = SqlStatement {};
 
@@ -244,6 +313,41 @@ TEST_CASE_METHOD(SqlTestFixture, "batch insert")
     REQUIRE(stmt.FetchRow());
     REQUIRE(stmt.GetColumn<std::string>(1).value() == "Alice");
     REQUIRE(stmt.GetColumn<std::string>(2).value() == "Smith");
+    REQUIRE(stmt.GetColumn<int>(3).value() == 50'000);
+
+    REQUIRE(!stmt.FetchRow());
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatchNative")
+{
+    auto stmt = SqlStatement {};
+
+    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (A VARCHAR(8), B REAL, C INTEGER)"));
+
+    REQUIRE(stmt.Prepare("INSERT INTO Test (A, B, C) VALUES (?, ?, ?)"));
+
+    // Ensure that the batch insert works with different types of contiguous containers
+    auto const first = std::array<SqlFixedString<8>, 3> { "Hello", "World", "!" };
+    auto const second = std::vector { 1.3, 2.3, 3.3 };
+    unsigned const third[3] = { 50'000, 60'000, 70'000 };
+
+    REQUIRE(stmt.ExecuteBatchNative(first, second, third));
+
+    REQUIRE(stmt.ExecuteDirect("SELECT A, B, C FROM Test ORDER BY C DESC"));
+
+    REQUIRE(stmt.FetchRow());
+    REQUIRE(stmt.GetColumn<std::string>(1).value() == "!");
+    REQUIRE(stmt.GetColumn<double>(2).value() == 3.3);
+    REQUIRE(stmt.GetColumn<int>(3).value() == 70'000);
+
+    REQUIRE(stmt.FetchRow());
+    REQUIRE(stmt.GetColumn<std::string>(1).value() == "World");
+    REQUIRE(stmt.GetColumn<double>(2).value() == 2.3);
+    REQUIRE(stmt.GetColumn<int>(3).value() == 60'000);
+
+    REQUIRE(stmt.FetchRow());
+    REQUIRE(stmt.GetColumn<std::string>(1).value() == "Hello");
+    REQUIRE(stmt.GetColumn<double>(2).value() == 1.3);
     REQUIRE(stmt.GetColumn<int>(3).value() == 50'000);
 
     REQUIRE(!stmt.FetchRow());

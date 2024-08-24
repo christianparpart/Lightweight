@@ -54,6 +54,9 @@ class SqlStatement final: public SqlDataBinderCallback
     // Retrieves the last error code.
     [[nodiscard]] SqlError LastError() const noexcept;
 
+    // Retrieves the last result code in form of a SqlResult<void>
+    SqlResult<void> LastResult() const noexcept;
+
     // Prepares the statement for execution.
     [[nodiscard]] SqlResult<void> Prepare(std::string_view query) noexcept;
 
@@ -72,6 +75,10 @@ class SqlStatement final: public SqlDataBinderCallback
     // Binds the given arguments to the prepared statement and executes it.
     template <SqlInputParameterBinder... Args>
     [[nodiscard]] SqlResult<void> Execute(Args const&... args) noexcept;
+
+    template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::contiguous_range... ColumnBatches>
+    SqlResult<void> ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch,
+                                       ColumnBatches const&... moreColumnBatches) noexcept;
 
     // Executes the prepared statement on a a batch of data.
     //
@@ -149,6 +156,14 @@ inline SqlConnection const& SqlStatement::Connection() const noexcept
     return m_lastError;
 }
 
+[[nodiscard]] inline SqlResult<void> SqlStatement::LastResult() const noexcept
+{
+    if (m_lastError != SqlError::SUCCESS)
+        return std::unexpected { m_lastError };
+
+    return {};
+}
+
 template <SqlOutputColumnBinder... Args>
 [[nodiscard]] SqlResult<void> SqlStatement::BindOutputColumns(Args*... args)
 {
@@ -210,6 +225,58 @@ template <SqlInputParameterBinder... Args>
     });
 }
 
+// TODO
+// template <typename T>
+// concept SqlNativeContiguousRange = requires(T value) {
+// };
+
+template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::contiguous_range... ColumnBatches>
+SqlResult<void> SqlStatement::ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch,
+                                                 ColumnBatches const&... moreColumnBatches) noexcept
+{
+    // TODO:
+    //static_assert(SqlNativeContiguousRange<firstColumnBatch> && (SqlNativeContiguousRange<moreColumnBatches> && ...),
+    //              "Must be a supported native contiguous range of data");
+
+    if (m_expectedParameterCount != 1 + sizeof...(moreColumnBatches))
+        // invalid number of columns
+        return std::unexpected { SqlError::INVALID_ARGUMENT };
+
+    const auto rowCount = std::ranges::size(firstColumnBatch);
+    if (!((std::size(moreColumnBatches) == rowCount) && ...))
+        // uneven number of rows
+        return std::unexpected { SqlError::INVALID_ARGUMENT };
+
+    size_t rowStart = 0;
+
+    // clang-format off
+    return UpdateLastError(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAMSET_SIZE, (SQLPOINTER) rowCount, 0))
+        .and_then([&] { return UpdateLastError(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAM_BIND_OFFSET_PTR, &rowStart, 0)); })
+        .and_then([&] { return UpdateLastError(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAM_BIND_TYPE, SQL_PARAM_BIND_BY_COLUMN, 0)); })
+        .and_then([&] { return UpdateLastError(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAM_OPERATION_PTR, SQL_PARAM_PROCEED, 0)); })
+        .and_then([&] {
+            return UpdateLastError(SqlDataBinder<std::remove_cvref_t<decltype(*std::ranges::data(firstColumnBatch))>>::
+                                   InputParameter(m_hStmt, 1, *std::ranges::data(firstColumnBatch)));
+        })
+        .and_then([&]() -> SqlResult<void> {
+            SQLUSMALLINT column = 1;
+            (UpdateLastError(SqlDataBinder<std::remove_cvref_t<decltype(*std::ranges::data(moreColumnBatches))>>::
+                                InputParameter(m_hStmt, ++column, *std::ranges::data(moreColumnBatches))) && ...);
+            return LastResult();
+        })
+        .and_then([&] {
+            return UpdateLastError(SQLExecute(m_hStmt)).and_then([&]() -> SqlResult<void> {
+                ProcessPostExecuteCallbacks();
+                return {};
+            });
+        })
+        .or_else([&](auto&& e) -> SqlResult<void> {
+            // std::println("Batch execution failed at {}.", rowStart);
+            return std::unexpected { e };
+        });
+    // clang-format on
+}
+
 template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... ColumnBatches>
 SqlResult<void> SqlStatement::ExecuteBatch(FirstColumnBatch const& firstColumnBatch,
                                            ColumnBatches const&... moreColumnBatches) noexcept
@@ -224,7 +291,7 @@ SqlResult<void> SqlStatement::ExecuteBatch(FirstColumnBatch const& firstColumnBa
         return std::unexpected { SqlError::INVALID_ARGUMENT };
 
     m_lastError = SqlError::SUCCESS;
-    for (auto const rowIndex: std::views::iota(size_t(0), rowCount))
+    for (auto const rowIndex: std::views::iota(size_t { 0 }, rowCount))
     {
         std::apply(
             [&]<SqlInputParameterBinder... ColumnValues>(ColumnValues const&... columnsInRow) {
