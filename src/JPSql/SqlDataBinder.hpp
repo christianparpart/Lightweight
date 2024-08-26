@@ -83,7 +83,6 @@ struct std::formatter<SqlText>: std::formatter<std::string>
 // Helper struct to store a date (without time of the day) to write to or read from a database.
 struct SqlDate
 {
-    std::chrono::year_month_day value {};
     SQL_DATE_STRUCT sqlValue {};
 
     SqlDate() noexcept = default;
@@ -93,9 +92,15 @@ struct SqlDate
     SqlDate& operator=(SqlDate const&) noexcept = default;
     ~SqlDate() noexcept = default;
 
+    std::chrono::year_month_day value() const noexcept
+    {
+        return ConvertToNative(sqlValue);
+    }
+
     bool operator==(SqlDate const& other) const noexcept
     {
-        return value == other.value;
+        return sqlValue.year == other.sqlValue.year && sqlValue.month == other.sqlValue.month
+               && sqlValue.day == other.sqlValue.day;
     }
 
     bool operator!=(SqlDate const& other) const noexcept
@@ -104,7 +109,6 @@ struct SqlDate
     }
 
     SqlDate(std::chrono::year_month_day value) noexcept:
-        value { value },
         sqlValue { SqlDate::ConvertToSqlValue(value) }
     {
     }
@@ -259,7 +263,15 @@ struct SqlDateTime
 
     static std::chrono::system_clock::time_point ConvertToNative(SQL_TIMESTAMP_STRUCT const& time) noexcept
     {
-        return SqlTimestamp::ConvertToNative(time);
+        // clang-format off
+        using namespace std::chrono;
+        auto timepoint = sys_days(year_month_day(year(time.year), month(time.month), day(time.day)))
+                       + hours(time.hour)
+                       + minutes(time.minute)
+                       + seconds(time.second)
+                       + microseconds(time.fraction / 1000);
+        return timepoint;
+        // clang-format on
     }
 
     std::chrono::system_clock::time_point value;
@@ -327,15 +339,7 @@ struct SqlTimestamp
 
     static std::chrono::system_clock::time_point ConvertToNative(SQL_TIMESTAMP_STRUCT const& time) noexcept
     {
-        // clang-format off
-        using namespace std::chrono;
-        auto timepoint = sys_days(year_month_day(year(time.year), month(time.month), day(time.day)))
-                       + hours(time.hour)
-                       + minutes(time.minute)
-                       + seconds(time.second)
-                       + microseconds(time.fraction / 1000);
-        return timepoint;
-        // clang-format on
+        return SqlDateTime::ConvertToNative(time);
     }
 
     std::chrono::system_clock::time_point value;
@@ -681,21 +685,19 @@ struct SqlDataBinder<SqlDate>
                                 nullptr);
     }
 
-    static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLUSMALLINT column, SqlDate* result, SQLLEN* /*indicator*/, SqlDataBinderCallback& cb) noexcept
+    static SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                  SQLUSMALLINT column,
+                                  SqlDate* result,
+                                  SQLLEN* /*indicator*/,
+                                  SqlDataBinderCallback& /*cb*/) noexcept
     {
         // TODO: handle indicator to check for NULL values
-        cb.PlanPostProcessOutputColumn([result]() { result->value = SqlDate::ConvertToNative(result->sqlValue); });
         return SQLBindCol(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), nullptr);
     }
 
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlDate* result, SQLLEN* indicator) noexcept
     {
-        SQLRETURN const sqlReturn =
-            SQLGetData(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), indicator);
-        if (SQL_SUCCEEDED(sqlReturn))
-            result->value = SqlDate::ConvertToNative(result->sqlValue);
-        return sqlReturn;
+        return SQLGetData(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }
 };
 
@@ -769,12 +771,13 @@ struct SqlDataBinder<SqlTimestamp>
                                 &const_cast<SqlTimestamp&>(value).sqlIndicator);
     }
 
-    static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLUSMALLINT column, SqlTimestamp* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
+    static SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                  SQLUSMALLINT column,
+                                  SqlTimestamp* result,
+                                  SQLLEN* indicator,
+                                  SqlDataBinderCallback& /*cb*/) noexcept
     {
         *indicator = sizeof(result->sqlValue);
-        cb.PlanPostProcessOutputColumn(
-            [result]() { result->value = SqlTimestamp::ConvertToNative(result->sqlValue); });
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, 0, indicator);
     }
 
@@ -803,13 +806,14 @@ struct SqlDataBinder<SqlDateTime>
                                 &const_cast<SqlDateTime&>(value).sqlIndicator);
     }
 
-    static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
+    static SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                  SQLUSMALLINT column,
+                                  SqlDateTime* result,
+                                  SQLLEN* indicator,
+                                  SqlDataBinderCallback& /*cb*/) noexcept
     {
         // TODO: handle indicator to check for NULL values
         *indicator = sizeof(result->sqlValue);
-        cb.PlanPostProcessOutputColumn(
-            [result]() { result->value = SqlDateTime::ConvertToNative(result->sqlValue); });
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, 0, indicator);
     }
 

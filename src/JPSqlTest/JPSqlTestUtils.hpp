@@ -106,7 +106,7 @@ inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
 
 inline std::ostream& operator<<(std::ostream& os, SqlDate const& date)
 {
-    auto const ymd = date.value;
+    auto const ymd = date.value();
     return os << std::format("SqlDate {{ {}-{}-{} }}", ymd.year(), ymd.month(), ymd.day());
 }
 
