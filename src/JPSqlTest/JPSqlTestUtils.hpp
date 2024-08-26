@@ -127,6 +127,12 @@ inline std::ostream& operator<<(std::ostream& os, SqlResult<T> const& result)
     return os << "SqlResult<int> { error: " << result.error() << " }";
 }
 
+template <std::size_t N, typename T>
+inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T> const& value)
+{
+    return os << std::format("SqlFixedString<{}> {{ '{}' }}", N, value.data());
+}
+
 template <typename T,
           SQLSMALLINT TheTableColumnIndex,
           Model::StringLiteral TheColumnName,
