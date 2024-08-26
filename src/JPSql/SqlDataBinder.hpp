@@ -145,7 +145,6 @@ struct SqlDate
 // Helper struct to store a time (of the day) to write to or read from a database.
 struct SqlTime
 {
-    std::chrono::hh_mm_ss<std::chrono::seconds> value {};
     SQL_TIME_STRUCT sqlValue {};
 
     SqlTime() noexcept = default;
@@ -155,9 +154,14 @@ struct SqlTime
     SqlTime& operator=(SqlTime const&) noexcept = default;
     ~SqlTime() noexcept = default;
 
+    std::chrono::hh_mm_ss<std::chrono::seconds> value() const noexcept
+    {
+        return ConvertToNative(sqlValue);
+    }
+
     bool operator==(SqlTime const& other) const noexcept
     {
-        return value.to_duration().count() == other.value.to_duration().count();
+        return value().to_duration().count() == other.value().to_duration().count();
     }
 
     bool operator!=(SqlTime const& other) const noexcept
@@ -166,7 +170,6 @@ struct SqlTime
     }
 
     SqlTime(std::chrono::hh_mm_ss<std::chrono::seconds> value) noexcept:
-        value { value },
         sqlValue { SqlTime::ConvertToSqlValue(value) }
     {
     }
@@ -718,21 +721,19 @@ struct SqlDataBinder<SqlTime>
                                 nullptr);
     }
 
-    static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLUSMALLINT column, SqlTime* result, SQLLEN* /*indicator*/, SqlDataBinderCallback& cb) noexcept
+    static SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                  SQLUSMALLINT column,
+                                  SqlTime* result,
+                                  SQLLEN* /*indicator*/,
+                                  SqlDataBinderCallback& /*cb*/) noexcept
     {
         // TODO: handle indicator to check for NULL values
-        cb.PlanPostProcessOutputColumn([result]() { result->value = SqlTime::ConvertToNative(result->sqlValue); });
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), nullptr);
     }
 
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlTime* result, SQLLEN* indicator) noexcept
     {
-        SQLRETURN const sqlReturn =
-            SQLGetData(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), indicator);
-        if (SQL_SUCCEEDED(sqlReturn))
-            result->value = SqlTime::ConvertToNative(result->sqlValue);
-        return sqlReturn;
+        return SQLGetData(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }
 };
 
