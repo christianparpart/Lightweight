@@ -80,160 +80,6 @@ struct std::formatter<SqlText>: std::formatter<std::string>
     }
 };
 
-// Helper struct to store a timestamp that should be automatically converted to/from a SQL_TIMESTAMP_STRUCT.
-struct SqlTimestamp
-{
-    static SqlTimestamp Now() noexcept
-    {
-        return SqlTimestamp { std::chrono::system_clock::now() };
-    }
-
-    SqlTimestamp() noexcept = default;
-    SqlTimestamp(SqlTimestamp&&) noexcept = default;
-    SqlTimestamp& operator=(SqlTimestamp&&) noexcept = default;
-    SqlTimestamp(SqlTimestamp const&) noexcept = default;
-    SqlTimestamp& operator=(SqlTimestamp const& other) noexcept = default;
-    ~SqlTimestamp() noexcept = default;
-
-    bool operator==(SqlTimestamp const& other) const noexcept
-    {
-        return value == other.value;
-    }
-    bool operator!=(SqlTimestamp const& other) const noexcept
-    {
-        return !(*this == other);
-    }
-
-    SqlTimestamp(std::chrono::year_month_day ymd, std::chrono::hh_mm_ss<std::chrono::microseconds> time) noexcept:
-        SqlTimestamp(std::chrono::system_clock::from_time_t(std::chrono::system_clock::to_time_t(
-            std::chrono::sys_days { ymd } + time.hours() + time.minutes() + time.seconds())))
-    {
-    }
-
-    SqlTimestamp(std::chrono::year year,
-                 std::chrono::month month,
-                 std::chrono::day day,
-                 std::chrono::hours hour,
-                 std::chrono::minutes minute,
-                 std::chrono::seconds second,
-                 std::chrono::microseconds microsecond = std::chrono::microseconds { 0 }) noexcept:
-        SqlTimestamp(std::chrono::year_month_day { year, month, day },
-                     std::chrono::hh_mm_ss<std::chrono::microseconds> { hour + minute + second + microsecond })
-    {
-    }
-
-    SqlTimestamp(std::chrono::system_clock::time_point value) noexcept:
-        value { value },
-        sqlValue { SqlTimestamp::ConvertToSqlValue(value) }
-    {
-    }
-
-    operator std::chrono::system_clock::time_point() const noexcept
-    {
-        return value;
-    }
-
-    static SQL_TIMESTAMP_STRUCT ConvertToSqlValue(std::chrono::system_clock::time_point value) noexcept
-    {
-        auto const ymd = std::chrono::year_month_day { std::chrono::floor<std::chrono::days>(value) };
-        auto const hms = std::chrono::hh_mm_ss { value - std::chrono::floor<std::chrono::days>(value) };
-        return SQL_TIMESTAMP_STRUCT {
-            .year = (SQLSMALLINT) (int) ymd.year(),
-            .month = (SQLUSMALLINT) (unsigned) ymd.month(),
-            .day = (SQLUSMALLINT) (unsigned) ymd.day(),
-            .hour = (SQLUSMALLINT) hms.hours().count(),
-            .minute = (SQLUSMALLINT) hms.minutes().count(),
-            .second = (SQLUSMALLINT) hms.seconds().count(),
-            .fraction = (SQLUINTEGER) hms.subseconds().count() * 1000,
-        };
-    }
-
-    static std::chrono::system_clock::time_point ConvertToNative(SQL_TIMESTAMP_STRUCT const& time) noexcept
-    {
-        // clang-format off
-        using namespace std::chrono;
-        auto timepoint = sys_days(year_month_day(year(time.year), month(time.month), day(time.day)))
-                       + hours(time.hour)
-                       + minutes(time.minute)
-                       + seconds(time.second)
-                       + microseconds(time.fraction / 1000);
-        return timepoint;
-        // clang-format on
-    }
-
-    std::chrono::system_clock::time_point value;
-    SQL_TIMESTAMP_STRUCT sqlValue {};
-    SQLLEN sqlIndicator {};
-};
-
-struct SqlDateTime
-{
-    static SqlDateTime Now() noexcept
-    {
-        return SqlDateTime { std::chrono::system_clock::now() };
-    }
-
-    SqlDateTime() noexcept = default;
-    SqlDateTime(SqlDateTime&&) noexcept = default;
-    SqlDateTime& operator=(SqlDateTime&&) noexcept = default;
-    SqlDateTime(SqlDateTime const&) noexcept = default;
-    SqlDateTime& operator=(SqlDateTime const& other) noexcept = default;
-    ~SqlDateTime() noexcept = default;
-
-    bool operator==(SqlDateTime const& other) const noexcept
-    {
-        return value == other.value;
-    }
-
-    bool operator!=(SqlDateTime const& other) const noexcept
-    {
-        return !(*this == other);
-    }
-
-    SqlDateTime(std::chrono::year_month_day ymd, std::chrono::hh_mm_ss<std::chrono::microseconds> time) noexcept:
-        SqlDateTime(std::chrono::system_clock::from_time_t(std::chrono::system_clock::to_time_t(
-            std::chrono::sys_days { ymd } + time.hours() + time.minutes() + time.seconds())))
-    {
-    }
-
-    SqlDateTime(std::chrono::year year,
-                std::chrono::month month,
-                std::chrono::day day,
-                std::chrono::hours hour,
-                std::chrono::minutes minute,
-                std::chrono::seconds second,
-                std::chrono::microseconds microsecond = std::chrono::microseconds { 0 }) noexcept:
-        SqlDateTime(std::chrono::year_month_day { year, month, day },
-                    std::chrono::hh_mm_ss<std::chrono::microseconds> { hour + minute + second + microsecond })
-    {
-    }
-
-    SqlDateTime(std::chrono::system_clock::time_point value) noexcept:
-        value { value },
-        sqlValue { SqlDateTime::ConvertToSqlValue(value) }
-    {
-    }
-
-    operator std::chrono::system_clock::time_point() const noexcept
-    {
-        return value;
-    }
-
-    static SQL_TIMESTAMP_STRUCT ConvertToSqlValue(std::chrono::system_clock::time_point value) noexcept
-    {
-        return SqlTimestamp::ConvertToSqlValue(value);
-    }
-
-    static std::chrono::system_clock::time_point ConvertToNative(SQL_TIMESTAMP_STRUCT const& time) noexcept
-    {
-        return SqlTimestamp::ConvertToNative(time);
-    }
-
-    std::chrono::system_clock::time_point value;
-    SQL_TIMESTAMP_STRUCT sqlValue {};
-    SQLLEN sqlIndicator {};
-};
-
 // Helper struct to store a date (without time of the day) to write to or read from a database.
 struct SqlDate
 {
@@ -341,6 +187,160 @@ struct SqlTime
                                                              + std::chrono::minutes { (unsigned) value.minute }
                                                              + std::chrono::seconds { (unsigned) value.second } };
     }
+};
+
+struct SqlDateTime
+{
+    static SqlDateTime Now() noexcept
+    {
+        return SqlDateTime { std::chrono::system_clock::now() };
+    }
+
+    SqlDateTime() noexcept = default;
+    SqlDateTime(SqlDateTime&&) noexcept = default;
+    SqlDateTime& operator=(SqlDateTime&&) noexcept = default;
+    SqlDateTime(SqlDateTime const&) noexcept = default;
+    SqlDateTime& operator=(SqlDateTime const& other) noexcept = default;
+    ~SqlDateTime() noexcept = default;
+
+    bool operator==(SqlDateTime const& other) const noexcept
+    {
+        return value == other.value;
+    }
+
+    bool operator!=(SqlDateTime const& other) const noexcept
+    {
+        return !(*this == other);
+    }
+
+    SqlDateTime(std::chrono::year_month_day ymd, std::chrono::hh_mm_ss<std::chrono::microseconds> time) noexcept:
+        SqlDateTime(std::chrono::system_clock::from_time_t(std::chrono::system_clock::to_time_t(
+            std::chrono::sys_days { ymd } + time.hours() + time.minutes() + time.seconds())))
+    {
+    }
+
+    SqlDateTime(std::chrono::year year,
+                std::chrono::month month,
+                std::chrono::day day,
+                std::chrono::hours hour,
+                std::chrono::minutes minute,
+                std::chrono::seconds second,
+                std::chrono::microseconds microsecond = std::chrono::microseconds { 0 }) noexcept:
+        SqlDateTime(std::chrono::year_month_day { year, month, day },
+                    std::chrono::hh_mm_ss<std::chrono::microseconds> { hour + minute + second + microsecond })
+    {
+    }
+
+    SqlDateTime(std::chrono::system_clock::time_point value) noexcept:
+        value { value },
+        sqlValue { SqlDateTime::ConvertToSqlValue(value) }
+    {
+    }
+
+    operator std::chrono::system_clock::time_point() const noexcept
+    {
+        return value;
+    }
+
+    static SQL_TIMESTAMP_STRUCT ConvertToSqlValue(std::chrono::system_clock::time_point value) noexcept
+    {
+        auto const ymd = std::chrono::year_month_day { std::chrono::floor<std::chrono::days>(value) };
+        auto const hms = std::chrono::hh_mm_ss { value - std::chrono::floor<std::chrono::days>(value) };
+        return SQL_TIMESTAMP_STRUCT {
+            .year = (SQLSMALLINT) (int) ymd.year(),
+            .month = (SQLUSMALLINT) (unsigned) ymd.month(),
+            .day = (SQLUSMALLINT) (unsigned) ymd.day(),
+            .hour = (SQLUSMALLINT) hms.hours().count(),
+            .minute = (SQLUSMALLINT) hms.minutes().count(),
+            .second = (SQLUSMALLINT) hms.seconds().count(),
+            .fraction = (SQLUINTEGER) hms.subseconds().count() * 1000,
+        };
+    }
+
+    static std::chrono::system_clock::time_point ConvertToNative(SQL_TIMESTAMP_STRUCT const& time) noexcept
+    {
+        return SqlTimestamp::ConvertToNative(time);
+    }
+
+    std::chrono::system_clock::time_point value;
+    SQL_TIMESTAMP_STRUCT sqlValue {};
+    SQLLEN sqlIndicator {};
+};
+
+// Helper struct to store a timestamp that should be automatically converted to/from a SQL_TIMESTAMP_STRUCT.
+struct SqlTimestamp
+{
+    static SqlTimestamp Now() noexcept
+    {
+        return SqlTimestamp { std::chrono::system_clock::now() };
+    }
+
+    SqlTimestamp() noexcept = default;
+    SqlTimestamp(SqlTimestamp&&) noexcept = default;
+    SqlTimestamp& operator=(SqlTimestamp&&) noexcept = default;
+    SqlTimestamp(SqlTimestamp const&) noexcept = default;
+    SqlTimestamp& operator=(SqlTimestamp const& other) noexcept = default;
+    ~SqlTimestamp() noexcept = default;
+
+    bool operator==(SqlTimestamp const& other) const noexcept
+    {
+        return value == other.value;
+    }
+    bool operator!=(SqlTimestamp const& other) const noexcept
+    {
+        return !(*this == other);
+    }
+
+    SqlTimestamp(std::chrono::year_month_day ymd, std::chrono::hh_mm_ss<std::chrono::microseconds> time) noexcept:
+        SqlTimestamp(std::chrono::system_clock::from_time_t(std::chrono::system_clock::to_time_t(
+            std::chrono::sys_days { ymd } + time.hours() + time.minutes() + time.seconds())))
+    {
+    }
+
+    SqlTimestamp(std::chrono::year year,
+                 std::chrono::month month,
+                 std::chrono::day day,
+                 std::chrono::hours hour,
+                 std::chrono::minutes minute,
+                 std::chrono::seconds second,
+                 std::chrono::microseconds microsecond = std::chrono::microseconds { 0 }) noexcept:
+        SqlTimestamp(std::chrono::year_month_day { year, month, day },
+                     std::chrono::hh_mm_ss<std::chrono::microseconds> { hour + minute + second + microsecond })
+    {
+    }
+
+    SqlTimestamp(std::chrono::system_clock::time_point value) noexcept:
+        value { value },
+        sqlValue { SqlTimestamp::ConvertToSqlValue(value) }
+    {
+    }
+
+    operator std::chrono::system_clock::time_point() const noexcept
+    {
+        return value;
+    }
+
+    static SQL_TIMESTAMP_STRUCT ConvertToSqlValue(std::chrono::system_clock::time_point value) noexcept
+    {
+        return SqlDateTime::ConvertToSqlValue(value);
+    }
+
+    static std::chrono::system_clock::time_point ConvertToNative(SQL_TIMESTAMP_STRUCT const& time) noexcept
+    {
+        // clang-format off
+        using namespace std::chrono;
+        auto timepoint = sys_days(year_month_day(year(time.year), month(time.month), day(time.day)))
+                       + hours(time.hour)
+                       + minutes(time.minute)
+                       + seconds(time.second)
+                       + microseconds(time.fraction / 1000);
+        return timepoint;
+        // clang-format on
+    }
+
+    std::chrono::system_clock::time_point value;
+    SQL_TIMESTAMP_STRUCT sqlValue {};
+    SQLLEN sqlIndicator {};
 };
 
 // Helper struct to generically store and load a variant of different SQL types.
