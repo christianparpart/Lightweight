@@ -21,6 +21,26 @@
 #include <sqlext.h>
 #include <sqltypes.h>
 
+namespace detail
+{
+
+template <typename Integer = int>
+constexpr Integer toInteger(std::string_view s, Integer fallback) noexcept
+{
+    Integer value {};
+    auto const rc = std::from_chars(s.data(), s.data() + s.size(), value);
+#if __cpp_lib_to_chars >= 202306L
+    if (rc)
+#else
+    if (rc.ec == std::errc {})
+#endif
+        return value;
+    else
+        return fallback;
+}
+
+} // namespace detail
+
 // Helper struct to store a string that should be automatically trimmed when fetched from the database.
 // This is only needed for compatibility with old columns that hard-code the length, like CHAR(50).
 struct SqlTrimmedString
@@ -213,26 +233,6 @@ struct SqlDateTime
     SQL_TIMESTAMP_STRUCT sqlValue {};
     SQLLEN sqlIndicator {};
 };
-
-namespace detail
-{
-
-template <typename Integer = int>
-constexpr Integer toInteger(std::string_view s, Integer fallback) noexcept
-{
-    Integer value {};
-    auto const rc = std::from_chars(s.data(), s.data() + s.size(), value);
-#if __cpp_lib_to_chars >= 202306L
-    if (rc)
-#else
-    if (rc.ec == std::errc {})
-#endif
-        return value;
-    else
-        return fallback;
-}
-
-} // namespace detail
 
 // Helper struct to store a date (without time of the day) to write to or read from a database.
 struct SqlDate
