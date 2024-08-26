@@ -15,8 +15,7 @@
 // - http://www.ch-werner.de/sqliteodbc/
 // - https://github.com/softace/sqliteodbc
 //
-auto const inline TestSqlConnectionString = SqlConnectionString
-{
+auto const inline TestSqlConnectionString = SqlConnectionString {
     .connectionString = std::format("DRIVER={};Database={}",
 #if defined(_WIN32) || defined(_WIN64)
                                     "SQLite3 ODBC Driver",
@@ -72,13 +71,9 @@ class SqlTestFixture
 class SqlModelTestFixture: public SqlTestFixture
 {
   public:
-    SqlModelTestFixture()
-    {
-    }
+    SqlModelTestFixture() {}
 
-    ~SqlModelTestFixture() override
-    {
-    }
+    ~SqlModelTestFixture() override {}
 };
 
 // {{{ ostream support for JPSql, for debugging purposes
@@ -106,21 +101,22 @@ inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
 
 inline std::ostream& operator<<(std::ostream& os, SqlDate const& date)
 {
-    auto const ymd = date.value;
+    auto const ymd = date.value();
     return os << std::format("SqlDate {{ {}-{}-{} }}", ymd.year(), ymd.month(), ymd.day());
 }
 
 inline std::ostream& operator<<(std::ostream& os, SqlTime const& time)
 {
+    auto const value = time.value();
     return os << std::format("SqlTime {{ {:02}:{:02}:{:02} }}",
-                             time.value.hours().count(),
-                             time.value.minutes().count(),
-                             time.value.seconds().count());
+                             value.hours().count(),
+                             value.minutes().count(),
+                             value.seconds().count());
 }
 
 inline std::ostream& operator<<(std::ostream& os, SqlTimestamp const& timestamp)
 {
-    return os << std::format("SqlTimestamp {{ {} }}", timestamp.value);
+    return os << std::format("SqlTimestamp {{ {} }}", timestamp.value());
 }
 
 template <typename T>
