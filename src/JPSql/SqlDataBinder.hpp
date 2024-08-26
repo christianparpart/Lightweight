@@ -212,7 +212,7 @@ struct SqlDateTime
 
     bool operator==(SqlDateTime const& other) const noexcept
     {
-        return value == other.value;
+        return value() == other.value();
     }
 
     bool operator!=(SqlDateTime const& other) const noexcept
@@ -239,14 +239,13 @@ struct SqlDateTime
     }
 
     SqlDateTime(std::chrono::system_clock::time_point value) noexcept:
-        value { value },
         sqlValue { SqlDateTime::ConvertToSqlValue(value) }
     {
     }
 
     operator std::chrono::system_clock::time_point() const noexcept
     {
-        return value;
+        return value();
     }
 
     static SQL_TIMESTAMP_STRUCT ConvertToSqlValue(std::chrono::system_clock::time_point value) noexcept
@@ -277,7 +276,11 @@ struct SqlDateTime
         // clang-format on
     }
 
-    std::chrono::system_clock::time_point value;
+    std::chrono::system_clock::time_point value() const noexcept
+    {
+        return ConvertToNative(sqlValue);
+    }
+
     SQL_TIMESTAMP_STRUCT sqlValue {};
     SQLLEN sqlIndicator {};
 };
@@ -820,7 +823,7 @@ struct SqlDataBinder<SqlDateTime>
 
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime* result, SQLLEN* indicator) noexcept
     {
-        return SqlDataBinder<std::chrono::system_clock::time_point>::GetColumn(stmt, column, &result->value, indicator);
+        return SQLGetData(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }
 };
 
