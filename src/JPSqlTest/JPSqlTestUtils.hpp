@@ -116,7 +116,7 @@ inline std::ostream& operator<<(std::ostream& os, SqlTime const& time)
 
 inline std::ostream& operator<<(std::ostream& os, SqlTimestamp const& timestamp)
 {
-    return os << std::format("SqlTimestamp {{ {} }}", timestamp.value);
+    return os << std::format("SqlTimestamp {{ {} }}", timestamp.value());
 }
 
 template <typename T>
