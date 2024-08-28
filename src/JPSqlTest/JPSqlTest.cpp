@@ -484,7 +484,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString")
     auto stmt = SqlStatement {};
     REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value VARCHAR(8) NOT NULL)"));
 
-    auto const expectedValue = SqlFixedString<8> { "Hello" };
+    auto const expectedValue = SqlFixedString<8> { "Hello " };
 
     REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
     REQUIRE(stmt.Execute(expectedValue));
@@ -496,7 +496,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString")
         auto const actualValue = stmt.GetColumn<SqlFixedString<8>>(1).value();
         CHECK(actualValue == expectedValue);
 
-        SECTION("Truncating result")
+        SECTION("Truncated result")
         {
             REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
             REQUIRE(stmt.FetchRow());
@@ -504,6 +504,14 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString")
             auto const truncatedStrView = truncatedValue.substr(0);
             auto const expectedStrView = expectedValue.substr(0, 3);
             CHECK(truncatedStrView == expectedStrView); // "Hel"
+        }
+
+        SECTION("Trimmed result")
+        {
+            REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+            REQUIRE(stmt.FetchRow());
+            auto const trimmedValue = stmt.GetColumn<SqlTrimmedFixedString<8>>(1).value();
+            CHECK(trimmedValue == "Hello");
         }
     }
 
@@ -515,6 +523,16 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString")
         REQUIRE(stmt.Execute());
         REQUIRE(stmt.FetchRow());
         CHECK(actualValue == expectedValue);
+    }
+
+    SECTION("check custom type handling for bound output columns (trimmed)")
+    {
+        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        auto actualValue = SqlTrimmedFixedString<8> {};
+        REQUIRE(stmt.BindOutputColumns(&actualValue));
+        REQUIRE(stmt.Execute());
+        REQUIRE(stmt.FetchRow());
+        CHECK(actualValue == "Hello");
     }
 }
 
