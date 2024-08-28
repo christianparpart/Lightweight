@@ -127,6 +127,15 @@ inline std::ostream& operator<<(std::ostream& os, SqlResult<T> const& result)
     return os << "SqlResult<int> { error: " << result.error() << " }";
 }
 
+template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
+inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, PostOp> const& value)
+{
+    if constexpr (PostOp == SqlStringPostRetrieveOperation::NOTHING)
+        return os << std::format("SqlFixedString<{}> {{ '{}' }}", N, value.data());
+    if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
+        return os << std::format("SqlTrimmedFixedString<{}> {{ '{}' }}", N, value.data());
+}
+
 template <typename T,
           SQLSMALLINT TheTableColumnIndex,
           Model::StringLiteral TheColumnName,

@@ -479,6 +479,63 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
     }
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString")
+{
+    auto stmt = SqlStatement {};
+    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value VARCHAR(8) NOT NULL)"));
+
+    auto const expectedValue = SqlFixedString<8> { "Hello " };
+
+    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
+    REQUIRE(stmt.Execute(expectedValue));
+
+    SECTION("check custom type handling for explicitly fetched output columns")
+    {
+        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        REQUIRE(stmt.FetchRow());
+        auto const actualValue = stmt.GetColumn<SqlFixedString<8>>(1).value();
+        CHECK(actualValue == expectedValue);
+
+        SECTION("Truncated result")
+        {
+            REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+            REQUIRE(stmt.FetchRow());
+            auto const truncatedValue = stmt.GetColumn<SqlFixedString<4>>(1).value();
+            auto const truncatedStrView = truncatedValue.substr(0);
+            auto const expectedStrView = expectedValue.substr(0, 3);
+            CHECK(truncatedStrView == expectedStrView); // "Hel"
+        }
+
+        SECTION("Trimmed result")
+        {
+            REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+            REQUIRE(stmt.FetchRow());
+            auto const trimmedValue = stmt.GetColumn<SqlTrimmedFixedString<8>>(1).value();
+            CHECK(trimmedValue == "Hello");
+        }
+    }
+
+    SECTION("check custom type handling for bound output columns")
+    {
+        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        auto actualValue = SqlFixedString<8> {};
+        REQUIRE(stmt.BindOutputColumns(&actualValue));
+        REQUIRE(stmt.Execute());
+        REQUIRE(stmt.FetchRow());
+        CHECK(actualValue == expectedValue);
+    }
+
+    SECTION("check custom type handling for bound output columns (trimmed)")
+    {
+        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        auto actualValue = SqlTrimmedFixedString<8> {};
+        REQUIRE(stmt.BindOutputColumns(&actualValue));
+        REQUIRE(stmt.Execute());
+        REQUIRE(stmt.FetchRow());
+        CHECK(actualValue == "Hello");
+    }
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlText")
 {
     auto stmt = SqlStatement {};
