@@ -66,6 +66,7 @@ namespace detail
 
     // clang-format off
 template <> struct ColumnTypeOf<char> { static constexpr ColumnType value = ColumnType::CHAR; };
+template <std::size_t N, typename T, SqlStringPostRetrieveOperation P> struct ColumnTypeOf<SqlFixedString<N, T, P>> { static constexpr ColumnType value = ColumnType::STRING; };
 template <> struct ColumnTypeOf<std::string> { static constexpr ColumnType value = ColumnType::STRING; };
 template <> struct ColumnTypeOf<SqlTrimmedString> { static constexpr ColumnType value = ColumnType::STRING; };
 template <> struct ColumnTypeOf<SqlText> { static constexpr ColumnType value = ColumnType::TEXT; };

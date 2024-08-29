@@ -249,6 +249,16 @@ class SqlFixedString
 template <std::size_t N, typename T = char>
 using SqlTrimmedFixedString = SqlFixedString<N, T,SqlStringPostRetrieveOperation::TRIM_RIGHT>;
 
+template <std::size_t N, typename T, SqlStringPostRetrieveOperation P>
+struct std::formatter<SqlFixedString<N, T, P>>: std::formatter<std::string>
+{
+    using value_type = SqlFixedString<N, T, P>;
+    auto format(value_type const& text, format_context& ctx) const -> format_context::iterator
+    {
+        return std::formatter<std::string>::format(text.c_str(), ctx);
+    }
+};
+
 template <>
 struct std::formatter<SqlText>: std::formatter<std::string>
 {
@@ -460,7 +470,6 @@ struct SqlDateTime
     }
 
     SQL_TIMESTAMP_STRUCT sqlValue {};
-    SQLLEN sqlIndicator {};
 };
 
 // Helper struct to store a timestamp that should be automatically converted to/from a SQL_TIMESTAMP_STRUCT.
@@ -531,7 +540,6 @@ struct SqlTimestamp
     }
 
     SQL_TIMESTAMP_STRUCT sqlValue {};
-    SQLLEN sqlIndicator {};
 };
 
 // Helper struct to generically store and load a variant of different SQL types.
@@ -1039,8 +1047,6 @@ struct SqlDataBinder<SqlTimestamp>
 {
     static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlTimestamp const& value) noexcept
     {
-        const_cast<SqlTimestamp&>(value).sqlIndicator = sizeof(value.sqlValue);
-
         return SQLBindParameter(stmt,
                                 column,
                                 SQL_PARAM_INPUT,
@@ -1049,8 +1055,8 @@ struct SqlDataBinder<SqlTimestamp>
                                 27,
                                 7,
                                 (SQLPOINTER) &value.sqlValue,
-                                0,
-                                &const_cast<SqlTimestamp&>(value).sqlIndicator);
+                                sizeof(value),
+                                nullptr);
     }
 
     static SQLRETURN OutputColumn(SQLHSTMT stmt,
@@ -1074,8 +1080,6 @@ struct SqlDataBinder<SqlDateTime>
 {
     static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime const& value) noexcept
     {
-        const_cast<SqlDateTime&>(value).sqlIndicator = sizeof(value.sqlValue);
-
         return SQLBindParameter(stmt,
                                 column,
                                 SQL_PARAM_INPUT,
@@ -1084,8 +1088,8 @@ struct SqlDataBinder<SqlDateTime>
                                 27,
                                 7,
                                 (SQLPOINTER) &value.sqlValue,
-                                0,
-                                &const_cast<SqlDateTime&>(value).sqlIndicator);
+                                sizeof(value),
+                                nullptr);
     }
 
     static SQLRETURN OutputColumn(SQLHSTMT stmt,
