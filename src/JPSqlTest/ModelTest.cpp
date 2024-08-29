@@ -131,7 +131,7 @@ struct Author: Model::Record<Author>
 
 struct Book: Model::Record<Book>
 {
-    Model::Field<std::string, 2, "title"> title;
+    Model::Field<SqlTrimmedFixedString<64>, 2, "title"> title;
     Model::Field<std::string, 3, "isbn"> isbn;
     Model::BelongsTo<Author, 4, "author_id"> author;
 
