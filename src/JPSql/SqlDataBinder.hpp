@@ -89,10 +89,14 @@ class SqlFixedString
     std::size_t _size = 0;
 
   public:
+    using value_type = T;
     using iterator = T*;
     using const_iterator = T const*;
     using pointer_type = T*;
     using const_pointer_type = T const*;
+
+    static constexpr inline std::size_t Capacity = N;
+    static constexpr inline SqlStringPostRetrieveOperation PostRetrieveOperation = PostOp;
 
     template <std::size_t SourceSize>
     SqlFixedString(T const (&text)[SourceSize]):

@@ -76,18 +76,26 @@ class SqlStatement final: public SqlDataBinderCallback
     template <SqlInputParameterBinder... Args>
     [[nodiscard]] SqlResult<void> Execute(Args const&... args) noexcept;
 
-    template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::contiguous_range... ColumnBatches>
+    // Executes the prepared statement on a a batch of data.
+    //
+    // Each parameter represents a column, to be bound as input parameter.
+    // The element types of each column container must be explicitly supported.
+    //
+    // In order to support column value types, their underlying storage must be contiguous.
+    // Also the input range itself must be contiguous.
+    // If any of these conditions are not met, the function will not compile - use ExecuteBatch() instead.
+    template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::contiguous_range... MoreColumnBatches>
     SqlResult<void> ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch,
-                                       ColumnBatches const&... moreColumnBatches) noexcept;
+                                       MoreColumnBatches const&... moreColumnBatches) noexcept;
 
     // Executes the prepared statement on a a batch of data.
     //
-    // Each parameter represents a column, in to be bound as input parameter,
+    // Each parameter represents a column, to be bound as input parameter,
     // and the number of elements in these bound column containers will
     // mandate how many executions will happen.
-    template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... ColumnBatches>
+    template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... MoreColumnBatches>
     SqlResult<void> ExecuteBatch(FirstColumnBatch const& firstColumnBatch,
-                                 ColumnBatches const&... moreColumnBatches) noexcept;
+                                 MoreColumnBatches const&... moreColumnBatches) noexcept;
 
     // Executes the given query directly.
     [[nodiscard]] SqlResult<void> ExecuteDirect(
@@ -225,18 +233,34 @@ template <SqlInputParameterBinder... Args>
     });
 }
 
-// TODO
-// template <typename T>
-// concept SqlNativeContiguousRange = requires(T value) {
-// };
+// clang-format off
+template <typename T>
+concept SqlNativeContiguousValueConcept =
+       std::same_as<T, bool>
+    || std::same_as<T, char>
+    || std::same_as<T, unsigned char>
+    || std::same_as<T, std::int16_t>
+    || std::same_as<T, std::uint16_t>
+    || std::same_as<T, std::int32_t>
+    || std::same_as<T, std::uint32_t>
+    || std::same_as<T, std::int64_t>
+    || std::same_as<T, std::uint64_t>
+    || std::same_as<T, float>
+    || std::same_as<T, double>
+    || std::same_as<T, SqlDate>
+    || std::same_as<T, SqlTime>
+    || std::same_as<T, SqlDateTime>
+    || std::same_as<T, SqlTimestamp>
+    || std::same_as<T, SqlFixedString<T::Capacity, typename T::value_type, T::PostRetrieveOperation>>;
+// clang-format on
 
-template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::contiguous_range... ColumnBatches>
+template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::contiguous_range... MoreColumnBatches>
 SqlResult<void> SqlStatement::ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch,
-                                                 ColumnBatches const&... moreColumnBatches) noexcept
+                                                 MoreColumnBatches const&... moreColumnBatches) noexcept
 {
-    // TODO:
-    //static_assert(SqlNativeContiguousRange<firstColumnBatch> && (SqlNativeContiguousRange<moreColumnBatches> && ...),
-    //              "Must be a supported native contiguous range of data");
+    static_assert(SqlNativeContiguousValueConcept<std::ranges::range_value_t<FirstColumnBatch>>
+                      && (SqlNativeContiguousValueConcept<std::ranges::range_value_t<MoreColumnBatches>> && ...),
+                  "Must be a supported native contiguous eleemnt type.");
 
     if (m_expectedParameterCount != 1 + sizeof...(moreColumnBatches))
         // invalid number of columns
@@ -277,9 +301,9 @@ SqlResult<void> SqlStatement::ExecuteBatchNative(FirstColumnBatch const& firstCo
     // clang-format on
 }
 
-template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... ColumnBatches>
+template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... MoreColumnBatches>
 SqlResult<void> SqlStatement::ExecuteBatch(FirstColumnBatch const& firstColumnBatch,
-                                           ColumnBatches const&... moreColumnBatches) noexcept
+                                           MoreColumnBatches const&... moreColumnBatches) noexcept
 {
     if (m_expectedParameterCount != 1 + sizeof...(moreColumnBatches))
         // invalid number of columns
