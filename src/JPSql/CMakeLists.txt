@@ -32,6 +32,7 @@ set(HEADER_FILES
     SqlConnection.hpp
     SqlError.hpp
     SqlLogger.hpp
+    SqlScopedTraceLogger.hpp
     SqlStatement.hpp
 )
 
