@@ -79,8 +79,8 @@ enum class SqlStringPostRetrieveOperation
 
 // SQL fixed-capacity string that mimmicks standard library string/string_view with a fixed-size underlying buffer.
 //
-// Member functions that require to know the size of the string is computed in O(N) time,
-// so this is not suitable for large strings.
+// The underlying storage will not be guaranteed to be `\0`-terminated unless
+// a call to mutable/const c_str() has been performed.
 template <std::size_t N, typename T = char, SqlStringPostRetrieveOperation PostOp = SqlStringPostRetrieveOperation::NOTHING>
 class SqlFixedString
 {
@@ -98,7 +98,7 @@ class SqlFixedString
     SqlFixedString(T const (&text)[SourceSize]):
         _data {}, _size { SourceSize - 1 }
     {
-        static_assert(SourceSize <= N, "RHS string size must not exceed target string's capacity.");
+        static_assert(SourceSize <= N + 1, "RHS string size must not exceed target string's capacity.");
         std::copy_n(text, SourceSize, _data);
     }
 
@@ -190,12 +190,14 @@ class SqlFixedString
     }
 
     // clang-format off
+    constexpr pointer_type c_str() noexcept { _data[_size] = '\0'; return _data; }
     constexpr pointer_type data() noexcept { return _data; }
     constexpr iterator begin() noexcept { return _data; }
     constexpr iterator end() noexcept { return _data + size(); }
     constexpr T& at(std::size_t i) noexcept { return _data[i]; }
     constexpr T& operator[](std::size_t i) noexcept { return _data[i]; }
 
+    constexpr const_pointer_type c_str() const noexcept { const_cast<T*>(_data)[_size] = '\0'; return _data; }
     constexpr const_pointer_type data() const noexcept { return _data; }
     constexpr const_iterator begin() const noexcept { return _data; }
     constexpr const_iterator end() const noexcept { return _data + size(); }
@@ -807,7 +809,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
                                 SQL_VARCHAR,
                                 value.size(),
                                 0,
-                                (SQLPOINTER) value.data(),
+                                (SQLPOINTER) value.c_str(), // Ensure Null-termination.
                                 sizeof(value),
                                 nullptr);
     }
@@ -829,7 +831,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
                 if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
                     TrimRight(boundOutputString, len);
                 else
-                    result->setsize(len);
+                    boundOutputString->setsize(len);
             });
         }
         return SQLBindCol(stmt,

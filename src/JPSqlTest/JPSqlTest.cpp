@@ -139,6 +139,22 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: assign")
     // str = ("Hello, World!"); // <-- would fail due to static_assert
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: c_str")
+{
+    SqlFixedString<12> str { "Hello, World" };
+    str.resize(5);
+    REQUIRE(str.data()[5] == ',');
+
+    SqlFixedString<12> const& constStr = str;
+    REQUIRE(constStr.c_str() == "Hello"sv); // Call to `c_str() const` also mutates [5] to NUL
+    REQUIRE(str.data()[5] == '\0');
+
+    str.resize(2);
+    REQUIRE(str.data()[2] == 'l');
+    REQUIRE(str.c_str() == "He"sv); // Call to `c_str()` also mutates [2] to NUL
+    REQUIRE(str.data()[2] == '\0');
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "ServerType")
 {
     // For now, this program is configured to use SQLite, as it is the easiest to setup and tests
