@@ -14,6 +14,7 @@
 #include <chrono>
 #include <expected>
 #include <format>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -65,6 +66,9 @@ class SqlConnection final
 
     // Kills all idle connections in the connection pool.
     static void KillAllIdle();
+
+    static void SetPostConnectedHook(std::function<void(SqlConnection&)> hook);
+    static void ResetPostConnectedHook();
 
     // Retrieves the connection ID.
     //
@@ -163,6 +167,7 @@ class SqlConnection final
 
     static inline std::optional<SqlConnectInfo> m_gDefaultConnectInfo;
     static inline std::atomic<uint64_t> m_gNextConnectionId { 1 };
+    static inline std::function<void(SqlConnection&)> m_gPostConnectedHook {};
 
     SQLHENV m_hEnv {};
     SQLHDBC m_hDbc {};

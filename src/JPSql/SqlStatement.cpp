@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "SqlStatement.hpp"
 
 SqlStatement::SqlStatement() noexcept:

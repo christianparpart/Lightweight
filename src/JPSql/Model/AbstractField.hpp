@@ -48,7 +48,7 @@ class AbstractField
     AbstractField(AbstractRecord& record,
                   SQLSMALLINT index,
                   std::string_view name,
-                  ColumnType type,
+                  SqlColumnType type,
                   FieldValueRequirement requirement):
         m_record { &record },
         m_index { index },
@@ -85,7 +85,7 @@ class AbstractField
     void SetModified(bool value) noexcept { m_modified = value; }
     SQLSMALLINT Index() const noexcept { return m_index; }
     SqlColumnNameView Name() const noexcept { return m_name; }
-    ColumnType Type() const noexcept { return m_type; }
+    SqlColumnType Type() const noexcept { return m_type; }
     bool IsNullable() const noexcept { return m_requirement == FieldValueRequirement::NULLABLE; }
     bool IsRequired() const noexcept { return m_requirement == FieldValueRequirement::NOT_NULL; }
     // clang-format on
@@ -94,7 +94,7 @@ class AbstractField
     AbstractRecord* m_record;
     SQLSMALLINT m_index;
     SqlColumnNameView m_name;
-    ColumnType m_type;
+    SqlColumnType m_type;
     FieldValueRequirement m_requirement;
     bool m_modified = false;
 };

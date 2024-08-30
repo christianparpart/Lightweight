@@ -51,4 +51,14 @@ void AbstractRecord::SortFieldsByIndex() noexcept
     std::sort(m_data->fields.begin(), m_data->fields.end(), [](auto a, auto b) { return a->Index() < b->Index(); });
 }
 
+std::vector<std::string_view> AbstractRecord::AllFieldNames() const
+{
+    std::vector<std::string_view> columnNames;
+    columnNames.resize(1 + m_data->fields.size());
+    columnNames[0] = PrimaryKeyName();
+    for (auto const* field: AllFields())
+        columnNames[field->Index() - 1] = field->Name().name;
+    return columnNames;
+}
+
 } // namespace Model

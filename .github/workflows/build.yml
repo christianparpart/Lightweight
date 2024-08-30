@@ -30,7 +30,7 @@ jobs:
   # {{{ Common checks
   check_clang_format:
     name: "Check C++ style"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
     - name: Install clang
@@ -66,8 +66,8 @@ jobs:
         if: false # TODO: Install sqliteodbc first
         run: ctest --preset windows-cl-release
   # }}}
-  # {{{ Ubuntu 24.04 CC matrix
-  ubuntu_2404_cc_matrix:
+  # {{{ Ubuntu build CC matrix
+  ubuntu_build_cc_matrix:
     strategy:
       fail-fast: false
       matrix:
@@ -137,15 +137,59 @@ jobs:
       - name: "build"
         run: cmake --build --preset linux-gcc-release -- -j3
       - name: "tests"
+        run: ctest --preset linux-gcc-release
+      - name: "Move tests to root directory"
         run: |
-          cmake --build --preset linux-gcc-release --target test
+          mv out/build/linux-gcc-release/src/JPSql/JPSqlTest .
+          mv out/build/linux-gcc-release/src/JPSql/JPSqlModelTest .
       - name: "Upload unit tests"
-        if: ${{ matrix.compiler == 'GCC 10' && matrix.cxx == '20' && matrix.qt_version == '6' }}
+        if: ${{ matrix.compiler == 'GCC 14' && matrix.cxx == '23' }}
         uses: actions/upload-artifact@v4
         with:
-          name: contour-ubuntu2204-tests
+          name: ubuntu2204-tests
           path: |
-            build/linux-gcc-release/src/JPSqlTest/JPSqlTest
-            build/linux-gcc-release/src/JPSqlTest/JPSqlModelTest
+            JPSqlTest
+            JPSqlModelTest
           retention-days: 1
+
+  dbms_test_matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          [
+            "SQLite3",
+            "MS SQL Server 2019"
+            # TODO: "MS SQL Server 2022"
+            # TODO: "Postgres"
+            # TODO: "Oracle"
+            # TODO: "MySQL" or "MariaDB"
+          ]
+    name: "Tests (${{ matrix.database }})"
+    runs-on: ubuntu-24.04
+    needs: [ubuntu_build_cc_matrix]
+    env:
+      DBMS: "${{ matrix.database }}"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Download unit test binaries"
+        uses: actions/download-artifact@v4
+        with:
+          name: ubuntu2204-tests
+      - name: "Mark unit tests as executable"
+        run: chmod 0755 JPSqlTest JPSqlModelTest
+      - name: "Setup ${{ matrix.database }}"
+        id: setup
+        run: bash ./.github/prepare-test-run.sh "${{ matrix.database }}"
+      - name: "Dump SQL connection string"
+        run: echo "ODBC_CONNECTION_STRING=${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+      - name: "Run SQL Core tests"
+        run: ./JPSqlTest --trace-sql -s # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+        env:
+          ODBC_CONNECTION_STRING: "${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+      - name: "Run SQL Model tests"
+        run: ./JPSqlModelTest --trace-model --trace-sql -s # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+        env:
+          ODBC_CONNECTION_STRING: "${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+
   # }}}

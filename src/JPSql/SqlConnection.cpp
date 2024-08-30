@@ -69,7 +69,8 @@ class SqlConnectionPool
         // Create a new connection
         ++m_stats.created;
         auto connection = SqlConnection { SqlConnection::DefaultConnectInfo() };
-        SqlLogger::GetLogger().OnConnectionOpened(connection);
+        if (connection.IsAlive())
+            SqlLogger::GetLogger().OnConnectionOpened(connection);
         return connection;
     }
 
@@ -131,6 +132,7 @@ SqlConnection::SqlConnection(SqlConnection&& other) noexcept:
     m_hEnv { other.m_hEnv },
     m_hDbc { other.m_hDbc },
     m_connectionId { other.m_connectionId },
+    m_lastError { other.m_lastError },
     m_connectInfo { std::move(other.m_connectInfo) },
     m_lastUsed { other.m_lastUsed },
     m_serverType { other.m_serverType },
@@ -173,6 +175,16 @@ void SqlConnection::SetMaxIdleConnections(size_t maxIdleConnections) noexcept
 void SqlConnection::KillAllIdle()
 {
     g_connectionPool.KillAllIdleConnections();
+}
+
+void SqlConnection::SetPostConnectedHook(std::function<void(SqlConnection&)> hook)
+{
+    m_gPostConnectedHook = std::move(hook);
+}
+
+void SqlConnection::ResetPostConnectedHook()
+{
+    m_gPostConnectedHook = {};
 }
 
 SqlResult<void> SqlConnection::Connect(std::string_view datasource,
@@ -234,6 +246,8 @@ SqlResult<void> SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
             .and_then([&]() -> SqlResult<void> {
                 PostConnect();
                 SqlLogger::GetLogger().OnConnectionOpened(*this);
+                if (m_gPostConnectedHook)
+                    m_gPostConnectedHook(*this);
                 return {};
             })
             .or_else([&](auto&&) -> SqlResult<void> {
@@ -259,11 +273,9 @@ SqlResult<void> SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
         .and_then([&]() -> SqlResult<void> {
             PostConnect();
             SqlLogger::GetLogger().OnConnectionOpened(*this);
+            if (m_gPostConnectedHook)
+                m_gPostConnectedHook(*this);
             return {};
-        })
-        .or_else([&](auto&&) -> SqlResult<void> {
-            SqlLogger::GetLogger().OnError(m_lastError, SqlErrorInfo::fromConnectionHandle(m_hDbc));
-            return std::unexpected { m_lastError };
         });
 }
 

@@ -15,6 +15,20 @@ SqlQueryBuilder::SqlQueryBuilder(std::string_view table)
     m_query.table = table;
 }
 
+SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames)
+{
+    for (auto const& fieldName: fieldNames)
+    {
+        if (!m_query.fields.empty())
+            m_query.fields += ", ";
+
+        m_query.fields += '"';
+        m_query.fields += fieldName;
+        m_query.fields += '"';
+    }
+    return *this;
+}
+
 SqlQueryBuilder& SqlQueryBuilder::Where(std::string_view sqlConditionExpression)
 {
     if (m_query.condition.empty())

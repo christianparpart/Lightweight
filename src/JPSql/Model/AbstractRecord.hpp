@@ -82,6 +82,8 @@ struct AbstractRecord
         return m_data->fields;
     }
 
+    std::vector<std::string_view> AllFieldNames() const;
+
   protected:
     struct Data
     {

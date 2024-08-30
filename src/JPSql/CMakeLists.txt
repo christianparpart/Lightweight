@@ -68,6 +68,7 @@ target_include_directories(JPSql PUBLIC
 if(MSVC)
     target_compile_options(JPSql PRIVATE /W4 /WX)
     target_link_libraries(JPSql PUBLIC odbc32)
+    target_compile_options(JPSql PRIVATE /MP)
 else()
     target_compile_options(JPSql PUBLIC ${ODBC_CFLAGS})
     target_link_libraries(JPSql PUBLIC ${ODBC_LDFLAGS})
@@ -85,7 +86,9 @@ find_package(Catch2 REQUIRED)
 add_executable(JPSqlTest)
 target_compile_features(JPSqlTest PUBLIC cxx_std_23)
 set(TEST_LIBRARIES Catch2::Catch2 JPSql::JPSql)
-if(NOT MSVC)
+if(MSVC)
+    target_compile_options(JPSqlTest PRIVATE /MP)
+else()
     set(TEST_LIBRARIES ${TEST_LIBRARIES} odbc ${SQLITE3_LIBRARY}) # FIXME: should be PkgConfig::ODBC in JPSql target already
 endif()
 target_link_libraries(JPSqlTest PRIVATE ${TEST_LIBRARIES})
@@ -94,6 +97,9 @@ add_test(NAME JPSqlTest COMMAND JPSqlTest)
 
 add_executable(JPSqlModelTest)
 target_compile_features(JPSqlModelTest PUBLIC cxx_std_23)
+if(MSVC)
+    target_compile_options(JPSqlModelTest PRIVATE /MP)
+endif()
 target_link_libraries(JPSqlModelTest PRIVATE ${TEST_LIBRARIES})
 target_sources(JPSqlModelTest PRIVATE
     ../JPSqlTest/ModelTest.cpp
