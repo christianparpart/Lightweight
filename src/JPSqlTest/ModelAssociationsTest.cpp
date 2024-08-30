@@ -157,3 +157,106 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasOne", "[model]")
     REQUIRE(supplier.account.IsLoaded() == true);
     REQUIRE(supplier.account->Inspect() == account.Inspect());
 }
+
+TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasOneThrough", "[model]")
+{
+    // {{{ models
+    struct Suppliers;
+    struct Account;
+    struct AccountHistory;
+
+    struct Suppliers: Model::Record<Suppliers>
+    {
+        Model::HasOne<Account, "supplier_id"> account;
+        Model::HasOneThrough<AccountHistory, "account_id", Account> accountHistory;
+        Model::Field<std::string, 2, "name"> name;
+
+        // {{{ ctors
+        Suppliers():
+            Record { "suppliers" },
+            account { *this },
+            accountHistory { *this },
+            name { *this }
+        {
+        }
+
+        Suppliers(Suppliers&& other) noexcept:
+            Record { std::move(other) },
+            account { *this, std::move(other.account) },
+            accountHistory { *this, std::move(other.accountHistory) },
+            name { *this, std::move(other.name) }
+        {
+        }
+        // }}}
+    };
+
+    struct Account: Model::Record<Account>
+    {
+        Model::Field<std::string, 2, "iban"> iban;
+        Model::BelongsTo<Suppliers, 2, "supplier_id"> supplier;
+        Model::HasOne<AccountHistory, "account_id"> accountHistory;
+
+        // {{{ ctors
+        Account():
+            Record { "accounts" },
+            iban { *this },
+            supplier { *this },
+            accountHistory { *this }
+        {
+        }
+
+        Account(Account&& other) noexcept:
+            Record { std::move(other) },
+            iban { *this, std::move(other.iban) },
+            supplier { *this, std::move(other.supplier) },
+            accountHistory { *this, std::move(other.accountHistory) }
+        {
+        }
+        // }}}
+    };
+
+    struct AccountHistory: Model::Record<AccountHistory>
+    {
+        Model::BelongsTo<Account, 2, "account_id"> account;
+        Model::Field<std::string, 3, "description"> description;
+
+        // {{{ ctors
+        AccountHistory():
+            Record { "account_histories" },
+            account { *this },
+            description { *this }
+        {
+        }
+
+        AccountHistory(AccountHistory&& other) noexcept:
+            Record { std::move(other) },
+            account { *this, std::move(other.account) },
+            description { *this, std::move(other.description) }
+        {
+        }
+        // }}}
+    };
+    // }}}
+
+    REQUIRE(Suppliers::CreateTable());
+    REQUIRE(Account::CreateTable());
+    REQUIRE(AccountHistory::CreateTable());
+
+    Suppliers supplier;
+    supplier.name = "The Supplier";
+    supplier.Save();
+
+    Account account;
+    account.supplier = supplier;
+    account.iban = "DE123456789";
+    account.Save();
+
+    AccountHistory accountHistory;
+    accountHistory.account = account;
+    accountHistory.description = "Initial deposit";
+    accountHistory.Save();
+
+    REQUIRE(supplier.accountHistory.IsLoaded() == false);
+    REQUIRE(supplier.accountHistory->Inspect() == accountHistory.Inspect()); // auto-loads the accountHistory
+    REQUIRE(supplier.accountHistory.IsLoaded() == true);
+}

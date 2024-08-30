@@ -46,6 +46,8 @@ struct AbstractRecord
     std::string_view PrimaryKeyName() const noexcept { return m_data->primaryKeyName; }
     RecordId Id() const noexcept { return m_data->id; }
 
+    RecordId& MutableId() noexcept { return m_data->id; }
+
     void RegisterField(AbstractField& field) noexcept { m_data->fields.push_back(&field); }
 
     void UnregisterField(AbstractField const& field) noexcept
