@@ -57,13 +57,20 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.BelongsTo", "[model]")
     Artist artist;
     artist.name = "Snoop Dog";
     REQUIRE(artist.Save());
+    REQUIRE(artist.Id().value);
 
     Track track1;
     track1.title = "Wuff";
     track1.artist = artist; // track1 "BelongsTo" artist
     REQUIRE(track1.Save());
+    REQUIRE(track1.Id().value);
 
     CHECK(track1.artist->Inspect() == artist.Inspect());
+
+    REQUIRE(artist.Destroy());
+    CHECK(Artist::Count() == 0);
+    CHECK(Track::Count() == 0);
+    // Destroying the artist must also destroy the track, due to the foreign key constraint.
 }
 
 TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasMany", "[model]")

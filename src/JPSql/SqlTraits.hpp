@@ -21,6 +21,7 @@ struct SqlTraits
     std::string_view PrimaryKeyAutoIncrement;
     std::string_view LimitOffsetClause; // 2 parameters: {limit}, {offset}
     std::string_view CurrentTimestampExpr;
+    std::string_view EnforceForeignKeyConstraint {};
     size_t MaxStatementLength {};
 };
 
@@ -53,6 +54,7 @@ constexpr inline SqlTraits SQLiteTraits {
     .PrimaryKeyAutoIncrement = "INTEGER PRIMARY KEY AUTOINCREMENT",
     .LimitOffsetClause = "LIMIT {limit} OFFSET {offset}",
     .CurrentTimestampExpr = "CURRENT_TIMESTAMP",
+    .EnforceForeignKeyConstraint = "PRAGMA foreign_keys = ON",
 };
 
 constexpr inline SqlTraits MySQLTraits {

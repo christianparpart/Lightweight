@@ -41,10 +41,15 @@ SqlResult<void> SqlStatement::Prepare(std::string_view query) noexcept
         });
 }
 
-SqlResult<void> SqlStatement::ExecuteDirect(const std::string& query, std::source_location location) noexcept
+SqlResult<void> SqlStatement::ExecuteDirect(const std::string_view& query, std::source_location location) noexcept
 {
+    if (query.empty())
+        return {};
+
+    SqlLogger::GetLogger().OnExecuteDirect(query);
+
     return UpdateLastError(SQLFreeStmt(m_hStmt, SQL_CLOSE), location).and_then([&] {
-        return UpdateLastError(SQLExecDirectA(m_hStmt, (SQLCHAR*) query.c_str(), (SQLINTEGER) query.size()), location);
+        return UpdateLastError(SQLExecDirectA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()), location);
     });
 }
 

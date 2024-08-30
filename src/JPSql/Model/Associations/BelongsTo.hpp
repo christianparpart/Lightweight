@@ -39,6 +39,8 @@ class BelongsTo final: public AbstractField
     OtherRecord* operator->() noexcept;
     OtherRecord& operator*() noexcept;
 
+    std::string SqlConstraintSpecifier() const override;
+
     std::string InspectValue() const override;
     SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
     SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
@@ -150,6 +152,17 @@ inline OtherRecord& BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, Th
 {
     RequireLoaded();
     return *m_otherRecord;
+}
+
+template <typename OtherRecord,
+          SQLSMALLINT TheColumnIndex,
+          StringLiteral TheForeignKeyName,
+          FieldValueRequirement TheRequirement>
+std::string BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::SqlConstraintSpecifier() const
+{
+    auto const otherRecord = OtherRecord {};
+    // TODO: Move the syntax into SqlTraits, as a parametrized member function
+    return std::format("FOREIGN KEY ({}) REFERENCES {}({}) ON DELETE CASCADE", ColumnName, otherRecord.TableName(), otherRecord.PrimaryKeyName());
 }
 
 template <typename OtherRecord,

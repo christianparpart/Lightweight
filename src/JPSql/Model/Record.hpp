@@ -234,14 +234,29 @@ std::string Record<Derived>::CreateTableString(SqlServerType serverType) noexcep
 
     sql << "    " << model.PrimaryKeyName() << " " << traits.PrimaryKeyAutoIncrement << ",\n";
 
+    std::vector<std::string> sqlConstraints;
+
     for (auto const* field: model.AllFields())
     {
         sql << "    " << field->Name() << " " << ColumnTypeName(field->Type());
+
         if (field->IsNullable())
             sql << " NULL";
         else
             sql << " NOT NULL";
-        if (field != model.AllFields().back())
+
+        if (auto constraint = field->SqlConstraintSpecifier(); !constraint.empty())
+            sqlConstraints.emplace_back(std::move(constraint));
+
+        if (field != model.AllFields().back() || !sqlConstraints.empty())
+            sql << ",";
+        sql << "\n";
+    }
+
+    for (auto const& constraint: sqlConstraints)
+    {
+        sql << "    " << constraint;
+        if (&constraint != &sqlConstraints.back())
             sql << ",";
         sql << "\n";
     }
@@ -428,7 +443,11 @@ SqlResult<void> Record<Derived>::Destroy()
 {
     auto const sqlQueryString = std::format("DELETE FROM {} WHERE {} = {}", TableName(), PrimaryKeyName(), *Id());
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-    return SqlStatement {}.ExecuteDirect(sqlQueryString);
+    auto stmt = SqlStatement {};
+    auto const& sqlTraits = stmt.Connection().Traits();
+    return stmt.ExecuteDirect(sqlTraits.EnforceForeignKeyConstraint).and_then([&] {
+        return stmt.ExecuteDirect(sqlQueryString);
+    });
 }
 
 template <typename Derived>

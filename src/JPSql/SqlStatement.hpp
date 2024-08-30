@@ -99,7 +99,7 @@ class SqlStatement final: public SqlDataBinderCallback
 
     // Executes the given query directly.
     [[nodiscard]] SqlResult<void> ExecuteDirect(
-        const std::string& query, std::source_location location = std::source_location::current()) noexcept;
+        const std::string_view& query, std::source_location location = std::source_location::current()) noexcept;
 
     // Retrieves the number of rows affected by the last query.
     [[nodiscard]] SqlResult<size_t> NumRowsAffected() const noexcept;
