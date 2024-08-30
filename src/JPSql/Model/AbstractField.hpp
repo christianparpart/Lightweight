@@ -65,6 +65,12 @@ class AbstractField
     AbstractField& operator=(AbstractField const&) = delete;
     virtual ~AbstractField() = default;
 
+    // Returns the syntax for the SQL constraint specification for this field, if any, otherwise an empty string.
+    virtual std::string SqlConstraintSpecifier() const
+    {
+        return "";
+    }
+
     virtual std::string InspectValue() const = 0;
     virtual SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const = 0;
     virtual SqlResult<void> BindOutputColumn(SqlStatement& stmt) = 0;
