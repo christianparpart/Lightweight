@@ -308,9 +308,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatch")
     REQUIRE(stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)"));
 
     // Ensure that the batch insert works with different types of containers
-    auto const firstNames = std::array { "Alice"sv, "Bob"sv, "Charlie"sv }; // random access STL container
-    auto const lastNames = std::list { "Smith"sv, "Johnson"sv, "Brown"sv }; // forward access STL container
+    // clang-format off
+    auto const firstNames = std::array { "Alice"sv, "Bob"sv, "Charlie"sv }; // random access STL container (contiguous)
+    auto const lastNames = std::list { "Smith"sv, "Johnson"sv, "Brown"sv }; // forward access STL container (non-contiguous)
     unsigned const salaries[3] = { 50'000, 60'000, 70'000 };                // C-style array
+    // clang-format on
 
     REQUIRE(stmt.ExecuteBatch(firstNames, lastNames, salaries));
 

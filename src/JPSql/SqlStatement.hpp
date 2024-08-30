@@ -126,7 +126,6 @@ class SqlStatement final: public SqlDataBinderCallback
                                     std::source_location location = std::source_location::current()) const noexcept;
 
     void PlanPostExecuteCallback(std::function<void()>&& cb) override;
-    void PlanPreProcessOutputColumn(std::function<void()>&& cb) override;
     void PlanPostProcessOutputColumn(std::function<void()>&& cb) override;
     void ProcessPostExecuteCallbacks() noexcept;
 
@@ -139,7 +138,6 @@ class SqlStatement final: public SqlDataBinderCallback
     SQLSMALLINT m_expectedParameterCount {};        // The number of parameters expected by the query
     std::vector<SQLLEN> m_indicators;               // Holds the indicators for the bound output columns
     std::vector<std::function<void()>> m_postExecuteCallbacks;
-    std::vector<std::function<void()>> m_preProcessOutputColumnCallbacks;
     std::vector<std::function<void()>> m_postProcessOutputColumnCallbacks;
 };
 
@@ -252,15 +250,22 @@ concept SqlNativeContiguousValueConcept =
     || std::same_as<T, SqlDateTime>
     || std::same_as<T, SqlTimestamp>
     || std::same_as<T, SqlFixedString<T::Capacity, typename T::value_type, T::PostRetrieveOperation>>;
+
+template <typename FirstColumnBatch, typename... MoreColumnBatches>
+concept SqlNativeBatchable =
+        std::ranges::contiguous_range<FirstColumnBatch>
+    && (std::ranges::contiguous_range<MoreColumnBatches> && ...)
+    &&  SqlNativeContiguousValueConcept<std::ranges::range_value_t<FirstColumnBatch>>
+    && (SqlNativeContiguousValueConcept<std::ranges::range_value_t<MoreColumnBatches>> && ...);
+
 // clang-format on
 
 template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::contiguous_range... MoreColumnBatches>
 SqlResult<void> SqlStatement::ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch,
                                                  MoreColumnBatches const&... moreColumnBatches) noexcept
 {
-    static_assert(SqlNativeContiguousValueConcept<std::ranges::range_value_t<FirstColumnBatch>>
-                      && (SqlNativeContiguousValueConcept<std::ranges::range_value_t<MoreColumnBatches>> && ...),
-                  "Must be a supported native contiguous eleemnt type.");
+    static_assert(SqlNativeBatchable<FirstColumnBatch, MoreColumnBatches...>,
+                  "Must be a supported native contiguous element type.");
 
     if (m_expectedParameterCount != 1 + sizeof...(moreColumnBatches))
         // invalid number of columns
@@ -295,7 +300,7 @@ SqlResult<void> SqlStatement::ExecuteBatchNative(FirstColumnBatch const& firstCo
             });
         })
         .or_else([&](auto&& e) -> SqlResult<void> {
-            // std::println("Batch execution failed at {}.", rowStart);
+            SqlLogger::GetLogger().OnWarning(std::format("Batch execution failed at {}.", rowStart));
             return std::unexpected { e };
         });
     // clang-format on
@@ -305,6 +310,11 @@ template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... M
 SqlResult<void> SqlStatement::ExecuteBatch(FirstColumnBatch const& firstColumnBatch,
                                            MoreColumnBatches const&... moreColumnBatches) noexcept
 {
+    // If the input ranges are contiguous and their element types are contiguous and supported as well,
+    // we can use the native batch execution.
+    if constexpr (SqlNativeBatchable<FirstColumnBatch, MoreColumnBatches...>)
+        return ExecuteBatchNative(firstColumnBatch, moreColumnBatches...);
+
     if (m_expectedParameterCount != 1 + sizeof...(moreColumnBatches))
         // invalid number of columns
         return std::unexpected { SqlError::INVALID_ARGUMENT };
@@ -362,11 +372,6 @@ inline void SqlStatement::ProcessPostExecuteCallbacks() noexcept
     for (auto& cb: m_postExecuteCallbacks)
         cb();
     m_postExecuteCallbacks.clear();
-}
-
-inline void SqlStatement::PlanPreProcessOutputColumn(std::function<void()>&& cb)
-{
-    m_preProcessOutputColumnCallbacks.emplace_back(std::move(cb));
 }
 
 inline void SqlStatement::PlanPostProcessOutputColumn(std::function<void()>&& cb)
