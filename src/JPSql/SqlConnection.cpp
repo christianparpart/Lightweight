@@ -1,4 +1,5 @@
 #include "SqlConnection.hpp"
+#include "SqlQueryFormatter.hpp"
 
 #include <list>
 #include <mutex>
@@ -131,7 +132,9 @@ SqlConnection::SqlConnection(SqlConnection&& other) noexcept:
     m_hDbc { other.m_hDbc },
     m_connectionId { other.m_connectionId },
     m_connectInfo { std::move(other.m_connectInfo) },
-    m_lastUsed { other.m_lastUsed }
+    m_lastUsed { other.m_lastUsed },
+    m_serverType { other.m_serverType },
+    m_queryFormatter { other.m_queryFormatter }
 {
     other.m_hEnv = {};
     other.m_hDbc = {};
@@ -186,6 +189,29 @@ SqlResult<void> SqlConnection::Connect(std::string connectionString) noexcept
     return Connect(SqlConnectionString { .connectionString = std::move(connectionString) });
 }
 
+void SqlConnection::PostConnect()
+{
+    auto const mappings = std::array {
+        std::pair { "Microsoft SQL Server"sv, SqlServerType::MICROSOFT_SQL },
+        std::pair { "PostgreSQL"sv, SqlServerType::POSTGRESQL },
+        std::pair { "Oracle"sv, SqlServerType::ORACLE },
+        std::pair { "SQLite"sv, SqlServerType::SQLITE },
+        std::pair { "MySQL"sv, SqlServerType::MYSQL },
+    };
+
+    auto const serverName = ServerName().value_or("");
+    for (auto const& [name, type]: mappings)
+    {
+        if (serverName.contains(name))
+        {
+            m_serverType = type;
+            break;
+        }
+    }
+
+    m_queryFormatter = SqlQueryFormatter::Get(m_serverType);
+}
+
 // Connects to the given database with the given username and password.
 SqlResult<void> SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
 {
@@ -206,6 +232,7 @@ SqlResult<void> SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
                     SQLSetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER));
             })
             .and_then([&]() -> SqlResult<void> {
+                PostConnect();
                 SqlLogger::GetLogger().OnConnectionOpened(*this);
                 return {};
             })
@@ -230,6 +257,7 @@ SqlResult<void> SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
                 SQLSetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER));
         })
         .and_then([&]() -> SqlResult<void> {
+            PostConnect();
             SqlLogger::GetLogger().OnConnectionOpened(*this);
             return {};
         })
@@ -265,7 +293,7 @@ void SqlConnection::Kill() noexcept
     m_hEnv = {};
 }
 
-[[nodiscard]] SqlResult<std::string> SqlConnection::DatabaseName() const noexcept
+SqlResult<std::string> SqlConnection::DatabaseName() const noexcept
 {
     std::string name(128, '\0');
     SQLSMALLINT nameLen {};
@@ -276,7 +304,7 @@ void SqlConnection::Kill() noexcept
     return { std::move(name) };
 }
 
-[[nodiscard]] SqlResult<std::string> SqlConnection::UserName() const noexcept
+SqlResult<std::string> SqlConnection::UserName() const noexcept
 {
     std::string name(128, '\0');
     SQLSMALLINT nameLen {};
@@ -287,7 +315,7 @@ void SqlConnection::Kill() noexcept
     return { std::move(name) };
 }
 
-[[nodiscard]] SqlResult<std::string> SqlConnection::ServerName() const noexcept
+SqlResult<std::string> SqlConnection::ServerName() const noexcept
 {
     std::string name(128, '\0');
     SQLSMALLINT nameLen {};
@@ -298,30 +326,14 @@ void SqlConnection::Kill() noexcept
     return { std::move(name) };
 }
 
-[[nodiscard]] SqlServerType SqlConnection::ServerType() const noexcept
-{
-    auto const mappings = std::array {
-        std::pair { "Microsoft SQL Server"sv, SqlServerType::MICROSOFT_SQL },
-        std::pair { "PostgreSQL"sv, SqlServerType::POSTGRESQL },
-        std::pair { "Oracle"sv, SqlServerType::ORACLE },
-        std::pair { "SQLite"sv, SqlServerType::SQLITE },
-        std::pair { "MySQL"sv, SqlServerType::MYSQL },
-    };
-    auto const serverName = ServerName().value_or("");
-    for (auto const& [name, type]: mappings)
-        if (serverName.contains(name))
-            return type;
-    return SqlServerType::UNKNOWN;
-}
-
-[[nodiscard]] bool SqlConnection::TransactionActive() const noexcept
+bool SqlConnection::TransactionActive() const noexcept
 {
     SQLUINTEGER state {};
     UpdateLastError(SQLGetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, &state, 0, nullptr));
     return m_lastError == SqlError::SUCCESS && state == SQL_AUTOCOMMIT_OFF;
 }
 
-[[nodiscard]] bool SqlConnection::TransactionsAllowed() const noexcept
+bool SqlConnection::TransactionsAllowed() const noexcept
 {
     SQLUSMALLINT txn {};
     SQLSMALLINT t {};
@@ -329,7 +341,7 @@ void SqlConnection::Kill() noexcept
     return rv == SQL_SUCCESS && txn != SQL_TC_NONE;
 }
 
-[[nodiscard]] bool SqlConnection::IsAlive() const noexcept
+bool SqlConnection::IsAlive() const noexcept
 {
     SQLUINTEGER state {};
     UpdateLastError(SQLGetConnectAttrA(m_hDbc, SQL_ATTR_CONNECTION_DEAD, &state, 0, nullptr));
