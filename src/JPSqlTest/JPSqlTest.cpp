@@ -1,7 +1,9 @@
 #include "../JPSql/SqlScopedTraceLogger.hpp"
 #include "JPSqlTestUtils.hpp"
 
+#include <JPSql/SqlComposedQuery.hpp>
 #include <JPSql/SqlConnection.hpp>
+#include <JPSql/SqlQueryFormatter.hpp>
 #include <JPSql/SqlStatement.hpp>
 #include <JPSql/SqlTransaction.hpp>
 
@@ -822,24 +824,59 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: time")
     }
 }
 
-// TODO: do we want this? LIKE THAT?
-// #include <JPSql/SqlQueryBuilder.hpp>
-// TEST_CASE_METHOD(SqlTestFixture, "SqlBasicQueryBuilder")
-// {
-// //     auto stmt = SqlStatement {};
-// //     REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT NOT NULL, Number INTEGER NOT NULL)"));
-// //     REQUIRE(stmt.Prepare("INSERT INTO Test (Value, Number) VALUES (?, ?)"));
-// //     REQUIRE(stmt.Execute("Alice", 42));
-// //     REQUIRE(stmt.Execute("Bob", 43));
-// //     REQUIRE(stmt.Execute("Charlie", 44));
-// //     REQUIRE(stmt.Execute("David", 45));
-//
-//     CHECK(SqlBasicQueryBuilder::From("Test").Select("*").Where("Number", 43).First()
-//           == "SELECT * FROM \"Test\" WHERE \"Number\" = ? LIMIT 1");
-//
-//     CHECK(SqlBasicQueryBuilder::From("Test").Select("foo").Where("Number", 43).First()
-//           == "SELECT \"foo\" FROM \"Test\" WHERE \"Number\" = ? LIMIT 1");
-//
-//     CHECK(SqlBasicQueryBuilder::From("Test").Select("foo", "bar").Where("Number", 43).First()
-//           == "SELECT \"foo\", \"bar\" FROM \"Test\" WHERE \"Number\" = ? LIMIT 1");
-// }
+struct QueryExpectations
+{
+    std::string_view sqlite;
+    std::string_view sqlServer;
+};
+
+void checkSqlQueryBuilder(SqlComposedQuery const& sqlQuery,
+                          QueryExpectations const& expectations,
+                          std::source_location const& location = std::source_location::current())
+{
+    INFO(std::format("Test source location: {}:{}", location.file_name(), location.line()));
+
+    auto const& sqliteFormatter = SqlQueryFormatter::Sqlite();
+    auto const& sqlServerFormatter = SqlQueryFormatter::SqlServer();
+
+    CHECK(sqlQuery.ToSql(sqliteFormatter) == expectations.sqlite);
+    CHECK(sqlQuery.ToSql(sqlServerFormatter) == expectations.sqlServer);
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Count")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::From("Table").Count(),
+                         QueryExpectations {
+                             .sqlite = "SELECT COUNT(*) FROM \"Table\"",
+                             .sqlServer = "SELECT COUNT(*) FROM \"Table\"",
+                         });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.All")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Select("a", "b").Select("c").GroupBy("a").OrderBy("b").All(),
+                         QueryExpectations {
+                             .sqlite = "SELECT \"a\", \"b\", \"c\" FROM \"That\" GROUP BY \"a\" ORDER BY \"b\" ASC",
+                             .sqlServer = "SELECT \"a\", \"b\", \"c\" FROM \"That\" GROUP BY \"a\" ORDER BY \"b\" ASC",
+                         });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.First")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Select("field1").OrderBy("id").First(),
+                         QueryExpectations {
+                             .sqlite = "SELECT \"field1\" FROM \"That\" ORDER BY \"id\" ASC LIMIT 1",
+                             .sqlServer = "SELECT TOP 1 \"field1\" FROM \"That\" ORDER BY \"id\" ASC",
+                         });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Range")
+{
+    checkSqlQueryBuilder(
+        SqlQueryBuilder::From("That").Select("foo", "bar").OrderBy("id").Range(200, 50),
+        QueryExpectations {
+            .sqlite = "SELECT \"foo\", \"bar\" FROM \"That\" ORDER BY \"id\" ASC LIMIT 50 OFFSET 200",
+            .sqlServer =
+                "SELECT \"foo\", \"bar\" FROM \"That\" ORDER BY \"id\" ASC OFFSET 200 ROWS FETCH NEXT 50 ROWS ONLY",
+        });
+}
