@@ -11,6 +11,7 @@ class SqliteQueryFormatter final: public SqlQueryFormatter
   public:
     std::string SelectFirst(std::string const& fields,
                             std::string const& fromTable,
+                            std::string const& tableJoins,
                             std::string const& whereCondition,
                             std::string const& orderBy) const override
     {
@@ -18,6 +19,7 @@ class SqliteQueryFormatter final: public SqlQueryFormatter
         std::stringstream sqlQueryString;
         sqlQueryString << "SELECT " << fields
                        << " FROM \"" << fromTable << "\""
+                       << tableJoins
                        << whereCondition
                        << orderBy
                        << " LIMIT 1";
@@ -27,6 +29,7 @@ class SqliteQueryFormatter final: public SqlQueryFormatter
 
     std::string SelectRange(std::string const& fields,
                             std::string const& fromTable,
+                            std::string const& tableJoins,
                             std::string const& whereCondition,
                             std::string const& orderBy,
                             std::string const& groupBy,
@@ -37,6 +40,7 @@ class SqliteQueryFormatter final: public SqlQueryFormatter
         std::stringstream sqlQueryString;
         sqlQueryString << "SELECT " << fields
                        << " FROM \"" << fromTable << "\""
+                       << tableJoins
                        << whereCondition
                        << groupBy
                        << orderBy
@@ -51,6 +55,7 @@ class SqlServerQueryFormatter final: public SqlQueryFormatter
   public:
     std::string SelectFirst(std::string const& fields,
                             std::string const& fromTable,
+                            std::string const& tableJoins,
                             std::string const& whereCondition,
                             std::string const& orderBy) const override
     {
@@ -59,6 +64,7 @@ class SqlServerQueryFormatter final: public SqlQueryFormatter
         sqlQueryString << "SELECT TOP 1 "
                        << fields
                        << " FROM \"" << fromTable << "\""
+                       << tableJoins
                        << whereCondition
                        << orderBy;
         return sqlQueryString.str();
@@ -67,16 +73,18 @@ class SqlServerQueryFormatter final: public SqlQueryFormatter
 
     std::string SelectRange(std::string const& fields,
                             std::string const& fromTable,
+                            std::string const& tableJoins,
                             std::string const& whereCondition,
                             std::string const& orderBy,
                             std::string const& groupBy,
                             std::size_t offset,
-                            std::size_t limit) const
+                            std::size_t limit) const override
     {
         // clang-format off
         std::stringstream sqlQueryString;
         sqlQueryString << "SELECT " << fields
                        << " FROM \"" << fromTable << "\""
+                       << tableJoins
                        << whereCondition
                        << groupBy
                        << orderBy
@@ -88,24 +96,29 @@ class SqlServerQueryFormatter final: public SqlQueryFormatter
 
 } // namespace
 
-std::string SqlQueryFormatter::SelectCount(std::string const& fromTable, std::string const& whereCondition) const
+std::string SqlQueryFormatter::SelectCount(std::string const& fromTable,
+                                           std::string const& tableJoins,
+                                           std::string const& whereCondition) const
 {
-    return std::format("SELECT COUNT(*) FROM \"{}\"{}", fromTable, whereCondition);
+    return std::format("SELECT COUNT(*) FROM \"{}\"{}{}", fromTable, tableJoins, whereCondition);
 }
 
 std::string SqlQueryFormatter::SelectAll(std::string const& fields,
                                          std::string const& fromTable,
+                                         std::string const& tableJoins,
                                          std::string const& whereCondition,
                                          std::string const& orderBy,
                                          std::string const& groupBy) const
 {
+    auto const delimiter = tableJoins.empty() ? "" : "\n  ";
     // clang-format off
     std::stringstream sqlQueryString;
     sqlQueryString << "SELECT " << fields
-                   << " FROM \"" << fromTable << "\""
-                   << whereCondition
-                   << groupBy
-                   << orderBy;
+                   << delimiter << " FROM \"" << fromTable << "\""
+                   << tableJoins
+                   << delimiter << whereCondition
+                   << delimiter << groupBy
+                   << delimiter << orderBy;
     return sqlQueryString.str();
     // clang-format off
 }

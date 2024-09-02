@@ -150,7 +150,7 @@ std::string Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::Inspec
     else if constexpr (std::is_same_v<T, SqlTime>)
         return std::format("\'{}\'", m_value.value);
     else if constexpr (std::is_same_v<T, SqlDateTime>)
-        return std::format("\'{}\'", m_value.value);
+        return std::format("\'{}\'", m_value.value());
     else
         return std::format("{}", m_value);
 }

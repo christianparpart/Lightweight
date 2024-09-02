@@ -485,6 +485,10 @@ struct SqlDateTime
 
     static SQL_TIMESTAMP_STRUCT ConvertToSqlValue(std::chrono::system_clock::time_point value) noexcept
     {
+        // For some reason I cannot manage to pass in the fractional seconds.
+        // auto const duration = value.time_since_epoch();
+        // auto const totalSeconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+        // auto const microSeconds = std::chrono::duration_cast<std::chrono::microseconds>(duration - totalSeconds);
         auto const ymd = std::chrono::year_month_day { std::chrono::floor<std::chrono::days>(value) };
         auto const hms = std::chrono::hh_mm_ss { value - std::chrono::floor<std::chrono::days>(value) };
         return SQL_TIMESTAMP_STRUCT {
@@ -494,7 +498,7 @@ struct SqlDateTime
             .hour = (SQLUSMALLINT) hms.hours().count(),
             .minute = (SQLUSMALLINT) hms.minutes().count(),
             .second = (SQLUSMALLINT) hms.seconds().count(),
-            .fraction = (SQLUINTEGER) hms.subseconds().count() * 1000,
+            .fraction = (SQLUINTEGER) 0, // FIXME: std::clamp(microSeconds.count(), 0l, 999'999l),
         };
     }
 
@@ -1018,7 +1022,7 @@ struct SqlDataBinder<SqlDateTime>
         return SQLBindParameter(stmt,
                                 column,
                                 SQL_PARAM_INPUT,
-                                SQL_C_TYPE_TIMESTAMP,
+                                SQL_C_TIMESTAMP,
                                 SQL_TYPE_TIMESTAMP,
                                 27,
                                 7,

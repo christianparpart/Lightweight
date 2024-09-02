@@ -40,8 +40,8 @@ struct [[nodiscard]] SqlComposedQuery
     std::string condition;
     std::string orderBy;
     std::string groupBy;
-    size_t limit = std::numeric_limits<size_t>::max();
     size_t offset = 0;
+    size_t limit = std::numeric_limits<size_t>::max();
 
     [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
 };
@@ -65,6 +65,7 @@ class [[nodiscard]] SqlQueryBuilder
     static SqlQueryBuilder From(std::string_view table);
 
     [[nodiscard]] SqlQueryBuilder& Select(std::vector<std::string_view> const& fieldNames);
+    [[nodiscard]] SqlQueryBuilder& Select(std::vector<std::string_view> const& fieldNames, std::string_view tableName);
 
     template <typename... MoreFields>
     [[nodiscard]] SqlQueryBuilder& Select(std::string_view const& firstField, MoreFields&&... moreFields);
@@ -76,13 +77,16 @@ class [[nodiscard]] SqlQueryBuilder
 
     [[nodiscard]] SqlQueryBuilder& OrderBy(std::string_view columnName,
                                            SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
+
     [[nodiscard]] SqlQueryBuilder& GroupBy(std::string_view columnName);
 
-    template <typename T>
     [[nodiscard]] SqlQueryBuilder& InnerJoin(std::string_view joinTable,
                                              std::string_view joinColumnName,
-                                             T&& joinColumnValue,
-                                             std::string_view onColumnName);
+                                             SqlQualifiedTableColumnName onComparisonColumn);
+
+    [[nodiscard]] SqlQueryBuilder& InnerJoin(std::string_view joinTable,
+                                             std::string_view joinColumnName,
+                                             std::string_view onMainTableColumn);
 
     // final methods
 
@@ -142,23 +146,6 @@ SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, T const& v
     else
         m_query.inputBindings.emplace_back(value);
 
-    return *this;
-}
-
-template <typename T>
-SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
-                                            std::string_view joinColumnName,
-                                            T&& joinColumnValue,
-                                            std::string_view onColumnName)
-{
-    if (!m_query.tableJoins.empty())
-        m_query.tableJoins += ' ';
-
-    m_query.tableJoins += std::format(R"(INNER JOIN "{0}" ON "{0}"."{1}" = "{2}"."{3}")",
-                                      joinTable,
-                                      joinColumnName,
-                                      m_query.table,
-                                      onColumnName);
     return *this;
 }
 
