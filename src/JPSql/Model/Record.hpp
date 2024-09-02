@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "../SqlComposedQuery.hpp"
 #include "AbstractRecord.hpp"
 #include "Detail.hpp"
 #include "Field.hpp"
@@ -66,8 +67,8 @@ struct Record: AbstractRecord
     SqlResult<void> Reload();
 
     // Reads the model from the database by given column name and value.
-    template <typename ColumnName, typename T>
-    SqlResult<void> Load(ColumnName const& columnName, T const& value) noexcept;
+    template <typename T>
+    SqlResult<void> Load(std::string_view const& columnName, T const& value) noexcept;
 
     // Updates the model in the database.
     SqlResult<void> Update();
@@ -230,7 +231,7 @@ std::string Record<Derived>::CreateTableString(SqlServerType serverType) noexcep
     // TODO: verify that the primary key is the first field
     // TODO: verify that the primary key is not nullable
 
-    sql << "CREATE TABLE IF NOT EXISTS " << model.TableName() << " (\n";
+    sql << "CREATE TABLE " << model.TableName() << " (\n";
 
     sql << "    " << model.PrimaryKeyName() << " " << traits.PrimaryKeyAutoIncrement << ",\n";
 
@@ -238,7 +239,7 @@ std::string Record<Derived>::CreateTableString(SqlServerType serverType) noexcep
 
     for (auto const* field: model.AllFields())
     {
-        sql << "    " << field->Name() << " " << ColumnTypeName(field->Type());
+        sql << "    " << field->Name() << " " << traits.ColumnTypeName(field->Type());
 
         if (field->IsNullable())
             sql << " NULL";
@@ -339,7 +340,7 @@ SqlResult<RecordId> Record<Derived>::Create()
 template <typename Derived>
 SqlResult<void> Record<Derived>::Load(RecordId id)
 {
-    return Load(PrimaryKeyName(), id);
+    return Load(PrimaryKeyName(), id.value);
 }
 
 template <typename Derived>
@@ -349,18 +350,16 @@ SqlResult<void> Record<Derived>::Reload()
 }
 
 template <typename Derived>
-template <typename ColumnName, typename T>
-SqlResult<void> Record<Derived>::Load(ColumnName const& columnName, T const& value) noexcept
+template <typename T>
+SqlResult<void> Record<Derived>::Load(std::string_view const& columnName, T const& value) noexcept
 {
-    detail::StringBuilder sqlColumnsString;
-    sqlColumnsString << PrimaryKeyName();
-    for (AbstractField const* field: AllFields())
-        sqlColumnsString << ", " << field->Name();
-
     SqlStatement stmt;
 
-    auto const sqlQueryString = std::format(
-        "SELECT {} FROM \"{}\" WHERE \"{}\" = {} LIMIT 1", *sqlColumnsString, TableName(), columnName, value);
+    auto const sqlQueryString = SqlQueryBuilder::From(TableName())
+                                    .Select(AllFieldNames())
+                                    .Where(columnName, SqlQueryWildcard())
+                                    .First()
+                                    .ToSql(stmt.Connection().QueryFormatter());
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, AllFields());
 

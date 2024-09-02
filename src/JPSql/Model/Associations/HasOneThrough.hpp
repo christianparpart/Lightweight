@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "../../SqlComposedQuery.hpp"
 #include "../../SqlError.hpp"
 #include "../../SqlStatement.hpp"
 #include "../AbstractRecord.hpp"
@@ -84,26 +85,20 @@ SqlResult<void> HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::Load(
     auto otherRecord = std::make_shared<OtherRecord>();
     auto const metaThroughRecord = ThroughRecord();
 
-    detail::StringBuilder sqlColumnsString;
-    sqlColumnsString << '"' << otherRecord->TableName() << "\".\"" << otherRecord->PrimaryKeyName() << '"';
-    for (AbstractField* field: otherRecord->AllFields())
-        sqlColumnsString << ", \"" << otherRecord->TableName() << "\"." << field->Name();
+    auto stmt = SqlStatement {};
 
-    auto const sqlQueryString = std::format(
-        "SELECT {} FROM \"{}\" INNER JOIN \"{}\" ON \"{}\".\"{}\" = \"{}\".\"{}\" WHERE \"{}\".\"{}\" = ? LIMIT 1",
-        /* fields */ sqlColumnsString.output,
-        /* FROM */ otherRecord->TableName(),
-        /* INNER JOIN */ metaThroughRecord.TableName(),
-        /* ON */ otherRecord->TableName(),
-        ForeignKeyName.value,
-        /* = */ metaThroughRecord.TableName(),
-        metaThroughRecord.PrimaryKeyName(),
-        /* WHERE */ otherRecord->TableName(),
-        otherRecord->PrimaryKeyName());
+    auto const sqlQueryString =
+        SqlQueryBuilder::From(otherRecord->TableName())
+            .Select(otherRecord->AllFieldNames())
+            .InnerJoin(metaThroughRecord.TableName(),
+                       metaThroughRecord.PrimaryKeyName(),
+                       otherRecord->TableName(),
+                       ForeignKeyName.value)
+            .Where(SqlQualifiedTableColumnName(otherRecord->TableName(), ForeignKeyName.value), SqlQueryWildcard())
+            .First()
+            .ToSql(stmt.Connection().QueryFormatter());
 
     auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-
-    auto stmt = SqlStatement {};
 
     if (auto result = stmt.Prepare(sqlQueryString); !result)
         return std::unexpected { result.error() };

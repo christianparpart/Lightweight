@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -213,12 +214,12 @@ template <SqlInputParameterBinder... Args>
     // such that we can call SQLBindParameter() without needing to copy it.
     // The memory region behind the input parameter must exist until the SQLExecute() call.
 
+    SqlLogger::GetLogger().OnExecute();
+
     if (!(m_expectedParameterCount == (std::numeric_limits<decltype(m_expectedParameterCount)>::max)()
           && sizeof...(args) == 0)
         && !(m_expectedParameterCount == sizeof...(args)))
         return std::unexpected { SqlError::INVALID_ARGUMENT };
-
-    SqlLogger::GetLogger().OnExecute();
 
     SQLUSMALLINT i = 0;
     ((++i, UpdateLastError(SqlDataBinder<Args>::InputParameter(m_hStmt, i, args))) && ...);
@@ -248,7 +249,6 @@ concept SqlNativeContiguousValueConcept =
     || std::same_as<T, SqlDate>
     || std::same_as<T, SqlTime>
     || std::same_as<T, SqlDateTime>
-    || std::same_as<T, SqlTimestamp>
     || std::same_as<T, SqlFixedString<T::Capacity, typename T::value_type, T::PostRetrieveOperation>>;
 
 template <typename FirstColumnBatch, typename... MoreColumnBatches>

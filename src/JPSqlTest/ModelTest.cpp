@@ -14,6 +14,8 @@ struct Job;
 
 int main(int argc, char const* argv[])
 {
+    SqlTestFixture::Initialize();
+
     int i = 1;
     for (; i < argc; ++i)
     {

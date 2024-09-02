@@ -30,39 +30,59 @@ enum class SqlQueryType
 
 class SqlQueryFormatter;
 
-struct SqlComposedQuery
+struct [[nodiscard]] SqlComposedQuery
 {
     SqlQueryType type = SqlQueryType::UNDEFINED;
     std::string fields;
     std::string table;
     std::vector<SqlVariant> inputBindings;
+    std::string tableJoins;
     std::string condition;
     std::string orderBy;
     std::string groupBy;
     size_t limit = std::numeric_limits<size_t>::max();
     size_t offset = 0;
 
-    std::string ToSql(SqlQueryFormatter const& formatter) const;
+    [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
 };
 
-class SqlQueryBuilder
+// SqlQueryWildcard is a placeholder for an explicit wildcard input parameter in a SQL query.
+//
+// Use this in the SqlQueryBuilder::Where method to insert a '?' placeholder for a wildcard.
+struct SqlQueryWildcard
+{
+};
+
+struct SqlQualifiedTableColumnName
+{
+    std::string_view tableName;
+    std::string_view columnName;
+};
+
+class [[nodiscard]] SqlQueryBuilder
 {
   public:
     static SqlQueryBuilder From(std::string_view table);
 
-    template <typename FirstField>
-    SqlQueryBuilder& Select(FirstField&& firstField);
+    [[nodiscard]] SqlQueryBuilder& Select(std::vector<std::string_view> const& fieldNames);
 
-    template <typename FirstField, typename... MoreFields>
-    SqlQueryBuilder& Select(FirstField&& firstField, MoreFields&&... moreFields);
+    template <typename... MoreFields>
+    [[nodiscard]] SqlQueryBuilder& Select(std::string_view const& firstField, MoreFields&&... moreFields);
 
-    SqlQueryBuilder& Where(std::string_view sqlConditionExpression);
+    [[nodiscard]] SqlQueryBuilder& Where(std::string_view sqlConditionExpression);
 
     template <typename ColumnName, typename T>
-    SqlQueryBuilder& Where(ColumnName const& columnName, T const& value);
+    [[nodiscard]] SqlQueryBuilder& Where(ColumnName const& columnName, T const& value);
 
-    SqlQueryBuilder& OrderBy(std::string_view columnName, SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
-    SqlQueryBuilder& GroupBy(std::string_view columnName);
+    [[nodiscard]] SqlQueryBuilder& OrderBy(std::string_view columnName,
+                                           SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
+    [[nodiscard]] SqlQueryBuilder& GroupBy(std::string_view columnName);
+
+    template <typename T>
+    [[nodiscard]] SqlQueryBuilder& InnerJoin(std::string_view joinTable,
+                                             std::string_view joinColumnName,
+                                             T&& joinColumnValue,
+                                             std::string_view onColumnName);
 
     // final methods
 
@@ -79,34 +99,18 @@ class SqlQueryBuilder
 
 // {{{ SqlQueryBuilder template implementations and inlines
 
-template <typename FirstField>
-SqlQueryBuilder& SqlQueryBuilder::Select(FirstField&& firstField)
-{
-    using namespace std::string_view_literals;
-
-    if (!m_query.fields.empty())
-        m_query.fields += ", ";
-
-    std::ostringstream fragment;
-    if (firstField == "*"sv)
-        fragment << "*";
-    else
-        fragment << "\"" << std::forward<FirstField>(firstField) << "\"";
-
-    m_query.fields += fragment.str();
-    return *this;
-}
-
-template <typename FirstField, typename... MoreFields>
-SqlQueryBuilder& SqlQueryBuilder::Select(FirstField&& firstField, MoreFields&&... moreFields)
+template <typename... MoreFields>
+SqlQueryBuilder& SqlQueryBuilder::Select(std::string_view const& firstField, MoreFields&&... moreFields)
 {
     std::ostringstream fragment;
 
     if (!m_query.fields.empty())
         fragment << ", ";
 
-    fragment << "\"" << std::forward<FirstField>(firstField) << "\"";
-    ((fragment << ", \"" << std::forward<MoreFields>(moreFields) << "\"") << ...);
+    fragment << "\"" << firstField << "\"";
+
+    if constexpr (sizeof...(MoreFields) > 0)
+        ((fragment << ", \"" << std::forward<MoreFields>(moreFields) << "\"") << ...);
 
     m_query.fields += fragment.str();
     return *this;
@@ -120,14 +124,41 @@ SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, T const& v
     else
         m_query.condition += " AND ";
 
-    m_query.condition += "\"";
-    m_query.condition += columnName;
-    m_query.condition += "\" ";
-    m_query.condition += "=";
-    m_query.condition += " ?";
+    if constexpr (std::is_same_v<ColumnName, SqlQualifiedTableColumnName>)
+    {
+        m_query.condition += std::format(R"("{}"."{}")", columnName.tableName, columnName.columnName);
+    }
+    else
+    {
+        m_query.condition += "\"";
+        m_query.condition += columnName;
+        m_query.condition += "\"";
+    }
 
-    m_query.inputBindings.emplace_back(value);
+    m_query.condition += " = ?";
 
+    if constexpr (std::is_same_v<T, SqlQueryWildcard>)
+        m_query.inputBindings.emplace_back(std::monostate());
+    else
+        m_query.inputBindings.emplace_back(value);
+
+    return *this;
+}
+
+template <typename T>
+SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
+                                            std::string_view joinColumnName,
+                                            T&& joinColumnValue,
+                                            std::string_view onColumnName)
+{
+    if (!m_query.tableJoins.empty())
+        m_query.tableJoins += ' ';
+
+    m_query.tableJoins += std::format(R"(INNER JOIN "{0}" ON "{0}"."{1}" = "{2}"."{3}")",
+                                      joinTable,
+                                      joinColumnName,
+                                      m_query.table,
+                                      onColumnName);
     return *this;
 }
 
