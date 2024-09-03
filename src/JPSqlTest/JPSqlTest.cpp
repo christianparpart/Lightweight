@@ -678,8 +678,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDateTime")
     auto stmt = SqlStatement {};
     REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value DATETIME NOT NULL)"));
 
+    // With SQL Server or Oracle, we could use DATETIME2(7) and have nano-second precision (with 100ns resolution)
+    // The standard DATETIME and ODBC SQL_TIMESTAMP have only millisecond precision.
+
     using namespace std::chrono_literals;
-    auto const expectedValue = SqlDateTime(2017y, std::chrono::August, 16d, 17h, 30min, 45s);
+    auto const expectedValue = SqlDateTime(2017y, std::chrono::August, 16d, 17h, 30min, 45s, 123'000'000ns);
 
     REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
     REQUIRE(stmt.Execute(expectedValue));
