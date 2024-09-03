@@ -2,7 +2,7 @@
 
 # This script is used to prepare the test run environment on Github Actions.
 
-DBMS="$1" # One of: "SQLite3", "SQLServer 2019", "PostgreSQL", "Oracle", "MySQL"
+DBMS="$1" # One of: "SQLite3", "MS SQL Server 2019", "MS SQL Server 2022" "PostgreSQL", "Oracle", "MySQL"
 
 setup_sqlite3() {
     echo "Setting up SQLite3..."
@@ -19,17 +19,17 @@ setup_sqlite3() {
     fi
 }
 
-setup_sqlserver2019() {
+setup_sqlserver() {
     # References:
     # https://learn.microsoft.com/en-us/sql/linux/sample-unattended-install-ubuntu?view=sql-server-ver16
     # https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-utility
     # https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker
 
     set -x
-    MSSQL_PID='evaluation'
-    MSSQL_SA_PASSWORD="${MSSQL_SA_PASSWORD:-R3a11yStrohng_P@ssw0rd}"
-
-    UBUNTU_RELEASE="20.04" # we fixiate the version, because the latest isn't always available by MS -- "$(lsb_release -r | awk '{print $2}')
+    local MSSQL_PID='evaluation'
+    local MSSQL_SA_PASSWORD="${MSSQL_SA_PASSWORD:-R3a11yStrohng_P@ssw0rd}"
+    local SS_VERSION="$1"
+    local UBUNTU_RELEASE="20.04" # we fixiate the version, because the latest isn't always available by MS -- "$(lsb_release -r | awk '{print $2}')
 
     echo "Installing sqlcmd..."
     curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
@@ -41,27 +41,22 @@ setup_sqlserver2019() {
     sudo ACCEPT_EULA=y DEBIAN_FRONTEND=noninteractive apt install -y unixodbc-dev unixodbc odbcinst mssql-tools18
     dpkg -L mssql-tools18
 
-    ls -hl /etc/odbc.ini
-    ls -hl /etc/odbcint.ini
-    cat /etc/odbc.ini
-    cat /etc/odbcint.ini
-
     echo "ODBC drivers installed:"
     sudo odbcinst -q -d
 
     echo "Querying ODBC driver for MS SQL Server..."
     sudo odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
 
-    echo "Pulling SQL Server 2019 image..."
-    docker pull mcr.microsoft.com/mssql/server:2019-latest
+    echo "Pulling SQL Server ${SS_VERSION} image..."
+    docker pull mcr.microsoft.com/mssql/server:${SS_VERSION}-latest
 
-    echo "Starting SQL Server 2019..."
+    echo "Starting SQL Server ${SS_VERSION}..."
     docker run \
             -e "ACCEPT_EULA=Y" \
             -e "MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}" \
             -p 1433:1433 --name sql1 --hostname sql1 \
             -d \
-            "mcr.microsoft.com/mssql/server:2019-latest"
+            "mcr.microsoft.com/mssql/server:${SS_VERSION}-latest"
 
     docker ps -a
     set +x
@@ -92,23 +87,6 @@ setup_sqlserver2019() {
     fi
 }
 
-setup_sqlserver2022() {
-    echo "Setting up SQLServer 2022..."
-    sudo apt install -y \
-                curl \
-                apt-transport-https \
-                gnupg
-
-    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-    add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list)"
-    apt-get install -y mssql-server
-
-    sudo apt update
-    sudo apt install -y \
-                mssql-tools \
-                unixodbc-dev
-}
-
 setup_postgres() {
     echo "Setting up PostgreSQL..."
     sudo apt install -y \
@@ -130,10 +108,10 @@ case "$DBMS" in
         setup_sqlite3
         ;;
     "MS SQL Server 2019")
-        setup_sqlserver2019
+        setup_sqlserver 2019
         ;;
     "MS SQL Server 2022")
-        setup_sqlserver2022
+        setup_sqlserver 2022
         ;;
     "PostgreSQL")
         setup_postgres
