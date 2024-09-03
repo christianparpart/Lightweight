@@ -159,8 +159,8 @@ jobs:
         database:
           [
             "SQLite3",
-            "MS SQL Server 2019"
-            # TODO: "MS SQL Server 2022"
+            "MS SQL Server 2019",
+            "MS SQL Server 2022"
             # TODO: "Postgres"
             # TODO: "Oracle"
             # TODO: "MySQL" or "MariaDB"
