@@ -29,6 +29,42 @@ SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fi
     return *this;
 }
 
+SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames, std::string_view tableName)
+{
+    for (auto const& fieldName: fieldNames)
+    {
+        if (!m_query.fields.empty())
+            m_query.fields += ", ";
+
+        m_query.fields += '"';
+        m_query.fields += tableName;
+        m_query.fields += "\".\"";
+        m_query.fields += fieldName;
+        m_query.fields += '"';
+    }
+    return *this;
+}
+
+SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
+                                            std::string_view joinColumnName,
+                                            SqlQualifiedTableColumnName onOtherColumn)
+{
+    m_query.tableJoins += std::format("\n   "
+                                      R"(INNER JOIN "{0}" ON "{0}"."{1}" = "{2}"."{3}")",
+                                      joinTable,
+                                      joinColumnName,
+                                      onOtherColumn.tableName,
+                                      onOtherColumn.columnName);
+    return *this;
+}
+
+SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
+                                            std::string_view joinColumnName,
+                                            std::string_view onMainTableColumn)
+{
+    return InnerJoin(joinTable, joinColumnName, SqlQualifiedTableColumnName { m_query.table, onMainTableColumn });
+}
+
 SqlQueryBuilder& SqlQueryBuilder::Where(std::string_view sqlConditionExpression)
 {
     if (m_query.condition.empty())
@@ -112,13 +148,13 @@ std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
         case SqlQueryType::UNDEFINED:
             break;
         case SqlQueryType::SELECT_ALL:
-            return formatter.SelectAll(fields, table, condition, orderBy, groupBy);
+            return formatter.SelectAll(fields, table, tableJoins, condition, orderBy, groupBy);
         case SqlQueryType::SELECT_FIRST:
-            return formatter.SelectFirst(fields, table, condition, orderBy);
+            return formatter.SelectFirst(fields, table, tableJoins, condition, orderBy);
         case SqlQueryType::SELECT_RANGE:
-            return formatter.SelectRange(fields, table, condition, orderBy, groupBy, offset, limit);
+            return formatter.SelectRange(fields, table, tableJoins, condition, orderBy, groupBy, offset, limit);
         case SqlQueryType::SELECT_COUNT:
-            return formatter.SelectCount(table, condition);
+            return formatter.SelectCount(table, tableJoins, condition);
     }
     return "";
 }

@@ -77,11 +77,6 @@ SqlResult<void> HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::Load(
     if (IsLoaded())
         return {};
 
-    // SELECT :other_record.*
-    //     FROM :other_record
-    //     INNER JOIN :through_record ON :other_record.:foreign_key_name = :through_record.id
-    //     WHERE :other_record.id = :record.id
-
     auto otherRecord = std::make_shared<OtherRecord>();
     auto const metaThroughRecord = ThroughRecord();
 
@@ -89,10 +84,9 @@ SqlResult<void> HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::Load(
 
     auto const sqlQueryString =
         SqlQueryBuilder::From(otherRecord->TableName())
-            .Select(otherRecord->AllFieldNames())
+            .Select(otherRecord->AllFieldNames(), otherRecord->TableName())
             .InnerJoin(metaThroughRecord.TableName(),
                        metaThroughRecord.PrimaryKeyName(),
-                       otherRecord->TableName(),
                        ForeignKeyName.value)
             .Where(SqlQualifiedTableColumnName(otherRecord->TableName(), ForeignKeyName.value), SqlQueryWildcard())
             .First()

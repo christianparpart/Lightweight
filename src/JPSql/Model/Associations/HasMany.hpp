@@ -24,12 +24,12 @@ class HasMany
 
     std::vector<OtherRecord>& All() noexcept;
 
+    OtherRecord& At(size_t index) noexcept;
+    OtherRecord& operator[](size_t index) noexcept;
+
     bool IsLoaded() const noexcept;
     SqlResult<void> Load();
     SqlResult<void> Reload();
-
-    OtherRecord& At(size_t index) noexcept;
-    OtherRecord& operator[](size_t index) noexcept;
 
   private:
     bool RequireLoaded();
@@ -79,16 +79,7 @@ SqlResult<void> HasMany<OtherRecord, ForeignKeyName>::Reload()
 template <typename OtherRecord, StringLiteral ForeignKeyName>
 SqlResult<bool> HasMany<OtherRecord, ForeignKeyName>::IsEmpty() const noexcept
 {
-    if (m_loaded)
-        return m_models.empty();
-
-    auto const sqlQueryString = std::format("SELECT COUNT(*) FROM {}", OtherRecord().TableName());
-    auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-
-    SqlStatement stmt;
-    return stmt.ExecuteDirect(sqlQueryString)
-        .and_then([&] { return stmt.FetchRow(); })
-        .and_then([&]() -> SqlResult<bool> { return stmt.GetColumn<unsigned long long>(1) == 0; });
+    return Count() == 0;
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>

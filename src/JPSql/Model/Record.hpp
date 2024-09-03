@@ -108,14 +108,13 @@ struct Record: AbstractRecord
     // Retrieves the number of models of this kind from the database.
     static SqlResult<size_t> Count() noexcept;
 
-    static SqlResult<std::vector<Derived>> Where(SqlColumnIndex columnIndex,
-                                                 const SqlVariant& value,
-                                                 SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
-
     template <typename Value>
     static SqlResult<std::vector<Derived>> Where(std::string_view columnName,
                                                  Value const& value,
-                                                 SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL) noexcept;
+                                                 SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL);
+
+    template <typename... InputParameters>
+    static SqlResult<std::vector<Derived>> Query(std::string_view sqlQueryString, InputParameters&&... inputParameters);
 
     // Returns the SQL string to create the table for this model.
     static std::string CreateTableString(SqlServerType serverType) noexcept;
@@ -453,7 +452,7 @@ template <typename Derived>
 template <typename Value>
 SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnName,
                                                        Value const& value,
-                                                       SqlWhereOperator whereOperator) noexcept
+                                                       SqlWhereOperator whereOperator)
 {
     static_assert(std::is_move_constructible_v<Derived>,
                   "The model `Derived` must be move constructible for Where() to return the models.");
@@ -467,21 +466,34 @@ SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnNa
     for (AbstractField const* field: modelSchema.AllFields())
         sqlColumnsString << ", " << field->Name();
 
-    SqlStatement stmt;
-
     auto const sqlQueryString = std::format("SELECT {} FROM {} WHERE \"{}\" {} ?",
                                             *sqlColumnsString,
                                             modelSchema.TableName(),
                                             columnName,
                                             sqlOperatorString(whereOperator));
+    return Query(sqlQueryString, value);
+}
+
+template <typename Derived>
+template <typename... InputParameters>
+SqlResult<std::vector<Derived>> Record<Derived>::Query(std::string_view sqlQueryString,
+                                                       InputParameters&&... inputParameters)
+{
+    static_assert(std::is_move_constructible_v<Derived>,
+                  "The model `Derived` must be move constructible for Where() to return the models.");
+
+    std::vector<Derived> allModels;
+
+    SqlStatement stmt;
 
     auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
 
     if (auto result = stmt.Prepare(sqlQueryString); !result)
         return std::unexpected { result.error() };
 
-    if (auto result = stmt.BindInputParameter(1, value); !result)
-        return std::unexpected { result.error() };
+    SQLSMALLINT inputParameterPosition = 0;
+    if (!(stmt.BindInputParameter(++inputParameterPosition, std::forward<InputParameters>(inputParameters)) && ...))
+        return std::unexpected { stmt.LastError() };
 
     if (auto result = stmt.Execute(); !result)
         return std::unexpected { result.error() };
