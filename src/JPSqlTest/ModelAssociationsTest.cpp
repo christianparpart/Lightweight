@@ -370,7 +370,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.HasManyThrough", "[model]")
 
     Patient patient2;
     patient2.name = "Valentine";
-    patient2.comment = "allways friendly";
+    patient2.comment = "always friendly";
     REQUIRE(patient2.Save());
 
     Appointment patient1Apointment1;
@@ -382,8 +382,8 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.HasManyThrough", "[model]")
 
     Appointment patient1Apointment2;
     patient1Apointment2.date = SqlDateTime::Now();
-    patient1Apointment2.patient = patient2;
-    patient1Apointment2.physician = physician2;
+    patient1Apointment2.patient = patient1;
+    patient1Apointment2.physician = physician1;
     patient1Apointment2.comment = "Patient is a bit nervous, again";
     REQUIRE(patient1Apointment2.Save());
 
@@ -394,8 +394,33 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.HasManyThrough", "[model]")
     patient2Apointment1.comment = "Patient is funny";
     REQUIRE(patient2Apointment1.Save());
 
-    auto const& physician2Patients = physician2.patients.All();
-    REQUIRE(physician2Patients.size() == 2);
-    CHECK(physician2Patients.at(0).Inspect() == patient1.Inspect());
-    CHECK(physician2Patients.at(1).Inspect() == patient2.Inspect());
+    auto const queriedCount = physician1.patients.Count();
+    CHECK(queriedCount == 2);
+
+    auto const& physician1Patients = physician1.patients.All();
+    REQUIRE(physician1Patients.size() == 2);
+    CHECK(physician1Patients.at(0).Inspect() == patient1.Inspect());
+    CHECK(physician1Patients.at(1).Inspect() == patient2.Inspect());
+
+    CHECK(patient1.physicians.Count() == 2);
+    CHECK(patient2.physicians.Count() == 1);
+
+    // Test Each() method
+    size_t numPatientsIterated = 0;
+    std::vector<Patient> retrievedPatients;
+    physician2.patients.Each([&](Patient& patient) {
+        // NB: Mind, SQLite does not seem to like issuing another query on the memory database while
+        // we are currently fetching the results via the Each() call. So we moved the results to a
+        // vector and then inspect them.
+        REQUIRE(numPatientsIterated == 0);
+        ++numPatientsIterated;
+        retrievedPatients.emplace_back(std::move(patient));
+    });
+    Patient const& patient = retrievedPatients.at(0);
+    CHECK(patient.Inspect() == patient1.Inspect()); // Blooper
+    CHECK(patient.comment.Value() == "Prefers morning times");
+    CHECK(patient.physicians.Count() == 2);
+    CHECK(patient.physicians.IsLoaded() == false);
+    CHECK(patient.physicians[0].name.Value() == "Granny");
+    CHECK(patient.physicians[0].Inspect() == physician2.Inspect());
 }

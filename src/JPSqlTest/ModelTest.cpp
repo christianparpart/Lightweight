@@ -141,7 +141,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
     Author author;
     author.name = "Bjarne Stroustrup";
     REQUIRE(author.Save());
-    REQUIRE(author.Id().value == 1);
+    REQUIRE(author.Id() == 1);
     REQUIRE(author.books.Count().value() == 0);
 
     Book book1;
@@ -149,7 +149,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
     book1.isbn = "978-0-321-56384-2";
     book1.author = author;
     REQUIRE(book1.Save());
-    REQUIRE(book1.Id().value == 1);
+    REQUIRE(book1.Id() == 1);
     REQUIRE(Book::Count().value() == 1);
     REQUIRE(author.books.Count().value() == 1);
 
@@ -158,7 +158,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
     book2.isbn = "978-0-321-958310";
     book2.author = author;
     REQUIRE(book2.Save());
-    REQUIRE(book2.Id().value == 2);
+    REQUIRE(book2.Id() == 2);
     REQUIRE(Book::Count().value() == 2);
     REQUIRE(author.books.Count().value() == 2);
 
@@ -353,7 +353,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Where", "[model]")
     employee3.isSenior = true;
     REQUIRE(employee3.Save());
 
-    auto employees = Employee::Where("is_senior"sv, true).value();
+    auto employees = Employee::Where("is_senior"sv, true).All();
     for (const auto& employee: employees)
         INFO("Employee: {}" << employee); // FIXME: breaks due to field name being NULL
     REQUIRE(employees.size() == 2);

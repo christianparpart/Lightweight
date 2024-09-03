@@ -42,6 +42,143 @@ constexpr std::string_view sqlOperatorString(SqlWhereOperator value) noexcept
     return result;
 }
 
+// API to load records with more complex constraints.
+//
+// @see Record
+// @see Record::Join()
+template <typename TargetModel>
+class RecordQueryBuilder
+{
+  private:
+    explicit RecordQueryBuilder(SqlQueryBuilder queryBuilder):
+        m_queryBuilder { std::move(queryBuilder) }
+    {
+    }
+
+  public:
+    explicit RecordQueryBuilder():
+        m_queryBuilder { SqlQueryBuilder::From(TargetModel().TableName()) }
+    {
+    }
+
+    template <typename JoinModel, StringLiteral foreignKeyColumn>
+    [[nodiscard]] RecordQueryBuilder<TargetModel> Join() &&
+    {
+        auto const joinModel = JoinModel();
+        (void) m_queryBuilder.InnerJoin(joinModel.TableName(), joinModel.PrimaryKeyName(), foreignKeyColumn.value);
+        return RecordQueryBuilder<TargetModel> { std::move(m_queryBuilder) };
+    }
+
+    [[nodiscard]] RecordQueryBuilder<TargetModel> Join(std::string_view joinTableName,
+                                                       std::string_view joinTablePrimaryKey,
+                                                       SqlQualifiedTableColumnName onComparisonColumn) &&
+    {
+        (void) m_queryBuilder.InnerJoin(joinTableName, joinTablePrimaryKey, onComparisonColumn);
+        return RecordQueryBuilder<TargetModel> { std::move(m_queryBuilder) };
+    }
+
+    [[nodiscard]] RecordQueryBuilder<TargetModel> Join(std::string_view joinTableName,
+                                                       std::string_view joinTablePrimaryKey,
+                                                       std::string_view onComparisonColumn) &&
+    {
+        (void) m_queryBuilder.InnerJoin(joinTableName, joinTablePrimaryKey, onComparisonColumn);
+        return RecordQueryBuilder<TargetModel> { std::move(m_queryBuilder) };
+    }
+
+    template <typename ColumnName, typename T>
+    [[nodiscard]] RecordQueryBuilder Where(ColumnName const& columnName,
+                                           SqlWhereOperator whereOperator,
+                                           T const& value) &&
+    {
+        (void) m_queryBuilder.Where(columnName, sqlOperatorString(whereOperator), value);
+        return RecordQueryBuilder<TargetModel> { std::move(m_queryBuilder) };
+    }
+
+    template <typename ColumnName, typename T>
+    [[nodiscard]] RecordQueryBuilder Where(ColumnName const& columnName, T const& value) &&
+    {
+        (void) m_queryBuilder.Where(columnName, value);
+        return *this;
+    }
+
+    [[nodiscard]] RecordQueryBuilder OrderBy(std::string_view columnName,
+                                             SqlResultOrdering ordering = SqlResultOrdering::ASCENDING) &&
+    {
+        (void) m_queryBuilder.OrderBy(columnName, ordering);
+        return *this;
+    }
+
+    [[nodiscard]] std::size_t Count()
+    {
+        auto stmt = SqlStatement();
+        auto const sqlQueryString = m_queryBuilder.Count().ToSql(stmt.Connection().QueryFormatter());
+        auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
+        return stmt.ExecuteDirectScalar<size_t>(sqlQueryString).value_or(0);
+    }
+
+    [[nodiscard]] std::optional<TargetModel> First(size_t count = 1)
+    {
+        TargetModel targetRecord;
+
+        auto stmt = SqlStatement {};
+
+        auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
+                                        .First(count)
+                                        .ToSql(stmt.Connection().QueryFormatter());
+
+        auto const _ = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
+
+        if (auto result = stmt.Prepare(sqlQueryString); !result)
+            return std::nullopt;
+
+        if (auto result = stmt.Execute(); !result)
+            return std::nullopt;
+
+        if (auto result = stmt.BindOutputColumn(1, &targetRecord.MutableId().value); !result)
+            return std::nullopt;
+
+        for (AbstractField* field: targetRecord.AllFields())
+            if (auto result = field->BindOutputColumn(stmt); !result)
+                return std::nullopt;
+
+        if (auto result = stmt.FetchRow(); !result)
+            return std::nullopt;
+
+        return { std::move(targetRecord) };
+    }
+
+    [[nodiscard]] std::vector<TargetModel> Range(std::size_t offset, std::size_t limit)
+    {
+        auto const targetRecord = TargetModel();
+        auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
+                                        .Range(offset, limit)
+                                        .ToSql(SqlConnection().QueryFormatter());
+        return TargetModel::Query(sqlQueryString).value_or(std::vector<TargetModel> {});
+    }
+
+    template <typename Callback>
+    bool Each(Callback&& callback)
+    {
+        auto const targetRecord = TargetModel();
+        auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
+                                        .All()
+                                        .ToSql(SqlConnection().QueryFormatter());
+        return TargetModel::Each(std::forward<Callback>(callback), sqlQueryString).has_value();
+    }
+
+    [[nodiscard]] std::vector<TargetModel> All()
+    {
+        auto const targetRecord = TargetModel();
+        auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
+                                        .All()
+                                        .ToSql(SqlConnection().QueryFormatter());
+        return TargetModel::Query(sqlQueryString).value_or(std::vector<TargetModel> {});
+    }
+
+  private:
+    SqlQueryBuilder m_queryBuilder;
+};
+
 template <typename Derived>
 struct Record: AbstractRecord
 {
@@ -79,19 +216,11 @@ struct Record: AbstractRecord
     // Deletes the model from the database.
     SqlResult<void> Destroy();
 
-    // TODO:
-    // template <typename OtherRecord> static ModelQueryBuilder<Derived, OtherRecord> Joins() noexcept; // TODO
-    //
-    // static ModelQueryBuilder<Derived> Where(std::string_view condition) noexcept;
-    //
-    // template <typename... JoinModel>
-    // static DynamicRecord<JoinModel...> Joins(); // TODO
-
     // Updates all models with the given changes in the modelChanges model.
     static SqlResult<void> UpdateAll(Derived const& modelChanges) noexcept;
 
     // Retrieves the first model from the database (ordered by ID ASC).
-    static SqlResult<Derived> First();
+    static SqlResult<Derived> First(size_t count = 1);
 
     // Retrieves the last model from the database (ordered by ID ASC).
     static SqlResult<Derived> Last();
@@ -108,10 +237,29 @@ struct Record: AbstractRecord
     // Retrieves the number of models of this kind from the database.
     static SqlResult<size_t> Count() noexcept;
 
+    static RecordQueryBuilder<Derived> Build();
+
+    // Joins the model with this record's model and returns a proxy for further joins and actions on this join.
+    template <typename JoinModel, StringLiteral foreignKeyColumn>
+    static RecordQueryBuilder<Derived> Join();
+
+    static RecordQueryBuilder<Derived> Join(std::string_view joinTable,
+                                            std::string_view joinColumnName,
+                                            SqlQualifiedTableColumnName onComparisonColumn);
+
     template <typename Value>
-    static SqlResult<std::vector<Derived>> Where(std::string_view columnName,
-                                                 Value const& value,
-                                                 SqlWhereOperator whereOperator = SqlWhereOperator::EQUAL);
+    static RecordQueryBuilder<Derived> Where(std::string_view columnName,
+                                             SqlWhereOperator whereOperator,
+                                             Value const& value);
+
+    template <typename Value>
+    static RecordQueryBuilder<Derived> Where(std::string_view columnName, Value const& value);
+
+    // Invokes a callback for each model that matches the given query string.
+    template <typename Callback, typename... InputParameters>
+    static SqlResult<void> Each(Callback&& callback,
+                                std::string_view sqlQueryString,
+                                InputParameters&&... inputParameters);
 
     template <typename... InputParameters>
     static SqlResult<std::vector<Derived>> Query(std::string_view sqlQueryString, InputParameters&&... inputParameters);
@@ -303,7 +451,7 @@ SqlResult<RecordId> Record<Derived>::Create()
         if (!field->IsModified())
         {
             // if (field->IsNull() && field->IsRequired())
-            //{
+            // {
             //     SqlLogger::GetLogger().OnWarning( // TODO
             //         std::format("Model required field not given: {}.{}", TableName(), field->Name()));
             //     return std::unexpected { SqlError::FAILURE }; // TODO: return
@@ -460,14 +608,45 @@ SqlResult<void> Record<Derived>::Destroy()
 }
 
 template <typename Derived>
+RecordQueryBuilder<Derived> Record<Derived>::Build()
+{
+    return RecordQueryBuilder<Derived>();
+}
+
+template <typename Derived>
+template <typename JoinModel, StringLiteral foreignKeyColumn>
+RecordQueryBuilder<Derived> Record<Derived>::Join()
+{
+    return RecordQueryBuilder<Derived>().template Join<JoinModel, foreignKeyColumn>();
+}
+
+template <typename Derived>
+RecordQueryBuilder<Derived> Record<Derived>::Join(std::string_view joinTable,
+                                                  std::string_view joinColumnName,
+                                                  SqlQualifiedTableColumnName onComparisonColumn)
+{
+    return RecordQueryBuilder<Derived>().Join(joinTable, joinColumnName, onComparisonColumn);
+}
+
+template <typename Derived>
 template <typename Value>
-SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnName,
-                                                       Value const& value,
-                                                       SqlWhereOperator whereOperator)
+RecordQueryBuilder<Derived> Record<Derived>::Where(std::string_view columnName, Value const& value)
+{
+    return Where(columnName, SqlWhereOperator::EQUAL, value);
+}
+
+template <typename Derived>
+template <typename Value>
+RecordQueryBuilder<Derived> Record<Derived>::Where(std::string_view columnName,
+                                                   SqlWhereOperator whereOperator,
+                                                   Value const& value)
 {
     static_assert(std::is_move_constructible_v<Derived>,
                   "The model `Derived` must be move constructible for Where() to return the models.");
 
+#if 1
+    return RecordQueryBuilder<Derived>().Where(columnName, whereOperator, value);
+#else
     std::vector<Derived> allModels;
 
     Derived modelSchema;
@@ -483,6 +662,7 @@ SqlResult<std::vector<Derived>> Record<Derived>::Where(std::string_view columnNa
                                             columnName,
                                             sqlOperatorString(whereOperator));
     return Query(sqlQueryString, value);
+#endif
 }
 
 template <typename Derived>
@@ -493,8 +673,22 @@ SqlResult<std::vector<Derived>> Record<Derived>::Query(std::string_view sqlQuery
     static_assert(std::is_move_constructible_v<Derived>,
                   "The model `Derived` must be move constructible for Where() to return the models.");
 
-    std::vector<Derived> allModels;
+    std::vector<Derived> output;
+    auto result = Each([&output](Derived& model) { output.emplace_back(std::move(model)); },
+                       sqlQueryString,
+                       std::forward<InputParameters>(inputParameters)...);
+    if (result.has_value())
+        return { std::move(output) };
+    else
+        return std::unexpected { result.error() };
+}
 
+template <typename Derived>
+template <typename Callback, typename... InputParameters>
+SqlResult<void> Record<Derived>::Each(Callback&& callback,
+                                      std::string_view sqlQueryString,
+                                      InputParameters&&... inputParameters)
+{
     SqlStatement stmt;
 
     auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
@@ -525,13 +719,13 @@ SqlResult<std::vector<Derived>> Record<Derived>::Query(std::string_view sqlQuery
 
         scopedModelSqlLogger += record;
 
-        allModels.emplace_back(std::move(record));
+        callback(record);
     }
 
     if (stmt.LastError() != SqlError::NO_DATA_FOUND)
         return std::unexpected { stmt.LastError() };
 
-    return { std::move(allModels) };
+    return {};
 }
 
 // }}}

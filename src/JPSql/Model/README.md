@@ -60,7 +60,7 @@ void demo()
 
 - [ ] drop SqlResult from Model API and use retry pattern instead, throw otherwise
 - [ ] Consider reintroducing `Model::Record<T, TableName, PrimaryKeyType, PrimaryKeyName>`
-- [ ] Support (join) Associations (https://guides.rubyonrails.org/association_basics.html) (e.g. `Author::All().Join<Book>().Where<Book::isbn == "978-0-321-56384-2"`) (may need some higher level query builder)
+- [x] Support (join) Associations (https://guides.rubyonrails.org/association_basics.html) (e.g. `Author::All().Join<Book>().Where<Book::isbn == "978-0-321-56384-2"`) (may need some higher level query builder)
 - [ ] Consider changing `SqlVariant` into a wrapped `std::variant` to allow convenient conversions between types (e.g. `SqlVariant v = 42; v.ToInt() == 42; v.As<int>() == 42; v.As<std::string>() == "42";`)
 
 ## Open TODOs
@@ -74,9 +74,9 @@ void demo()
 - [x] Make logging more useful, adding payload data
 - [x] remove debug prints
 - [x] add proper trace logging
-- [ ] Add `HasManyThrough<>` association
-- [ ] Add `HasOneThrough<>` association
+- [x] Add `HasManyThrough<>` association
+- [x] Add `HasOneThrough<>` association
 - [ ] Add `HasAndBelongsToMany<>` association
 - [ ] Add SQL query caching
-- [ ] Add lazy loading constraints (e.g. something similar to `Book::All().Where<Book::author_id == 1>`)
+- [x] Add lazy loading constraints (e.g. something similar to `Book::All().Where<Book::author_id == 1>`)
 - [ ] Add ability to configure PK's auto-increment to be server-side (default) vs client-side. this must be a compile-time option (via template parameter)
