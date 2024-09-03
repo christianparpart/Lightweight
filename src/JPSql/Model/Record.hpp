@@ -117,10 +117,13 @@ struct Record: AbstractRecord
     static SqlResult<std::vector<Derived>> Query(std::string_view sqlQueryString, InputParameters&&... inputParameters);
 
     // Returns the SQL string to create the table for this model.
-    static std::string CreateTableString(SqlServerType serverType) noexcept;
+    static std::string CreateTableString(SqlServerType serverType);
 
-    // Creates the table for this model in the database.
-    static SqlResult<void> CreateTable() noexcept;
+    // Creates the table for this model from the database.
+    static SqlResult<void> CreateTable();
+
+    // Drops the table for this model from the database.
+    static SqlResult<void> DropTable();
 
   protected:
     explicit Record(std::string_view tableName, std::string_view primaryKey = "id");
@@ -219,7 +222,7 @@ SqlResult<std::vector<Derived>> Record<Derived>::All() noexcept
 }
 
 template <typename Derived>
-std::string Record<Derived>::CreateTableString(SqlServerType serverType) noexcept
+std::string Record<Derived>::CreateTableString(SqlServerType serverType)
 {
     SqlTraits const& traits = GetSqlTraits(serverType); // TODO: take server type from connection
     detail::StringBuilder sql;
@@ -267,12 +270,20 @@ std::string Record<Derived>::CreateTableString(SqlServerType serverType) noexcep
 }
 
 template <typename Derived>
-SqlResult<void> Record<Derived>::CreateTable() noexcept
+SqlResult<void> Record<Derived>::CreateTable()
 {
     auto stmt = SqlStatement {};
     auto const sqlQueryString = CreateTableString(stmt.Connection().ServerType());
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
     return stmt.ExecuteDirect(sqlQueryString);
+}
+
+template <typename Derived>
+SqlResult<void> Record<Derived>::DropTable()
+{
+    auto const sqlQueryString = std::format("DROP TABLE \"{}\"", Derived().TableName());
+    auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
+    return SqlStatement().ExecuteDirect(sqlQueryString);
 }
 
 template <typename Derived>

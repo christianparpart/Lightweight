@@ -36,6 +36,7 @@ class SqlQueryFormatter
 
     static SqlQueryFormatter const& Sqlite();
     static SqlQueryFormatter const& SqlServer();
+    static SqlQueryFormatter const& PostgrSQL();
 
     static SqlQueryFormatter const* Get(SqlServerType serverType) noexcept;
 };

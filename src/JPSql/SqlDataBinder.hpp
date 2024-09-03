@@ -502,16 +502,6 @@ struct SqlDateTime
         auto const ymd = year_month_day { totalDays };
         auto const hms = hh_mm_ss<nanoseconds> { floor<nanoseconds>(value - totalDays) };
 
-        std::println("ConvertToSqlValue({}): {}-{}-{} {}:{}:{}.{}",
-                     value.time_since_epoch().count(),
-                     ymd.year(),
-                     ymd.month(),
-                     ymd.day(),
-                     hms.hours().count(),
-                     hms.minutes().count(),
-                     hms.seconds().count(),
-                     hms.subseconds().count());
-
         return SQL_TIMESTAMP_STRUCT {
             .year = (SQLSMALLINT) (int) ymd.year(),
             .month = (SQLUSMALLINT) (unsigned) ymd.month(),
@@ -527,14 +517,6 @@ struct SqlDateTime
     {
         // clang-format off
         using namespace std::chrono;
-        std::println("SqlDateTime.ConvertToNative: {}-{:02}-{:02} {:02}:{:02}:{:02}.{:09}",
-                     time.year,
-                     time.month,
-                     time.day,
-                     time.hour,
-                     time.minute,
-                     time.second,
-                     time.fraction);
         auto timepoint = sys_days(year_month_day(year(time.year), month(time.month), day(time.day)))
                        + hours(time.hour)
                        + minutes(time.minute)
@@ -788,11 +770,24 @@ struct SqlDataBinder<StringType>
                     return SQL_SUCCESS;
                 case SQL_SUCCESS_WITH_INFO: {
                     // more data pending
-                    auto const len = std::cmp_greater_equal(*indicator, bufferSize) || *indicator == SQL_NO_TOTAL
-                                         ? bufferSize - 1
-                                         : *indicator;
-                    writeIndex += len;
-                    StringTraits::Resize(result, writeIndex + *indicator + 1);
+                    if (*indicator == SQL_NO_TOTAL)
+                    {
+                        // We have a truncation and the server does not know how much data is left.
+                        writeIndex += bufferSize - 1;
+                        StringTraits::Resize(result, 2 * writeIndex + 1);
+                    }
+                    else if (std::cmp_greater_equal(*indicator, bufferSize))
+                    {
+                        // We have a truncation and the server knows how much data is left.
+                        writeIndex += bufferSize - 1;
+                        StringTraits::Resize(result, writeIndex + *indicator);
+                    }
+                    else
+                    {
+                        // We have no truncation and the server knows how much data is left.
+                        StringTraits::Resize(result, writeIndex + *indicator - 1);
+                        return SQL_SUCCESS;
+                    }
                     break;
                 }
                 default:
@@ -1133,10 +1128,16 @@ struct SqlDataBinder<SqlVariant>
                 returnCode =
                     SqlDataBinder<std::string>::GetColumn(stmt, column, &std::get<std::string>(*result), indicator);
                 break;
+            case SQL_DATE:
+                SqlLogger::GetLogger().OnWarning(std::format("SQL_DATE is from ODBC 2. SQL_TYPE_DATE should have been received instead."));
+                [[fallthrough]];
             case SQL_TYPE_DATE:
                 result->emplace<SqlDate>();
                 returnCode = SqlDataBinder<SqlDate>::GetColumn(stmt, column, &std::get<SqlDate>(*result), indicator);
                 break;
+            case SQL_TIME:
+                SqlLogger::GetLogger().OnWarning(std::format("SQL_TIME is from ODBC 2. SQL_TYPE_TIME should have been received instead."));
+                [[fallthrough]];
             case SQL_TYPE_TIME:
             case SQL_SS_TIME2:
                 result->emplace<SqlTime>();
@@ -1154,6 +1155,7 @@ struct SqlDataBinder<SqlVariant>
                 // TODO: Get them implemented on demand
                 [[fallthrough]];
             default:
+                std::println("Unsupported column type: {}", columnType);
                 SqlLogger::GetLogger().OnError(SqlError::UNSUPPORTED_TYPE, SqlErrorInfo::fromStatementHandle(stmt));
                 returnCode = SQL_ERROR; // std::errc::invalid_argument;
         }

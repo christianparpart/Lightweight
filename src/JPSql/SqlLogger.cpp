@@ -1,3 +1,4 @@
+#include "SqlConnectInfo.hpp"
 #include "SqlConnection.hpp"
 #include "SqlLogger.hpp"
 
@@ -20,28 +21,6 @@
 
 namespace
 {
-
-std::string ConnectInfoLogString(SqlConnectInfo const& info)
-{
-    return std::visit(
-        [](auto const& info) -> std::string {
-            using T = std::decay_t<decltype(info)>;
-            if constexpr (std::is_same_v<T, SqlConnectionString>)
-                return info.connectionString;
-            else if constexpr (std::is_same_v<T, SqlConnectionDataSource>)
-                return std::format("{}@{}", info.username, info.datasource);
-            else
-            {
-#if defined(__APPLE__)
-                // Apple Clang runs in here, even though all cases are covered.
-                std::unreachable();
-#else
-                static_assert(false, "non-exhaustive visitor!");
-#endif
-            }
-        },
-        info);
-}
 
 class SqlStandardLogger: public SqlLogger
 {
@@ -100,6 +79,8 @@ class SqlTraceLogger: public SqlStandardLogger
         SqlStandardLogger::OnError(errorCode, errorInfo, sourceLocation);
 
         WriteMessage("  Source: {}:{}", sourceLocation.file_name(), sourceLocation.line());
+        if (!m_lastPreparedQuery.empty())
+            WriteMessage("  Query: {}", m_lastPreparedQuery);
         WriteMessage("  Stack trace:");
 
 #if __has_include(<stacktrace>)
@@ -112,29 +93,25 @@ class SqlTraceLogger: public SqlStandardLogger
     void OnConnectionOpened(SqlConnection const& connection) override
     {
         Tick();
-        WriteMessage(
-            "Connection {} opened: {}", connection.ConnectionId(), ConnectInfoLogString(connection.ConnectionInfo()));
+        WriteMessage("Connection {} opened: {}", connection.ConnectionId(), connection.ConnectionInfo());
     }
 
     void OnConnectionClosed(SqlConnection const& connection) override
     {
         Tick();
-        WriteMessage(
-            "Connection {} closed: {}", connection.ConnectionId(), ConnectInfoLogString(connection.ConnectionInfo()));
+        WriteMessage("Connection {} closed: {}", connection.ConnectionId(), connection.ConnectionInfo());
     }
 
-    void OnConnectionIdle(SqlConnection const& connection) override
+    void OnConnectionIdle(SqlConnection const& /*connection*/) override
     {
-        Tick();
-        WriteMessage(
-            "Connection {} idle: {}", connection.ConnectionId(), ConnectInfoLogString(connection.ConnectionInfo()));
+        // Tick();
+        // WriteMessage("Connection {} idle: {}", connection.ConnectionId(), connection.ConnectionInfo());
     }
 
-    void OnConnectionReuse(SqlConnection const& connection) override
+    void OnConnectionReuse(SqlConnection const& /*connection*/) override
     {
-        Tick();
-        WriteMessage(
-            "Connection {} reused: {}", connection.ConnectionId(), ConnectInfoLogString(connection.ConnectionInfo()));
+        // Tick();
+        // WriteMessage("Connection {} reused: {}", connection.ConnectionId(), connection.ConnectionInfo());
     }
 
     void OnExecuteDirect(std::string_view const& query) override
@@ -152,6 +129,7 @@ class SqlTraceLogger: public SqlStandardLogger
     {
         Tick();
         WriteMessage("Execute: {}", m_lastPreparedQuery);
+        m_lastPreparedQuery.clear();
     }
 
     void OnExecuteBatch() override

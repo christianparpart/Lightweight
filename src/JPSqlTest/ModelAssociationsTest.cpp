@@ -49,10 +49,10 @@ struct Track: Model::Record<Track>
     }
 };
 
-TEST_CASE_METHOD(SqlModelTestFixture, "Model.BelongsTo", "[model]")
+TEST_CASE_METHOD(SqlTestFixture, "Model.BelongsTo", "[model]")
 {
-    REQUIRE(Artist::CreateTable());
-    REQUIRE(Track::CreateTable());
+    REQUIRE(CreateModelTable<Artist>());
+    REQUIRE(CreateModelTable<Track>());
 
     Artist artist;
     artist.name = "Snoop Dog";
@@ -73,10 +73,10 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.BelongsTo", "[model]")
     // Destroying the artist must also destroy the track, due to the foreign key constraint.
 }
 
-TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasMany", "[model]")
+TEST_CASE_METHOD(SqlTestFixture, "Model.HasMany", "[model]")
 {
-    REQUIRE(Artist::CreateTable());
-    REQUIRE(Track::CreateTable());
+    REQUIRE(CreateModelTable<Artist>());
+    REQUIRE(CreateModelTable<Track>());
 
     Artist artist;
     artist.name = "Snoop Dog";
@@ -102,7 +102,7 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasMany", "[model]")
     REQUIRE(artist.tracks[1].Inspect() == track2.Inspect());
 }
 
-TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasOne", "[model]")
+TEST_CASE_METHOD(SqlTestFixture, "Model.HasOne", "[model]")
 {
     struct Suppliers;
     struct Account;
@@ -147,8 +147,8 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasOne", "[model]")
         }
     };
 
-    REQUIRE(Suppliers::CreateTable());
-    REQUIRE(Account::CreateTable());
+    REQUIRE(CreateModelTable<Suppliers>());
+    REQUIRE(CreateModelTable<Account>());
 
     Suppliers supplier;
     supplier.name = "Supplier";
@@ -165,7 +165,7 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasOne", "[model]")
     REQUIRE(supplier.account->Inspect() == account.Inspect());
 }
 
-TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasOneThrough", "[model]")
+TEST_CASE_METHOD(SqlTestFixture, "Model.HasOneThrough", "[model]")
 {
     // {{{ models
     struct Suppliers;
@@ -245,9 +245,9 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasOneThrough", "[model]")
     };
     // }}}
 
-    REQUIRE(Suppliers::CreateTable());
-    REQUIRE(Account::CreateTable());
-    REQUIRE(AccountHistory::CreateTable());
+    REQUIRE(CreateModelTable<Suppliers>());
+    REQUIRE(CreateModelTable<Account>());
+    REQUIRE(CreateModelTable<AccountHistory>());
 
     Suppliers supplier;
     supplier.name = "The Supplier";
@@ -268,7 +268,7 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasOneThrough", "[model]")
     REQUIRE(supplier.accountHistory.IsLoaded() == true);
 }
 
-TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasManyThrough", "[model]")
+TEST_CASE_METHOD(SqlTestFixture, "Model.HasManyThrough", "[model]")
 {
     // {{{ Models
     struct Physician;
@@ -351,9 +351,9 @@ TEST_CASE_METHOD(SqlModelTestFixture, "Model.HasManyThrough", "[model]")
     };
     // }}}
 
-    REQUIRE(Physician::CreateTable());
-    REQUIRE(Patient::CreateTable());
-    REQUIRE(Appointment::CreateTable());
+    REQUIRE(CreateModelTable<Physician>());
+    REQUIRE(CreateModelTable<Patient>());
+    REQUIRE(CreateModelTable<Appointment>());
 
     Physician physician1;
     physician1.name = "Dr. House";

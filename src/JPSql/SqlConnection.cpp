@@ -69,8 +69,6 @@ class SqlConnectionPool
         // Create a new connection
         ++m_stats.created;
         auto connection = SqlConnection { SqlConnection::DefaultConnectInfo() };
-        if (connection.IsAlive())
-            SqlLogger::GetLogger().OnConnectionOpened(connection);
         return connection;
     }
 
@@ -305,7 +303,7 @@ void SqlConnection::Kill() noexcept
     m_hEnv = {};
 }
 
-SqlResult<std::string> SqlConnection::DatabaseName() const noexcept
+SqlResult<std::string> SqlConnection::DatabaseName() const
 {
     std::string name(128, '\0');
     SQLSMALLINT nameLen {};
@@ -316,7 +314,7 @@ SqlResult<std::string> SqlConnection::DatabaseName() const noexcept
     return { std::move(name) };
 }
 
-SqlResult<std::string> SqlConnection::UserName() const noexcept
+SqlResult<std::string> SqlConnection::UserName() const
 {
     std::string name(128, '\0');
     SQLSMALLINT nameLen {};
@@ -327,7 +325,7 @@ SqlResult<std::string> SqlConnection::UserName() const noexcept
     return { std::move(name) };
 }
 
-SqlResult<std::string> SqlConnection::ServerName() const noexcept
+SqlResult<std::string> SqlConnection::ServerName() const
 {
     std::string name(128, '\0');
     SQLSMALLINT nameLen {};
@@ -336,6 +334,17 @@ SqlResult<std::string> SqlConnection::ServerName() const noexcept
         return std::unexpected { m_lastError };
     name.resize(nameLen);
     return { std::move(name) };
+}
+
+SqlResult<std::string> SqlConnection::ServerVersion() const
+{
+    std::string text(128, '\0');
+    SQLSMALLINT textLen {};
+    UpdateLastError(SQLGetInfoA(m_hDbc, SQL_DBMS_VER, (SQLPOINTER) text.data(), (SQLSMALLINT) text.size(), &textLen));
+    if (m_lastError != SqlError::SUCCESS)
+        return std::unexpected { m_lastError };
+    text.resize(textLen);
+    return { std::move(text) };
 }
 
 bool SqlConnection::TransactionActive() const noexcept
