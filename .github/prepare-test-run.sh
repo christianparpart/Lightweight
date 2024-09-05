@@ -138,18 +138,19 @@ setup_postgres() {
 
 setup_oracle() {
     echo "Setting up Oracle..." # TODO
+    local ORACLE_VERSION="$1" # e.g. "23.5", "23.2", ...
 
     # References
     # - https://github.com/gvenzl/oci-oracle-free
 
-    # {{{ install Oracle SQL server on ubuntu
-
-    local DB_PASSWORD="BlahThat."
-    local ORACLE_VERSION="$1" # e.g. "23.5", "23.2", ...
+    # install Oracle SQL server on ubuntu
     docker pull gvenzl/oracle-free:$ORACLE_VERSION
-    docker run -d -p 1521:1521 -e ORACLE_PASSWORD="$DB_PASSWORD" gvenzl/oracle-free:$ORACLE_VERSION
-
-    # }}}
+    docker run -d -p 1521:1521 \
+               -e ORACLE_PASSWORD="$DB_PASSWORD" \
+               -e ORACLE_DATABASE="$DB_NAME" \
+               -e APP_USER="$DB_USER" \
+               -e APP_USER_PASSWORD="$DB_PASSWORD" \
+               gvenzl/oracle-free:$ORACLE_VERSION
 
     # {{{ instant client
     wget https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-basiclite-linux.x64-21.3.0.0.0.zip
@@ -197,7 +198,7 @@ case "$DBMS" in
         setup_postgres
         ;;
     "Oracle")
-        setup_oracle
+        setup_oracle 23.5
         ;;
     "MySQL")
         setup_mysql
