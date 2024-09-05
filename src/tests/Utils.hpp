@@ -117,6 +117,7 @@ class SqlTestFixture
 {
   public:
     static inline std::string_view const testDatabaseName = "LightweightTest";
+    static inline bool odbcTrace = false;
 
     using MainProgramArgs = std::tuple<int, char**>;
 
@@ -128,9 +129,11 @@ class SqlTestFixture
         {
             if (argv[i] == "--trace-sql"sv)
                 SqlLogger::SetLogger(SqlLogger::TraceLogger());
+            else if (argv[i] == "--trace-odbc"sv)
+                odbcTrace = true;
             else if (argv[i] == "--help"sv || argv[i] == "-h"sv)
             {
-                std::println("{} [--trace-sql] [--trace-model] [[--] [Catch2 flags ...]]", argv[0]);
+                std::println("{} [--trace-sql] [--trace-odbc] [[--] [Catch2 flags ...]]", argv[0]);
                 return { EXIT_SUCCESS };
             }
             else if (argv[i] == "--"sv)
@@ -165,6 +168,8 @@ class SqlTestFixture
             SqlConnection::SetDefaultConnectInfo(DefaultTestConnectionString);
         }
 
+        SqlConnection::SetPostConnectedHook(&SqlTestFixture::PostConnectedHook);
+
         auto sqlConnection = SqlConnection();
         if (!sqlConnection.IsAlive())
         {
@@ -178,13 +183,20 @@ class SqlTestFixture
                      sqlConnection.ServerVersion(),
                      sqlConnection.ServerType());
 
-        SqlConnection::SetPostConnectedHook(&SqlTestFixture::PostConnectedHook);
-
         return MainProgramArgs { argc - (i - 1), argv + (i - 1) };
     }
 
     static void PostConnectedHook(SqlConnection& connection)
     {
+        if (odbcTrace)
+        {
+#if !defined(_WIN32) && !defined(_WIN64)
+            SQLHDBC handle = connection.NativeHandle();
+            SQLSetConnectAttrA(handle, SQL_ATTR_TRACEFILE, (SQLPOINTER) "/dev/stdout", SQL_NTS);
+            SQLSetConnectAttrA(handle, SQL_ATTR_TRACE, (SQLPOINTER) SQL_OPT_TRACE_ON, SQL_IS_UINTEGER);
+#endif
+        }
+
         switch (connection.ServerType())
         {
             case SqlServerType::SQLITE: {
@@ -258,6 +270,20 @@ class SqlTestFixture
                 stmt.ExecuteDirect(std::format("CREATE DATABASE \"{}\"", testDatabaseName));
                 stmt.ExecuteDirect(std::format("USE {}", testDatabaseName));
                 break;
+            case SqlServerType::ORACLE: {
+                // Drop user-created tables
+                stmt.ExecuteDirect(R"SQL(
+                    SELECT user_tables.table_name FROM user_tables
+                    LEFT JOIN sys.user_objects ON user_objects.object_type = 'TABLE' AND user_objects.object_name = user_tables.table_name
+                    WHERE user_objects.oracle_maintained != 'Y'
+                )SQL");
+                std::vector<std::string> tableNames;
+                while (stmt.FetchRow())
+                    tableNames.emplace_back(stmt.GetColumn<std::string>(1));
+                for (auto const& tableName: tableNames)
+                    stmt.ExecuteDirect(std::format("DROP TABLE \"{}\"", tableName));
+                break;
+            }
             case SqlServerType::POSTGRESQL:
                 if (m_createdTables.empty())
                     m_createdTables = GetAllTableNames();
@@ -272,7 +298,7 @@ class SqlTestFixture
         m_createdTables.clear();
     }
 
-    std::vector<std::string> m_createdTables;
+    static inline std::vector<std::string> m_createdTables;
 };
 
 // {{{ ostream support for Lightweight, for debugging purposes
