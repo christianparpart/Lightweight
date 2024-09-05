@@ -160,8 +160,8 @@ jobs:
           [
             "SQLite3",
             "MS SQL Server 2019",
-            "MS SQL Server 2022"
-            # TODO: "Postgres"
+            "MS SQL Server 2022",
+            "PostgreSQL"
             # TODO: "Oracle"
             # TODO: "MySQL" or "MariaDB"
           ]

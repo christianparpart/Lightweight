@@ -135,6 +135,12 @@ SqlQueryFormatter const& SqlQueryFormatter::SqlServer()
     return formatter;
 }
 
+SqlQueryFormatter const& SqlQueryFormatter::PostgrSQL()
+{
+    static SqliteQueryFormatter formatter {};
+    return formatter;
+}
+
 SqlQueryFormatter const* SqlQueryFormatter::Get(SqlServerType serverType) noexcept
 {
     switch (serverType)
@@ -143,7 +149,8 @@ SqlQueryFormatter const* SqlQueryFormatter::Get(SqlServerType serverType) noexce
             return &Sqlite();
         case SqlServerType::MICROSOFT_SQL:
             return &SqlServer();
-        case SqlServerType::POSTGRESQL: // TODO
+        case SqlServerType::POSTGRESQL:
+            return &PostgrSQL();
         case SqlServerType::ORACLE: // TODO
         case SqlServerType::MYSQL: // TODO
         case SqlServerType::UNKNOWN:

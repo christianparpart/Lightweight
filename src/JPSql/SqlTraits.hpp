@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <format>
 #include <functional>
 #include <string_view>
 
@@ -68,32 +69,16 @@ constexpr std::string_view MSSqlColumnTypeName(SqlColumnType value) noexcept
 {
     switch (value)
     {
-        case SqlColumnType::CHAR:
-            return "CHAR";
-        case SqlColumnType::STRING:
-            return "VARCHAR(255)"; // FIXME: This is a guess. Define and use column width somewhere
         case SqlColumnType::TEXT:
             return "VARCHAR(MAX)";
         case SqlColumnType::BOOLEAN:
             return "BIT";
-        case SqlColumnType::INTEGER:
-            return "INTEGER";
-        case SqlColumnType::REAL:
-            return "REAL";
-        case SqlColumnType::BLOB:
-            return "BLOB";
-        case SqlColumnType::DATE:
-            return "DATE";
-        case SqlColumnType::TIME:
-            return "TIME";
-        case SqlColumnType::DATETIME:
-            return "DATETIME";
-        case SqlColumnType::UNKNOWN:
-            break;
+        default:
+            return DefaultColumnTypeName(value);
     }
-    return "UNKNOWN";
 }
-}
+
+} // namespace detail
 
 struct SqlTraits
 {
@@ -119,7 +104,15 @@ inline SqlTraits const PostgresSqlTraits {
     .LastInsertIdQuery = "SELECT LASTVAL()",
     .PrimaryKeyAutoIncrement = "SERIAL PRIMARY KEY",
     .CurrentTimestampExpr = "CURRENT_TIMESTAMP",
-    .ColumnTypeName = detail::DefaultColumnTypeName,
+    .ColumnTypeName = [](SqlColumnType value) -> std::string_view {
+        switch (value)
+        {
+            case SqlColumnType::DATETIME:
+                return "TIMESTAMP";
+            default:
+                return detail::DefaultColumnTypeName(value);
+        }
+    },
 };
 
 inline SqlTraits const OracleSqlTraits {
@@ -162,3 +155,34 @@ inline SqlTraits const& GetSqlTraits(SqlServerType serverType) noexcept
 
     return *sqlTraits[static_cast<size_t>(serverType)];
 }
+
+template <>
+struct std::formatter<SqlServerType>: std::formatter<std::string_view>
+{
+    auto format(SqlServerType type, format_context& ctx) const -> format_context::iterator
+    {
+        string_view name;
+        switch (type)
+        {
+            case SqlServerType::MICROSOFT_SQL:
+                name = "Microsoft SQL Server";
+                break;
+            case SqlServerType::POSTGRESQL:
+                name = "PostgreSQL";
+                break;
+            case SqlServerType::ORACLE:
+                name = "Oracle";
+                break;
+            case SqlServerType::SQLITE:
+                name = "SQLite";
+                break;
+            case SqlServerType::MYSQL:
+                name = "MySQL";
+                break;
+            case SqlServerType::UNKNOWN:
+                name = "Unknown";
+                break;
+        }
+        return std::formatter<string_view>::format(name, ctx);
+    }
+};

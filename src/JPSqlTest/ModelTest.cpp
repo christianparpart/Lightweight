@@ -12,35 +12,14 @@ struct Company;
 struct Phone;
 struct Job;
 
-int main(int argc, char const* argv[])
+int main(int argc, char** argv)
 {
-    SqlTestFixture::Initialize();
+    auto result = SqlTestFixture::Initialize(argc, argv);
+    if (!result.has_value())
+        return result.error();
 
-    int i = 1;
-    for (; i < argc; ++i)
-    {
-        if (argv[i] == "--trace-model"sv)
-            Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
-        else if (argv[i] == "--trace-sql"sv)
-            SqlLogger::SetLogger(SqlLogger::TraceLogger());
-        else if (argv[i] == "--help"sv || argv[i] == "-h"sv)
-        {
-            std::println("{} [--trace-model] [--trace-sql] [[--] [Catch2 flags ...]]", argv[0]);
-            return EXIT_SUCCESS;
-        }
-        else if (argv[i] == "--"sv)
-        {
-            ++i;
-            break;
-        }
-        else
-            break;
-    }
-
-    if (i < argc)
-        argv[i - 1] = argv[0];
-
-    return Catch::Session().run(argc - (i - 1), argv + (i - 1));
+    std::tie(argc, argv) = result.value();
+    return Catch::Session().run(argc, argv);
 }
 
 struct Author;
@@ -68,7 +47,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Move", "[model]")
     // Ensure move constructor is working as expected.
     // Inspect() touches the most internal data structures, so we use this call to verify.
 
-    REQUIRE(MovableRecord::CreateTable());
+    REQUIRE(CreateModelTable<MovableRecord>());
 
     MovableRecord record;
     record.name = "Foxy Fox";
@@ -100,7 +79,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Field: SqlTrimmedString", "[model]")
         }
     };
 
-    REQUIRE(TrimmedStringRecord::CreateTable());
+    REQUIRE(CreateModelTable<TrimmedStringRecord>());
 
     TrimmedStringRecord record;
     record.name = SqlTrimmedString { "  Hello, World!  " };
@@ -156,8 +135,8 @@ struct Book: Model::Record<Book>
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
 {
-    REQUIRE(Author::CreateTable());
-    REQUIRE(Book::CreateTable());
+    REQUIRE(CreateModelTable<Author>());
+    REQUIRE(CreateModelTable<Book>());
 
     Author author;
     author.name = "Bjarne Stroustrup";
@@ -257,7 +236,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Update", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Destroy", "[model]")
 {
-    REQUIRE(Author::CreateTable());
+    REQUIRE(CreateModelTable<Author>());
 
     Author author1;
     author1.name = "Bjarne Stroustrup";
@@ -275,7 +254,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Destroy", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.All", "[model]")
 {
-    REQUIRE(Author::CreateTable());
+    REQUIRE(CreateModelTable<Author>());
 
     Author author1;
     author1.name = "Bjarne Stroustrup";
@@ -323,7 +302,7 @@ struct ColumnTypesRecord: Model::Record<ColumnTypesRecord>
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.ColumnTypes", "[model]")
 {
-    REQUIRE(ColumnTypesRecord::CreateTable());
+    REQUIRE(CreateModelTable<ColumnTypesRecord>());
 
     ColumnTypesRecord record;
     record.stringColumn = "Hello";
@@ -357,7 +336,7 @@ struct Employee: Model::Record<Employee>
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Where", "[model]")
 {
-    REQUIRE(Employee::CreateTable());
+    REQUIRE(CreateModelTable<Employee>());
 
     Employee employee1;
     employee1.name = "John Doe";

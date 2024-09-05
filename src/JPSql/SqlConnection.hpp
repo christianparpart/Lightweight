@@ -95,13 +95,16 @@ class SqlConnection final
     SqlResult<void> Connect(SqlConnectInfo connectInfo) noexcept;
 
     // Retrieves the name of the database in use.
-    [[nodiscard]] SqlResult<std::string> DatabaseName() const noexcept;
+    [[nodiscard]] SqlResult<std::string> DatabaseName() const;
 
     // Retrieves the name of the user.
-    [[nodiscard]] SqlResult<std::string> UserName() const noexcept;
+    [[nodiscard]] SqlResult<std::string> UserName() const;
 
     // Retrieves the name of the server.
-    [[nodiscard]] SqlResult<std::string> ServerName() const noexcept;
+    [[nodiscard]] SqlResult<std::string> ServerName() const;
+
+    // Retrieves the reported server version.
+    [[nodiscard]] SqlResult<std::string> ServerVersion() const;
 
     // Retrieves the type of the server.
     [[nodiscard]] SqlServerType ServerType() const noexcept;
@@ -189,37 +192,6 @@ inline SqlQueryFormatter const& SqlConnection::QueryFormatter() const noexcept
 {
     return *m_queryFormatter;
 }
-
-template <>
-struct std::formatter<SqlServerType>: std::formatter<std::string_view>
-{
-    auto format(SqlServerType type, format_context& ctx) -> format_context::iterator
-    {
-        string_view name;
-        switch (type)
-        {
-            case SqlServerType::MICROSOFT_SQL:
-                name = "Microsoft SQL Server";
-                break;
-            case SqlServerType::POSTGRESQL:
-                name = "PostgreSQL";
-                break;
-            case SqlServerType::ORACLE:
-                name = "Oracle";
-                break;
-            case SqlServerType::SQLITE:
-                name = "SQLite";
-                break;
-            case SqlServerType::MYSQL:
-                name = "MySQL";
-                break;
-            case SqlServerType::UNKNOWN:
-                name = "Unknown";
-                break;
-        }
-        return std::formatter<string_view>::format(name, ctx);
-    }
-};
 
 template <typename T>
 struct std::formatter<SqlResult<T>>: std::formatter<std::string>
