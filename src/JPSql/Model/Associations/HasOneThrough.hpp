@@ -77,44 +77,15 @@ SqlResult<void> HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::Load(
     if (IsLoaded())
         return {};
 
-    auto otherRecord = std::make_shared<OtherRecord>();
-    auto const metaThroughRecord = ThroughRecord();
+    auto result =
+        OtherRecord::template Join<ThroughRecord, ForeignKeyName>()
+            .Where(SqlQualifiedTableColumnName(OtherRecord().TableName(), ForeignKeyName.value), m_record->Id().value)
+            .First();
 
-    auto stmt = SqlStatement {};
+    if (!result.has_value())
+        return std::unexpected { SqlError::NO_DATA_FOUND };
 
-    auto const sqlQueryString =
-        SqlQueryBuilder::From(otherRecord->TableName())
-            .Select(otherRecord->AllFieldNames(), otherRecord->TableName())
-            .InnerJoin(metaThroughRecord.TableName(),
-                       metaThroughRecord.PrimaryKeyName(),
-                       ForeignKeyName.value)
-            .Where(SqlQualifiedTableColumnName(otherRecord->TableName(), ForeignKeyName.value), SqlQueryWildcard())
-            .First()
-            .ToSql(stmt.Connection().QueryFormatter());
-
-    auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-
-    if (auto result = stmt.Prepare(sqlQueryString); !result)
-        return std::unexpected { result.error() };
-
-    if (auto result = stmt.BindInputParameter(1, m_record->Id()); !result)
-        return std::unexpected { result.error() };
-
-    if (auto result = stmt.Execute(); !result)
-        return std::unexpected { result.error() };
-
-    if (auto result = stmt.BindOutputColumn(1, &otherRecord->MutableId().value); !result)
-        return std::unexpected { result.error() };
-
-    for (AbstractField* field: otherRecord->AllFields())
-        if (auto result = field->BindOutputColumn(stmt); !result)
-            return std::unexpected { result.error() };
-
-    if (auto result = stmt.FetchRow(); !result)
-        return std::unexpected { result.error() };
-
-    m_otherRecord = std::move(otherRecord);
-
+    m_otherRecord = std::make_shared<OtherRecord>(std::move(result.value()));
     return {};
 }
 

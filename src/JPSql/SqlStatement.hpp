@@ -102,6 +102,11 @@ class SqlStatement final: public SqlDataBinderCallback
     [[nodiscard]] SqlResult<void> ExecuteDirect(
         const std::string_view& query, std::source_location location = std::source_location::current()) noexcept;
 
+    // Executes the given query, assuming that only one result row and column is affected, that one will be returned.
+    template <typename T>
+    [[nodiscard]] SqlResult<T> ExecuteDirectScalar(
+        const std::string_view& query, std::source_location location = std::source_location::current()) noexcept;
+
     // Retrieves the number of rows affected by the last query.
     [[nodiscard]] SqlResult<size_t> NumRowsAffected() const noexcept;
 
@@ -377,6 +382,16 @@ inline void SqlStatement::ProcessPostExecuteCallbacks() noexcept
 inline void SqlStatement::PlanPostProcessOutputColumn(std::function<void()>&& cb)
 {
     m_postProcessOutputColumnCallbacks.emplace_back(std::move(cb));
+}
+
+template <typename T>
+SqlResult<T> SqlStatement::ExecuteDirectScalar(const std::string_view& query, std::source_location location) noexcept
+{
+    // clang-format off
+    return ExecuteDirect(query, location)
+        .and_then([&] { return FetchRow(); })
+        .and_then([&] { return GetColumn<T>(1); });
+    // clang-format on
 }
 
 // }}}

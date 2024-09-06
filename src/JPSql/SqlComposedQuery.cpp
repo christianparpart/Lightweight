@@ -125,9 +125,10 @@ SqlComposedQuery SqlQueryBuilder::All()
     return std::move(m_query);
 }
 
-SqlComposedQuery SqlQueryBuilder::First()
+SqlComposedQuery SqlQueryBuilder::First(size_t count)
 {
     m_query.type = SqlQueryType::SELECT_FIRST;
+    m_query.limit = count;
 
     return std::move(m_query);
 }
@@ -143,18 +144,36 @@ SqlComposedQuery SqlQueryBuilder::Range(std::size_t offset, std::size_t limit)
 
 std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
 {
+    std::string finalConditionBuffer;
+    std::string const* finalCondition = &condition;
+
+    if (!booleanLiteralConditions.empty())
+    {
+        finalConditionBuffer = condition;
+        finalCondition = &finalConditionBuffer;
+        for (auto&& [column, binaryOp, literalValue]: booleanLiteralConditions)
+        {
+            if (finalConditionBuffer.empty())
+                finalConditionBuffer += " WHERE ";
+            else
+                finalConditionBuffer += " AND ";
+
+            finalConditionBuffer += formatter.BooleanWhereClause(column, binaryOp, literalValue);
+        }
+    }
+
     switch (type)
     {
         case SqlQueryType::UNDEFINED:
             break;
         case SqlQueryType::SELECT_ALL:
-            return formatter.SelectAll(fields, table, tableJoins, condition, orderBy, groupBy);
+            return formatter.SelectAll(fields, table, tableJoins, *finalCondition, orderBy, groupBy);
         case SqlQueryType::SELECT_FIRST:
-            return formatter.SelectFirst(fields, table, tableJoins, condition, orderBy);
+            return formatter.SelectFirst(fields, table, tableJoins, *finalCondition, orderBy, limit);
         case SqlQueryType::SELECT_RANGE:
-            return formatter.SelectRange(fields, table, tableJoins, condition, orderBy, groupBy, offset, limit);
+            return formatter.SelectRange(fields, table, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
         case SqlQueryType::SELECT_COUNT:
-            return formatter.SelectCount(table, tableJoins, condition);
+            return formatter.SelectCount(table, tableJoins, *finalCondition);
     }
     return "";
 }

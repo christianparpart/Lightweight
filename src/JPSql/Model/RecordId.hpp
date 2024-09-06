@@ -19,10 +19,29 @@ struct RecordId
         return value;
     }
 
-    constexpr std::strong_ordering operator<=>(RecordId const& other) const noexcept = default;
+    constexpr std::weak_ordering operator<=>(RecordId const& other) const noexcept = default;
+
+    constexpr bool operator==(RecordId other) const noexcept
+    {
+        return value == other.value;
+    }
+
+    constexpr bool operator==(InnerType other) const noexcept
+    {
+        return value == other;
+    }
 };
 
 } // namespace Model
+
+template <typename>
+struct WhereConditionLiteralType;
+
+template <>
+struct WhereConditionLiteralType<Model::RecordId>
+{
+    constexpr static bool needsQuotes = false;
+};
 
 template <>
 struct SqlDataBinder<Model::RecordId>

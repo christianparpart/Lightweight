@@ -19,18 +19,25 @@ class HasManyThrough
     explicit HasManyThrough(AbstractRecord& record, HasManyThrough&& other) noexcept;
 
     bool IsEmpty() const noexcept;
-    size_t Count() const noexcept;
+    size_t Count() const;
 
-    std::vector<TargetRecord>& All() noexcept;
+    std::vector<TargetRecord>& All();
 
-    TargetRecord& At(size_t index) noexcept;
-    TargetRecord& operator[](size_t index) noexcept;
+    template <typename Callback>
+    void Each(Callback&& callback);
+
+    TargetRecord& At(size_t index);
+    TargetRecord const& At(size_t index) const;
+    TargetRecord& operator[](size_t index);
+    TargetRecord const& operator[](size_t index) const;
 
     bool IsLoaded() const noexcept;
     SqlResult<void> Load();
     SqlResult<void> Reload();
 
   private:
+    void RequireLoaded() const;
+
     AbstractRecord* m_record;
     bool m_loaded = false;
     std::vector<TargetRecord> m_models;
@@ -60,40 +67,82 @@ bool HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::IsE
 }
 
 template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
-size_t HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::Count() const noexcept
+size_t HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::Count() const
 {
     if (IsLoaded())
         return m_models.size();
 
     auto const targetRecord = TargetRecord();
-    auto const throughRecordMeta = ThroughRecord();
+    auto const throughRecordMeta = ThroughRecord(); // TODO: eliminate instances, allowing direct access to meta info
 
-    auto const sqlQueryString =
-        SqlQueryBuilder::From(targetRecord.TableName())
-            .InnerJoin(throughRecordMeta.TableName(),
-                       SqlQualifiedTableColumnName(throughRecordMeta.TableName(), RightKeyName.value),
-                       SqlQualifiedTableColumnName(targetRecord.TableName(), targetRecord.PrimaryKeyName()))
-            .InnerJoin(m_record->TableName(),
-                       SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()),
-                       SqlQualifiedTableColumnName(throughRecordMeta.TableName(), RightKeyName.value))
-            .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), SqlQueryWildcard())
-            .Count()
-            .ToSql(SqlConnection().QueryFormatter());
-
-    auto stmt = SqlStatement {};
-    return stmt.ExecuteDirect(sqlQueryString)
-        .and_then([&] { return stmt.FetchRow(); })
-        .and_then([&] { return stmt.GetColumn<size_t>(1); })
-        .value();
+    return TargetRecord::Join(throughRecordMeta.TableName(),
+                              LeftKeyName.value,
+                              SqlQualifiedTableColumnName(targetRecord.TableName(), targetRecord.PrimaryKeyName()))
+        .Join(m_record->TableName(),
+              m_record->PrimaryKeyName(),
+              SqlQualifiedTableColumnName(throughRecordMeta.TableName(), RightKeyName.value))
+        .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), m_record->Id())
+        .Count();
 }
 
 template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
-inline std::vector<TargetRecord>& HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::All() noexcept
+inline std::vector<TargetRecord>& HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::All()
 {
-    if (!IsLoaded())
-        Load();
-
+    RequireLoaded();
     return m_models;
+}
+
+template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
+TargetRecord& HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::At(size_t index)
+{
+    RequireLoaded();
+    return m_models.at(index);
+}
+
+template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
+TargetRecord const& HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::At(size_t index) const
+{
+    RequireLoaded();
+    return m_models.at(index);
+}
+
+template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
+TargetRecord& HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::operator[](size_t index)
+{
+    RequireLoaded();
+    return m_models[index];
+}
+
+template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
+TargetRecord const& HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::operator[](size_t index) const
+{
+    RequireLoaded();
+    return m_models[index];
+}
+
+template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
+template <typename Callback>
+inline void HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::Each(Callback&& callback)
+{
+    if (IsLoaded())
+    {
+        for (auto& model: m_models)
+            callback(model);
+    }
+    else
+    {
+        auto const targetRecord = TargetRecord();
+        auto const throughRecordMeta = ThroughRecord();
+
+        TargetRecord::Join(throughRecordMeta.TableName(),
+                           LeftKeyName.value,
+                           SqlQualifiedTableColumnName(targetRecord.TableName(), targetRecord.PrimaryKeyName()))
+            .Join(m_record->TableName(),
+                  m_record->PrimaryKeyName(),
+                  SqlQualifiedTableColumnName(throughRecordMeta.TableName(), RightKeyName.value))
+            .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), m_record->Id())
+            .Each(callback);
+    }
 }
 
 template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
@@ -111,20 +160,16 @@ SqlResult<void> HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKe
     auto const targetRecord = TargetRecord();
     auto const throughRecordMeta = ThroughRecord();
 
-    auto const sqlQueryString =
-        SqlQueryBuilder::From(targetRecord.TableName())
-            .Select(targetRecord.AllFieldNames(), targetRecord.TableName())
-            .InnerJoin(throughRecordMeta.TableName(),
-                       LeftKeyName.value,
-                       SqlQualifiedTableColumnName(targetRecord.TableName(), targetRecord.PrimaryKeyName()))
-            .InnerJoin(m_record->TableName(),
-                       m_record->PrimaryKeyName(),
-                       SqlQualifiedTableColumnName(throughRecordMeta.TableName(), RightKeyName.value))
-            .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), SqlQueryWildcard())
-            .All()
-            .ToSql(SqlConnection().QueryFormatter());
+    m_models =
+        TargetRecord::Join(throughRecordMeta.TableName(),
+                           LeftKeyName.value,
+                           SqlQualifiedTableColumnName(targetRecord.TableName(), targetRecord.PrimaryKeyName()))
+            .Join(m_record->TableName(),
+                  m_record->PrimaryKeyName(),
+                  SqlQualifiedTableColumnName(throughRecordMeta.TableName(), RightKeyName.value))
+            .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), m_record->Id())
+            .All();
 
-    m_models = TargetRecord::Query(sqlQueryString, m_record->Id()).value();
     m_loaded = true;
     return {};
 }
@@ -135,6 +180,13 @@ SqlResult<void> HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKe
     m_loaded = false;
     m_models.clear();
     return Load();
+}
+
+template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
+void HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::RequireLoaded() const
+{
+    if (!IsLoaded())
+        const_cast<HasManyThrough*>(this)->Load();
 }
 
 // }}}

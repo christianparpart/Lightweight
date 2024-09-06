@@ -15,7 +15,7 @@ class StandardQueryLogger: public QueryLogger
 {
   private:
     std::chrono::steady_clock::time_point m_startedAt;
-    std::string_view m_query;
+    std::string m_query;
     std::vector<AbstractField*> m_output;
     size_t m_rowCount {};
 

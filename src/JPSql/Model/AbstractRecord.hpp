@@ -42,8 +42,8 @@ struct AbstractRecord
     std::string Inspect() const noexcept;
 
     // clang-format off
-    std::string_view TableName() const noexcept { return m_data->tableName; }
-    std::string_view PrimaryKeyName() const noexcept { return m_data->primaryKeyName; }
+    std::string_view TableName() const noexcept { return m_data->tableName; } // TODO: make this statically accessible from Record<> as well
+    std::string_view PrimaryKeyName() const noexcept { return m_data->primaryKeyName; } // TODO: make this statically accessible from Record<> as well
     RecordId Id() const noexcept { return m_data->id; }
 
     RecordId& MutableId() noexcept { return m_data->id; }

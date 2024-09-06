@@ -61,11 +61,9 @@ SqlResult<void> HasMany<OtherRecord, ForeignKeyName>::Load()
     if (m_loaded)
         return {};
 
-    return OtherRecord::Where(*ForeignKeyName, m_record->Id()).and_then([&](auto&& models) -> SqlResult<void> {
-        m_models = std::move(models);
-        m_loaded = true;
-        return {};
-    });
+    m_models = OtherRecord::Where(*ForeignKeyName, m_record->Id()).All();
+    m_loaded = true;
+    return {};
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
