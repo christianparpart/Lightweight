@@ -1,8 +1,6 @@
 # JPSql
 
-**JPSql** is a thin C++ ODBC wrapper for easy and fast raw database access.
-
-This is not meant to replace DABase's SQL, but to complement it with a more explicit and performant API.
+**JPSql** is a thin C++ ODBC wrapper for **easy** and **fast** raw database access.
 
 ## Features
 
@@ -29,11 +27,11 @@ This library a little bit of more modern C++ language and library features in or
 ## Supported Databases
 
 - Microsoft SQL
-- PostgreSQL (untested)
-- Oracle (untested)
-- SQLite (only for internal testing purposes)
+- PostgreSQL
+- SQLite
+- Oracle database (untested)
 
-## Using SQLite for testing
+## Using SQLite for testing on Windows operating system
 
 You need to have the SQLite3 ODBC driver for SQLite installed.
 
@@ -55,29 +53,3 @@ arch -arm64 brew install sqliteodbc
 
 - sqliteODBC Documentation: http://www.ch-werner.de/sqliteodbc/html/index.html
 - Example connection string: `DRIVER=SQLite3;Database=file::memory:`
-
-## Open TODOs
-
-- [x] Initial connection API
-- [x] Initial prepared statement API
-- [x] Proper error handling
-- [x] Support transactions
-- [x] Support default connection, such that an SqlStatement can be created without requiring a connection
-- [x] (PERFORMANCE) Make SQLGetData write directly into the string buffer
-- [x] (PERFORMANCE) Support binding bulk data (many rows) to a prepared statement, fallback to single row iteration if not supported
-- [x] (PERFORMANCE) SqlConnectionPool: SqlConnection pooling through static accessor `SqlConnection::CreateDefaultConnection()` to default connection (auto-invalidate on default connect info change)
-- [x] (TESTING) Test suite for the API with basic test coverage (using SQLite)
-- [x] (FEATURE) Support binding output parameters for convenience (and performance)
-- [x] (COMPATIBILITY) Support auto-trimming CHAR(n) columns by introducing a new string type (`SqlTrimmedString`)
-- [x] (FEATURE) Support query and performance metrics logging
-- [x] (FEATURE) Support custom C++ data types (via `SqlDataBinder<T>`-specialization)
-- [x] (FEATURE) Support SQL data types: timestamp (utilizing chrono standard library)
-- [x] (FEATURE) Support SQL data type: `std::chrono::year_month_day` (date)
-- [x] (FEATURE) Support SQL data type: `std::chrono::hh_mm_ss` (time of day)
-- [ ] (FEATURE) Handle NULL values in result sets (partially implemented already)
-- [x] (CI) integrate unit tests into CI pipeline
-- [x] (CI) test compile for 32bit and 64bit using MSVC
-- [x] (CI) Create test case for overly large strings to be written and read back
-- [ ] (CI) test using MS-SQL, PostgreSQL, Oracle (?)
-- [x] (LASTRADA) when Lastrada connects to the database, or changes the database, we must update the default connection in JPSql as well
-- [ ] (LASTRADA) Provide data bindings for `RNString`, `CString`, `QString` via `SqlOutputStringTraits<T>`
