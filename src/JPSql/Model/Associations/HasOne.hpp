@@ -22,8 +22,8 @@ class HasOne final
     OtherRecord* operator->();
     bool IsLoaded() const;
 
-    SqlResult<void> Load();
-    SqlResult<void> Reload();
+    bool Load();
+    void Reload();
 
   private:
     void RequireLoaded();
@@ -71,23 +71,24 @@ bool HasOne<OtherRecord, TheForeignKeyName>::IsLoaded() const
 }
 
 template <typename OtherRecord, StringLiteral TheForeignKeyName>
-SqlResult<void> HasOne<OtherRecord, TheForeignKeyName>::Load()
+bool HasOne<OtherRecord, TheForeignKeyName>::Load()
 {
     if (m_otherRecord)
-        return {};
+        return true;
 
-    return OtherRecord::FindBy(TheForeignKeyName.value, m_record->Id())
-        .and_then([&](auto&& model) -> SqlResult<void> {
-            m_otherRecord = std::make_shared<OtherRecord>(std::move(model));
-            return {};
-        });
+    auto foundRecord = OtherRecord::FindBy(TheForeignKeyName.value, m_record->Id());
+    if (!foundRecord)
+        return false;
+
+    m_otherRecord = std::make_shared<OtherRecord>(std::move(foundRecord.value()));
+    return true;
 }
 
 template <typename OtherRecord, StringLiteral TheForeignKeyName>
-SqlResult<void> HasOne<OtherRecord, TheForeignKeyName>::Reload()
+void HasOne<OtherRecord, TheForeignKeyName>::Reload()
 {
     m_otherRecord.reset();
-    return Load();
+    Load();
 }
 
 template <typename OtherRecord, StringLiteral TheForeignKeyName>

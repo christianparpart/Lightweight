@@ -47,7 +47,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Move", "[model]")
     // Ensure move constructor is working as expected.
     // Inspect() touches the most internal data structures, so we use this call to verify.
 
-    REQUIRE(CreateModelTable<MovableRecord>());
+    CreateModelTable<MovableRecord>();
 
     MovableRecord record;
     record.name = "Foxy Fox";
@@ -79,13 +79,12 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Field: SqlTrimmedString", "[model]")
         }
     };
 
-    REQUIRE(CreateModelTable<TrimmedStringRecord>());
+    CreateModelTable<TrimmedStringRecord>();
 
     TrimmedStringRecord record;
     record.name = SqlTrimmedString { "  Hello, World!  " };
-    REQUIRE(record.Save());
-
-    REQUIRE(record.Reload()); // Ensure we fetch name from the database and got trimmed on fetch.
+    record.Save();
+    record.Reload(); // Ensure we fetch name from the database and got trimmed on fetch.
 
     CHECK(record.name == SqlTrimmedString { "  Hello, World!" });
 }
@@ -135,32 +134,32 @@ struct Book: Model::Record<Book>
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
 {
-    REQUIRE(CreateModelTable<Author>());
-    REQUIRE(CreateModelTable<Book>());
+    CreateModelTable<Author>();
+    CreateModelTable<Book>();
 
     Author author;
     author.name = "Bjarne Stroustrup";
-    REQUIRE(author.Save());
+    author.Save();
     REQUIRE(author.Id() == 1);
-    REQUIRE(author.books.Count().value() == 0);
+    REQUIRE(author.books.Count() == 0);
 
     Book book1;
     book1.title = "The C++ Programming Language";
     book1.isbn = "978-0-321-56384-2";
     book1.author = author;
-    REQUIRE(book1.Save());
+    book1.Save();
     REQUIRE(book1.Id() == 1);
-    REQUIRE(Book::Count().value() == 1);
-    REQUIRE(author.books.Count().value() == 1);
+    REQUIRE(Book::Count() == 1);
+    REQUIRE(author.books.Count() == 1);
 
     Book book2;
     book2.title = "A Tour of C++";
     book2.isbn = "978-0-321-958310";
     book2.author = author;
-    REQUIRE(book2.Save());
+    book2.Save();
     REQUIRE(book2.Id() == 2);
-    REQUIRE(Book::Count().value() == 2);
-    REQUIRE(author.books.Count().value() == 2);
+    REQUIRE(Book::Count() == 2);
+    REQUIRE(author.books.Count() == 2);
 
     // Also take the chance to ensure the formatter works.
     REQUIRE(std::format("{}", author) == author.Inspect());
@@ -168,17 +167,17 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Create", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
 {
-    REQUIRE(Model::CreateSqlTables<Author, Book>());
+    Model::CreateSqlTables<Author, Book>();
 
     Author author;
     author.name = "Bjarne Stroustrup";
-    REQUIRE(author.Save());
+    author.Save();
 
     Book book;
     book.title = "The C++ Programming Language";
     book.isbn = "978-0-321-56384-2";
     book.author = author;
-    REQUIRE(book.Save());
+    book.Save();
 
     Book bookLoaded;
     bookLoaded.Load(book.Id());
@@ -191,17 +190,17 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Load", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
 {
-    REQUIRE(Model::CreateSqlTables<Author, Book>());
+    Model::CreateSqlTables<Author, Book>();
 
     Author author;
     author.name = "Bjarne Stroustrup";
-    REQUIRE(author.Save());
+    author.Save();
 
     Book book;
     book.title = "The C++ Programming Language";
     book.isbn = "978-0-321-56384-2";
     book.author = author;
-    REQUIRE(book.Save());
+    book.Save();
 
     Book bookLoaded = Book::Find(book.Id()).value();
     INFO("Book: " << book);
@@ -213,20 +212,20 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Find", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Update", "[model]")
 {
-    REQUIRE(Model::CreateSqlTables<Author, Book>());
+    Model::CreateSqlTables<Author, Book>();
 
     Author author;
     author.name = "Bjarne Stroustrup";
-    REQUIRE(author.Save());
+    author.Save();
 
     Book book;
     book.title = "The C++ Programming Language";
     book.isbn = "978-0-321-56384-2";
     book.author = author;
-    REQUIRE(book.Save());
+    book.Save();
 
     book.isbn = "978-0-321-958310";
-    REQUIRE(book.Save());
+    book.Save();
 
     Book bookRead = Book::Find(book.Id()).value();
     CHECK(bookRead.Id() == book.Id());
@@ -236,43 +235,43 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Update", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Destroy", "[model]")
 {
-    REQUIRE(CreateModelTable<Author>());
+    CreateModelTable<Author>();
 
     Author author1;
     author1.name = "Bjarne Stroustrup";
-    REQUIRE(author1.Save());
+    author1.Save();
     REQUIRE(Author::Count() == 1);
 
     Author author2;
     author2.name = "John Doe";
-    REQUIRE(author2.Save());
+    author2.Save();
     REQUIRE(Author::Count() == 2);
 
-    REQUIRE(author1.Destroy());
+    author1.Destroy();
     REQUIRE(Author::Count() == 1);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.All", "[model]")
 {
-    REQUIRE(CreateModelTable<Author>());
+    CreateModelTable<Author>();
 
     Author author1;
     author1.name = "Bjarne Stroustrup";
-    REQUIRE(author1.Save());
+    author1.Save();
 
     Author author2;
     author2.name = "John Doe";
-    REQUIRE(author2.Save());
+    author2.Save();
 
     Author author3;
     author3.name = "Some very long name";
-    REQUIRE(author3.Save());
+    author3.Save();
 
     Author author4;
     author4.name = "Shorty";
-    REQUIRE(author4.Save());
+    author4.Save();
 
-    auto authors = Author::All().value();
+    auto authors = Author::All();
     REQUIRE(authors.size() == 4);
     CHECK(authors[0].name == author1.name);
     CHECK(authors[1].name == author2.name);
@@ -302,12 +301,12 @@ struct ColumnTypesRecord: Model::Record<ColumnTypesRecord>
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.ColumnTypes", "[model]")
 {
-    REQUIRE(CreateModelTable<ColumnTypesRecord>());
+    CreateModelTable<ColumnTypesRecord>();
 
     ColumnTypesRecord record;
     record.stringColumn = "Hello";
     record.textColumn = SqlText { ", World!" };
-    REQUIRE(record.Save());
+    record.Save();
 
     ColumnTypesRecord record2 = ColumnTypesRecord::Find(record.Id()).value();
     CHECK(record2.stringColumn == record.stringColumn);
@@ -336,22 +335,22 @@ struct Employee: Model::Record<Employee>
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.Where", "[model]")
 {
-    REQUIRE(CreateModelTable<Employee>());
+    CreateModelTable<Employee>();
 
     Employee employee1;
     employee1.name = "John Doe";
     employee1.isSenior = false;
-    REQUIRE(employee1.Save());
+    employee1.Save();
 
     Employee employee2;
     employee2.name = "Jane Doe";
     employee2.isSenior = true;
-    REQUIRE(employee2.Save());
+    employee2.Save();
 
     Employee employee3;
     employee3.name = "John Smith";
     employee3.isSenior = true;
-    REQUIRE(employee3.Save());
+    employee3.Save();
 
     auto employees = Employee::Where("is_senior"sv, true).All();
     for (const auto& employee: employees)

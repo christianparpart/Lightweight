@@ -7,14 +7,14 @@ SqlStatement::SqlStatement() noexcept:
     m_lastError { m_connection->LastError() }
 {
     if (m_lastError == SqlError::SUCCESS)
-        UpdateLastError(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
+        RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
 }
 
 // Construct a new SqlStatement object, using the given connection.
-SqlStatement::SqlStatement(SqlConnection& relatedConnection) noexcept:
+SqlStatement::SqlStatement(SqlConnection& relatedConnection):
     m_connection { &relatedConnection }
 {
-    UpdateLastError(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
+    RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
 }
 
 SqlStatement::~SqlStatement() noexcept
@@ -22,7 +22,7 @@ SqlStatement::~SqlStatement() noexcept
     SQLFreeHandle(SQL_HANDLE_STMT, m_hStmt);
 }
 
-SqlResult<void> SqlStatement::Prepare(std::string_view query) noexcept
+void SqlStatement::Prepare(std::string_view query)
 {
     SqlLogger::GetLogger().OnPrepare(query);
 
@@ -30,92 +30,80 @@ SqlResult<void> SqlStatement::Prepare(std::string_view query) noexcept
     m_postProcessOutputColumnCallbacks.clear();
 
     // Closes the cursor if it is open
-    return UpdateLastError(SQLFreeStmt(m_hStmt, SQL_CLOSE))
-        .and_then([&] {
-            // Prepares the statement
-            return UpdateLastError(SQLPrepareA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()));
-        })
-        .and_then([&] { return UpdateLastError(SQLNumParams(m_hStmt, &m_expectedParameterCount)); })
-        .and_then([&]() -> SqlResult<void> {
-            m_indicators.resize(m_expectedParameterCount + 1);
-            return {};
-        });
+    RequireSuccess(SQLFreeStmt(m_hStmt, SQL_CLOSE));
+
+    // Prepares the statement
+    RequireSuccess(SQLPrepareA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()));
+    RequireSuccess(SQLNumParams(m_hStmt, &m_expectedParameterCount));
+    m_indicators.resize(m_expectedParameterCount + 1);
 }
 
-SqlResult<void> SqlStatement::ExecuteDirect(const std::string_view& query, std::source_location location) noexcept
+void SqlStatement::ExecuteDirect(const std::string_view& query, std::source_location location)
 {
     if (query.empty())
-        return {};
+        return;
 
     SqlLogger::GetLogger().OnExecuteDirect(query);
 
-    return UpdateLastError(SQLFreeStmt(m_hStmt, SQL_CLOSE), location).and_then([&] {
-        return UpdateLastError(SQLExecDirectA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()), location);
-    });
+    RequireSuccess(SQLFreeStmt(m_hStmt, SQL_CLOSE), location);
+    RequireSuccess(SQLExecDirectA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()), location);
 }
 
 // Retrieves the number of rows affected by the last query.
-SqlResult<size_t> SqlStatement::NumRowsAffected() const noexcept
+size_t SqlStatement::NumRowsAffected() const
 {
     SQLLEN numRowsAffected {};
-    return UpdateLastError(SQLRowCount(m_hStmt, &numRowsAffected)).transform([&] { return numRowsAffected; });
+    RequireSuccess(SQLRowCount(m_hStmt, &numRowsAffected));
+    return numRowsAffected;
 }
 
 // Retrieves the number of columns affected by the last query.
-SqlResult<size_t> SqlStatement::NumColumnsAffected() const noexcept
+size_t SqlStatement::NumColumnsAffected() const
 {
     SQLSMALLINT numColumns {};
-    return UpdateLastError(SQLNumResultCols(m_hStmt, &numColumns)).transform([&] { return numColumns; });
+    RequireSuccess(SQLNumResultCols(m_hStmt, &numColumns));
+    return numColumns;
 }
 
 // Retrieves the last insert ID of the last query's primary key.
-SqlResult<size_t> SqlStatement::LastInsertId() noexcept
+size_t SqlStatement::LastInsertId()
 {
-    switch (m_connection->ServerType())
-    {
-        case SqlServerType::MICROSOFT_SQL:
-            return ExecuteDirect("SELECT @@IDENTITY;").and_then([&] { return FetchRow(); }).and_then([&] {
-                return GetColumn<size_t>(1);
-            });
-        case SqlServerType::POSTGRESQL:
-            return ExecuteDirect("SELECT lastval();").and_then([&] { return FetchRow(); }).and_then([&] {
-                return GetColumn<size_t>(1);
-            });
-        case SqlServerType::ORACLE:
-            return ExecuteDirect("SELECT LAST_INSERT_ID() FROM DUAL;")
-                .and_then([&] { return FetchRow(); })
-                .and_then([&] { return GetColumn<size_t>(1); });
-        case SqlServerType::SQLITE:
-            return ExecuteDirect("SELECT last_insert_rowid();").and_then([&] { return FetchRow(); }).and_then([&] {
-                return GetColumn<size_t>(1);
-            });
-        case SqlServerType::MYSQL:
-            return ExecuteDirect("SELECT LAST_INSERT_ID();").and_then([&] { return FetchRow(); }).and_then([&] {
-                return GetColumn<size_t>(1);
-            });
-        case SqlServerType::UNKNOWN:
-            return 0;
-    }
+    ExecuteDirect(m_connection->Traits().LastInsertIdQuery);
+
+    if (FetchRow())
+        return GetColumn<size_t>(1);
+
     return 0;
 }
 
 // Fetches the next row of the result set.
-SqlResult<void> SqlStatement::FetchRow() noexcept
+bool SqlStatement::FetchRow()
 {
-    return UpdateLastError(SQLFetch(m_hStmt)).and_then([&]() -> SqlResult<void> {
-        // post-process the output columns, if needed
-        for (auto const& postProcess: m_postProcessOutputColumnCallbacks)
-            postProcess();
-        m_postProcessOutputColumnCallbacks.clear();
-        return {};
-    });
+    auto const sqlResult = SQLFetch(m_hStmt);
+    switch (sqlResult)
+    {
+        case SQL_NO_DATA:
+            return false;
+        default:
+            RequireSuccess(sqlResult);
+            // post-process the output columns, if needed
+            for (auto const& postProcess: m_postProcessOutputColumnCallbacks)
+                postProcess();
+            m_postProcessOutputColumnCallbacks.clear();
+            return true;
+    }
 }
 
-SqlResult<void> SqlStatement::UpdateLastError(SQLRETURN error, std::source_location location) const noexcept
+void SqlStatement::RequireSuccess(SQLRETURN error, std::source_location sourceLocation) const
 {
-    return detail::UpdateSqlError(&m_lastError, error).or_else([&](auto&&) -> SqlResult<void> {
-        if (m_lastError != SqlError::NODATA)
-            SqlLogger::GetLogger().OnError(m_lastError, SqlErrorInfo::fromStatementHandle(m_hStmt), location);
-        return std::unexpected { m_lastError };
-    });
+    auto result = detail::UpdateSqlError(&m_lastError, error);
+    if (result.has_value())
+        return;
+
+    auto errorInfo = SqlErrorInfo::fromStatementHandle(m_hStmt);
+    SqlLogger::GetLogger().OnError(m_lastError, errorInfo, sourceLocation);
+    if (errorInfo.sqlState == "07009")
+        throw std::invalid_argument(std::format("SQL error: {}", errorInfo));
+    else
+        throw std::runtime_error(std::format("SQL error: {}", errorInfo));
 }

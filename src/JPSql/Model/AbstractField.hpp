@@ -72,9 +72,9 @@ class AbstractField
     }
 
     virtual std::string InspectValue() const = 0;
-    virtual SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const = 0;
-    virtual SqlResult<void> BindOutputColumn(SqlStatement& stmt) = 0;
-    virtual SqlResult<void> BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt) = 0;
+    virtual void BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const = 0;
+    virtual void BindOutputColumn(SqlStatement& stmt) = 0;
+    virtual void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt) = 0;
     virtual void LoadValueFrom(AbstractField& other) = 0;
 
     // clang-format off

@@ -32,19 +32,19 @@ class BelongsTo final: public AbstractField
     explicit BelongsTo(AbstractRecord& record);
     BelongsTo(BelongsTo const& other);
     explicit BelongsTo(AbstractRecord& record, BelongsTo&& other);
-    BelongsTo& operator=(RecordId modelId) noexcept;
-    BelongsTo& operator=(OtherRecord const& model) noexcept;
+    BelongsTo& operator=(RecordId modelId);
+    BelongsTo& operator=(OtherRecord const& model);
     ~BelongsTo() = default;
 
-    OtherRecord* operator->() noexcept;
-    OtherRecord& operator*() noexcept;
+    OtherRecord* operator->();
+    OtherRecord& operator*();
 
     std::string SqlConstraintSpecifier() const override;
 
     std::string InspectValue() const override;
-    SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
-    SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
-    SqlResult<void> BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;
+    void BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
+    void BindOutputColumn(SqlStatement& stmt) override;
+    void BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;
     void LoadValueFrom(AbstractField& other) override;
 
     auto operator<=>(BelongsTo const& other) const noexcept;
@@ -55,10 +55,10 @@ class BelongsTo final: public AbstractField
     template <typename U, SQLSMALLINT I, StringLiteral N, FieldValueRequirement R>
     bool operator!=(BelongsTo<U, I, N, R> const& other) const noexcept;
 
-    SqlResult<void> Load() noexcept;
+    void Load() noexcept;
 
   private:
-    void RequireLoaded() noexcept;
+    void RequireLoaded();
 
     RecordId m_value {};
     std::shared_ptr<OtherRecord> m_otherRecord;
@@ -115,7 +115,7 @@ template <typename Model,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
 BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>&
-BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator=(RecordId modelId) noexcept
+BelongsTo<Model, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator=(RecordId modelId)
 {
     SetModified(true);
     m_value = modelId;
@@ -127,7 +127,7 @@ template <typename OtherRecord,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
 BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>&
-BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator=(OtherRecord const& model) noexcept
+BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator=(OtherRecord const& model)
 {
     SetModified(true);
     m_value = model.Id();
@@ -138,7 +138,7 @@ template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-inline OtherRecord* BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator->() noexcept
+inline OtherRecord* BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator->()
 {
     RequireLoaded();
     return &*m_otherRecord;
@@ -148,7 +148,7 @@ template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-inline OtherRecord& BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator*() noexcept
+inline OtherRecord& BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::operator*()
 {
     RequireLoaded();
     return *m_otherRecord;
@@ -162,7 +162,10 @@ std::string BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequire
 {
     auto const otherRecord = OtherRecord {};
     // TODO: Move the syntax into SqlTraits, as a parametrized member function
-    return std::format("FOREIGN KEY ({}) REFERENCES {}({}) ON DELETE CASCADE", ColumnName, otherRecord.TableName(), otherRecord.PrimaryKeyName());
+    return std::format("FOREIGN KEY ({}) REFERENCES {}({}) ON DELETE CASCADE",
+                       ColumnName,
+                       otherRecord.TableName(),
+                       otherRecord.PrimaryKeyName());
 }
 
 template <typename OtherRecord,
@@ -178,7 +181,7 @@ template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-inline SqlResult<void> BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindInputParameter(
+inline void BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindInputParameter(
     SQLSMALLINT parameterIndex, SqlStatement& stmt) const
 {
     return stmt.BindInputParameter(parameterIndex, m_value.value);
@@ -188,7 +191,7 @@ template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-inline SqlResult<void> BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
+inline void BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
     SqlStatement& stmt)
 {
     return stmt.BindOutputColumn(TheColumnIndex, &m_value.value);
@@ -198,7 +201,7 @@ template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-inline SqlResult<void> BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
+inline void BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::BindOutputColumn(
     SQLSMALLINT outputIndex, SqlStatement& stmt)
 {
     return stmt.BindOutputColumn(outputIndex, &m_value.value);
@@ -251,25 +254,28 @@ template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-SqlResult<void> BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::Load() noexcept
+void BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::Load() noexcept
 {
     if (m_otherRecord)
-        return {};
+        return;
 
-    return OtherRecord::Find(m_value).and_then([&](auto&& otherRecord) -> SqlResult<void> {
-        m_otherRecord = std::make_shared<OtherRecord>(std::move(otherRecord));
-        return {};
-    });
+    auto otherRecord = OtherRecord::Find(m_value);
+    if (otherRecord.has_value())
+        m_otherRecord = std::make_shared<OtherRecord>(std::move(otherRecord.value()));
 }
 
 template <typename OtherRecord,
           SQLSMALLINT TheColumnIndex,
           StringLiteral TheForeignKeyName,
           FieldValueRequirement TheRequirement>
-inline void BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::RequireLoaded() noexcept
+inline void BelongsTo<OtherRecord, TheColumnIndex, TheForeignKeyName, TheRequirement>::RequireLoaded()
 {
     if (!m_otherRecord)
+    {
         Load();
+        if (!m_otherRecord)
+            throw std::runtime_error("BelongsTo::RequireLoaded(): Record not found");
+    }
 }
 
 // }}}

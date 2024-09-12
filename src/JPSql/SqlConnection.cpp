@@ -185,16 +185,14 @@ void SqlConnection::ResetPostConnectedHook()
     m_gPostConnectedHook = {};
 }
 
-SqlResult<void> SqlConnection::Connect(std::string_view datasource,
-                                       std::string_view username,
-                                       std::string_view password) noexcept
+bool SqlConnection::Connect(std::string_view datasource, std::string_view username, std::string_view password) noexcept
 {
     return Connect(SqlConnectionDataSource {
         .datasource = std::string(datasource), .username = std::string(username), .password = std::string(password) });
 }
 
 // Connects to the given database with the given ODBC connection string.
-SqlResult<void> SqlConnection::Connect(std::string connectionString) noexcept
+bool SqlConnection::Connect(std::string connectionString) noexcept
 {
     return Connect(SqlConnectionString { .connectionString = std::move(connectionString) });
 }
@@ -209,7 +207,7 @@ void SqlConnection::PostConnect()
         std::pair { "MySQL"sv, SqlServerType::MYSQL },
     };
 
-    auto const serverName = ServerName().value_or("");
+    auto const serverName = ServerName();
     for (auto const& [name, type]: mappings)
     {
         if (serverName.contains(name))
@@ -223,7 +221,7 @@ void SqlConnection::PostConnect()
 }
 
 // Connects to the given database with the given username and password.
-SqlResult<void> SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
+bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
 {
     m_connectInfo = std::move(connectInfo);
 
@@ -251,7 +249,8 @@ SqlResult<void> SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
             .or_else([&](auto&&) -> SqlResult<void> {
                 SqlLogger::GetLogger().OnError(m_lastError, SqlErrorInfo::fromConnectionHandle(m_hDbc));
                 return std::unexpected { m_lastError };
-            });
+            })
+            .has_value();
     }
 
     auto const& connectionString = std::get<SqlConnectionString>(m_connectInfo).connectionString;
@@ -274,7 +273,8 @@ SqlResult<void> SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
             if (m_gPostConnectedHook)
                 m_gPostConnectedHook(*this);
             return {};
-        });
+        })
+        .has_value();
 }
 
 void SqlConnection::Close() noexcept
@@ -303,48 +303,40 @@ void SqlConnection::Kill() noexcept
     m_hEnv = {};
 }
 
-SqlResult<std::string> SqlConnection::DatabaseName() const
+std::string SqlConnection::DatabaseName() const
 {
     std::string name(128, '\0');
     SQLSMALLINT nameLen {};
-    UpdateLastError(SQLGetInfoA(m_hDbc, SQL_DATABASE_NAME, name.data(), (SQLSMALLINT) name.size(), &nameLen));
-    if (m_lastError != SqlError::SUCCESS)
-        return std::unexpected { m_lastError };
+    RequireSuccess(SQLGetInfoA(m_hDbc, SQL_DATABASE_NAME, name.data(), (SQLSMALLINT) name.size(), &nameLen));
     name.resize(nameLen);
-    return { std::move(name) };
+    return name;
 }
 
-SqlResult<std::string> SqlConnection::UserName() const
+std::string SqlConnection::UserName() const
 {
     std::string name(128, '\0');
     SQLSMALLINT nameLen {};
-    UpdateLastError(SQLGetInfoA(m_hDbc, SQL_USER_NAME, name.data(), (SQLSMALLINT) name.size(), &nameLen));
-    if (m_lastError != SqlError::SUCCESS)
-        return std::unexpected { m_lastError };
+    RequireSuccess(SQLGetInfoA(m_hDbc, SQL_USER_NAME, name.data(), (SQLSMALLINT) name.size(), &nameLen));
     name.resize(nameLen);
-    return { std::move(name) };
+    return name;
 }
 
-SqlResult<std::string> SqlConnection::ServerName() const
+std::string SqlConnection::ServerName() const
 {
     std::string name(128, '\0');
     SQLSMALLINT nameLen {};
-    UpdateLastError(SQLGetInfoA(m_hDbc, SQL_DBMS_NAME, (SQLPOINTER) name.data(), (SQLSMALLINT) name.size(), &nameLen));
-    if (m_lastError != SqlError::SUCCESS)
-        return std::unexpected { m_lastError };
+    RequireSuccess(SQLGetInfoA(m_hDbc, SQL_DBMS_NAME, (SQLPOINTER) name.data(), (SQLSMALLINT) name.size(), &nameLen));
     name.resize(nameLen);
-    return { std::move(name) };
+    return name;
 }
 
-SqlResult<std::string> SqlConnection::ServerVersion() const
+std::string SqlConnection::ServerVersion() const
 {
     std::string text(128, '\0');
     SQLSMALLINT textLen {};
-    UpdateLastError(SQLGetInfoA(m_hDbc, SQL_DBMS_VER, (SQLPOINTER) text.data(), (SQLSMALLINT) text.size(), &textLen));
-    if (m_lastError != SqlError::SUCCESS)
-        return std::unexpected { m_lastError };
+    RequireSuccess(SQLGetInfoA(m_hDbc, SQL_DBMS_VER, (SQLPOINTER) text.data(), (SQLSMALLINT) text.size(), &textLen));
     text.resize(textLen);
-    return { std::move(text) };
+    return text;
 }
 
 bool SqlConnection::TransactionActive() const noexcept
@@ -367,6 +359,17 @@ bool SqlConnection::IsAlive() const noexcept
     SQLUINTEGER state {};
     UpdateLastError(SQLGetConnectAttrA(m_hDbc, SQL_ATTR_CONNECTION_DEAD, &state, 0, nullptr));
     return m_lastError == SqlError::SUCCESS && state == SQL_CD_FALSE;
+}
+
+void SqlConnection::RequireSuccess(SQLRETURN error, std::source_location sourceLocation) const
+{
+    auto result = detail::UpdateSqlError(&m_lastError, error);
+    if (result.has_value())
+        return;
+
+    auto errorInfo = SqlErrorInfo::fromConnectionHandle(m_hDbc);
+    SqlLogger::GetLogger().OnError(m_lastError, errorInfo, sourceLocation);
+    throw std::runtime_error(std::format("SQL error: {}", errorInfo));
 }
 
 SqlResult<void> SqlConnection::UpdateLastError(SQLRETURN error, std::source_location sourceLocation) const noexcept

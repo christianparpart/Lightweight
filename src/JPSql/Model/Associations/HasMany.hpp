@@ -6,7 +6,6 @@
 #include "../Logger.hpp"
 #include "../StringLiteral.hpp"
 
-#include <memory>
 #include <vector>
 
 namespace Model
@@ -19,17 +18,17 @@ class HasMany
     explicit HasMany(AbstractRecord& parent);
     HasMany(AbstractRecord& record, HasMany&& other) noexcept;
 
-    SqlResult<bool> IsEmpty() const noexcept;
-    SqlResult<size_t> Count() const noexcept;
+    bool IsEmpty() const;
+    size_t Count() const;
 
-    std::vector<OtherRecord>& All() noexcept;
+    std::vector<OtherRecord>& All();
 
-    OtherRecord& At(size_t index) noexcept;
-    OtherRecord& operator[](size_t index) noexcept;
+    OtherRecord& At(size_t index);
+    OtherRecord& operator[](size_t index);
 
     bool IsLoaded() const noexcept;
-    SqlResult<void> Load();
-    SqlResult<void> Reload();
+    void Load();
+    void Reload();
 
   private:
     bool RequireLoaded();
@@ -56,18 +55,17 @@ HasMany<OtherRecord, ForeignKeyName>::HasMany(AbstractRecord& record, HasMany&& 
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
-SqlResult<void> HasMany<OtherRecord, ForeignKeyName>::Load()
+void HasMany<OtherRecord, ForeignKeyName>::Load()
 {
     if (m_loaded)
-        return {};
+        return;
 
     m_models = OtherRecord::Where(*ForeignKeyName, m_record->Id()).All();
     m_loaded = true;
-    return {};
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
-SqlResult<void> HasMany<OtherRecord, ForeignKeyName>::Reload()
+void HasMany<OtherRecord, ForeignKeyName>::Reload()
 {
     m_loaded = false;
     m_models.clear();
@@ -75,13 +73,13 @@ SqlResult<void> HasMany<OtherRecord, ForeignKeyName>::Reload()
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
-SqlResult<bool> HasMany<OtherRecord, ForeignKeyName>::IsEmpty() const noexcept
+bool HasMany<OtherRecord, ForeignKeyName>::IsEmpty() const
 {
     return Count() == 0;
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
-SqlResult<size_t> HasMany<OtherRecord, ForeignKeyName>::Count() const noexcept
+size_t HasMany<OtherRecord, ForeignKeyName>::Count() const
 {
     if (m_loaded)
         return m_models.size();
@@ -91,29 +89,25 @@ SqlResult<size_t> HasMany<OtherRecord, ForeignKeyName>::Count() const noexcept
     auto const sqlQueryString = std::format(
         "SELECT COUNT(*) FROM {} WHERE {} = {}", OtherRecord().TableName(), *ForeignKeyName, *m_record->Id());
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-
-    return stmt.Prepare(sqlQueryString)
-        .and_then([&] { return stmt.Execute(); })
-        .and_then([&] { return stmt.FetchRow(); })
-        .and_then([&] { return stmt.GetColumn<size_t>(1); });
+    return stmt.ExecuteDirectScalar<size_t>(sqlQueryString).value();
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
-inline std::vector<OtherRecord>& HasMany<OtherRecord, ForeignKeyName>::All() noexcept
+inline std::vector<OtherRecord>& HasMany<OtherRecord, ForeignKeyName>::All()
 {
     RequireLoaded();
     return m_models;
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
-inline OtherRecord& HasMany<OtherRecord, ForeignKeyName>::At(size_t index) noexcept
+inline OtherRecord& HasMany<OtherRecord, ForeignKeyName>::At(size_t index)
 {
     RequireLoaded();
     return m_models.at(index);
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
-inline OtherRecord& HasMany<OtherRecord, ForeignKeyName>::operator[](size_t index) noexcept
+inline OtherRecord& HasMany<OtherRecord, ForeignKeyName>::operator[](size_t index)
 {
     RequireLoaded();
     return m_models[index];
