@@ -68,12 +68,7 @@ size_t SqlStatement::NumColumnsAffected() const
 // Retrieves the last insert ID of the last query's primary key.
 size_t SqlStatement::LastInsertId()
 {
-    ExecuteDirect(m_connection->Traits().LastInsertIdQuery);
-
-    if (FetchRow())
-        return GetColumn<size_t>(1);
-
-    return 0;
+    return ExecuteDirectScalar<size_t>(m_connection->Traits().LastInsertIdQuery).value_or(0);
 }
 
 // Fetches the next row of the result set.
