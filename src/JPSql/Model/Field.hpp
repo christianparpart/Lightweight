@@ -5,12 +5,9 @@
 #include "AbstractField.hpp"
 #include "AbstractRecord.hpp"
 #include "ColumnType.hpp"
-#include "RecordId.hpp"
 #include "StringLiteral.hpp"
 
 #include <cassert>
-#include <memory>
-#include <string_view>
 
 namespace Model
 {
@@ -91,9 +88,9 @@ class Field: public AbstractField
     // clang-format on
 
     std::string InspectValue() const override;
-    SqlResult<void> BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
-    SqlResult<void> BindOutputColumn(SqlStatement& stmt) override;
-    SqlResult<void> BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;
+    void BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
+    void BindOutputColumn(SqlStatement& stmt) override;
+    void BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;
 
     void LoadValueFrom(AbstractField& other) override
     {
@@ -159,8 +156,8 @@ template <typename T,
           SQLSMALLINT TheTableColumnIndex,
           StringLiteral TheColumnName,
           FieldValueRequirement TheRequirement>
-SqlResult<void> Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindInputParameter(
-    SQLSMALLINT parameterIndex, SqlStatement& stmt) const
+void Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindInputParameter(SQLSMALLINT parameterIndex,
+                                                                                      SqlStatement& stmt) const
 {
     return stmt.BindInputParameter(parameterIndex, m_value);
 }
@@ -169,19 +166,19 @@ template <typename T,
           SQLSMALLINT TheTableColumnIndex,
           StringLiteral TheColumnName,
           FieldValueRequirement TheRequirement>
-SqlResult<void> Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindOutputColumn(SqlStatement& stmt)
+void Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindOutputColumn(SqlStatement& stmt)
 {
-    return stmt.BindOutputColumn(TheTableColumnIndex, &m_value);
+    stmt.BindOutputColumn(TheTableColumnIndex, &m_value);
 }
 
 template <typename T,
           SQLSMALLINT TheTableColumnIndex,
           StringLiteral TheColumnName,
           FieldValueRequirement TheRequirement>
-SqlResult<void> Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindOutputColumn(SQLSMALLINT outputIndex,
-                                                                                               SqlStatement& stmt)
+void Field<T, TheTableColumnIndex, TheColumnName, TheRequirement>::BindOutputColumn(SQLSMALLINT outputIndex,
+                                                                                    SqlStatement& stmt)
 {
-    return stmt.BindOutputColumn(outputIndex, &m_value);
+    stmt.BindOutputColumn(outputIndex, &m_value);
 }
 
 // }}}

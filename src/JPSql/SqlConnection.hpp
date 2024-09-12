@@ -86,25 +86,25 @@ class SqlConnection final
     void Kill() noexcept;
 
     // Connects to the given database with the given username and password.
-    SqlResult<void> Connect(std::string_view datasource, std::string_view username, std::string_view password) noexcept;
+    bool Connect(std::string_view datasource, std::string_view username, std::string_view password) noexcept;
 
     // Connects to the given database with the given ODBC connection string.
-    SqlResult<void> Connect(std::string connectionString) noexcept;
+    bool Connect(std::string connectionString) noexcept;
 
     // Connects to the given database with the given username and password.
-    SqlResult<void> Connect(SqlConnectInfo connectInfo) noexcept;
+    bool Connect(SqlConnectInfo connectInfo) noexcept;
 
     // Retrieves the name of the database in use.
-    [[nodiscard]] SqlResult<std::string> DatabaseName() const;
+    [[nodiscard]] std::string DatabaseName() const;
 
     // Retrieves the name of the user.
-    [[nodiscard]] SqlResult<std::string> UserName() const;
+    [[nodiscard]] std::string UserName() const;
 
     // Retrieves the name of the server.
-    [[nodiscard]] SqlResult<std::string> ServerName() const;
+    [[nodiscard]] std::string ServerName() const;
 
     // Retrieves the reported server version.
-    [[nodiscard]] SqlResult<std::string> ServerVersion() const;
+    [[nodiscard]] std::string ServerVersion() const;
 
     // Retrieves the type of the server.
     [[nodiscard]] SqlServerType ServerType() const noexcept;
@@ -160,6 +160,8 @@ class SqlConnection final
   private:
     void PostConnect();
 
+    void RequireSuccess(SQLRETURN error, std::source_location sourceLocation = std::source_location::current()) const;
+
     // Updates the last error code and returns the error code as an SqlResult if the operation failed.
     //
     // We also log here the error message.
@@ -192,14 +194,3 @@ inline SqlQueryFormatter const& SqlConnection::QueryFormatter() const noexcept
 {
     return *m_queryFormatter;
 }
-
-template <typename T>
-struct std::formatter<SqlResult<T>>: std::formatter<std::string>
-{
-    auto format(SqlResult<T> const& result, format_context& ctx) -> format_context::iterator
-    {
-        if (result)
-            return std::formatter<std::string>::format(std::format("{}", result.value()), ctx);
-        return std::formatter<std::string>::format(std::format("{}", result.error()), ctx);
-    }
-};

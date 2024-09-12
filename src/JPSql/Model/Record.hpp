@@ -9,6 +9,7 @@
 
 #include <array>
 #include <limits>
+#include <optional>
 #include <ranges>
 #include <string_view>
 #include <vector>
@@ -113,7 +114,7 @@ class RecordQueryBuilder
         auto stmt = SqlStatement();
         auto const sqlQueryString = m_queryBuilder.Count().ToSql(stmt.Connection().QueryFormatter());
         auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-        return stmt.ExecuteDirectScalar<size_t>(sqlQueryString).value_or(0);
+        return stmt.ExecuteDirectScalar<size_t>(sqlQueryString).value();
     }
 
     [[nodiscard]] std::optional<TargetModel> First(size_t count = 1)
@@ -128,20 +129,14 @@ class RecordQueryBuilder
 
         auto const _ = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
 
-        if (auto result = stmt.Prepare(sqlQueryString); !result)
-            return std::nullopt;
+        stmt.Prepare(sqlQueryString);
+        stmt.Execute();
 
-        if (auto result = stmt.Execute(); !result)
-            return std::nullopt;
-
-        if (auto result = stmt.BindOutputColumn(1, &targetRecord.MutableId().value); !result)
-            return std::nullopt;
-
+        stmt.BindOutputColumn(1, &targetRecord.MutableId().value);
         for (AbstractField* field: targetRecord.AllFields())
-            if (auto result = field->BindOutputColumn(stmt); !result)
-                return std::nullopt;
+            field->BindOutputColumn(stmt);
 
-        if (auto result = stmt.FetchRow(); !result)
+        if (!stmt.FetchRow())
             return std::nullopt;
 
         return { std::move(targetRecord) };
@@ -157,13 +152,13 @@ class RecordQueryBuilder
     }
 
     template <typename Callback>
-    bool Each(Callback&& callback)
+    void Each(Callback&& callback)
     {
         auto const targetRecord = TargetModel();
         auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
                                         .All()
                                         .ToSql(SqlConnection().QueryFormatter());
-        return TargetModel::Each(std::forward<Callback>(callback), sqlQueryString).has_value();
+        TargetModel::Each(std::forward<Callback>(callback), sqlQueryString);
     }
 
     [[nodiscard]] std::vector<TargetModel> All()
@@ -172,7 +167,7 @@ class RecordQueryBuilder
         auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
                                         .All()
                                         .ToSql(SqlConnection().QueryFormatter());
-        return TargetModel::Query(sqlQueryString).value_or(std::vector<TargetModel> {});
+        return TargetModel::Query(sqlQueryString);
     }
 
   private:
@@ -195,47 +190,47 @@ struct Record: AbstractRecord
     }
 
     // Creates (or recreates a copy of) the model in the database.
-    SqlResult<RecordId> Create();
+    RecordId Create();
 
     // Reads the model from the database by given model ID.
-    SqlResult<void> Load(RecordId id);
+    bool Load(RecordId id);
 
     // Re-reads the model from the database.
-    SqlResult<void> Reload();
+    void Reload();
 
     // Reads the model from the database by given column name and value.
     template <typename T>
-    SqlResult<void> Load(std::string_view const& columnName, T const& value) noexcept;
+    bool Load(std::string_view const& columnName, T const& value);
 
     // Updates the model in the database.
-    SqlResult<void> Update();
+    void Update();
 
     // Creates or updates the model in the database, depending on whether it already exists.
-    SqlResult<void> Save();
+    void Save();
 
     // Deletes the model from the database.
-    SqlResult<void> Destroy();
+    void Destroy();
 
     // Updates all models with the given changes in the modelChanges model.
-    static SqlResult<void> UpdateAll(Derived const& modelChanges) noexcept;
+    static void UpdateAll(Derived const& modelChanges) noexcept;
 
     // Retrieves the first model from the database (ordered by ID ASC).
-    static SqlResult<Derived> First(size_t count = 1);
+    static std::optional<Derived> First(size_t count = 1);
 
     // Retrieves the last model from the database (ordered by ID ASC).
-    static SqlResult<Derived> Last();
+    static std::optional<Derived> Last();
 
     // Retrieves the model with the given ID from the database.
-    static SqlResult<Derived> Find(RecordId id);
+    static std::optional<Derived> Find(RecordId id);
 
     template <typename ColumnName, typename T>
-    static SqlResult<Derived> FindBy(ColumnName const& columnName, T const& value);
+    static std::optional<Derived> FindBy(ColumnName const& columnName, T const& value);
 
     // Retrieves all models of this kind from the database.
-    static SqlResult<std::vector<Derived>> All() noexcept;
+    static std::vector<Derived> All() noexcept;
 
     // Retrieves the number of models of this kind from the database.
-    static SqlResult<size_t> Count() noexcept;
+    static size_t Count() noexcept;
 
     static RecordQueryBuilder<Derived> Build();
 
@@ -257,21 +252,19 @@ struct Record: AbstractRecord
 
     // Invokes a callback for each model that matches the given query string.
     template <typename Callback, typename... InputParameters>
-    static SqlResult<void> Each(Callback&& callback,
-                                std::string_view sqlQueryString,
-                                InputParameters&&... inputParameters);
+    static void Each(Callback&& callback, std::string_view sqlQueryString, InputParameters&&... inputParameters);
 
     template <typename... InputParameters>
-    static SqlResult<std::vector<Derived>> Query(std::string_view sqlQueryString, InputParameters&&... inputParameters);
+    static std::vector<Derived> Query(std::string_view sqlQueryString, InputParameters&&... inputParameters);
 
     // Returns the SQL string to create the table for this model.
     static std::string CreateTableString(SqlServerType serverType);
 
     // Creates the table for this model from the database.
-    static SqlResult<void> CreateTable();
+    static void CreateTable();
 
     // Drops the table for this model from the database.
-    static SqlResult<void> DropTable();
+    static void DropTable();
 
   protected:
     explicit Record(std::string_view tableName, std::string_view primaryKey = "id");
@@ -286,38 +279,37 @@ Record<Derived>::Record(std::string_view tableName, std::string_view primaryKey)
 }
 
 template <typename Derived>
-SqlResult<size_t> Record<Derived>::Count() noexcept
+size_t Record<Derived>::Count() noexcept
 {
     SqlStatement stmt;
-    Derived modelSchema;
-
-    return stmt.Prepare(std::format("SELECT COUNT(*) FROM {}", modelSchema.TableName()))
-        .and_then([&] { return stmt.Execute(); })
-        .and_then([&] { return stmt.FetchRow(); })
-        .and_then([&] { return stmt.GetColumn<size_t>(1); });
+    return stmt.ExecuteDirectScalar<size_t>(std::format("SELECT COUNT(*) FROM {}", Derived().TableName())).value();
 }
 
 template <typename Derived>
-SqlResult<Derived> Record<Derived>::Find(RecordId id)
+std::optional<Derived> Record<Derived>::Find(RecordId id)
 {
     static_assert(std::is_move_constructible_v<Derived>,
                   "The model `Derived` must be move constructible for Find() to return the model.");
     Derived model;
-    return model.Load(id).and_then([&]() -> SqlResult<Derived> { return { std::move(model) }; });
+    if (!model.Load(id))
+        return std::nullopt;
+    return { std::move(model) };
 }
 
 template <typename Derived>
 template <typename ColumnName, typename T>
-SqlResult<Derived> Record<Derived>::FindBy(ColumnName const& columnName, T const& value)
+std::optional<Derived> Record<Derived>::FindBy(ColumnName const& columnName, T const& value)
 {
     static_assert(std::is_move_constructible_v<Derived>,
                   "The model `Derived` must be move constructible for Find() to return the model.");
     Derived model;
-    return model.Load(columnName, value).and_then([&]() -> SqlResult<Derived> { return { std::move(model) }; });
+    if (!model.Load(columnName, value))
+        return std::nullopt;
+    return { std::move(model) };
 }
 
 template <typename Derived>
-SqlResult<std::vector<Derived>> Record<Derived>::All() noexcept
+std::vector<Derived> Record<Derived>::All() noexcept
 {
     // Require that the model is copy constructible. Simply add a default move constructor to the model if it is not.
     static_assert(std::is_move_constructible_v<Derived>,
@@ -338,24 +330,18 @@ SqlResult<std::vector<Derived>> Record<Derived>::All() noexcept
 
     auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
 
-    if (auto result = stmt.Prepare(sqlQueryString); !result)
-        return std::unexpected { result.error() };
-
-    if (auto result = stmt.Execute(); !result)
-        return std::unexpected { result.error() };
+    stmt.Prepare(sqlQueryString);
+    stmt.Execute();
 
     while (true)
     {
         Derived record;
 
-        if (auto result = stmt.BindOutputColumn(1, &record.m_data->id.value); !result)
-            return std::unexpected { result.error() };
-
+        stmt.BindOutputColumn(1, &record.m_data->id.value);
         for (AbstractField* field: record.AllFields())
-            if (auto result = field->BindOutputColumn(stmt); !result)
-                return std::unexpected { result.error() };
+            field->BindOutputColumn(stmt);
 
-        if (auto result = stmt.FetchRow(); !result)
+        if (!stmt.FetchRow())
             break;
 
         scopedModelSqlLogger += record;
@@ -363,10 +349,7 @@ SqlResult<std::vector<Derived>> Record<Derived>::All() noexcept
         allModels.emplace_back(std::move(record));
     }
 
-    if (stmt.LastError() != SqlError::NO_DATA_FOUND)
-        return std::unexpected { stmt.LastError() };
-
-    return { std::move(allModels) };
+    return allModels;
 }
 
 template <typename Derived>
@@ -414,28 +397,28 @@ std::string Record<Derived>::CreateTableString(SqlServerType serverType)
 
     sql << ");\n";
 
-    return std::move(*sql);
+    return *sql;
 }
 
 template <typename Derived>
-SqlResult<void> Record<Derived>::CreateTable()
+void Record<Derived>::CreateTable()
 {
     auto stmt = SqlStatement {};
     auto const sqlQueryString = CreateTableString(stmt.Connection().ServerType());
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-    return stmt.ExecuteDirect(sqlQueryString);
+    stmt.ExecuteDirect(sqlQueryString);
 }
 
 template <typename Derived>
-SqlResult<void> Record<Derived>::DropTable()
+void Record<Derived>::DropTable()
 {
     auto const sqlQueryString = std::format("DROP TABLE \"{}\"", Derived().TableName());
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-    return SqlStatement().ExecuteDirect(sqlQueryString);
+    SqlStatement().ExecuteDirect(sqlQueryString);
 }
 
 template <typename Derived>
-SqlResult<RecordId> Record<Derived>::Create()
+RecordId Record<Derived>::Create()
 {
     auto const requiredFieldCount =
         std::ranges::count_if(AllFields(), [](AbstractField const* field) { return field->IsRequired(); });
@@ -475,41 +458,36 @@ SqlResult<RecordId> Record<Derived>::Create()
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlInsertStmtString, modifiedFields);
 
-    if (auto result = stmt.Prepare(sqlInsertStmtString); !result)
-        return std::unexpected { result.error() };
+    stmt.Prepare(sqlInsertStmtString);
 
     for (auto const&& [parameterIndex, field]: modifiedFields | std::views::enumerate)
-        if (auto result = field->BindInputParameter(parameterIndex + 1, stmt); !result)
-            return std::unexpected { result.error() };
+        field->BindInputParameter(parameterIndex + 1, stmt);
 
-    if (auto result = stmt.Execute(); !result)
-        return std::unexpected { result.error() };
+    stmt.Execute();
 
     for (auto* field: AllFields())
         field->SetModified(false);
 
     // Update the model's ID with the last insert ID
-    if (auto const result = stmt.LastInsertId(); result)
-        m_data->id = RecordId { .value = *result };
-
-    return {};
+    m_data->id = RecordId { .value = stmt.LastInsertId() };
+    return m_data->id;
 }
 
 template <typename Derived>
-SqlResult<void> Record<Derived>::Load(RecordId id)
+bool Record<Derived>::Load(RecordId id)
 {
     return Load(PrimaryKeyName(), id.value);
 }
 
 template <typename Derived>
-SqlResult<void> Record<Derived>::Reload()
+void Record<Derived>::Reload()
 {
-    return Load(PrimaryKeyName(), Id());
+    Load(PrimaryKeyName(), Id());
 }
 
 template <typename Derived>
 template <typename T>
-SqlResult<void> Record<Derived>::Load(std::string_view const& columnName, T const& value) noexcept
+bool Record<Derived>::Load(std::string_view const& columnName, T const& value)
 {
     SqlStatement stmt;
 
@@ -521,30 +499,17 @@ SqlResult<void> Record<Derived>::Load(std::string_view const& columnName, T cons
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, AllFields());
 
-    if (auto result = stmt.Prepare(sqlQueryString); !result)
-        return std::unexpected { result.error() };
-
-    if (auto result = stmt.BindInputParameter(1, value); !result)
-        return std::unexpected { result.error() };
-
-    if (auto result = stmt.BindOutputColumn(1, &m_data->id.value); !result)
-        return std::unexpected { result.error() };
-
+    stmt.Prepare(sqlQueryString);
+    stmt.BindInputParameter(1, value);
+    stmt.BindOutputColumn(1, &m_data->id.value);
     for (AbstractField* field: AllFields())
-        if (auto result = field->BindOutputColumn(stmt); !result)
-            return std::unexpected { result.error() };
-
-    if (auto result = stmt.Execute(); !result)
-        return std::unexpected { result.error() };
-
-    if (auto result = stmt.FetchRow(); !result)
-        return std::unexpected { result.error() };
-
-    return {};
+        field->BindOutputColumn(stmt);
+    stmt.Execute();
+    return stmt.FetchRow();
 }
 
 template <typename Derived>
-SqlResult<void> Record<Derived>::Update()
+void Record<Derived>::Update()
 {
     auto sqlColumnsString = detail::StringBuilder {};
     auto modifiedFields = GetModifiedFields();
@@ -567,44 +532,35 @@ SqlResult<void> Record<Derived>::Update()
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, modifiedFields);
 
-    if (auto result = stmt.Prepare(sqlQueryString); !result)
-        return result;
+    stmt.Prepare(sqlQueryString);
 
     for (auto const&& [index, field]: modifiedFields | std::views::enumerate)
-        if (auto result = field->BindInputParameter(index + 1, stmt); !result)
-            return result;
+        field->BindInputParameter(index + 1, stmt);
 
-    if (auto result = stmt.Execute(); !result)
-        return result;
+    stmt.Execute();
 
     for (auto* field: modifiedFields)
         field->SetModified(false);
-
-    return {};
 }
 
 template <typename Derived>
-SqlResult<void> Record<Derived>::Save()
+void Record<Derived>::Save()
 {
     if (Id().value != 0)
         return Update();
 
-    if (auto result = Create(); !result)
-        return std::unexpected { result.error() };
-
-    return {};
+    Create();
 }
 
 template <typename Derived>
-SqlResult<void> Record<Derived>::Destroy()
+void Record<Derived>::Destroy()
 {
     auto const sqlQueryString = std::format("DELETE FROM {} WHERE {} = {}", TableName(), PrimaryKeyName(), *Id());
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
     auto stmt = SqlStatement {};
     auto const& sqlTraits = stmt.Connection().Traits();
-    return stmt.ExecuteDirect(sqlTraits.EnforceForeignKeyConstraint).and_then([&] {
-        return stmt.ExecuteDirect(sqlQueryString);
-    });
+    stmt.ExecuteDirect(sqlTraits.EnforceForeignKeyConstraint);
+    stmt.ExecuteDirect(sqlQueryString);
 }
 
 template <typename Derived>
@@ -667,65 +623,48 @@ RecordQueryBuilder<Derived> Record<Derived>::Where(std::string_view columnName,
 
 template <typename Derived>
 template <typename... InputParameters>
-SqlResult<std::vector<Derived>> Record<Derived>::Query(std::string_view sqlQueryString,
-                                                       InputParameters&&... inputParameters)
+std::vector<Derived> Record<Derived>::Query(std::string_view sqlQueryString, InputParameters&&... inputParameters)
 {
     static_assert(std::is_move_constructible_v<Derived>,
                   "The model `Derived` must be move constructible for Where() to return the models.");
 
     std::vector<Derived> output;
-    auto result = Each([&output](Derived& model) { output.emplace_back(std::move(model)); },
-                       sqlQueryString,
-                       std::forward<InputParameters>(inputParameters)...);
-    if (result.has_value())
-        return { std::move(output) };
-    else
-        return std::unexpected { result.error() };
+    Each([&output](Derived& model) { output.push_back(std::move(model)); },
+         sqlQueryString,
+         std::forward<InputParameters>(inputParameters)...);
+    return { std::move(output) };
 }
 
 template <typename Derived>
 template <typename Callback, typename... InputParameters>
-SqlResult<void> Record<Derived>::Each(Callback&& callback,
-                                      std::string_view sqlQueryString,
-                                      InputParameters&&... inputParameters)
+void Record<Derived>::Each(Callback&& callback, std::string_view sqlQueryString, InputParameters&&... inputParameters)
 {
     SqlStatement stmt;
 
     auto scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
 
-    if (auto result = stmt.Prepare(sqlQueryString); !result)
-        return std::unexpected { result.error() };
+    stmt.Prepare(sqlQueryString);
 
     SQLSMALLINT inputParameterPosition = 0;
-    if (!(stmt.BindInputParameter(++inputParameterPosition, std::forward<InputParameters>(inputParameters)) && ...))
-        return std::unexpected { stmt.LastError() };
+    (stmt.BindInputParameter(++inputParameterPosition, std::forward<InputParameters>(inputParameters)), ...);
 
-    if (auto result = stmt.Execute(); !result)
-        return std::unexpected { result.error() };
+    stmt.Execute();
 
     while (true)
     {
         Derived record;
 
-        if (auto result = stmt.BindOutputColumn(1, &record.m_data->id.value); !result)
-            return std::unexpected { result.error() };
-
+        stmt.BindOutputColumn(1, &record.m_data->id.value);
         for (AbstractField* field: record.AllFields())
-            if (auto result = field->BindOutputColumn(stmt); !result)
-                return std::unexpected { result.error() };
+            field->BindOutputColumn(stmt);
 
-        if (auto result = stmt.FetchRow(); !result)
+        if (!stmt.FetchRow())
             break;
 
         scopedModelSqlLogger += record;
 
         callback(record);
     }
-
-    if (stmt.LastError() != SqlError::NO_DATA_FOUND)
-        return std::unexpected { stmt.LastError() };
-
-    return {};
 }
 
 // }}}

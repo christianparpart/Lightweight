@@ -121,8 +121,8 @@ class SqlTestFixture
 
         auto sqlConnection = SqlConnection();
         std::println("Running test cases against: {} ({}) (identified as: {})",
-                     sqlConnection.ServerName().value_or(std::string("ERROR")),
-                     sqlConnection.ServerVersion().value_or(std::string("ERROR")),
+                     sqlConnection.ServerName(),
+                     sqlConnection.ServerVersion(),
                      sqlConnection.ServerType());
 
         SqlConnection::SetPostConnectedHook(&SqlTestFixture::PostConnectedHook);
@@ -162,11 +162,11 @@ class SqlTestFixture
     }
 
     template <typename T>
-    SqlResult<void> CreateModelTable()
+    void CreateModelTable()
     {
         auto const tableName = T().TableName();
         m_createdTables.emplace_back(tableName);
-        return T::CreateTable();
+        T::CreateTable();
     }
 
   private:
@@ -199,9 +199,7 @@ class SqlTestFixture
         {
             while (stmt.FetchRow())
             {
-                auto const tableNameResult = stmt.GetColumn<std::string>(3);
-                if (tableNameResult.has_value())
-                    result.emplace_back(tableNameResult.value()); // table name
+                result.emplace_back(stmt.GetColumn<std::string>(3)); // table name
             }
         }
         return result;

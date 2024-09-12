@@ -19,11 +19,9 @@ std::string CreateSqlTablesString(SqlServerType serverType)
 }
 
 template <typename... Models>
-SqlResult<void> CreateSqlTables()
+void CreateSqlTables()
 {
-    SqlResult<void> result;
-    ((result = Models::CreateTable()) && ...);
-    return result;
+    (Models::CreateTable(), ...);
 }
 
 } // namespace Model

@@ -163,3 +163,14 @@ struct std::formatter<SqlErrorInfo>: formatter<std::string>
             std::format("{} ({}) - {}", info.sqlState, info.nativeErrorCode, info.message), ctx);
     }
 };
+
+template <typename T>
+struct std::formatter<SqlResult<T>>: std::formatter<std::string>
+{
+    auto format(SqlResult<T> const& result, format_context& ctx) -> format_context::iterator
+    {
+        if (result)
+            return std::formatter<std::string>::format(std::format("{}", result.value()), ctx);
+        return std::formatter<std::string>::format(std::format("{}", result.error()), ctx);
+    }
+};

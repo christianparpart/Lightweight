@@ -51,23 +51,23 @@ struct Track: Model::Record<Track>
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.BelongsTo", "[model]")
 {
-    REQUIRE(CreateModelTable<Artist>());
-    REQUIRE(CreateModelTable<Track>());
+    CreateModelTable<Artist>();
+    CreateModelTable<Track>();
 
     Artist artist;
     artist.name = "Snoop Dog";
-    REQUIRE(artist.Save());
+    artist.Save();
     REQUIRE(artist.Id().value);
 
     Track track1;
     track1.title = "Wuff";
     track1.artist = artist; // track1 "BelongsTo" artist
-    REQUIRE(track1.Save());
+    track1.Save();
     REQUIRE(track1.Id().value);
 
     CHECK(track1.artist->Inspect() == artist.Inspect());
 
-    REQUIRE(artist.Destroy());
+    artist.Destroy();
     CHECK(Artist::Count() == 0);
     CHECK(Track::Count() == 0);
     // Destroying the artist must also destroy the track, due to the foreign key constraint.
@@ -75,27 +75,27 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.BelongsTo", "[model]")
 
 TEST_CASE_METHOD(SqlTestFixture, "Model.HasMany", "[model]")
 {
-    REQUIRE(CreateModelTable<Artist>());
-    REQUIRE(CreateModelTable<Track>());
+    CreateModelTable<Artist>();
+    CreateModelTable<Track>();
 
     Artist artist;
     artist.name = "Snoop Dog";
-    REQUIRE(artist.Save());
+    artist.Save();
 
     Track track1;
     track1.title = "Wuff";
     track1.artist = artist;
-    REQUIRE(track1.Save());
+    track1.Save();
 
     Track track2;
     track2.title = "Paff Dog";
     track2.artist = artist;
-    REQUIRE(track2.Save());
+    track2.Save();
 
     REQUIRE(artist.tracks.IsLoaded() == false);
-    REQUIRE(artist.tracks.IsEmpty().value() == false);
+    REQUIRE(artist.tracks.IsEmpty() == false);
     REQUIRE(artist.tracks.Count() == 2);
-    REQUIRE(artist.tracks.Load());
+    artist.tracks.Load();
     REQUIRE(artist.tracks.IsLoaded() == true);
     REQUIRE(artist.tracks.Count() == 2); // Using cached value
     REQUIRE(artist.tracks[0].Inspect() == track1.Inspect());
@@ -147,20 +147,20 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.HasOne", "[model]")
         }
     };
 
-    REQUIRE(CreateModelTable<Suppliers>());
-    REQUIRE(CreateModelTable<Account>());
+    CreateModelTable<Suppliers>();
+    CreateModelTable<Account>();
 
     Suppliers supplier;
     supplier.name = "Supplier";
-    REQUIRE(supplier.Save());
+    supplier.Save();
 
     Account account;
     account.iban = "DE123456789";
     account.supplier = supplier;
-    REQUIRE(account.Save());
+    account.Save();
 
     REQUIRE(supplier.account.IsLoaded() == false);
-    REQUIRE(supplier.account.Load());
+    supplier.account.Load();
     REQUIRE(supplier.account.IsLoaded() == true);
     REQUIRE(supplier.account->Inspect() == account.Inspect());
 }
@@ -245,9 +245,9 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.HasOneThrough", "[model]")
     };
     // }}}
 
-    REQUIRE(CreateModelTable<Suppliers>());
-    REQUIRE(CreateModelTable<Account>());
-    REQUIRE(CreateModelTable<AccountHistory>());
+    CreateModelTable<Suppliers>();
+    CreateModelTable<Account>();
+    CreateModelTable<AccountHistory>();
 
     Suppliers supplier;
     supplier.name = "The Supplier";
@@ -351,48 +351,48 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.HasManyThrough", "[model]")
     };
     // }}}
 
-    REQUIRE(CreateModelTable<Physician>());
-    REQUIRE(CreateModelTable<Patient>());
-    REQUIRE(CreateModelTable<Appointment>());
+    CreateModelTable<Physician>();
+    CreateModelTable<Patient>();
+    CreateModelTable<Appointment>();
 
     Physician physician1;
     physician1.name = "Dr. House";
-    REQUIRE(physician1.Save());
+    physician1.Save();
 
     Physician physician2;
     physician2.name = "Granny";
-    REQUIRE(physician2.Save());
+    physician2.Save();
 
     Patient patient1;
     patient1.name = "Blooper";
     patient1.comment = "Prefers morning times";
-    REQUIRE(patient1.Save());
+    patient1.Save();
 
     Patient patient2;
     patient2.name = "Valentine";
     patient2.comment = "always friendly";
-    REQUIRE(patient2.Save());
+    patient2.Save();
 
     Appointment patient1Apointment1;
     patient1Apointment1.date = SqlDateTime::Now();
     patient1Apointment1.patient = patient1;
     patient1Apointment1.physician = physician2;
     patient1Apointment1.comment = "Patient is a bit nervous";
-    REQUIRE(patient1Apointment1.Save());
+    patient1Apointment1.Save();
 
     Appointment patient1Apointment2;
     patient1Apointment2.date = SqlDateTime::Now();
     patient1Apointment2.patient = patient1;
     patient1Apointment2.physician = physician1;
     patient1Apointment2.comment = "Patient is a bit nervous, again";
-    REQUIRE(patient1Apointment2.Save());
+    patient1Apointment2.Save();
 
     Appointment patient2Apointment1;
     patient2Apointment1.date = SqlDateTime::Now();
     patient2Apointment1.patient = patient2;
     patient2Apointment1.physician = physician1;
     patient2Apointment1.comment = "Patient is funny";
-    REQUIRE(patient2Apointment1.Save());
+    patient2Apointment1.Save();
 
     auto const queriedCount = physician1.patients.Count();
     CHECK(queriedCount == 2);

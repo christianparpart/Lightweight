@@ -41,23 +41,23 @@ namespace
 
 void CreateEmployeesTable(SqlStatement& stmt, std::source_location sourceLocation = std::source_location::current())
 {
-    REQUIRE(stmt.ExecuteDirect(std::format(R"SQL(CREATE TABLE Employees (
+    stmt.ExecuteDirect(std::format(R"SQL(CREATE TABLE Employees (
                                                          EmployeeID {},
                                                          FirstName VARCHAR(50) NOT NULL,
                                                          LastName VARCHAR(50),
                                                          Salary INT NOT NULL
                                                      );
                                                     )SQL",
-                                           stmt.Connection().Traits().PrimaryKeyAutoIncrement),
-                               sourceLocation));
+                                   stmt.Connection().Traits().PrimaryKeyAutoIncrement),
+                       sourceLocation);
 }
 
 void FillEmployeesTable(SqlStatement& stmt)
 {
-    REQUIRE(stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)"));
-    REQUIRE(stmt.Execute("Alice", "Smith", 50'000));
-    REQUIRE(stmt.Execute("Bob", "Johnson", 60'000));
-    REQUIRE(stmt.Execute("Charlie", "Brown", 70'000));
+    stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    stmt.Execute("Alice", "Smith", 50'000);
+    stmt.Execute("Bob", "Johnson", 60'000);
+    stmt.Execute("Charlie", "Brown", 70'000);
 }
 
 } // namespace
@@ -149,23 +149,21 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: c_str")
 TEST_CASE_METHOD(SqlTestFixture, "select: get columns")
 {
     auto stmt = SqlStatement {};
-    stmt.ExecuteDirect("SELECT 42").value();
+    stmt.ExecuteDirect("SELECT 42");
     REQUIRE(stmt.FetchRow());
-    REQUIRE(stmt.GetColumn<int>(1).value() == 42);
+    REQUIRE(stmt.GetColumn<int>(1) == 42);
     REQUIRE(!stmt.FetchRow());
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "select: get column (invalid index)")
 {
     auto stmt = SqlStatement {};
-    stmt.ExecuteDirect("SELECT 42").value();
+    stmt.ExecuteDirect("SELECT 42");
     REQUIRE(stmt.FetchRow());
 
     auto const _ = ScopedSqlNullLogger {}; // suppress the error message, we are testing for it
 
-    auto const result = stmt.GetColumn<int>(2);
-    REQUIRE(!result.has_value());
-    REQUIRE(result.error() == SqlError::FAILURE); // SQL_ERROR
+    CHECK_THROWS_AS(stmt.GetColumn<int>(2), std::invalid_argument);
     REQUIRE(!stmt.FetchRow());
 }
 
@@ -174,30 +172,30 @@ TEST_CASE_METHOD(SqlTestFixture, "execute bound parameters and select back: VARC
     auto stmt = SqlStatement {};
     CreateEmployeesTable(stmt);
 
-    REQUIRE(stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)"));
-    REQUIRE(stmt.Execute("Alice", "Smith", 50'000));
-    REQUIRE(stmt.Execute("Bob", "Johnson", 60'000));
-    REQUIRE(stmt.Execute("Charlie", "Brown", 70'000));
+    stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    stmt.Execute("Alice", "Smith", 50'000);
+    stmt.Execute("Bob", "Johnson", 60'000);
+    stmt.Execute("Charlie", "Brown", 70'000);
 
-    REQUIRE(stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees"));
-    REQUIRE(stmt.NumColumnsAffected().value() == 1);
+    stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
+    REQUIRE(stmt.NumColumnsAffected() == 1);
     REQUIRE(stmt.FetchRow());
-    REQUIRE(stmt.GetColumn<int>(1).value() == 3);
+    REQUIRE(stmt.GetColumn<int>(1) == 3);
     REQUIRE(!stmt.FetchRow());
 
-    REQUIRE(stmt.Prepare("SELECT FirstName, LastName, Salary FROM Employees WHERE Salary >= ?"));
-    REQUIRE(stmt.NumColumnsAffected().value() == 3);
-    REQUIRE(stmt.Execute(55'000));
+    stmt.Prepare("SELECT FirstName, LastName, Salary FROM Employees WHERE Salary >= ?");
+    REQUIRE(stmt.NumColumnsAffected() == 3);
+    stmt.Execute(55'000);
 
     REQUIRE(stmt.FetchRow());
-    REQUIRE(stmt.GetColumn<std::string>(1).value() == "Bob");
-    REQUIRE(stmt.GetColumn<std::string>(2).value() == "Johnson");
-    REQUIRE(stmt.GetColumn<int>(3).value() == 60'000);
+    REQUIRE(stmt.GetColumn<std::string>(1) == "Bob");
+    REQUIRE(stmt.GetColumn<std::string>(2) == "Johnson");
+    REQUIRE(stmt.GetColumn<int>(3) == 60'000);
 
     REQUIRE(stmt.FetchRow());
-    REQUIRE(stmt.GetColumn<std::string>(1).value() == "Charlie");
-    REQUIRE(stmt.GetColumn<std::string>(2).value() == "Brown");
-    REQUIRE(stmt.GetColumn<int>(3).value() == 70'000);
+    REQUIRE(stmt.GetColumn<std::string>(1) == "Charlie");
+    REQUIRE(stmt.GetColumn<std::string>(2) == "Brown");
+    REQUIRE(stmt.GetColumn<int>(3) == 70'000);
 
     REQUIRE(!stmt.FetchRow());
 }
@@ -210,16 +208,16 @@ TEST_CASE_METHOD(SqlTestFixture, "transaction: auto-rollback")
 
     {
         auto transaction = SqlTransaction { stmt.Connection(), SqlTransactionMode::ROLLBACK };
-        REQUIRE(stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)"));
-        REQUIRE(stmt.Execute("Alice", "Smith", 50'000));
+        stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+        stmt.Execute("Alice", "Smith", 50'000);
         REQUIRE(stmt.Connection().TransactionActive());
     }
     // transaction automatically rolled back
 
     REQUIRE(!stmt.Connection().TransactionActive());
-    REQUIRE(stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees"));
+    stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
     REQUIRE(stmt.FetchRow());
-    REQUIRE(stmt.GetColumn<int>(1).value() == 0);
+    REQUIRE(stmt.GetColumn<int>(1) == 0);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "transaction: auto-commit")
@@ -230,16 +228,16 @@ TEST_CASE_METHOD(SqlTestFixture, "transaction: auto-commit")
 
     {
         auto transaction = SqlTransaction { stmt.Connection(), SqlTransactionMode::COMMIT };
-        REQUIRE(stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)"));
-        REQUIRE(stmt.Execute("Alice", "Smith", 50'000));
+        stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+        stmt.Execute("Alice", "Smith", 50'000);
         REQUIRE(stmt.Connection().TransactionActive());
     }
     // transaction automatically committed
 
     REQUIRE(!stmt.Connection().TransactionActive());
-    REQUIRE(stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees"));
+    stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
     REQUIRE(stmt.FetchRow());
-    REQUIRE(stmt.GetColumn<int>(1).value() == 1);
+    REQUIRE(stmt.GetColumn<int>(1) == 1);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "execute binding output parameters (direct)")
@@ -252,9 +250,9 @@ TEST_CASE_METHOD(SqlTestFixture, "execute binding output parameters (direct)")
     std::string lastName(20, '\0');  // ditto
     unsigned int salary {};
 
-    REQUIRE(stmt.Prepare("SELECT FirstName, LastName, Salary FROM Employees WHERE Salary = ?"));
-    REQUIRE(stmt.BindOutputColumns(&firstName, &lastName, &salary));
-    REQUIRE(stmt.Execute(50'000));
+    stmt.Prepare("SELECT FirstName, LastName, Salary FROM Employees WHERE Salary = ?");
+    stmt.BindOutputColumns(&firstName, &lastName, &salary);
+    stmt.Execute(50'000);
 
     REQUIRE(stmt.FetchRow());
     CHECK(firstName == "Alice");
@@ -268,14 +266,14 @@ TEST_CASE_METHOD(SqlTestFixture, "FetchRow can auto-trim string if requested")
 {
     auto stmt = SqlStatement {};
     CreateEmployeesTable(stmt);
-    REQUIRE(stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)"));
-    REQUIRE(stmt.Execute("Alice    ", "Smith    ", 50'000));
+    stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    stmt.Execute("Alice    ", "Smith    ", 50'000);
 
     SqlTrimmedString firstName { .value = std::string(20, '\0') };
     SqlTrimmedString lastName { .value = std::string(20, '\0') };
 
-    REQUIRE(stmt.ExecuteDirect("SELECT FirstName, LastName FROM Employees"));
-    REQUIRE(stmt.BindOutputColumns(&firstName, &lastName));
+    stmt.ExecuteDirect("SELECT FirstName, LastName FROM Employees");
+    stmt.BindOutputColumns(&firstName, &lastName);
 
     REQUIRE(stmt.FetchRow());
     CHECK(firstName.value == "Alice");
@@ -290,7 +288,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatch")
 
     CreateEmployeesTable(stmt);
 
-    REQUIRE(stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)"));
+    stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
 
     // Ensure that the batch insert works with different types of containers
     // clang-format off
@@ -299,24 +297,24 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatch")
     unsigned const salaries[3] = { 50'000, 60'000, 70'000 };                // C-style array
     // clang-format on
 
-    REQUIRE(stmt.ExecuteBatch(firstNames, lastNames, salaries));
+    stmt.ExecuteBatch(firstNames, lastNames, salaries);
 
-    REQUIRE(stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees ORDER BY Salary DESC"));
-
-    REQUIRE(stmt.FetchRow());
-    REQUIRE(stmt.GetColumn<std::string>(1).value() == "Charlie");
-    REQUIRE(stmt.GetColumn<std::string>(2).value() == "Brown");
-    REQUIRE(stmt.GetColumn<int>(3).value() == 70'000);
+    stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees ORDER BY Salary DESC");
 
     REQUIRE(stmt.FetchRow());
-    REQUIRE(stmt.GetColumn<std::string>(1).value() == "Bob");
-    REQUIRE(stmt.GetColumn<std::string>(2).value() == "Johnson");
-    REQUIRE(stmt.GetColumn<int>(3).value() == 60'000);
+    REQUIRE(stmt.GetColumn<std::string>(1) == "Charlie");
+    REQUIRE(stmt.GetColumn<std::string>(2) == "Brown");
+    REQUIRE(stmt.GetColumn<int>(3) == 70'000);
 
     REQUIRE(stmt.FetchRow());
-    REQUIRE(stmt.GetColumn<std::string>(1).value() == "Alice");
-    REQUIRE(stmt.GetColumn<std::string>(2).value() == "Smith");
-    REQUIRE(stmt.GetColumn<int>(3).value() == 50'000);
+    REQUIRE(stmt.GetColumn<std::string>(1) == "Bob");
+    REQUIRE(stmt.GetColumn<std::string>(2) == "Johnson");
+    REQUIRE(stmt.GetColumn<int>(3) == 60'000);
+
+    REQUIRE(stmt.FetchRow());
+    REQUIRE(stmt.GetColumn<std::string>(1) == "Alice");
+    REQUIRE(stmt.GetColumn<std::string>(2) == "Smith");
+    REQUIRE(stmt.GetColumn<int>(3) == 50'000);
 
     REQUIRE(!stmt.FetchRow());
 }
@@ -325,33 +323,33 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatchNative")
 {
     auto stmt = SqlStatement {};
 
-    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (A VARCHAR(8), B REAL, C INTEGER)"));
+    stmt.ExecuteDirect("CREATE TABLE Test (A VARCHAR(8), B REAL, C INTEGER)");
 
-    REQUIRE(stmt.Prepare("INSERT INTO Test (A, B, C) VALUES (?, ?, ?)"));
+    stmt.Prepare("INSERT INTO Test (A, B, C) VALUES (?, ?, ?)");
 
     // Ensure that the batch insert works with different types of contiguous containers
     auto const first = std::array<SqlFixedString<8>, 3> { "Hello", "World", "!" };
     auto const second = std::vector { 1.3, 2.3, 3.3 };
     unsigned const third[3] = { 50'000, 60'000, 70'000 };
 
-    REQUIRE(stmt.ExecuteBatchNative(first, second, third));
+    stmt.ExecuteBatchNative(first, second, third);
 
-    REQUIRE(stmt.ExecuteDirect("SELECT A, B, C FROM Test ORDER BY C DESC"));
-
-    REQUIRE(stmt.FetchRow());
-    CHECK(stmt.GetColumn<std::string>(1).value() == "!");
-    CHECK_THAT(stmt.GetColumn<double>(2).value(), Catch::Matchers::WithinAbs(3.3, 0.000'001));
-    CHECK(stmt.GetColumn<int>(3).value() == 70'000);
+    stmt.ExecuteDirect("SELECT A, B, C FROM Test ORDER BY C DESC");
 
     REQUIRE(stmt.FetchRow());
-    CHECK(stmt.GetColumn<std::string>(1).value() == "World");
-    CHECK_THAT(stmt.GetColumn<double>(2).value(), Catch::Matchers::WithinAbs(2.3, 0.000'001));
-    CHECK(stmt.GetColumn<int>(3).value() == 60'000);
+    CHECK(stmt.GetColumn<std::string>(1) == "!");
+    CHECK_THAT(stmt.GetColumn<double>(2), Catch::Matchers::WithinAbs(3.3, 0.000'001));
+    CHECK(stmt.GetColumn<int>(3) == 70'000);
 
     REQUIRE(stmt.FetchRow());
-    CHECK(stmt.GetColumn<std::string>(1).value() == "Hello");
-    CHECK_THAT(stmt.GetColumn<double>(2).value(), Catch::Matchers::WithinAbs(1.3, 0.000'001));
-    CHECK(stmt.GetColumn<int>(3).value() == 50'000);
+    CHECK(stmt.GetColumn<std::string>(1) == "World");
+    CHECK_THAT(stmt.GetColumn<double>(2), Catch::Matchers::WithinAbs(2.3, 0.000'001));
+    CHECK(stmt.GetColumn<int>(3) == 60'000);
+
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Hello");
+    CHECK_THAT(stmt.GetColumn<double>(2), Catch::Matchers::WithinAbs(1.3, 0.000'001));
+    CHECK(stmt.GetColumn<int>(3) == 50'000);
 
     REQUIRE(!stmt.FetchRow());
 }
@@ -418,23 +416,23 @@ struct SqlDataBinder<CustomType>
 TEST_CASE_METHOD(SqlTestFixture, "custom types", "[sql]")
 {
     auto stmt = SqlStatement {};
-    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value INT)"));
+    stmt.ExecuteDirect("CREATE TABLE Test (Value INT)");
 
     // check custom type handling for input parameters
-    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
-    REQUIRE(stmt.Execute(CustomType { 42 }));
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(CustomType { 42 });
 
     // check custom type handling for explicitly fetched output columns
-    REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+    stmt.ExecuteDirect("SELECT Value FROM Test");
     REQUIRE(stmt.FetchRow());
-    auto result = stmt.GetColumn<CustomType>(1).value();
+    auto result = stmt.GetColumn<CustomType>(1);
     REQUIRE(result.value == 42);
 
     // check custom type handling for bound output columns
     result = {};
-    REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
-    REQUIRE(stmt.BindOutputColumns(&result));
-    REQUIRE(stmt.Execute());
+    stmt.Prepare("SELECT Value FROM Test");
+    stmt.BindOutputColumns(&result);
+    stmt.Execute();
     REQUIRE(stmt.FetchRow());
     REQUIRE(result.value == (42 | 0x01));
 }
@@ -446,7 +444,7 @@ TEST_CASE_METHOD(SqlTestFixture, "LastInsertId")
     FillEmployeesTable(stmt);
 
     // 3 because we inserted 3 rows
-    REQUIRE(stmt.LastInsertId().value() == 3);
+    REQUIRE(stmt.LastInsertId() == 3);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SELECT * FROM Table")
@@ -455,21 +453,21 @@ TEST_CASE_METHOD(SqlTestFixture, "SELECT * FROM Table")
     CreateEmployeesTable(stmt);
     FillEmployeesTable(stmt);
 
-    REQUIRE(stmt.ExecuteDirect("SELECT * FROM Employees"));
+    stmt.ExecuteDirect("SELECT * FROM Employees");
 
-    REQUIRE(stmt.NumColumnsAffected().value_or(0) == 4);
-
-    REQUIRE(stmt.FetchRow());
-    CHECK(stmt.GetColumn<int>(1).value() == 1);
-    CHECK(stmt.GetColumn<std::string>(2).value() == "Alice");
-    CHECK(stmt.GetColumn<std::string>(3).value() == "Smith");
-    CHECK(stmt.GetColumn<int>(4).value() == 50'000);
+    REQUIRE(stmt.NumColumnsAffected() == 4);
 
     REQUIRE(stmt.FetchRow());
-    CHECK(stmt.GetColumn<int>(1).value() == 2);
-    CHECK(stmt.GetColumn<std::string>(2).value() == "Bob");
-    CHECK(stmt.GetColumn<std::string>(3).value() == "Johnson");
-    CHECK(stmt.GetColumn<int>(4).value() == 60'000);
+    CHECK(stmt.GetColumn<int>(1) == 1);
+    CHECK(stmt.GetColumn<std::string>(2) == "Alice");
+    CHECK(stmt.GetColumn<std::string>(3) == "Smith");
+    CHECK(stmt.GetColumn<int>(4) == 50'000);
+
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<int>(1) == 2);
+    CHECK(stmt.GetColumn<std::string>(2) == "Bob");
+    CHECK(stmt.GetColumn<std::string>(3) == "Johnson");
+    CHECK(stmt.GetColumn<int>(4) == 60'000);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "GetColumn in-place store variant")
@@ -478,51 +476,51 @@ TEST_CASE_METHOD(SqlTestFixture, "GetColumn in-place store variant")
     CreateEmployeesTable(stmt);
     FillEmployeesTable(stmt);
 
-    REQUIRE(stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees"));
+    stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees");
     REQUIRE(stmt.FetchRow());
 
-    CHECK(stmt.GetColumn<std::string>(1).value() == "Alice");
+    CHECK(stmt.GetColumn<std::string>(1) == "Alice");
 
     SqlVariant lastName;
-    REQUIRE(stmt.GetColumn(2, &lastName));
+    stmt.GetColumn(2, &lastName);
     CHECK(std::get<std::string>(lastName) == "Smith");
 
     SqlVariant salary;
-    REQUIRE(stmt.GetColumn(3, &salary));
+    stmt.GetColumn(3, &salary);
     CHECK(std::get<int>(salary) == 50'000);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate")
 {
     auto stmt = SqlStatement {};
-    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NOT NULL)"));
+    stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NOT NULL)");
 
     using namespace std::chrono_literals;
     auto const expected = SqlDate { 2017y, std::chrono::August, 16d };
 
-    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
-    REQUIRE(stmt.Execute(expected));
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(expected);
 
-    REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+    stmt.ExecuteDirect("SELECT Value FROM Test");
     REQUIRE(stmt.FetchRow());
-    auto const actual = stmt.GetColumn<SqlVariant>(1).value();
+    auto const actual = stmt.GetColumn<SqlVariant>(1);
     CHECK(std::get<SqlDate>(actual) == expected);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
 {
     auto stmt = SqlStatement {};
-    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NOT NULL)"));
+    stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NOT NULL)");
 
     using namespace std::chrono_literals;
     auto const expected = SqlTime { 12h, 34min, 56s };
 
-    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
-    REQUIRE(stmt.Execute(expected));
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(expected);
 
-    REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+    stmt.ExecuteDirect("SELECT Value FROM Test");
     REQUIRE(stmt.FetchRow());
-    auto const actual = stmt.GetColumn<SqlVariant>(1).value();
+    auto const actual = stmt.GetColumn<SqlVariant>(1);
 
     if (stmt.Connection().ServerType() == SqlServerType::POSTGRESQL)
     {
@@ -544,33 +542,33 @@ static std::string MakeLargeText(size_t size)
 TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large values")
 {
     auto stmt = SqlStatement {};
-    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT)"));
+    stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT)");
     auto const expectedText = MakeLargeText(8 * 1000);
-    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
-    REQUIRE(stmt.Execute(expectedText));
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(expectedText);
 
     SECTION("check handling for explicitly fetched output columns")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
-        CHECK(stmt.GetColumn<std::string>(1).value() == expectedText);
+        CHECK(stmt.GetColumn<std::string>(1) == expectedText);
     }
 
     SECTION("check handling for explicitly fetched output columns (in-place store)")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
         std::string actualText;
-        REQUIRE(stmt.GetColumn(1, &actualText));
+        stmt.GetColumn(1, &actualText);
         CHECK(actualText == expectedText);
     }
 
     SECTION("check handling for bound output columns")
     {
         std::string actualText; // intentionally an empty string, auto-growing behind the scenes
-        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
-        REQUIRE(stmt.BindOutputColumns(&actualText));
-        REQUIRE(stmt.Execute());
+        stmt.Prepare("SELECT Value FROM Test");
+        stmt.BindOutputColumns(&actualText);
+        stmt.Execute();
         REQUIRE(stmt.FetchRow());
         REQUIRE(actualText.size() == expectedText.size());
         CHECK(actualText == expectedText);
@@ -580,25 +578,25 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString")
 {
     auto stmt = SqlStatement {};
-    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value VARCHAR(8) NOT NULL)"));
+    stmt.ExecuteDirect("CREATE TABLE Test (Value VARCHAR(8) NOT NULL)");
 
     auto const expectedValue = SqlFixedString<8> { "Hello " };
 
-    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
-    REQUIRE(stmt.Execute(expectedValue));
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(expectedValue);
 
     SECTION("check custom type handling for explicitly fetched output columns")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
-        auto const actualValue = stmt.GetColumn<SqlFixedString<8>>(1).value();
+        auto const actualValue = stmt.GetColumn<SqlFixedString<8>>(1);
         CHECK(actualValue == expectedValue);
 
         SECTION("Truncated result")
         {
-            REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+            stmt.ExecuteDirect("SELECT Value FROM Test");
             REQUIRE(stmt.FetchRow());
-            auto const truncatedValue = stmt.GetColumn<SqlFixedString<4>>(1).value();
+            auto const truncatedValue = stmt.GetColumn<SqlFixedString<4>>(1);
             auto const truncatedStrView = truncatedValue.substr(0);
             auto const expectedStrView = expectedValue.substr(0, 3);
             CHECK(truncatedStrView == expectedStrView); // "Hel"
@@ -606,29 +604,29 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString")
 
         SECTION("Trimmed result")
         {
-            REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+            stmt.ExecuteDirect("SELECT Value FROM Test");
             REQUIRE(stmt.FetchRow());
-            auto const trimmedValue = stmt.GetColumn<SqlTrimmedFixedString<8>>(1).value();
+            auto const trimmedValue = stmt.GetColumn<SqlTrimmedFixedString<8>>(1);
             CHECK(trimmedValue == "Hello");
         }
     }
 
     SECTION("check custom type handling for bound output columns")
     {
-        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        stmt.Prepare("SELECT Value FROM Test");
         auto actualValue = SqlFixedString<8> {};
-        REQUIRE(stmt.BindOutputColumns(&actualValue));
-        REQUIRE(stmt.Execute());
+        stmt.BindOutputColumns(&actualValue);
+        stmt.Execute();
         REQUIRE(stmt.FetchRow());
         CHECK(actualValue == expectedValue);
     }
 
     SECTION("check custom type handling for bound output columns (trimmed)")
     {
-        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        stmt.Prepare("SELECT Value FROM Test");
         auto actualValue = SqlTrimmedFixedString<8> {};
-        REQUIRE(stmt.BindOutputColumns(&actualValue));
-        REQUIRE(stmt.Execute());
+        stmt.BindOutputColumns(&actualValue);
+        stmt.Execute();
         REQUIRE(stmt.FetchRow());
         CHECK(actualValue == "Hello");
     }
@@ -637,28 +635,28 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString")
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlText")
 {
     auto stmt = SqlStatement {};
-    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT NOT NULL)"));
+    stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT NOT NULL)");
 
     using namespace std::chrono_literals;
     auto const expectedValue = SqlText { "Hello, World!" };
 
-    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
-    REQUIRE(stmt.Execute(expectedValue));
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(expectedValue);
 
     SECTION("check custom type handling for explicitly fetched output columns")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
-        auto const actualValue = stmt.GetColumn<SqlText>(1).value();
+        auto const actualValue = stmt.GetColumn<SqlText>(1);
         CHECK(actualValue == expectedValue);
     }
 
     SECTION("check custom type handling for bound output columns")
     {
-        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        stmt.Prepare("SELECT Value FROM Test");
         auto actualValue = SqlText {};
-        REQUIRE(stmt.BindOutputColumns(&actualValue));
-        REQUIRE(stmt.Execute());
+        stmt.BindOutputColumns(&actualValue);
+        stmt.Execute();
         REQUIRE(stmt.FetchRow());
         CHECK(actualValue == expectedValue);
     }
@@ -667,8 +665,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlText")
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDateTime")
 {
     auto stmt = SqlStatement {};
-    REQUIRE(stmt.ExecuteDirect(std::format("CREATE TABLE Test (Value {} NOT NULL)",
-                                           stmt.Connection().Traits().ColumnTypeName(SqlColumnType::DATETIME))));
+    stmt.ExecuteDirect(std::format("CREATE TABLE Test (Value {} NOT NULL)",
+                                   stmt.Connection().Traits().ColumnTypeName(SqlColumnType::DATETIME)));
 
     // With SQL Server or Oracle, we could use DATETIME2(7) and have nano-second precision (with 100ns resolution)
     // The standard DATETIME and ODBC SQL_TIMESTAMP have only millisecond precision.
@@ -676,23 +674,23 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDateTime")
     using namespace std::chrono_literals;
     auto const expectedValue = SqlDateTime(2017y, std::chrono::August, 16d, 17h, 30min, 45s, 123'000'000ns);
 
-    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
-    REQUIRE(stmt.Execute(expectedValue));
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(expectedValue);
 
     SECTION("check custom type handling for explicitly fetched output columns")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
-        auto const actualValue = stmt.GetColumn<SqlDateTime>(1).value();
+        auto const actualValue = stmt.GetColumn<SqlDateTime>(1);
         CHECK(actualValue == expectedValue);
     }
 
     SECTION("check custom type handling for bound output columns")
     {
-        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        stmt.Prepare("SELECT Value FROM Test");
         auto actualValue = SqlDateTime {};
-        REQUIRE(stmt.BindOutputColumns(&actualValue));
-        REQUIRE(stmt.Execute());
+        stmt.BindOutputColumns(&actualValue);
+        stmt.Execute();
         REQUIRE(stmt.FetchRow());
         CHECK(actualValue == expectedValue);
     }
@@ -701,35 +699,35 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDateTime")
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: date")
 {
     auto stmt = SqlStatement {};
-    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NOT NULL)"));
+    stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NOT NULL)");
     using namespace std::chrono_literals;
     auto const expected = SqlDate { std::chrono::year_month_day { 2017y, std::chrono::August, 16d } };
 
-    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
-    REQUIRE(stmt.Execute(expected));
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(expected);
 
     SECTION("check custom type handling for explicitly fetched output columns")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
-        auto const actual = stmt.GetColumn<SqlDate>(1).value();
+        auto const actual = stmt.GetColumn<SqlDate>(1);
         REQUIRE(actual == expected);
     }
 
     SECTION("check custom type handling for explicitly fetched output columns")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
-        auto const actual = stmt.GetColumn<SqlDate>(1).value();
+        auto const actual = stmt.GetColumn<SqlDate>(1);
         REQUIRE(actual == expected);
     }
 
     SECTION("check custom type handling for bound output columns")
     {
-        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        stmt.Prepare("SELECT Value FROM Test");
         auto actual = SqlDate {};
-        REQUIRE(stmt.BindOutputColumns(&actual));
-        REQUIRE(stmt.Execute());
+        stmt.BindOutputColumns(&actual);
+        stmt.Execute();
         REQUIRE(stmt.FetchRow());
         REQUIRE(actual == expected);
     }
@@ -738,35 +736,35 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: date")
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: time")
 {
     auto stmt = SqlStatement {};
-    REQUIRE(stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NOT NULL)"));
+    stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NOT NULL)");
     using namespace std::chrono_literals;
     auto const expected = SqlTime(12h, 34min, 56s);
 
-    REQUIRE(stmt.Prepare("INSERT INTO Test (Value) VALUES (?)"));
-    REQUIRE(stmt.Execute(expected));
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(expected);
 
     SECTION("check custom type handling for explicitly fetched output columns")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
-        auto const actual = stmt.GetColumn<SqlTime>(1).value();
+        auto const actual = stmt.GetColumn<SqlTime>(1);
         REQUIRE(actual == expected);
     }
 
     SECTION("check custom type handling for explicitly fetched output columns")
     {
-        REQUIRE(stmt.ExecuteDirect("SELECT Value FROM Test"));
+        stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
-        auto const actual = stmt.GetColumn<SqlTime>(1).value();
+        auto const actual = stmt.GetColumn<SqlTime>(1);
         REQUIRE(actual == expected);
     }
 
     SECTION("check custom type handling for bound output columns")
     {
-        REQUIRE(stmt.Prepare("SELECT Value FROM Test"));
+        stmt.Prepare("SELECT Value FROM Test");
         auto actual = SqlTime {};
-        REQUIRE(stmt.BindOutputColumns(&actual));
-        REQUIRE(stmt.Execute());
+        stmt.BindOutputColumns(&actual);
+        stmt.Execute();
         REQUIRE(stmt.FetchRow());
         REQUIRE(actual == expected);
     }
