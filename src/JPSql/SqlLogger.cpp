@@ -67,6 +67,7 @@ class SqlStandardLogger: public SqlLogger
     void OnExecute() override {}
     void OnExecuteBatch() override {}
     void OnFetchedRow() override {}
+    void OnStats(SqlConnectionStats const&) override {}
 };
 
 class SqlTraceLogger: public SqlStandardLogger
@@ -143,14 +144,26 @@ class SqlTraceLogger: public SqlStandardLogger
         Tick();
         WriteMessage("Fetched row");
     }
+
+    void OnStats(SqlConnectionStats const& stats) override
+    {
+        Tick();
+        WriteMessage("[SqlConnectionPool stats] "
+                     "created: {}, reused: {}, closed: {}, timedout: {}, released: {}",
+                     stats.created,
+                     stats.reused,
+                     stats.closed,
+                     stats.timedout,
+                     stats.released);
+    }
 };
 
 } // namespace
 
+static SqlStandardLogger theStdLogger {};
 SqlLogger& SqlLogger::StandardLogger()
 {
-    static SqlStandardLogger logger {};
-    return logger;
+    return theStdLogger;
 }
 
 SqlLogger& SqlLogger::TraceLogger()
@@ -159,12 +172,7 @@ SqlLogger& SqlLogger::TraceLogger()
     return logger;
 }
 
-static SqlLogger* theDefaultLogger = []() -> SqlLogger* {
-    if (auto const* env = std::getenv("SQL_TRACE"); env && std::string_view(env) == "1")
-        return &SqlLogger::TraceLogger();
-
-    return &SqlLogger::StandardLogger();
-}();
+static SqlLogger* theDefaultLogger = &SqlLogger::StandardLogger();
 
 SqlLogger& SqlLogger::GetLogger()
 {

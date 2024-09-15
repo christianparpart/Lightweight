@@ -70,6 +70,8 @@ class SqlConnection final
     static void SetPostConnectedHook(std::function<void(SqlConnection&)> hook);
     static void ResetPostConnectedHook();
 
+    static SqlConnectionStats Stats() noexcept;
+
     // Retrieves the connection ID.
     //
     // This is a unique identifier for the connection, which is useful for debugging purposes.

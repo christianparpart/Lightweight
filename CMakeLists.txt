@@ -17,3 +17,6 @@ endif()
 
 enable_testing()
 add_subdirectory(src/JPSql)
+
+add_executable(ddl2cpp src/ddl2cpp.cpp)
+target_link_libraries(ddl2cpp PRIVATE JPSql::JPSql)

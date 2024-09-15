@@ -97,7 +97,8 @@ class SqlStatement final: public SqlDataBinderCallback
     // Executes the given query directly.
     void ExecuteDirect(const std::string_view& query, std::source_location location = std::source_location::current());
 
-    // Executes the given query, assuming that only one result row and column is affected, that one will be returned.
+    // Executes the given query, assuming that only one result row and column is affected, that one will be
+    // returned.
     template <typename T>
     [[nodiscard]] std::optional<T> ExecuteDirectScalar(const std::string_view& query,
                                                        std::source_location location = std::source_location::current());

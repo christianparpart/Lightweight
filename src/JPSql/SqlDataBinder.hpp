@@ -103,11 +103,14 @@ enum class SqlStringPostRetrieveOperation
     TRIM_RIGHT,
 };
 
-// SQL fixed-capacity string that mimmicks standard library string/string_view with a fixed-size underlying buffer.
+// SQL fixed-capacity string that mimmicks standard library string/string_view with a fixed-size underlying
+// buffer.
 //
 // The underlying storage will not be guaranteed to be `\0`-terminated unless
 // a call to mutable/const c_str() has been performed.
-template <std::size_t N, typename T = char, SqlStringPostRetrieveOperation PostOp = SqlStringPostRetrieveOperation::NOTHING>
+template <std::size_t N,
+          typename T = char,
+          SqlStringPostRetrieveOperation PostOp = SqlStringPostRetrieveOperation::NOTHING>
 class SqlFixedString
 {
   private:
@@ -126,7 +129,8 @@ class SqlFixedString
 
     template <std::size_t SourceSize>
     SqlFixedString(T const (&text)[SourceSize]):
-        _data {}, _size { SourceSize - 1 }
+        _data {},
+        _size { SourceSize - 1 }
     {
         static_assert(SourceSize <= N + 1, "RHS string size must not exceed target string's capacity.");
         std::copy_n(text, SourceSize, _data);
@@ -142,7 +146,8 @@ class SqlFixedString
     void reserve(std::size_t capacity)
     {
         if (capacity > N)
-            throw std::length_error(std::format("SqlFixedString: capacity {} exceeds maximum capacity {}", capacity, N));
+            throw std::length_error(
+                std::format("SqlFixedString: capacity {} exceeds maximum capacity {}", capacity, N));
     }
 
     constexpr bool empty() const noexcept
@@ -208,7 +213,8 @@ class SqlFixedString
             --_size;
     }
 
-    constexpr std::basic_string_view<T> substr(std::size_t offset = 0, std::size_t count = (std::numeric_limits<std::size_t>::max)()) const noexcept
+    constexpr std::basic_string_view<T> substr(
+        std::size_t offset = 0, std::size_t count = (std::numeric_limits<std::size_t>::max)()) const noexcept
     {
         if (offset >= _size)
             return {};
@@ -555,7 +561,8 @@ using SqlVariant = std::variant<std::monostate,
 // Callback interface for SqlDataBinder to allow post-processing of output columns.
 //
 // This is needed because the SQLBindCol() function does not allow to specify a callback function to be called
-// after the data has been fetched from the database. This is needed to trim strings to the correct size, for example.
+// after the data has been fetched from the database. This is needed to trim strings to the correct size, for
+// example.
 class SqlDataBinderCallback
 {
   public:
@@ -611,9 +618,9 @@ template <> struct SqlDataBinder<std::size_t>: SqlSimpleDataBinder<std::size_t, 
 // clang-format on
 
 // Default traits for output string parameters
-// This needs to be implemented for each string type that should be used as output parameter via SqlDataBinder<>.
-// An std::string specialization is provided below.
-// Feel free to add more specializations for other string types, such as CString, etc.
+// This needs to be implemented for each string type that should be used as output parameter via
+// SqlDataBinder<>. An std::string specialization is provided below. Feel free to add more specializations for
+// other string types, such as CString, etc.
 template <typename>
 struct SqlOutputStringTraits;
 
@@ -641,7 +648,8 @@ struct SqlOutputStringTraits<std::string>
     static void Reserve(std::string* str, size_t capacity) noexcept
     {
         // std::string tries to defer the allocation as long as possible.
-        // So we first tell std::string how much to reserve and then resize it to the *actually* reserved size.
+        // So we first tell std::string how much to reserve and then resize it to the *actually* reserved
+        // size.
         str->reserve(capacity);
         str->resize(str->capacity());
     }
@@ -833,21 +841,16 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
             ValueType* boundOutputString = result;
             cb.PlanPostProcessOutputColumn([indicator, boundOutputString]() {
                 // NB: If the indicator is greater than the buffer size, we have a truncation.
-                auto const len = std::cmp_greater_equal(*indicator, N + 1) || *indicator == SQL_NO_TOTAL
-                                     ? N
-                                     : *indicator;
+                auto const len =
+                    std::cmp_greater_equal(*indicator, N + 1) || *indicator == SQL_NO_TOTAL ? N : *indicator;
                 if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
                     TrimRight(boundOutputString, len);
                 else
                     boundOutputString->setsize(len);
             });
         }
-        return SQLBindCol(stmt,
-                          column,
-                          SQL_C_CHAR,
-                          (SQLPOINTER) result->data(),
-                          (SQLLEN) result->capacity(),
-                          indicator);
+        return SQLBindCol(
+            stmt, column, SQL_C_CHAR, (SQLPOINTER) result->data(), (SQLLEN) result->capacity(), indicator);
     }
 
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator) noexcept
@@ -1129,14 +1132,16 @@ struct SqlDataBinder<SqlVariant>
                     SqlDataBinder<std::string>::GetColumn(stmt, column, &std::get<std::string>(*result), indicator);
                 break;
             case SQL_DATE:
-                SqlLogger::GetLogger().OnWarning(std::format("SQL_DATE is from ODBC 2. SQL_TYPE_DATE should have been received instead."));
+                SqlLogger::GetLogger().OnWarning(
+                    std::format("SQL_DATE is from ODBC 2. SQL_TYPE_DATE should have been received instead."));
                 [[fallthrough]];
             case SQL_TYPE_DATE:
                 result->emplace<SqlDate>();
                 returnCode = SqlDataBinder<SqlDate>::GetColumn(stmt, column, &std::get<SqlDate>(*result), indicator);
                 break;
             case SQL_TIME:
-                SqlLogger::GetLogger().OnWarning(std::format("SQL_TIME is from ODBC 2. SQL_TYPE_TIME should have been received instead."));
+                SqlLogger::GetLogger().OnWarning(
+                    std::format("SQL_TIME is from ODBC 2. SQL_TYPE_TIME should have been received instead."));
                 [[fallthrough]];
             case SQL_TYPE_TIME:
             case SQL_SS_TIME2:

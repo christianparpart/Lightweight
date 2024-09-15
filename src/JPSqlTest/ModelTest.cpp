@@ -1,4 +1,4 @@
-#include "../JPSql/Model.hpp"
+#include "../JPSql/Model/All.hpp"
 #include "../JPSql/SqlConnection.hpp"
 #include "JPSqlTestUtils.hpp"
 

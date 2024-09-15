@@ -33,6 +33,15 @@ int main(int argc, char** argv)
         return result.error();
 
     std::tie(argc, argv) = result.value();
+
+    struct finally
+    {
+        ~finally()
+        {
+            SqlLogger::GetLogger().OnStats(SqlConnection::Stats());
+        }
+    } _;
+
     return Catch::Session().run(argc, argv);
 }
 

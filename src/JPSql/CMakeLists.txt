@@ -30,10 +30,12 @@ set(HEADER_FILES
     Model/Utils.hpp
     SqlComposedQuery.hpp
     SqlConcepts.hpp
+    SqlConnectInfo.hpp
     SqlConnection.hpp
     SqlError.hpp
     SqlLogger.hpp
     SqlQueryFormatter.hpp
+    SqlSchema.hpp
     SqlScopedTraceLogger.hpp
     SqlStatement.hpp
 )
@@ -42,9 +44,12 @@ set(SOURCE_FILES
     Model/AbstractRecord.cpp
     Model/Logger.cpp
     SqlComposedQuery.cpp
+    SqlConnectInfo.cpp
     SqlConnection.cpp
+    SqlError.cpp
     SqlLogger.cpp
     SqlQueryFormatter.cpp
+    SqlSchema.cpp
     SqlStatement.cpp
     SqlTransaction.cpp
 )
