@@ -178,6 +178,9 @@ template <typename Derived>
 struct Record: AbstractRecord
 {
   public:
+    static constexpr auto Nullable = Model::SqlNullable;
+    static constexpr auto NotNullable = Model::SqlNotNullable;
+
     Record() = delete;
     Record(Record const&) = default;
     Record& operator=(Record const&) = delete;

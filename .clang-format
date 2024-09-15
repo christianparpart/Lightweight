@@ -11,7 +11,7 @@ AllowAllArgumentsOnNextLine: 'true'
 AllowAllConstructorInitializersOnNextLine: 'true'
 AllowAllParametersOfDeclarationOnNextLine: 'true'
 AllowShortBlocksOnASingleLine: 'false'
-AllowShortCaseLabelsOnASingleLine: 'true'
+AllowShortCaseLabelsOnASingleLine: 'false'
 AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: Inline

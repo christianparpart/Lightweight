@@ -36,7 +36,7 @@ struct AbstractRecord
 
     AbstractRecord& operator=(AbstractRecord const&) = delete;
     AbstractRecord& operator=(AbstractRecord&&) = delete;
-    ~AbstractRecord() = default;
+    virtual ~AbstractRecord() = default;
 
     // Returns a human readable string representation of this model.
     std::string Inspect() const noexcept;

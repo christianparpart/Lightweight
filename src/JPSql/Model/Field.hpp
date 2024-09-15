@@ -23,7 +23,7 @@ struct Record;
 template <typename T,
           SQLSMALLINT TheTableColumnIndex,
           StringLiteral TheColumnName,
-          FieldValueRequirement TheRequirement = FieldValueRequirement::NOT_NULL>
+          FieldValueRequirement TheRequirement = SqlNotNullable>
 class Field: public AbstractField
 {
   public:

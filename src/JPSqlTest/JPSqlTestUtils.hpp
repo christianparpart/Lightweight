@@ -5,7 +5,7 @@
     #include <Windows.h>
 #endif
 
-#include "../JPSql/Model.hpp"
+#include "../JPSql/Model/All.hpp"
 #include "../JPSql/SqlConnectInfo.hpp"
 #include "../JPSql/SqlDataBinder.hpp"
 #include "../JPSql/SqlLogger.hpp"
@@ -35,13 +35,13 @@
 // - https://github.com/softace/sqliteodbc
 //
 auto const inline DefaultTestConnectionString = SqlConnectionString {
-    .connectionString = std::format("DRIVER={};Database={}",
+    .value = std::format("DRIVER={};Database={}",
 #if defined(_WIN32) || defined(_WIN64)
-                                    "SQLite3 ODBC Driver",
+                         "SQLite3 ODBC Driver",
 #else
-                                    "SQLite3",
+                         "SQLite3",
 #endif
-                                    "file::memory:"),
+                         "file::memory:"),
 };
 
 class ScopedSqlNullLogger: public SqlLogger
@@ -71,6 +71,7 @@ class ScopedSqlNullLogger: public SqlLogger
     void OnExecute() override {}
     void OnExecuteBatch() override {}
     void OnFetchedRow() override {}
+    void OnStats(SqlConnectionStats const&) override {}
 };
 
 class SqlTestFixture
@@ -115,7 +116,7 @@ class SqlTestFixture
         else
         {
             // Use an in-memory SQLite3 database by default (for testing purposes)
-            std::println("Using default ODBC connection string: '{}'", DefaultTestConnectionString.connectionString);
+            std::println("Using default ODBC connection string: '{}'", DefaultTestConnectionString.value);
             SqlConnection::SetDefaultConnectInfo(DefaultTestConnectionString);
         }
 

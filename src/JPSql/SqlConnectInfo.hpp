@@ -2,15 +2,21 @@
 
 #include <chrono>
 #include <format>
+#include <map>
 #include <string>
 #include <variant>
 
 struct SqlConnectionString
 {
-    std::string connectionString;
+    std::string value;
 
     auto operator<=>(SqlConnectionString const&) const noexcept = default;
 };
+
+using SqlConnectionStringMap = std::map<std::string, std::string>;
+
+SqlConnectionStringMap ParseConnectionString(SqlConnectionString const& connectionString);
+SqlConnectionString BuildConnectionString(SqlConnectionStringMap const& map);
 
 struct SqlConnectionDataSource
 {
@@ -31,14 +37,16 @@ struct std::formatter<SqlConnectInfo>: std::formatter<std::string>
     {
         if (auto const* dsn = std::get_if<SqlConnectionDataSource>(&info))
         {
-            return formatter<string>::format(
-                std::format(
-                    "DSN={};UID={};PWD={};TIMEOUT={}", dsn->datasource, dsn->username, dsn->password, dsn->timeout.count()),
-                ctx);
+            return formatter<string>::format(std::format("DSN={};UID={};PWD={};TIMEOUT={}",
+                                                         dsn->datasource,
+                                                         dsn->username,
+                                                         dsn->password,
+                                                         dsn->timeout.count()),
+                                             ctx);
         }
         else if (auto const* connectionString = std::get_if<SqlConnectionString>(&info))
         {
-            return formatter<string>::format(connectionString->connectionString, ctx);
+            return formatter<string>::format(connectionString->value, ctx);
         }
         else
         {

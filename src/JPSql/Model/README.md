@@ -13,7 +13,7 @@ This API was inspired by **Active Record** pattern and API from Ruby on Rails.
 ## Example
 
 ```cpp
-#include <JPSql/Model.hpp>
+#include <JPSql/Model/All.hpp>
 #include <print>
 
 struct Book;

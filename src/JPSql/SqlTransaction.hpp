@@ -23,11 +23,11 @@ enum class SqlTransactionMode
 
 // Represents a transaction to a SQL database.
 //
-// This class is used to control the transaction manually. It disables the auto-commit mode when constructed, and
-// automatically commits the transaction when destructed if not done so.
+// This class is used to control the transaction manually. It disables the auto-commit mode when constructed,
+// and automatically commits the transaction when destructed if not done so.
 //
-// This class is designed with RAII in mind, so that the transaction is automatically committed or rolled back when
-// the object goes out of scope.
+// This class is designed with RAII in mind, so that the transaction is automatically committed or rolled back
+// when the object goes out of scope.
 class SqlTransaction
 {
   public:

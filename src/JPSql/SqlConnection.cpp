@@ -16,14 +16,6 @@ class SqlConnectionPool
     ~SqlConnectionPool()
     {
         KillAllIdleConnections();
-
-        std::println(
-            "SqlConnectionPool: Tearing down. (created: {}, reused: {}, closed: {}, timedout: {}, released: {})",
-            m_stats.created,
-            m_stats.reused,
-            m_stats.closed,
-            m_stats.timedout,
-            m_stats.released);
     }
 
     void KillAllIdleConnections()
@@ -94,19 +86,17 @@ class SqlConnectionPool
         m_maxIdleConnections = maxIdleConnections;
     }
 
+    SqlConnectionStats Stats() const noexcept
+    {
+        return m_stats;
+    }
+
   private:
     std::list<SqlConnection> m_unusedConnections;
     std::mutex m_unusedConnectionsMutex;
     size_t m_maxIdleConnections = 10;
     std::chrono::seconds m_connectionTimeout = std::chrono::seconds { 120 };
-    struct
-    {
-        size_t created {};
-        size_t reused {};
-        size_t closed {};
-        size_t timedout {};
-        size_t released {};
-    } m_stats;
+    SqlConnectionStats m_stats;
 };
 
 static SqlConnectionPool g_connectionPool;
@@ -185,6 +175,11 @@ void SqlConnection::ResetPostConnectedHook()
     m_gPostConnectedHook = {};
 }
 
+SqlConnectionStats SqlConnection::Stats() noexcept
+{
+    return g_connectionPool.Stats();
+}
+
 bool SqlConnection::Connect(std::string_view datasource, std::string_view username, std::string_view password) noexcept
 {
     return Connect(SqlConnectionDataSource {
@@ -194,7 +189,7 @@ bool SqlConnection::Connect(std::string_view datasource, std::string_view userna
 // Connects to the given database with the given ODBC connection string.
 bool SqlConnection::Connect(std::string connectionString) noexcept
 {
-    return Connect(SqlConnectionString { .connectionString = std::move(connectionString) });
+    return Connect(SqlConnectionString { .value = std::move(connectionString) });
 }
 
 void SqlConnection::PostConnect()
@@ -253,7 +248,7 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
             .has_value();
     }
 
-    auto const& connectionString = std::get<SqlConnectionString>(m_connectInfo).connectionString;
+    auto const& connectionString = std::get<SqlConnectionString>(m_connectInfo).value;
 
     return UpdateLastError(SQLDriverConnectA(m_hDbc,
                                              (SQLHWND) nullptr,

@@ -52,6 +52,8 @@ struct SqlErrorInfo
         info.message.resize(msgLen);
         return info;
     }
+
+    static void RequireStatementSuccess(SQLRETURN result, SQLHSTMT hStmt, std::string_view message);
 };
 
 enum class SqlError
