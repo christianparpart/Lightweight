@@ -14,7 +14,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
   public:
     std::string BooleanWhereClause(SqlQualifiedTableColumnName const& column,
                                    std::string_view op,
-                                   bool literalValue) const
+                                   bool literalValue) const override
     {
         auto const literalValueStr = literalValue ? "TRUE"sv : "FALSE"sv;
         if (!column.tableName.empty())
@@ -25,7 +25,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
 
     std::string SelectCount(std::string const& fromTable,
                             std::string const& tableJoins,
-                            std::string const& whereCondition) const
+                            std::string const& whereCondition) const override
     {
         return std::format("SELECT COUNT(*) FROM \"{}\"{}{}", fromTable, tableJoins, whereCondition);
     }
@@ -35,7 +35,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                           std::string const& tableJoins,
                           std::string const& whereCondition,
                           std::string const& orderBy,
-                          std::string const& groupBy) const
+                          std::string const& groupBy) const override
     {
         auto const delimiter = tableJoins.empty() ? "" : "\n  ";
         // clang-format off
@@ -76,7 +76,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                             std::string const& orderBy,
                             std::string const& groupBy,
                             std::size_t offset,
-                            std::size_t limit) const
+                            std::size_t limit) const override
     {
         // clang-format off
         std::stringstream sqlQueryString;

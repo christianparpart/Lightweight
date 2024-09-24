@@ -28,7 +28,7 @@ class StandardQueryLogger: public QueryLogger
         m_rowCount = 0;
     }
 
-    void QueryNextRow(AbstractRecord const& /*record*/)
+    void QueryNextRow(AbstractRecord const& /*record*/) override
     {
         ++m_rowCount;
     }

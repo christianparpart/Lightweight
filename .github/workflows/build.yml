@@ -41,6 +41,40 @@ jobs:
         sudo apt-get install clang-format-18
     - name: "Clang-format"
       run: find ./src/ -name "*.cpp" -o -name "*.h" | xargs clang-format-18 --Werror --dry-run
+
+
+  check_clang_tidy:
+    name: "Check clang-tidy"
+    runs-on: ubuntu-24.04
+    if: github.ref != 'refs/heads/master'
+    steps:
+    - uses: actions/checkout@v4
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: "ccache-ubuntu2404-clang-tidy"
+        max-size: 256M
+    - name: "update APT database"
+      run: sudo apt -q update
+    - name: Install clang
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 19
+        sudo apt -qy install clang-tidy
+    - name: "install dependencies"
+      run: sudo apt install -y cmake ninja-build catch2 unixodbc-dev sqlite3 libsqlite3-dev libsqliteodbc
+    - name: Install GCC
+      run: sudo apt install -y g++-14
+    - name: "cmake"
+      run: |
+        cmake -S . -B build -G Ninja \
+        -D CMAKE_CXX_COMPILER="g++-14"
+    - name: "build"
+      run: cmake --build build
+    - name: "run clang-tidy"
+      run: find ./src/ -name "*.cpp" -o -name "*.h" | xargs -n 1 -P $(nproc) clang-tidy -format-style=file -p build
+
   # }}}
   # {{{ Windows
   windows:
@@ -108,9 +142,6 @@ jobs:
       - name: Install Clang
         if: ${{ startsWith(matrix.compiler, 'Clang') }}
         run: sudo apt install -y clang-${{ steps.extract_matrix.outputs.CC_VERSION }} #libc++-dev libc++abi-dev
-      - name: Install Clang-Tidy
-        if: ${{ startsWith(matrix.compiler, 'Clang') }}
-        run: sudo apt install -y clang-tidy-${{ steps.extract_matrix.outputs.CC_VERSION }}
       - name: "cmake"
         run: |
           CC_NAME=$(echo "${{ matrix.compiler }}" | awk '{ print tolower($1); }')
