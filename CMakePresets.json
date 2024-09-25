@@ -1,0 +1,88 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "common",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_VERBOSE_MAKEFILE": "OFF"
+            }
+        },
+        {
+            "name": "windows-common",
+            "hidden": true,
+            "inherits": ["common"],
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "cacheVariables": {
+                "CMAKE_SYSTEM_VERSION": "10.0"
+            }
+        },
+        {
+            "name": "windows-cl-common",
+            "hidden": true,
+            "inherits": ["windows-common"],
+            "generator": "Visual Studio 17 2022",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "cl"
+            }
+        },
+        { "name": "windows-cl-debug",   "inherits": ["windows-cl-common"], "displayName": "Windows - MSVC CL - Debug"   },
+        { "name": "windows-cl-release", "inherits": ["windows-cl-common"], "displayName": "Windows - MSVC CL - Release" },
+        {
+            "name": "windows-clangcl-common",
+            "hidden": true,
+            "inherits": ["windows-common"],
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang-cl",
+                "CMAKE_C_COMPILER": "clang-cl"
+            }
+        },
+        { "name": "windows-clangcl-debug",  "inherits": ["windows-clangcl-common"], "displayName": "Windows - MSVC ClangCL - Debug",   "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug"   } },
+        { "name": "windows-clangcl-release","inherits": ["windows-clangcl-common"], "displayName": "Windows - MSVC ClangCL - Release", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" } },
+        { "name": "linux-common",           "hidden": true, "inherits": ["common"], "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" } },
+        { "name": "macos-common",           "hidden": true, "inherits": ["common"], "condition": { "lhs": "${hostSystemName}", "type": "equals", "rhs": "Darwin" } },
+        { "name": "debug",                  "hidden": true, "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" } },
+        { "name": "release",                "hidden": true, "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" } },
+        { "name": "pedantic",               "hidden": true, "cacheVariables": { "PEDANTIC_COMPILER": "ON", "PEDANTIC_COMPILER_WERROR": "ON" } },
+        { "name": "linux-common-release",   "hidden": true, "inherits": "release",      "cacheVariables": { "CMAKE_INSTALL_PREFIX": "/usr/local" } },
+        { "name": "linux-clang",            "hidden": true, "inherits": "linux-common", "cacheVariables": { "CMAKE_CXX_COMPILER": "clang++" } },
+        { "name": "linux-gcc",              "hidden": true, "inherits": "linux-common", "cacheVariables": { "CMAKE_CXX_COMPILER": "g++" } },
+        { "name": "linux-clang-release",    "displayName": "Linux (Clang) Release", "inherits": ["linux-clang", "linux-common-release"] },
+        { "name": "linux-clang-debug",      "displayName": "Linux (Clang) Debug", "inherits": ["linux-clang", "debug"] },
+        { "name": "linux-gcc-release",      "displayName": "Linux (GCC) Release", "inherits": ["linux-gcc", "linux-common-release"] },
+        { "name": "linux-gcc-debug",        "displayName": "Linux (GCC) Debug", "inherits": ["linux-gcc", "debug", "pedantic"] },
+        { "name": "macos-release",          "displayName": "MacOS Release", "inherits": ["macos-common", "release"] },
+        { "name": "macos-debug",            "displayName": "MacOS Debug", "inherits": ["macos-common", "debug"] }
+    ],
+    "buildPresets": [
+        { "name": "windows-cl-debug",        "displayName": "Windows - MSVC CL - Debug",        "configurePreset": "windows-cl-debug",        "configuration": "Debug" },
+        { "name": "windows-cl-release",      "displayName": "Windows - MSVC CL - Release",      "configurePreset": "windows-cl-release",      "configuration": "Release" },
+        { "name": "windows-clangcl-debug",   "displayName": "Windows - MSVC ClangCL - Debug",   "configurePreset": "windows-clangcl-debug",   "configuration": "Debug" },
+        { "name": "windows-clangcl-release", "displayName": "Windows - MSVC ClangCL - Release", "configurePreset": "windows-clangcl-release", "configuration": "Release" },
+        { "name": "linux-clang-debug",       "displayName": "Linux - Clang - Debug", "configurePreset": "linux-clang-debug" },
+        { "name": "linux-clang-release",     "displayName": "Linux - Clang - RelWithDebInfo", "configurePreset": "linux-clang-release" },
+        { "name": "linux-gcc-debug",         "displayName": "Linux - GCC - Debug", "configurePreset": "linux-gcc-debug" },
+        { "name": "linux-gcc-release",       "displayName": "Linux - GCC - RelWithDebInfo", "configurePreset": "linux-gcc-release" },
+        { "name": "macos-debug",             "displayName": "MacOS - Debug", "configurePreset": "macos-debug" },
+        { "name": "macos-release",           "displayName": "MacOS - RelWithDebInfo", "configurePreset": "macos-release" }
+    ],
+    "testPresets": [
+        { "name": "windows-cl-debug", "configurePreset": "windows-cl-debug", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
+        { "name": "windows-cl-release", "configurePreset": "windows-cl-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
+        { "name": "windows-clangcl-debug", "configurePreset": "windows-clangcl-debug", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
+        { "name": "windows-clangcl-release", "configurePreset": "windows-clangcl-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
+        { "name": "linux-gcc-debug", "configurePreset": "linux-gcc-debug", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
+        { "name": "linux-gcc-release", "configurePreset": "linux-gcc-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
+        { "name": "linux-clang-debug", "configurePreset": "linux-clang-debug", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
+        { "name": "linux-clang-release", "configurePreset": "linux-clang-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } }
+    ]
+}
