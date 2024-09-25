@@ -39,12 +39,12 @@ struct AbstractRecord
     virtual ~AbstractRecord() = default;
 
     // Returns a human readable string representation of this model.
-    std::string Inspect() const noexcept;
+    [[nodiscard]] std::string Inspect() const noexcept;
 
     // clang-format off
-    std::string_view TableName() const noexcept { return m_data->tableName; } // TODO: make this statically accessible from Record<> as well
-    std::string_view PrimaryKeyName() const noexcept { return m_data->primaryKeyName; } // TODO: make this statically accessible from Record<> as well
-    RecordId Id() const noexcept { return m_data->id; }
+    [[nodiscard]] std::string_view TableName() const noexcept { return m_data->tableName; } // TODO: make this statically accessible from Record<> as well
+    [[nodiscard]] std::string_view PrimaryKeyName() const noexcept { return m_data->primaryKeyName; } // TODO: make this statically accessible from Record<> as well
+    [[nodiscard]] RecordId Id() const noexcept { return m_data->id; }
 
     RecordId& MutableId() noexcept { return m_data->id; }
 
@@ -63,13 +63,13 @@ struct AbstractRecord
         }
     }
 
-    AbstractField const& GetField(SqlColumnIndex index) const noexcept { return *m_data->fields[index.value]; }
+    [[nodiscard]] AbstractField const& GetField(SqlColumnIndex index) const noexcept { return *m_data->fields[index.value]; }
     AbstractField& GetField(SqlColumnIndex index) noexcept { return *m_data->fields[index.value]; }
     // clang-format on
 
     void SetModified(bool value) noexcept;
 
-    bool IsModified() const noexcept;
+    [[nodiscard]] bool IsModified() const noexcept;
 
     void SortFieldsByIndex() noexcept;
 
@@ -82,7 +82,7 @@ struct AbstractRecord
         return m_data->fields;
     }
 
-    std::vector<std::string_view> AllFieldNames() const;
+    [[nodiscard]] std::vector<std::string_view> AllFieldNames() const;
 
   protected:
     struct Data

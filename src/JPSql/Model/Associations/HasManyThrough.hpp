@@ -2,10 +2,7 @@
 #pragma once
 
 #include "../../SqlComposedQuery.hpp"
-#include "../../SqlError.hpp"
-#include "../../SqlStatement.hpp"
 #include "../AbstractRecord.hpp"
-#include "../Record.hpp"
 #include "../StringLiteral.hpp"
 
 namespace Model
@@ -18,8 +15,8 @@ class HasManyThrough
     explicit HasManyThrough(AbstractRecord& record);
     explicit HasManyThrough(AbstractRecord& record, HasManyThrough&& other) noexcept;
 
-    bool IsEmpty() const noexcept;
-    size_t Count() const;
+    [[nodiscard]] bool IsEmpty() const noexcept;
+    [[nodiscard]] size_t Count() const;
 
     std::vector<TargetRecord>& All();
 
@@ -31,7 +28,7 @@ class HasManyThrough
     TargetRecord& operator[](size_t index);
     TargetRecord const& operator[](size_t index) const;
 
-    bool IsLoaded() const noexcept;
+    [[nodiscard]] bool IsLoaded() const noexcept;
     SqlResult<void> Load();
     SqlResult<void> Reload();
 
@@ -114,7 +111,8 @@ TargetRecord& HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyN
 }
 
 template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
-TargetRecord const& HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::operator[](size_t index) const
+TargetRecord const& HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::operator[](
+    size_t index) const
 {
     RequireLoaded();
     return m_models[index];

@@ -2,8 +2,6 @@
 #pragma once
 
 #include "../../SqlComposedQuery.hpp"
-#include "../../SqlError.hpp"
-#include "../../SqlStatement.hpp"
 #include "../AbstractRecord.hpp"
 #include "../StringLiteral.hpp"
 
@@ -22,7 +20,7 @@ class HasOneThrough
     OtherRecord& operator*();
     OtherRecord* operator->();
 
-    bool IsLoaded() const noexcept;
+    [[nodiscard]] bool IsLoaded() const noexcept;
     SqlResult<void> Load();
     SqlResult<void> Reload();
 

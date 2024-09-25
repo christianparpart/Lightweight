@@ -16,7 +16,7 @@ enum class SqlResultOrdering : uint8_t
     DESCENDING
 };
 
-enum class SqlQueryType
+enum class SqlQueryType : uint8_t
 {
     UNDEFINED,
 
@@ -99,7 +99,7 @@ class [[nodiscard]] SqlQueryBuilder
     // Constructs an INNER JOIN clause.
     [[nodiscard]] SqlQueryBuilder& InnerJoin(std::string_view joinTable,
                                              std::string_view joinColumnName,
-                                             SqlQualifiedTableColumnName onComparisonColumn);
+                                             SqlQualifiedTableColumnName onOtherColumn);
 
     // Constructs an INNER JOIN clause.
     [[nodiscard]] SqlQueryBuilder& InnerJoin(std::string_view joinTable,

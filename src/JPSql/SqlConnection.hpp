@@ -180,8 +180,8 @@ class SqlConnection final
     SQLHDBC m_hDbc {};
     uint64_t m_connectionId { m_gNextConnectionId++ };
     mutable SqlError m_lastError {};
-    SqlConnectInfo m_connectInfo {};
-    std::chrono::steady_clock::time_point m_lastUsed {}; // Last time the connection was used (mostly interesting for
+    SqlConnectInfo m_connectInfo;
+    std::chrono::steady_clock::time_point m_lastUsed; // Last time the connection was used (mostly interesting for
                                                          // idle connections in the connection pool).
     SqlServerType m_serverType = SqlServerType::UNKNOWN;
     SqlQueryFormatter const* m_queryFormatter {};

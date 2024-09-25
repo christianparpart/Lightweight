@@ -14,7 +14,7 @@ struct StringBuilder
 
     std::string operator*() const& noexcept
     {
-        return std::move(output);
+        return output;
     }
 
     std::string operator*() && noexcept
@@ -22,7 +22,7 @@ struct StringBuilder
         return std::move(output);
     }
 
-    bool empty() const noexcept
+    [[nodiscard]] bool empty() const noexcept
     {
         return output.empty();
     }

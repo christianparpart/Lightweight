@@ -66,12 +66,12 @@ class AbstractField
     virtual ~AbstractField() = default;
 
     // Returns the syntax for the SQL constraint specification for this field, if any, otherwise an empty string.
-    virtual std::string SqlConstraintSpecifier() const
+    [[nodiscard]] virtual std::string SqlConstraintSpecifier() const
     {
         return "";
     }
 
-    virtual std::string InspectValue() const = 0;
+    [[nodiscard]] virtual std::string InspectValue() const = 0;
     virtual void BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const = 0;
     virtual void BindOutputColumn(SqlStatement& stmt) = 0;
     virtual void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt) = 0;
@@ -79,15 +79,15 @@ class AbstractField
 
     // clang-format off
     AbstractRecord& GetRecord() noexcept { return *m_record; }
-    AbstractRecord const& GetRecord() const noexcept { return *m_record; }
+    [[nodiscard]] AbstractRecord const& GetRecord() const noexcept { return *m_record; }
     void SetRecord(AbstractRecord& record) noexcept { m_record = &record; }
-    bool IsModified() const noexcept { return m_modified; }
+    [[nodiscard]] bool IsModified() const noexcept { return m_modified; }
     void SetModified(bool value) noexcept { m_modified = value; }
-    SQLSMALLINT Index() const noexcept { return m_index; }
-    SqlColumnNameView Name() const noexcept { return m_name; }
-    SqlColumnType Type() const noexcept { return m_type; }
-    bool IsNullable() const noexcept { return m_requirement == FieldValueRequirement::NULLABLE; }
-    bool IsRequired() const noexcept { return m_requirement == FieldValueRequirement::NOT_NULL; }
+    [[nodiscard]] SQLSMALLINT Index() const noexcept { return m_index; }
+    [[nodiscard]] SqlColumnNameView Name() const noexcept { return m_name; }
+    [[nodiscard]] SqlColumnType Type() const noexcept { return m_type; }
+    [[nodiscard]] bool IsNullable() const noexcept { return m_requirement == FieldValueRequirement::NULLABLE; }
+    [[nodiscard]] bool IsRequired() const noexcept { return m_requirement == FieldValueRequirement::NOT_NULL; }
     // clang-format on
 
   private:

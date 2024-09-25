@@ -18,15 +18,15 @@ class HasMany
     explicit HasMany(AbstractRecord& parent);
     HasMany(AbstractRecord& record, HasMany&& other) noexcept;
 
-    bool IsEmpty() const;
-    size_t Count() const;
+    [[nodiscard]] bool IsEmpty() const;
+    [[nodiscard]] size_t Count() const;
 
     std::vector<OtherRecord>& All();
 
     OtherRecord& At(size_t index);
     OtherRecord& operator[](size_t index);
 
-    bool IsLoaded() const noexcept;
+    [[nodiscard]] bool IsLoaded() const noexcept;
     void Load();
     void Reload();
 

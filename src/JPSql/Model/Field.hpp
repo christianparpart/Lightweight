@@ -59,7 +59,7 @@ class Field: public AbstractField
     Field(Field&& other) = delete;
     Field& operator=(Field&& other) = delete;
     Field& operator=(Field const& other) = delete;
-    ~Field() = default;
+    ~Field() override = default;
 
     // clang-format off
 
@@ -87,7 +87,7 @@ class Field: public AbstractField
 
     // clang-format on
 
-    std::string InspectValue() const override;
+    [[nodiscard]] std::string InspectValue() const override;
     void BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
     void BindOutputColumn(SqlStatement& stmt) override;
     void BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;

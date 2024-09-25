@@ -34,14 +34,14 @@ class BelongsTo final: public AbstractField
     explicit BelongsTo(AbstractRecord& record, BelongsTo&& other);
     BelongsTo& operator=(RecordId modelId);
     BelongsTo& operator=(OtherRecord const& model);
-    ~BelongsTo() = default;
+    ~BelongsTo() override = default;
 
     OtherRecord* operator->();
     OtherRecord& operator*();
 
-    std::string SqlConstraintSpecifier() const override;
+    [[nodiscard]] std::string SqlConstraintSpecifier() const override;
 
-    std::string InspectValue() const override;
+    [[nodiscard]] std::string InspectValue() const override;
     void BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const override;
     void BindOutputColumn(SqlStatement& stmt) override;
     void BindOutputColumn(SQLSMALLINT index, SqlStatement& stmt) override;

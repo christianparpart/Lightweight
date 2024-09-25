@@ -37,7 +37,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Move", "[model]")
         {
         }
 
-        MovableRecord(MovableRecord&& other):
+        MovableRecord(MovableRecord&& other) noexcept:
             Record { std::move(other) },
             name { *this, std::move(other.name) }
         {
@@ -72,7 +72,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Model.Field: SqlTrimmedString", "[model]")
         {
         }
 
-        TrimmedStringRecord(TrimmedStringRecord&& other):
+        TrimmedStringRecord(TrimmedStringRecord&& other) noexcept:
             Record { std::move(other) },
             name { *this, std::move(other.name) }
         {
@@ -101,7 +101,7 @@ struct Author: Model::Record<Author>
     {
     }
 
-    Author(Author&& other):
+    Author(Author&& other) noexcept:
         Record { std::move(other) },
         name { *this, std::move(other.name) },
         books { *this, std::move(other.books) }
@@ -123,7 +123,7 @@ struct Book: Model::Record<Book>
     {
     }
 
-    Book(Book&& other):
+    Book(Book&& other) noexcept:
         Record { std::move(other) },
         title { *this, std::move(other.title) },
         isbn { *this, std::move(other.isbn) },
@@ -291,7 +291,7 @@ struct ColumnTypesRecord: Model::Record<ColumnTypesRecord>
     {
     }
 
-    ColumnTypesRecord(ColumnTypesRecord&& other):
+    ColumnTypesRecord(ColumnTypesRecord&& other) noexcept:
         Record { std::move(other) },
         stringColumn { *this, std::move(other.stringColumn) },
         textColumn { *this, std::move(other.textColumn) }
@@ -325,7 +325,7 @@ struct Employee: Model::Record<Employee>
     {
     }
 
-    Employee(Employee&& other):
+    Employee(Employee&& other) noexcept:
         Record { std::move(other) },
         name { *this, std::move(other.name) },
         isSenior { *this, std::move(other.isSenior) }

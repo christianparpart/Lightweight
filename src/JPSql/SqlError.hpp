@@ -56,7 +56,7 @@ struct SqlErrorInfo
     static void RequireStatementSuccess(SQLRETURN result, SQLHSTMT hStmt, std::string_view message);
 };
 
-enum class SqlError
+enum class SqlError : std::int16_t
 {
     SUCCESS = SQL_SUCCESS,
     SUCCESS_WITH_INFO = SQL_SUCCESS_WITH_INFO,
@@ -78,12 +78,12 @@ struct SqlErrorCategory: std::error_category
         static SqlErrorCategory const category;
         return category;
     }
-    const char* name() const noexcept override
+    [[nodiscard]] const char* name() const noexcept override
     {
         return "JPSql";
     }
 
-    std::string message(int code) const override
+    [[nodiscard]] std::string message(int code) const override
     {
         using namespace std::string_literals;
         switch (static_cast<SqlError>(code))

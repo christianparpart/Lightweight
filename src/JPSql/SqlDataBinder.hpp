@@ -49,7 +49,7 @@ constexpr Integer toInteger(std::string_view s, Integer fallback) noexcept
 // - SQL Server 2008 and later
 // - MariaDB and MySQL ODBC drivers
 
-#define SQL_SS_TIME2 -154
+#define SQL_SS_TIME2 (-154)
 
 struct SQL_SS_TIME2_STRUCT
 {
@@ -97,7 +97,7 @@ struct SqlText
     std::weak_ordering operator<=>(SqlText const&) const noexcept = default;
 };
 
-enum class SqlStringPostRetrieveOperation
+enum class SqlStringPostRetrieveOperation : uint8_t
 {
     NOTHING,
     TRIM_RIGHT,
@@ -124,12 +124,11 @@ class SqlFixedString
     using pointer_type = T*;
     using const_pointer_type = T const*;
 
-    static constexpr inline std::size_t Capacity = N;
-    static constexpr inline SqlStringPostRetrieveOperation PostRetrieveOperation = PostOp;
+    static constexpr std::size_t Capacity = N;
+    static constexpr SqlStringPostRetrieveOperation PostRetrieveOperation = PostOp;
 
     template <std::size_t SourceSize>
     SqlFixedString(T const (&text)[SourceSize]):
-        _data {},
         _size { SourceSize - 1 }
     {
         static_assert(SourceSize <= N + 1, "RHS string size must not exceed target string's capacity.");
@@ -150,12 +149,12 @@ class SqlFixedString
                 std::format("SqlFixedString: capacity {} exceeds maximum capacity {}", capacity, N));
     }
 
-    constexpr bool empty() const noexcept
+    [[nodiscard]] constexpr bool empty() const noexcept
     {
         return _size == 0;
     }
 
-    constexpr std::size_t size() const noexcept
+    [[nodiscard]] constexpr std::size_t size() const noexcept
     {
         return _size;
     }
@@ -174,7 +173,7 @@ class SqlFixedString
         _size = newSize;
     }
 
-    constexpr std::size_t capacity() const noexcept
+    [[nodiscard]] constexpr std::size_t capacity() const noexcept
     {
         return N;
     }
@@ -312,7 +311,7 @@ struct SqlDate
     SqlDate& operator=(SqlDate const&) noexcept = default;
     ~SqlDate() noexcept = default;
 
-    std::chrono::year_month_day value() const noexcept
+    [[nodiscard]] std::chrono::year_month_day value() const noexcept
     {
         return ConvertToNative(sqlValue);
     }
@@ -382,7 +381,7 @@ struct SqlTime
     SqlTime& operator=(SqlTime const&) noexcept = default;
     ~SqlTime() noexcept = default;
 
-    native_type value() const noexcept
+    [[nodiscard]] native_type value() const noexcept
     {
         return ConvertToNative(sqlValue);
     }
@@ -532,7 +531,7 @@ struct SqlDateTime
         // clang-format on
     }
 
-    native_type value() const noexcept
+    [[nodiscard]] native_type value() const noexcept
     {
         return ConvertToNative(sqlValue);
     }
@@ -767,7 +766,7 @@ struct SqlDataBinder<StringType>
         {
             char* const bufferStart = StringTraits::Data(result) + writeIndex;
             size_t const bufferSize = StringTraits::Size(result) - writeIndex;
-            SQLRETURN rv = SQLGetData(stmt, column, SQL_C_CHAR, bufferStart, bufferSize, indicator);
+            SQLRETURN const rv = SQLGetData(stmt, column, SQL_C_CHAR, bufferStart, bufferSize, indicator);
             switch (rv)
             {
                 case SQL_SUCCESS:
@@ -782,7 +781,7 @@ struct SqlDataBinder<StringType>
                     {
                         // We have a truncation and the server does not know how much data is left.
                         writeIndex += bufferSize - 1;
-                        StringTraits::Resize(result, 2 * writeIndex + 1);
+                        StringTraits::Resize(result, (2 * writeIndex) + 1);
                     }
                     else if (std::cmp_greater_equal(*indicator, bufferSize))
                     {
@@ -856,7 +855,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator) noexcept
     {
         *indicator = 0;
-        SQLRETURN rv = SQLGetData(stmt, column, SQL_C_CHAR, result->data(), result->capacity(), indicator);
+        const SQLRETURN rv = SQLGetData(stmt, column, SQL_C_CHAR, result->data(), result->capacity(), indicator);
         switch (rv)
         {
             case SQL_SUCCESS:
@@ -920,7 +919,7 @@ struct SqlDataBinder<SqlTrimmedString>
         size_t n = indicator;
         while (n > 0 && std::isspace((*boundOutputString)[n - 1]))
             --n;
-        StringTraits::Resize(boundOutputString, n);
+        StringTraits::Resize(boundOutputString, static_cast<SQLLEN>(n));
     }
 
     static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlTrimmedString const& value) noexcept
@@ -941,7 +940,7 @@ struct SqlDataBinder<SqlTrimmedString>
             auto const len = std::cmp_greater_equal(*indicator, bufferSize) || *indicator == SQL_NO_TOTAL
                                  ? bufferSize - 1
                                  : *indicator;
-            TrimRight(boundOutputString, len);
+            TrimRight(boundOutputString, static_cast<SQLLEN>(len));
         });
         return SQLBindCol(stmt,
                           column,
@@ -1081,7 +1080,8 @@ struct SqlDataBinder<SqlVariant>
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlVariant* result, SQLLEN* indicator) noexcept
     {
         SQLLEN columnType {};
-        SQLRETURN returnCode = SQLColAttributeA(stmt, column, SQL_DESC_TYPE, nullptr, 0, nullptr, &columnType);
+        SQLRETURN returnCode =
+            SQLColAttributeA(stmt, static_cast<SQLSMALLINT>(column), SQL_DESC_TYPE, nullptr, 0, nullptr, &columnType);
         if (!SQL_SUCCEEDED(returnCode))
             return returnCode;
 

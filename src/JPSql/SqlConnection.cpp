@@ -86,7 +86,7 @@ class SqlConnectionPool
         m_maxIdleConnections = maxIdleConnections;
     }
 
-    SqlConnectionStats Stats() const noexcept
+    [[nodiscard]] SqlConnectionStats Stats() const noexcept
     {
         return m_stats;
     }
@@ -140,7 +140,7 @@ SqlConnection& SqlConnection::operator=(SqlConnection&& other) noexcept
     m_hEnv = other.m_hEnv;
     m_hDbc = other.m_hDbc;
     m_connectionId = other.m_connectionId;
-    m_lastError = std::move(other.m_lastError);
+    m_lastError = other.m_lastError;
     m_connectInfo = std::move(other.m_connectInfo);
     m_lastUsed = other.m_lastUsed;
 

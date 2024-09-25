@@ -275,11 +275,11 @@ void PrintInfo()
 
 struct Configuration
 {
-    std::string_view connectionString {};
-    std::string_view database {};
-    std::string_view schema {};
-    std::string_view modelNamespace {};
-    std::string_view outputFileName {};
+    std::string_view connectionString;
+    std::string_view database;
+    std::string_view schema;
+    std::string_view modelNamespace;
+    std::string_view outputFileName;
     bool createTestTables = false;
 };
 

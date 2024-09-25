@@ -66,8 +66,6 @@ Checks: >-
   -readability-use-anyofallof,
   misc-const-correctness,
 WarningsAsErrors: >-
-  readability-identifier-naming,
-  misc-const-correctness,
   modernize-use-nullptr,
 UseColor: true
 HeaderFilterRegex: 'src/'

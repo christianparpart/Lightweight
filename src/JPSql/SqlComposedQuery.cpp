@@ -62,7 +62,9 @@ SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
                                             std::string_view joinColumnName,
                                             std::string_view onMainTableColumn)
 {
-    return InnerJoin(joinTable, joinColumnName, SqlQualifiedTableColumnName { m_query.table, onMainTableColumn });
+    return InnerJoin(joinTable,
+                     joinColumnName,
+                     SqlQualifiedTableColumnName { .tableName = m_query.table, .columnName = onMainTableColumn });
 }
 
 SqlQueryBuilder& SqlQueryBuilder::Where(std::string_view sqlConditionExpression)

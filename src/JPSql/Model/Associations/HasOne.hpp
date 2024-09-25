@@ -20,7 +20,7 @@ class HasOne final
 
     OtherRecord& operator*();
     OtherRecord* operator->();
-    bool IsLoaded() const;
+    [[nodiscard]] bool IsLoaded() const;
 
     bool Load();
     void Reload();
