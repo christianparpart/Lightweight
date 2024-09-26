@@ -29,8 +29,8 @@ class HasManyThrough
     TargetRecord const& operator[](size_t index) const;
 
     [[nodiscard]] bool IsLoaded() const noexcept;
-    SqlResult<void> Load();
-    SqlResult<void> Reload();
+    void Load();
+    void Reload();
 
   private:
     void RequireLoaded() const;
@@ -150,10 +150,10 @@ inline bool HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyNam
 }
 
 template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
-SqlResult<void> HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::Load()
+void HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::Load()
 {
     if (m_loaded)
-        return {};
+        return;
 
     auto const targetRecord = TargetRecord();
     auto const throughRecordMeta = ThroughRecord();
@@ -169,15 +169,14 @@ SqlResult<void> HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKe
             .All();
 
     m_loaded = true;
-    return {};
 }
 
 template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>
-SqlResult<void> HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::Reload()
+void HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::Reload()
 {
     m_loaded = false;
     m_models.clear();
-    return Load();
+    Load();
 }
 
 template <typename TargetRecord, StringLiteral LeftKeyName, typename ThroughRecord, StringLiteral RightKeyName>

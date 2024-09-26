@@ -17,6 +17,7 @@ class SqlConnection;
 // Represents the mode of a SQL transaction to be applied, if not done so explicitly.
 enum class SqlTransactionMode
 {
+    NONE,
     COMMIT,
     ROLLBACK,
 };
@@ -40,13 +41,12 @@ class SqlTransaction
     ~SqlTransaction();
 
     // Rollback the transaction
-    SqlResult<void> Rollback();
+    std::expected<void, SqlErrorInfo> Rollback();
 
     // Commit the transaction
-    SqlResult<void> Commit();
+    std::expected<void, SqlErrorInfo> Commit();
 
   private:
     SQLHDBC m_hDbc;
-    bool m_done { false };
     SqlTransactionMode m_defaultMode;
 };

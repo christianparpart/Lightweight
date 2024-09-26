@@ -10,11 +10,10 @@ SqlTransaction::SqlTransaction(SqlConnection& connection, SqlTransactionMode def
 
 SqlTransaction::~SqlTransaction()
 {
-    if (m_done)
-        return;
-
     switch (m_defaultMode)
     {
+        case SqlTransactionMode::NONE:
+            break;
         case SqlTransactionMode::COMMIT:
             Commit();
             break;
@@ -24,27 +23,31 @@ SqlTransaction::~SqlTransaction()
     }
 }
 
-SqlResult<void> SqlTransaction::Rollback()
+std::expected<void, SqlErrorInfo> SqlTransaction::Rollback()
 {
-    SqlError ec = SqlError::SUCCESS;
-    detail::UpdateSqlError(&ec, SQLEndTran(SQL_HANDLE_DBC, m_hDbc, SQL_ROLLBACK));
-    detail::UpdateSqlError(
-        &ec, SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER));
-    m_done = true;
-    if (ec != SqlError::SUCCESS)
-        return std::unexpected { ec };
+    SQLRETURN sqlReturn = SQLEndTran(SQL_HANDLE_DBC, m_hDbc, SQL_ROLLBACK);
+    if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
+        return std::unexpected { SqlErrorInfo::fromConnectionHandle(m_hDbc) };
+    ;
+    sqlReturn = SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
+    if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
+        return std::unexpected { SqlErrorInfo::fromConnectionHandle(m_hDbc) };
+
+    m_defaultMode = SqlTransactionMode::NONE;
     return {};
 }
 
 // Commit the transaction
-SqlResult<void> SqlTransaction::Commit()
+std::expected<void, SqlErrorInfo> SqlTransaction::Commit()
 {
-    SqlError ec = SqlError::SUCCESS;
-    detail::UpdateSqlError(&ec, SQLEndTran(SQL_HANDLE_DBC, m_hDbc, SQL_COMMIT));
-    detail::UpdateSqlError(
-        &ec, SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER));
-    m_done = true;
-    if (ec != SqlError::SUCCESS)
-        return std::unexpected { ec };
+    SQLRETURN sqlReturn = SQLEndTran(SQL_HANDLE_DBC, m_hDbc, SQL_COMMIT);
+    if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
+        return std::unexpected { SqlErrorInfo::fromConnectionHandle(m_hDbc) };
+
+    sqlReturn = SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
+    if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
+        return std::unexpected { SqlErrorInfo::fromConnectionHandle(m_hDbc) };
+
+    m_defaultMode = SqlTransactionMode::NONE;
     return {};
 }

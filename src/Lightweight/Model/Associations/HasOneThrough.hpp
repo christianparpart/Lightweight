@@ -21,8 +21,8 @@ class HasOneThrough
     OtherRecord* operator->();
 
     [[nodiscard]] bool IsLoaded() const noexcept;
-    SqlResult<void> Load();
-    SqlResult<void> Reload();
+    void Load();
+    void Reload();
 
   private:
     AbstractRecord* m_record;
@@ -70,10 +70,10 @@ bool HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::IsLoaded() const
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName, typename ThroughRecord>
-SqlResult<void> HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::Load()
+void HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::Load()
 {
     if (IsLoaded())
-        return {};
+        return;
 
     auto result =
         OtherRecord::template Join<ThroughRecord, ForeignKeyName>()
@@ -81,14 +81,19 @@ SqlResult<void> HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::Load(
             .First();
 
     if (!result.has_value())
-        return std::unexpected { SqlError::NO_DATA_FOUND };
+    {
+        SqlLogger::GetLogger().OnWarning(std::format("No data found on table {} for {} = {}",
+                                                     OtherRecord().TableName(),
+                                                     ForeignKeyName.value,
+                                                     m_record->Id().value));
+        return;
+    }
 
     m_otherRecord = std::make_shared<OtherRecord>(std::move(result.value()));
-    return {};
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName, typename ThroughRecord>
-SqlResult<void> HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::Reload()
+void HasOneThrough<OtherRecord, ForeignKeyName, ThroughRecord>::Reload()
 {
     m_otherRecord.reset();
     return Load();
