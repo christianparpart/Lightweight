@@ -61,6 +61,8 @@ std::string MakeType(SqlSchema::Column const& column)
             return "SqlTime";
         case ColumnType::DATETIME:
             return "SqlDateTime";
+        case ColumnType::UNKNOWN:
+            break;
     }
     return "void";
 }

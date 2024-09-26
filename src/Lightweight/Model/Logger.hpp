@@ -17,7 +17,7 @@ class QueryLogger
 
     using FieldList = std::vector<AbstractField*>;
 
-    virtual void QueryStart(std::string_view /*query*/, FieldList const& /*output*/) {};
+    virtual void QueryStart(std::string_view /*query*/, FieldList const& /*output*/) {}
     virtual void QueryNextRow(AbstractRecord const& /*model*/) {}
     virtual void QueryEnd() {}
 

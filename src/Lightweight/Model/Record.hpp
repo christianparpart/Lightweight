@@ -423,9 +423,6 @@ void Record<Derived>::DropTable()
 template <typename Derived>
 RecordId Record<Derived>::Create()
 {
-    auto const requiredFieldCount =
-        std::ranges::count_if(AllFields(), [](AbstractField const* field) { return field->IsRequired(); });
-
     auto stmt = SqlStatement {};
 
     auto const modifiedFields = GetModifiedFields();
