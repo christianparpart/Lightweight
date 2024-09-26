@@ -15,8 +15,8 @@
 namespace SqlUtils
 {
 
-SqlResult<std::vector<std::string>> TableNames(std::string_view database, std::string_view schema = {});
+std::vector<std::string> TableNames(std::string_view database, std::string_view schema = {});
 
-SqlResult<std::vector<std::string>> ColumnNames(std::string_view tableName, std::string_view schema = {});
+std::vector<std::string> ColumnNames(std::string_view tableName, std::string_view schema = {});
 
 } // namespace SqlUtils

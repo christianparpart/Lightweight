@@ -29,7 +29,8 @@ class SqlLogger
 
     // An ODBC SQL error occurred.
     virtual void OnError(SqlError errorCode,
-                         SqlErrorInfo const& errorInfo,
+                         std::source_location sourceLocation = std::source_location::current()) = 0;
+    virtual void OnError(SqlErrorInfo const& errorInfo,
                          std::source_location sourceLocation = std::source_location::current()) = 0;
 
     virtual void OnConnectionOpened(SqlConnection const& connection) = 0;

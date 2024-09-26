@@ -29,10 +29,10 @@ using namespace std::string_view_literals;
 int main(int argc, char** argv)
 {
     auto result = SqlTestFixture::Initialize(argc, argv);
-    if (!result.has_value())
-        return result.error();
+    if (auto const* exitCode = std::get_if<int>(&result))
+        return *exitCode;
 
-    std::tie(argc, argv) = result.value();
+    std::tie(argc, argv) = std::get<SqlTestFixture::MainProgramArgs>(result);
 
     struct finally
     {

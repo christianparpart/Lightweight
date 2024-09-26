@@ -14,13 +14,13 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
-#include <expected>
 #include <format>
 #include <ostream>
 #include <regex>
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <variant>
 #include <vector>
 
 #include <sql.h>
@@ -61,7 +61,8 @@ class ScopedSqlNullLogger: public SqlLogger
     }
 
     void OnWarning(std::string_view const&) override {}
-    void OnError(SqlError, SqlErrorInfo const&, std::source_location) override {}
+    void OnError(SqlError, std::source_location) override {}
+    void OnError(SqlErrorInfo const&, std::source_location) override {}
     void OnConnectionOpened(SqlConnection const&) override {}
     void OnConnectionClosed(SqlConnection const&) override {}
     void OnConnectionIdle(SqlConnection const&) override {}
@@ -81,7 +82,7 @@ class SqlTestFixture
 
     using MainProgramArgs = std::tuple<int, char**>;
 
-    static std::expected<MainProgramArgs, int> Initialize(int argc, char** argv)
+    static std::variant<MainProgramArgs, int> Initialize(int argc, char** argv)
     {
         using namespace std::string_view_literals;
         int i = 1;
@@ -94,7 +95,7 @@ class SqlTestFixture
             else if (argv[i] == "--help"sv || argv[i] == "-h"sv)
             {
                 std::println("{} [--trace-sql] [--trace-model] [[--] [Catch2 flags ...]]", argv[0]);
-                return std::unexpected { EXIT_SUCCESS };
+                return { EXIT_SUCCESS };
             }
             else if (argv[i] == "--"sv)
             {
@@ -183,7 +184,7 @@ class SqlTestFixture
         return outputString.str();
     }
 
-    std::vector<std::string> GetAllTableNames()
+    static std::vector<std::string> GetAllTableNames()
     {
         auto result = std::vector<std::string>();
         auto stmt = SqlStatement();
@@ -247,13 +248,6 @@ inline std::ostream& operator<<(std::ostream& os, Model::AbstractRecord const& v
     return os << std::format("{}", value);
 }
 
-inline std::ostream& operator<<(std::ostream& os, SqlResult<void> const& result)
-{
-    if (result)
-        return os << "SqlResult<void> { success }";
-    return os << "SqlResult<void> { error: " << result.error() << " }";
-}
-
 inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
 {
     return os << std::format("SqlTrimmedString {{ '{}' }}", value);
@@ -290,14 +284,6 @@ inline std::ostream& operator<<(std::ostream& os, SqlDateTime const& datetime)
                              hms.minutes().count(),
                              hms.seconds().count(),
                              hms.subseconds().count());
-}
-
-template <typename T>
-inline std::ostream& operator<<(std::ostream& os, SqlResult<T> const& result)
-{
-    if (result)
-        return os << "SqlResult<int> { value: " << result.value() << " }";
-    return os << "SqlResult<int> { error: " << result.error() << " }";
 }
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>

@@ -1,4 +1,12 @@
+// SPDX-License-Identifier: MIT
+
 #include "SqlError.hpp"
+
+SqlException::SqlException(SqlErrorInfo info):
+    std::runtime_error(std::format("{}", info)),
+    _info { std::move(info) }
+{
+}
 
 void SqlErrorInfo::RequireStatementSuccess(SQLRETURN result, SQLHSTMT hStmt, std::string_view message)
 {

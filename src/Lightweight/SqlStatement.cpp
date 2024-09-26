@@ -3,10 +3,9 @@
 
 SqlStatement::SqlStatement() noexcept:
     m_ownedConnection { SqlConnection() },
-    m_connection { &m_ownedConnection.value() },
-    m_lastError { m_connection->LastError() }
+    m_connection { &m_ownedConnection.value() }
 {
-    if (m_lastError == SqlError::SUCCESS)
+    if (m_connection->NativeHandle())
         RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
 }
 
@@ -91,14 +90,13 @@ bool SqlStatement::FetchRow()
 
 void SqlStatement::RequireSuccess(SQLRETURN error, std::source_location sourceLocation) const
 {
-    auto result = detail::UpdateSqlError(&m_lastError, error);
-    if (result.has_value())
+    if (SQL_SUCCEEDED(error))
         return;
 
     auto errorInfo = SqlErrorInfo::fromStatementHandle(m_hStmt);
-    SqlLogger::GetLogger().OnError(m_lastError, errorInfo, sourceLocation);
+    SqlLogger::GetLogger().OnError(errorInfo, sourceLocation);
     if (errorInfo.sqlState == "07009")
         throw std::invalid_argument(std::format("SQL error: {}", errorInfo));
     else
-        throw std::runtime_error(std::format("SQL error: {}", errorInfo));
+        throw SqlException(errorInfo);
 }

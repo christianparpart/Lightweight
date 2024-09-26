@@ -141,12 +141,6 @@ class SqlConnection final
         return m_hDbc;
     }
 
-    // Retrieves the last error code.
-    [[nodiscard]] SqlError LastError() const noexcept
-    {
-        return m_lastError;
-    }
-
     // Retrieves the last time the connection was used.
     [[nodiscard]] std::chrono::steady_clock::time_point LastUsed() const noexcept
     {
@@ -164,12 +158,6 @@ class SqlConnection final
 
     void RequireSuccess(SQLRETURN error, std::source_location sourceLocation = std::source_location::current()) const;
 
-    // Updates the last error code and returns the error code as an SqlResult if the operation failed.
-    //
-    // We also log here the error message.
-    SqlResult<void> UpdateLastError(
-        SQLRETURN error, std::source_location sourceLocation = std::source_location::current()) const noexcept;
-
     // Private data members
 
     static inline std::optional<SqlConnectInfo> m_gDefaultConnectInfo;
@@ -179,7 +167,6 @@ class SqlConnection final
     SQLHENV m_hEnv {};
     SQLHDBC m_hDbc {};
     uint64_t m_connectionId { m_gNextConnectionId++ };
-    mutable SqlError m_lastError {};
     SqlConnectInfo m_connectInfo;
     std::chrono::steady_clock::time_point m_lastUsed; // Last time the connection was used (mostly interesting for
                                                       // idle connections in the connection pool).

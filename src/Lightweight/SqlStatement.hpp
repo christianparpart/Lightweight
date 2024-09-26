@@ -10,12 +10,10 @@
 #include "SqlDataBinder.hpp"
 
 #include <cstring>
-#include <format>
 #include <optional>
 #include <ranges>
 #include <source_location>
 #include <type_traits>
-#include <variant>
 #include <vector>
 
 #include <sql.h>
@@ -42,19 +40,16 @@ class SqlStatement final: public SqlDataBinderCallback
     // Construct a new SqlStatement object, using the given connection.
     SqlStatement(SqlConnection& relatedConnection);
 
-    ~SqlStatement() noexcept final;
+    ~SqlStatement() noexcept;
 
     // Retrieves the connection associated with this statement.
-    SqlConnection& Connection() noexcept;
+    [[nodiscard]] SqlConnection& Connection() noexcept;
 
     // Retrieves the connection associated with this statement.
-    SqlConnection const& Connection() const noexcept;
+    [[nodiscard]] SqlConnection const& Connection() const noexcept;
 
     // Retrieves the native handle of the statement.
     [[nodiscard]] SQLHSTMT NativeHandle() const noexcept;
-
-    // Retrieves the last error code.
-    [[nodiscard]] SqlError LastError() const noexcept;
 
     // Prepares the statement for execution.
     void Prepare(std::string_view query);
@@ -134,7 +129,6 @@ class SqlStatement final: public SqlDataBinderCallback
     std::optional<SqlConnection> m_ownedConnection; // The connection object (if owned)
     SqlConnection* m_connection {};                 // Pointer to the connection object
     SQLHSTMT m_hStmt {};                            // The native oDBC statement handle
-    mutable SqlError m_lastError {};                // The last error code
     SQLSMALLINT m_expectedParameterCount {};        // The number of parameters expected by the query
     std::vector<SQLLEN> m_indicators;               // Holds the indicators for the bound output columns
     std::vector<std::function<void()>> m_postExecuteCallbacks;
@@ -155,11 +149,6 @@ inline SqlConnection const& SqlStatement::Connection() const noexcept
 [[nodiscard]] inline SQLHSTMT SqlStatement::NativeHandle() const noexcept
 {
     return m_hStmt;
-}
-
-[[nodiscard]] inline SqlError SqlStatement::LastError() const noexcept
-{
-    return m_lastError;
 }
 
 template <SqlOutputColumnBinder... Args>
@@ -287,7 +276,6 @@ void SqlStatement::ExecuteBatch(FirstColumnBatch const& firstColumnBatch, MoreCo
     if (!((std::size(moreColumnBatches) == rowCount) && ...))
         throw std::invalid_argument { "Uneven number of rows" };
 
-    m_lastError = SqlError::SUCCESS;
     for (auto const rowIndex: std::views::iota(size_t { 0 }, rowCount))
     {
         std::apply(

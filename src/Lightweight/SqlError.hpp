@@ -1,11 +1,12 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <Windows.h>
 #endif
 
-#include <expected>
 #include <format>
+#include <stdexcept>
 #include <system_error>
 
 #include <sql.h>
@@ -54,6 +55,20 @@ struct SqlErrorInfo
     }
 
     static void RequireStatementSuccess(SQLRETURN result, SQLHSTMT hStmt, std::string_view message);
+};
+
+class SqlException: std::runtime_error
+{
+  public:
+    explicit SqlException(SqlErrorInfo info);
+
+    [[nodiscard]] SqlErrorInfo const& info() const noexcept
+    {
+        return _info;
+    }
+
+  private:
+    SqlErrorInfo _info;
 };
 
 enum class SqlError : std::int16_t
@@ -125,27 +140,6 @@ inline std::error_code make_error_code(SqlError e)
     return { static_cast<int>(e), SqlErrorCategory::get() };
 }
 
-// Represents the result of a call to the SQL server.
-template <typename T>
-using SqlResult = std::expected<T, SqlError>;
-
-namespace detail
-{
-
-inline SqlResult<void> UpdateSqlError(SqlError* errorCode, SQLRETURN error) noexcept
-{
-    if (error == SQL_SUCCESS || error == SQL_SUCCESS_WITH_INFO)
-    {
-        *errorCode = SqlError::SUCCESS;
-        return {};
-    }
-
-    *errorCode = static_cast<SqlError>(error);
-    return std::unexpected { *errorCode };
-}
-
-} // namespace detail
-
 template <>
 struct std::formatter<SqlError>: formatter<std::string>
 {
@@ -163,16 +157,5 @@ struct std::formatter<SqlErrorInfo>: formatter<std::string>
     {
         return formatter<std::string>::format(
             std::format("{} ({}) - {}", info.sqlState, info.nativeErrorCode, info.message), ctx);
-    }
-};
-
-template <typename T>
-struct std::formatter<SqlResult<T>>: std::formatter<std::string>
-{
-    auto format(SqlResult<T> const& result, format_context& ctx) -> format_context::iterator
-    {
-        if (result)
-            return std::formatter<std::string>::format(std::format("{}", result.value()), ctx);
-        return std::formatter<std::string>::format(std::format("{}", result.error()), ctx);
     }
 };

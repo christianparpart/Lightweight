@@ -5,6 +5,8 @@
 #include <mutex>
 #include <print>
 
+#include <sql.h>
+
 using namespace std::chrono_literals;
 using namespace std::string_view_literals;
 
@@ -24,14 +26,6 @@ class SqlConnectionPool
         for (auto& connection: m_unusedConnections)
             connection.Kill();
         m_unusedConnections.clear();
-    }
-
-    SqlResult<SqlConnection> Acquire()
-    {
-        auto connection = AcquireDirect();
-        if (connection.LastError() != SqlError::SUCCESS)
-            return std::unexpected { connection.LastError() };
-        return { std::move(connection) };
     }
 
     SqlConnection AcquireDirect()
@@ -120,7 +114,6 @@ SqlConnection::SqlConnection(SqlConnection&& other) noexcept:
     m_hEnv { other.m_hEnv },
     m_hDbc { other.m_hDbc },
     m_connectionId { other.m_connectionId },
-    m_lastError { other.m_lastError },
     m_connectInfo { std::move(other.m_connectInfo) },
     m_lastUsed { other.m_lastUsed },
     m_serverType { other.m_serverType },
@@ -140,7 +133,6 @@ SqlConnection& SqlConnection::operator=(SqlConnection&& other) noexcept
     m_hEnv = other.m_hEnv;
     m_hDbc = other.m_hDbc;
     m_connectionId = other.m_connectionId;
-    m_lastError = other.m_lastError;
     m_connectInfo = std::move(other.m_connectInfo);
     m_lastUsed = other.m_lastUsed;
 
@@ -222,54 +214,65 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
 
     if (auto const* info = std::get_if<SqlConnectionDataSource>(&m_connectInfo))
     {
-        UpdateLastError(SQLSetConnectAttrA(m_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER) info->timeout.count(), 0));
-        return UpdateLastError(SQLConnectA(m_hDbc,
-                                           (SQLCHAR*) info->datasource.data(),
-                                           (SQLSMALLINT) info->datasource.size(),
-                                           (SQLCHAR*) info->username.data(),
-                                           (SQLSMALLINT) info->username.size(),
-                                           (SQLCHAR*) info->password.data(),
-                                           (SQLSMALLINT) info->password.size()))
-            .and_then([&] {
-                return UpdateLastError(
-                    SQLSetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER));
-            })
-            .and_then([&]() -> SqlResult<void> {
-                PostConnect();
-                SqlLogger::GetLogger().OnConnectionOpened(*this);
-                if (m_gPostConnectedHook)
-                    m_gPostConnectedHook(*this);
-                return {};
-            })
-            .or_else([&](auto&&) -> SqlResult<void> {
-                SqlLogger::GetLogger().OnError(m_lastError, SqlErrorInfo::fromConnectionHandle(m_hDbc));
-                return std::unexpected { m_lastError };
-            })
-            .has_value();
+        SQLRETURN sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER) info->timeout.count(), 0);
+        if (!SQL_SUCCEEDED(sqlReturn))
+        {
+            SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+            return false;
+        }
+
+        sqlReturn = SQLConnectA(m_hDbc,
+                                (SQLCHAR*) info->datasource.data(),
+                                (SQLSMALLINT) info->datasource.size(),
+                                (SQLCHAR*) info->username.data(),
+                                (SQLSMALLINT) info->username.size(),
+                                (SQLCHAR*) info->password.data(),
+                                (SQLSMALLINT) info->password.size());
+        if (!SQL_SUCCEEDED(sqlReturn))
+        {
+            SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+            return false;
+        }
+
+        sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
+        if (!SQL_SUCCEEDED(sqlReturn))
+        {
+            SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+            return false;
+        }
+
+        PostConnect();
+
+        SqlLogger::GetLogger().OnConnectionOpened(*this);
+
+        if (m_gPostConnectedHook)
+            m_gPostConnectedHook(*this);
     }
 
     auto const& connectionString = std::get<SqlConnectionString>(m_connectInfo).value;
 
-    return UpdateLastError(SQLDriverConnectA(m_hDbc,
+    SQLRETURN sqlResult = SQLDriverConnectA(m_hDbc,
                                              (SQLHWND) nullptr,
                                              (SQLCHAR*) connectionString.data(),
                                              (SQLSMALLINT) connectionString.size(),
                                              nullptr,
                                              0,
                                              nullptr,
-                                             SQL_DRIVER_NOPROMPT))
-        .and_then([&] {
-            return UpdateLastError(
-                SQLSetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER));
-        })
-        .and_then([&]() -> SqlResult<void> {
-            PostConnect();
-            SqlLogger::GetLogger().OnConnectionOpened(*this);
-            if (m_gPostConnectedHook)
-                m_gPostConnectedHook(*this);
-            return {};
-        })
-        .has_value();
+                                             SQL_DRIVER_NOPROMPT);
+    if (!SQL_SUCCEEDED(sqlResult))
+        return false;
+
+    sqlResult = SQLSetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
+    if (!SQL_SUCCEEDED(sqlResult))
+        return false;
+
+    PostConnect();
+    SqlLogger::GetLogger().OnConnectionOpened(*this);
+
+    if (m_gPostConnectedHook)
+        m_gPostConnectedHook(*this);
+
+    return true;
 }
 
 void SqlConnection::Close() noexcept
@@ -337,8 +340,8 @@ std::string SqlConnection::ServerVersion() const
 bool SqlConnection::TransactionActive() const noexcept
 {
     SQLUINTEGER state {};
-    UpdateLastError(SQLGetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, &state, 0, nullptr));
-    return m_lastError == SqlError::SUCCESS && state == SQL_AUTOCOMMIT_OFF;
+    SQLRETURN sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, &state, 0, nullptr);
+    return sqlResult == SQL_SUCCESS && state == SQL_AUTOCOMMIT_OFF;
 }
 
 bool SqlConnection::TransactionsAllowed() const noexcept
@@ -352,25 +355,16 @@ bool SqlConnection::TransactionsAllowed() const noexcept
 bool SqlConnection::IsAlive() const noexcept
 {
     SQLUINTEGER state {};
-    UpdateLastError(SQLGetConnectAttrA(m_hDbc, SQL_ATTR_CONNECTION_DEAD, &state, 0, nullptr));
-    return m_lastError == SqlError::SUCCESS && state == SQL_CD_FALSE;
+    SQLRETURN sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_CONNECTION_DEAD, &state, 0, nullptr);
+    return SQL_SUCCEEDED(sqlResult) && state == SQL_CD_FALSE;
 }
 
 void SqlConnection::RequireSuccess(SQLRETURN error, std::source_location sourceLocation) const
 {
-    auto result = detail::UpdateSqlError(&m_lastError, error);
-    if (result.has_value())
+    if (SQL_SUCCEEDED(error))
         return;
 
     auto errorInfo = SqlErrorInfo::fromConnectionHandle(m_hDbc);
-    SqlLogger::GetLogger().OnError(m_lastError, errorInfo, sourceLocation);
+    SqlLogger::GetLogger().OnError(errorInfo, sourceLocation);
     throw std::runtime_error(std::format("SQL error: {}", errorInfo));
-}
-
-SqlResult<void> SqlConnection::UpdateLastError(SQLRETURN error, std::source_location sourceLocation) const noexcept
-{
-    return detail::UpdateSqlError(&m_lastError, error).or_else([&](auto&&) -> SqlResult<void> {
-        SqlLogger::GetLogger().OnError(m_lastError, SqlErrorInfo::fromConnectionHandle(m_hDbc), sourceLocation);
-        return std::unexpected { m_lastError };
-    });
 }

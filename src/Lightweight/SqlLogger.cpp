@@ -49,10 +49,16 @@ class SqlStandardLogger: public SqlLogger
         WriteMessage("Warning: {}", message);
     }
 
-    void OnError(SqlError errorCode, SqlErrorInfo const& errorInfo, std::source_location /*sourceLocation*/) override
+    void OnError(SqlError error, std::source_location /*sourceLocation*/) override
     {
         Tick();
-        WriteMessage("Error: {}", SqlErrorCategory().message((int) errorCode));
+        WriteMessage("SQL Error: {}", error);
+    }
+
+    void OnError(SqlErrorInfo const& errorInfo, std::source_location /*sourceLocation*/) override
+    {
+        Tick();
+        WriteMessage("SQL Error:");
         WriteMessage("  SQLSTATE: {}", errorInfo.sqlState);
         WriteMessage("  Native error code: {}", errorInfo.nativeErrorCode);
         WriteMessage("  Message: {}", errorInfo.message);
@@ -75,20 +81,16 @@ class SqlTraceLogger: public SqlStandardLogger
     std::string m_lastPreparedQuery;
 
   public:
-    void OnError(SqlError errorCode, SqlErrorInfo const& errorInfo, std::source_location sourceLocation) override
+    void OnError(SqlError error, std::source_location sourceLocation) override
     {
-        SqlStandardLogger::OnError(errorCode, errorInfo, sourceLocation);
+        SqlStandardLogger::OnError(error, sourceLocation);
+        WriteDetails(sourceLocation);
+    }
 
-        WriteMessage("  Source: {}:{}", sourceLocation.file_name(), sourceLocation.line());
-        if (!m_lastPreparedQuery.empty())
-            WriteMessage("  Query: {}", m_lastPreparedQuery);
-        WriteMessage("  Stack trace:");
-
-#if __has_include(<stacktrace>)
-        auto stackTrace = std::stacktrace::current(1, 25);
-        for (std::size_t const i: std::views::iota(std::size_t(0), stackTrace.size()))
-            WriteMessage("    [{:>2}] {}", i, stackTrace[i]);
-#endif
+    void OnError(SqlErrorInfo const& errorInfo, std::source_location sourceLocation) override
+    {
+        SqlStandardLogger::OnError(errorInfo, sourceLocation);
+        WriteDetails(sourceLocation);
     }
 
     void OnConnectionOpened(SqlConnection const& connection) override
@@ -155,6 +157,21 @@ class SqlTraceLogger: public SqlStandardLogger
                      stats.closed,
                      stats.timedout,
                      stats.released);
+    }
+
+  private:
+    void WriteDetails(std::source_location sourceLocation)
+    {
+        WriteMessage("  Source: {}:{}", sourceLocation.file_name(), sourceLocation.line());
+        if (!m_lastPreparedQuery.empty())
+            WriteMessage("  Query: {}", m_lastPreparedQuery);
+        WriteMessage("  Stack trace:");
+
+#if __has_include(<stacktrace>)
+        auto stackTrace = std::stacktrace::current(1, 25);
+        for (std::size_t const i: std::views::iota(std::size_t(0), stackTrace.size()))
+            WriteMessage("    [{:>2}] {}", i, stackTrace[i]);
+#endif
     }
 };
 

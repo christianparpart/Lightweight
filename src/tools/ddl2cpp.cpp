@@ -288,7 +288,7 @@ struct Configuration
     bool createTestTables = false;
 };
 
-std::expected<Configuration, int> ParseArguments(int argc, char const* argv[])
+std::variant<Configuration, int> ParseArguments(int argc, char const* argv[])
 {
     using namespace std::string_view_literals;
     auto config = Configuration {};
@@ -302,19 +302,19 @@ std::expected<Configuration, int> ParseArguments(int argc, char const* argv[])
         else if (argv[i] == "--connection-string"sv)
         {
             if (++i >= argc)
-                return std::unexpected { EXIT_FAILURE };
+                return { EXIT_FAILURE };
             config.connectionString = argv[i];
         }
         else if (argv[i] == "--database"sv)
         {
             if (++i >= argc)
-                return std::unexpected { EXIT_FAILURE };
+                return { EXIT_FAILURE };
             config.database = argv[i];
         }
         else if (argv[i] == "--schema"sv)
         {
             if (++i >= argc)
-                return std::unexpected { EXIT_FAILURE };
+                return { EXIT_FAILURE };
             config.schema = argv[i];
         }
         else if (argv[i] == "--create-test-tables"sv)
@@ -322,13 +322,13 @@ std::expected<Configuration, int> ParseArguments(int argc, char const* argv[])
         else if (argv[i] == "--model-namespace"sv)
         {
             if (++i >= argc)
-                return std::unexpected { EXIT_FAILURE };
+                return { EXIT_FAILURE };
             config.modelNamespace = argv[i];
         }
         else if (argv[i] == "--output"sv)
         {
             if (++i >= argc)
-                return std::unexpected { EXIT_FAILURE };
+                return { EXIT_FAILURE };
             config.outputFileName = argv[i];
         }
         else if (argv[i] == "--help"sv || argv[i] == "-h"sv)
@@ -343,7 +343,7 @@ std::expected<Configuration, int> ParseArguments(int argc, char const* argv[])
             std::println("  --output STR            Output file name");
             std::println("  --help, -h              Display this information");
             std::println("");
-            return std::unexpected { EXIT_SUCCESS };
+            return { EXIT_SUCCESS };
         }
         else if (argv[i] == "--"sv)
         {
@@ -353,7 +353,7 @@ std::expected<Configuration, int> ParseArguments(int argc, char const* argv[])
         else
         {
             std::println("Unknown option: {}", argv[i]);
-            return std::unexpected { EXIT_FAILURE };
+            return { EXIT_FAILURE };
         }
     }
 
@@ -366,9 +366,9 @@ std::expected<Configuration, int> ParseArguments(int argc, char const* argv[])
 int main(int argc, char const* argv[])
 {
     auto const configOpt = ParseArguments(argc, argv);
-    if (!configOpt)
-        return configOpt.error();
-    auto const config = configOpt.value();
+    if (auto const* exitCode = std::get_if<int>(&configOpt))
+        return *exitCode;
+    auto const config = std::get<Configuration>(configOpt);
 
     SqlConnection::SetDefaultConnectInfo(SqlConnectionString { std::string(config.connectionString) });
     SqlConnection::SetPostConnectedHook(&PostConnectedHook);

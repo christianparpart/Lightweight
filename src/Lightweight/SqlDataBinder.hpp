@@ -1160,8 +1160,7 @@ struct SqlDataBinder<SqlVariant>
                 // TODO: Get them implemented on demand
                 [[fallthrough]];
             default:
-                std::println("Unsupported column type: {}", columnType);
-                SqlLogger::GetLogger().OnError(SqlError::UNSUPPORTED_TYPE, SqlErrorInfo::fromStatementHandle(stmt));
+                SqlLogger::GetLogger().OnWarning(std::format("Unsupported column type: {}", columnType));
                 returnCode = SQL_ERROR; // std::errc::invalid_argument;
         }
         if (*indicator == SQL_NULL_DATA)

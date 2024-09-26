@@ -41,10 +41,10 @@ class SqlTransaction
     ~SqlTransaction();
 
     // Rollback the transaction
-    std::expected<void, SqlErrorInfo> Rollback();
+    void Rollback();
 
     // Commit the transaction
-    std::expected<void, SqlErrorInfo> Commit();
+    void Commit();
 
   private:
     SQLHDBC m_hDbc;
