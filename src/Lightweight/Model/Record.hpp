@@ -161,7 +161,7 @@ class RecordQueryBuilder
         TargetModel::Each(std::forward<Callback>(callback), sqlQueryString);
     }
 
-    [[nodiscard]] std::vector<TargetModel> All()
+    [[nodiscard]] std::vector<std::unique_ptr<TargetModel>> All()
     {
         auto const targetRecord = TargetModel();
         auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())

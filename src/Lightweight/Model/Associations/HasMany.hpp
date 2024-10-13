@@ -2,10 +2,12 @@
 #pragma once
 
 #include "../../SqlError.hpp"
+#include "../../SqlStatement.hpp"
 #include "../AbstractRecord.hpp"
 #include "../Logger.hpp"
 #include "../StringLiteral.hpp"
 
+#include <memory>
 #include <vector>
 
 namespace Model
@@ -35,7 +37,7 @@ class HasMany
 
     bool m_loaded = false;
     AbstractRecord* m_record;
-    std::vector<OtherRecord> m_models;
+    std::unique_ptr<std::vector<OtherRecord>> m_models;
 };
 
 // {{{ HasMany<> implementation
@@ -60,7 +62,7 @@ void HasMany<OtherRecord, ForeignKeyName>::Load()
     if (m_loaded)
         return;
 
-    m_models = OtherRecord::Where(*ForeignKeyName, m_record->Id()).All();
+    m_models = std::make_unique<std::vector<OtherRecord>>(OtherRecord::Where(*ForeignKeyName, m_record->Id()).All());
     m_loaded = true;
 }
 
@@ -68,7 +70,7 @@ template <typename OtherRecord, StringLiteral ForeignKeyName>
 void HasMany<OtherRecord, ForeignKeyName>::Reload()
 {
     m_loaded = false;
-    m_models.clear();
+    m_models->clear();
     return Load();
 }
 
@@ -82,7 +84,7 @@ template <typename OtherRecord, StringLiteral ForeignKeyName>
 size_t HasMany<OtherRecord, ForeignKeyName>::Count() const
 {
     if (m_loaded)
-        return m_models.size();
+        return m_models->size();
 
     SqlStatement stmt;
 
@@ -96,21 +98,21 @@ template <typename OtherRecord, StringLiteral ForeignKeyName>
 inline std::vector<OtherRecord>& HasMany<OtherRecord, ForeignKeyName>::All()
 {
     RequireLoaded();
-    return m_models;
+    return *m_models;
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
 inline OtherRecord& HasMany<OtherRecord, ForeignKeyName>::At(size_t index)
 {
     RequireLoaded();
-    return m_models.at(index);
+    return m_models->at(index);
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
 inline OtherRecord& HasMany<OtherRecord, ForeignKeyName>::operator[](size_t index)
 {
     RequireLoaded();
-    return m_models[index];
+    return (*m_models)[index];
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
