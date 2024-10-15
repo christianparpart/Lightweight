@@ -4,6 +4,7 @@
 
 #include <concepts>
 #include <cstdint>
+#include <ranges>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -36,6 +37,16 @@ enum class SqlQueryType : uint8_t
 struct SqlQueryWildcard
 {
 };
+
+namespace detail
+{
+
+struct RawSqlCondition
+{
+    std::string condition;
+};
+
+} // namespace detail
 
 struct SqlQualifiedTableColumnName
 {
@@ -88,6 +99,10 @@ class [[nodiscard]] SqlQueryBuilder
     // Constructs or extends a WHERE clause to test for equality.
     template <typename ColumnName, typename T>
     [[nodiscard]] SqlQueryBuilder& Where(ColumnName const& columnName, T const& value);
+
+    // Constructs or extends a WHERE clause to test for a range of values.
+    template <typename ColumnName, std::ranges::input_range InputRange>
+    [[nodiscard]] SqlQueryBuilder& Where(ColumnName const& columnName, InputRange&& values);
 
     // Constructs or extends a ORDER BY clause.
     [[nodiscard]] SqlQueryBuilder& OrderBy(std::string_view columnName,
@@ -154,6 +169,24 @@ SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, T const& v
     return Where(columnName, "=", value);
 }
 
+template <typename ColumnName, std::ranges::input_range InputRange>
+SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, InputRange&& values)
+{
+    return Where(columnName, "IN", [](auto const& values) {
+        using namespace std::string_view_literals;
+        std::ostringstream fragment;
+        fragment << '(';
+        for (auto const&& [index, value]: values | std::views::enumerate)
+        {
+            if (index > 0)
+                fragment << ", "sv;
+            fragment << value;
+        }
+        fragment << ')';
+        return detail::RawSqlCondition { fragment.str() };
+    }(std::forward<InputRange>(values)));
+}
+
 template <typename T>
 struct WhereConditionLiteralType
 {
@@ -197,6 +230,10 @@ SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, std::strin
     {
         m_query.condition += "?";
         m_query.inputBindings.emplace_back(std::monostate());
+    }
+    else if constexpr (std::is_same_v<T, detail::RawSqlCondition>)
+    {
+        m_query.condition += value.condition;
     }
     else if constexpr (!WhereConditionLiteralType<T>::needsQuotes)
     {

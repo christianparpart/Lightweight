@@ -843,3 +843,12 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
                          });
 }
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereInRange", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Where("foo", std::vector { 1, 2, 3 }).Delete(),
+                         QueryExpectations {
+                             .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
+                             .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
+                         });
+}
