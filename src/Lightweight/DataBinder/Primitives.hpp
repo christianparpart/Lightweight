@@ -7,7 +7,7 @@
 template <typename T, SQLSMALLINT TheCType, SQLINTEGER TheSqlType, SqlColumnType TheColumnType>
 struct SqlSimpleDataBinder
 {
-    static constexpr inline auto ColumnType = TheColumnType;
+    static constexpr inline SqlColumnType ColumnType = TheColumnType;
 
     static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, T const& value) noexcept
     {
@@ -44,9 +44,10 @@ template <> struct SqlDataBinder<std::size_t>: SqlSimpleDataBinder<std::size_t, 
 #endif
 // clang-format on
 
-template <typename T, SQLSMALLINT TheCType, SQLINTEGER TheSqlType, SqlColumnType TheColumnType>
-struct SqlDataTraits<SqlSimpleDataBinder<T, TheCType, TheSqlType, TheColumnType>>
+template <typename T>
+    requires(std::is_same_v<SqlDataBinder<T>, SqlDataBinder<T>>) // Ensure that an SqlDataBinder<T> exists
+struct SqlDataTraits<T>
 {
-    static constexpr unsigned Size = 0;
-    static constexpr SqlColumnType Type = TheColumnType;
+    static constexpr inline unsigned Size = 0;
+    static constexpr inline SqlColumnType Type = SqlDataBinder<T>::ColumnType;
 };

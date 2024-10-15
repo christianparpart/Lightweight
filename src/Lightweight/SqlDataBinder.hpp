@@ -2,6 +2,7 @@
 #pragma once
 
 #include "DataBinder/CStringLiteral.hpp"
+#include "DataBinder/OutputStringBinder.hpp"
 #include "DataBinder/Primitives.hpp"
 #include "DataBinder/SqlDate.hpp"
 #include "DataBinder/SqlDateTime.hpp"

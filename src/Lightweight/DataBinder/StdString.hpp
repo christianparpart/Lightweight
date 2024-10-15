@@ -45,4 +45,9 @@ struct SqlOutputStringTraits<std::string>
     }
 };
 
-#include "OutputStringBinder.hpp"
+template <>
+struct SqlDataTraits<std::string>
+{
+    static constexpr inline unsigned Size = 0;
+    static constexpr inline SqlColumnType Type = SqlColumnType::STRING;
+};
