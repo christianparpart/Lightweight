@@ -16,6 +16,7 @@
 #include <chrono>
 #include <format>
 #include <ostream>
+#include <ranges>
 #include <regex>
 #include <string>
 #include <string_view>
@@ -223,12 +224,12 @@ class SqlTestFixture
             case SqlServerType::POSTGRESQL:
                 if (m_createdTables.empty())
                     m_createdTables = GetAllTableNames();
-                for (auto i = m_createdTables.rbegin(); i != m_createdTables.rend(); ++i)
-                    (void) stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\" CASCADE", *i));
+                for (auto& createdTable: std::views::reverse(m_createdTables))
+                    (void) stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\" CASCADE", createdTable));
                 break;
             default:
-                for (auto i = m_createdTables.rbegin(); i != m_createdTables.rend(); ++i)
-                    (void) stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", *i));
+                for (auto& createdTable: std::views::reverse(m_createdTables))
+                    (void) stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", createdTable));
                 break;
         }
         m_createdTables.clear();
