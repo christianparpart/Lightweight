@@ -14,8 +14,9 @@ target_link_libraries(LightweightTest PRIVATE ${TEST_LIBRARIES})
 
 target_sources(LightweightTest PRIVATE 
     LightweightTests.cpp
-    ModelTests.cpp
-    ModelAssociationsTests.cpp
+    #ModelTests.cpp
+    DataMapperTests.cpp
+    #ModelAssociationsTests.cpp
 )
 
 enable_testing()

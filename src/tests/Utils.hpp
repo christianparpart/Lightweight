@@ -5,10 +5,13 @@
     #include <Windows.h>
 #endif
 
-#include "../Lightweight/Model/All.hpp"
-#include "../Lightweight/SqlConnectInfo.hpp"
-#include "../Lightweight/SqlDataBinder.hpp"
-#include "../Lightweight/SqlLogger.hpp"
+// TODO(pr) #include "../Lightweight/Model/All.hpp"
+#include <Lightweight/Model/RecordId.hpp>
+#include <Lightweight/SqlConnectInfo.hpp>
+#include <Lightweight/SqlConnection.hpp>
+#include <Lightweight/SqlDataBinder.hpp>
+#include <Lightweight/SqlLogger.hpp>
+#include <Lightweight/SqlStatement.hpp>
 
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -91,8 +94,10 @@ class SqlTestFixture
         {
             if (argv[i] == "--trace-sql"sv)
                 SqlLogger::SetLogger(SqlLogger::TraceLogger());
+#if 0 // TODO(pr)
             else if (argv[i] == "--trace-model"sv)
                 Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
+#endif
             else if (argv[i] == "--help"sv || argv[i] == "-h"sv)
             {
                 std::println("{} [--trace-sql] [--trace-model] [[--] [Catch2 flags ...]]", argv[0]);
@@ -244,11 +249,6 @@ inline std::ostream& operator<<(std::ostream& os, Model::RecordId value)
     return os << "ModelId { " << value.value << " }";
 }
 
-inline std::ostream& operator<<(std::ostream& os, Model::AbstractRecord const& value)
-{
-    return os << std::format("{}", value);
-}
-
 inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
 {
     return os << std::format("SqlTrimmedString {{ '{}' }}", value);
@@ -294,16 +294,6 @@ inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, PostOp> c
         return os << std::format("SqlFixedString<{}> {{ '{}' }}", N, value.data());
     if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
         return os << std::format("SqlTrimmedFixedString<{}> {{ '{}' }}", N, value.data());
-}
-
-template <typename T,
-          SQLSMALLINT TheTableColumnIndex,
-          Model::StringLiteral TheColumnName,
-          Model::FieldValueRequirement TheRequirement>
-inline std::ostream& operator<<(std::ostream& os,
-                                Model::Field<T, TheTableColumnIndex, TheColumnName, TheRequirement> const& field)
-{
-    return os << std::format("Field<{}:{}: {}>", TheTableColumnIndex, TheColumnName.value, field.Value());
 }
 
 // }}}
