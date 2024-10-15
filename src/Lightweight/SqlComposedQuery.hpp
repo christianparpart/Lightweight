@@ -25,9 +25,9 @@ enum class SqlQueryType : uint8_t
     SELECT_RANGE,
     SELECT_COUNT,
 
-    // INSERT,
-    // UPDATE,
-    // DELETE -- ABUSED by winnt.h on Windows as preprocessor definition. Thanks!
+    // TODO: INSERT, // <-- is this a use-case we need?
+    // TODO: UPDATE, // <-- is this a use-case we need?
+    DELETE_ // "DELETE" is ABUSED by winnt.h on Windows as preprocessor definition. Thanks!
 };
 
 // SqlQueryWildcard is a placeholder for an explicit wildcard input parameter in a SQL query.
@@ -119,6 +119,9 @@ class [[nodiscard]] SqlQueryBuilder
 
     // Finalizes building the query as SELECT field names FROM ... query with a range.
     SqlComposedQuery Range(std::size_t offset, std::size_t limit);
+
+    // Finalizes building the query as DELETE FROM ... query.
+    SqlComposedQuery Delete();
 
   private:
     explicit SqlQueryBuilder(std::string_view table);

@@ -144,6 +144,13 @@ SqlComposedQuery SqlQueryBuilder::Range(std::size_t offset, std::size_t limit)
     return std::move(m_query);
 }
 
+SqlComposedQuery SqlQueryBuilder::Delete()
+{
+    m_query.type = SqlQueryType::DELETE_;
+
+    return std::move(m_query);
+}
+
 std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
 {
     std::string finalConditionBuffer;
@@ -176,6 +183,8 @@ std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
             return formatter.SelectRange(fields, table, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
         case SqlQueryType::SELECT_COUNT:
             return formatter.SelectCount(table, tableJoins, *finalCondition);
+        case SqlQueryType::DELETE_:
+            return formatter.Delete(table, tableJoins, *finalCondition);
     }
     return "";
 }

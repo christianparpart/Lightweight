@@ -835,3 +835,12 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Range")
                 "SELECT \"foo\", \"bar\" FROM \"That\" ORDER BY \"id\" ASC OFFSET 200 ROWS FETCH NEXT 50 ROWS ONLY",
         });
 }
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Where("foo", 42).Where("bar", "baz").Delete(),
+                         QueryExpectations {
+                             .sqlite = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
+                             .sqlServer = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
+                         });
+}
