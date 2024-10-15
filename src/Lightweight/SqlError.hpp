@@ -57,7 +57,7 @@ struct SqlErrorInfo
     static void RequireStatementSuccess(SQLRETURN result, SQLHSTMT hStmt, std::string_view message);
 };
 
-class SqlException: std::runtime_error
+class SqlException: public std::runtime_error
 {
   public:
     explicit SqlException(SqlErrorInfo info);
