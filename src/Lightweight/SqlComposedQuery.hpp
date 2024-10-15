@@ -58,7 +58,7 @@ struct [[nodiscard]] SqlComposedQuery
     std::string orderBy;
     std::string groupBy;
     size_t offset = 0;
-    size_t limit = std::numeric_limits<size_t>::max();
+    size_t limit = (std::numeric_limits<size_t>::max)();
 
     [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
 };
