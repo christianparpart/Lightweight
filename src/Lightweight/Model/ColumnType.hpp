@@ -7,7 +7,6 @@
 
 #include <cstdint>
 #include <string>
-#include <string_view>
 
 namespace Model
 {
