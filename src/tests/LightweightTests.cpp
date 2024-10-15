@@ -811,8 +811,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.All")
 {
     checkSqlQueryBuilder(SqlQueryBuilder::From("That").Select("a", "b").Select("c").GroupBy("a").OrderBy("b").All(),
                          QueryExpectations {
-                             .sqlite = "SELECT \"a\", \"b\", \"c\" FROM \"That\" GROUP BY \"a\" ORDER BY \"b\" ASC",
-                             .sqlServer = "SELECT \"a\", \"b\", \"c\" FROM \"That\" GROUP BY \"a\" ORDER BY \"b\" ASC",
+                             .sqlite = R"(SELECT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
+                             .sqlServer = R"(SELECT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
                          });
 }
 
@@ -820,8 +820,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.First")
 {
     checkSqlQueryBuilder(SqlQueryBuilder::From("That").Select("field1").OrderBy("id").First(),
                          QueryExpectations {
-                             .sqlite = "SELECT \"field1\" FROM \"That\" ORDER BY \"id\" ASC LIMIT 1",
-                             .sqlServer = "SELECT TOP 1 \"field1\" FROM \"That\" ORDER BY \"id\" ASC",
+                             .sqlite = R"(SELECT "field1" FROM "That" ORDER BY "id" ASC LIMIT 1)",
+                             .sqlServer = R"(SELECT TOP 1 "field1" FROM "That" ORDER BY "id" ASC)",
                          });
 }
 
@@ -830,8 +830,25 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Range")
     checkSqlQueryBuilder(
         SqlQueryBuilder::From("That").Select("foo", "bar").OrderBy("id").Range(200, 50),
         QueryExpectations {
-            .sqlite = "SELECT \"foo\", \"bar\" FROM \"That\" ORDER BY \"id\" ASC LIMIT 50 OFFSET 200",
-            .sqlServer =
-                "SELECT \"foo\", \"bar\" FROM \"That\" ORDER BY \"id\" ASC OFFSET 200 ROWS FETCH NEXT 50 ROWS ONLY",
+            .sqlite = R"(SELECT "foo", "bar" FROM "That" ORDER BY "id" ASC LIMIT 50 OFFSET 200)",
+            .sqlServer = R"(SELECT "foo", "bar" FROM "That" ORDER BY "id" ASC OFFSET 200 ROWS FETCH NEXT 50 ROWS ONLY)",
         });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Where("foo", 42).Where("bar", "baz").Delete(),
+                         QueryExpectations {
+                             .sqlite = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
+                             .sqlServer = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
+                         });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereInRange", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Where("foo", std::vector { 1, 2, 3 }).Delete(),
+                         QueryExpectations {
+                             .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
+                             .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
+                         });
 }

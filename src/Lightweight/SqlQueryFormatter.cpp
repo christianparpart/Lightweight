@@ -90,6 +90,13 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         return sqlQueryString.str();
         // clang-format on
     }
+
+    [[nodiscard]] std::string Delete(std::string const& fromTable,
+                                     std::string const& tableJoins,
+                                     std::string const& whereCondition) const override
+    {
+        return std::format("DELETE FROM \"{}\"{}{}", fromTable, tableJoins, whereCondition);
+    }
 };
 
 class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
@@ -169,6 +176,11 @@ SqlQueryFormatter const& SqlQueryFormatter::PostgrSQL()
     return formatter;
 }
 
+SqlQueryFormatter const& SqlQueryFormatter::OracleSQL()
+{
+    return SqlServer(); // So far, Oracle SQL is similar to Microsoft SQL Server.
+}
+
 SqlQueryFormatter const* SqlQueryFormatter::Get(SqlServerType serverType) noexcept
 {
     switch (serverType)
@@ -179,8 +191,9 @@ SqlQueryFormatter const* SqlQueryFormatter::Get(SqlServerType serverType) noexce
             return &SqlServer();
         case SqlServerType::POSTGRESQL:
             return &PostgrSQL();
-        case SqlServerType::ORACLE: // TODO
-        case SqlServerType::MYSQL:  // TODO
+        case SqlServerType::ORACLE:
+            return &OracleSQL();
+        case SqlServerType::MYSQL: // TODO
         case SqlServerType::UNKNOWN:
             break;
     }

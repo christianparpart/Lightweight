@@ -4,6 +4,7 @@
 
 #include <concepts>
 #include <cstdint>
+#include <ranges>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -25,9 +26,9 @@ enum class SqlQueryType : uint8_t
     SELECT_RANGE,
     SELECT_COUNT,
 
-    // INSERT,
-    // UPDATE,
-    // DELETE -- ABUSED by winnt.h on Windows as preprocessor definition. Thanks!
+    // TODO: INSERT, // <-- is this a use-case we need?
+    // TODO: UPDATE, // <-- is this a use-case we need?
+    DELETE_ // "DELETE" is ABUSED by winnt.h on Windows as preprocessor definition. Thanks!
 };
 
 // SqlQueryWildcard is a placeholder for an explicit wildcard input parameter in a SQL query.
@@ -36,6 +37,16 @@ enum class SqlQueryType : uint8_t
 struct SqlQueryWildcard
 {
 };
+
+namespace detail
+{
+
+struct RawSqlCondition
+{
+    std::string condition;
+};
+
+} // namespace detail
 
 struct SqlQualifiedTableColumnName
 {
@@ -89,6 +100,10 @@ class [[nodiscard]] SqlQueryBuilder
     template <typename ColumnName, typename T>
     [[nodiscard]] SqlQueryBuilder& Where(ColumnName const& columnName, T const& value);
 
+    // Constructs or extends a WHERE clause to test for a range of values.
+    template <typename ColumnName, std::ranges::input_range InputRange>
+    [[nodiscard]] SqlQueryBuilder& Where(ColumnName const& columnName, InputRange&& values);
+
     // Constructs or extends a ORDER BY clause.
     [[nodiscard]] SqlQueryBuilder& OrderBy(std::string_view columnName,
                                            SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
@@ -120,6 +135,9 @@ class [[nodiscard]] SqlQueryBuilder
     // Finalizes building the query as SELECT field names FROM ... query with a range.
     SqlComposedQuery Range(std::size_t offset, std::size_t limit);
 
+    // Finalizes building the query as DELETE FROM ... query.
+    SqlComposedQuery Delete();
+
   private:
     explicit SqlQueryBuilder(std::string_view table);
 
@@ -149,6 +167,24 @@ template <typename ColumnName, typename T>
 SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, T const& value)
 {
     return Where(columnName, "=", value);
+}
+
+template <typename ColumnName, std::ranges::input_range InputRange>
+SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, InputRange&& values)
+{
+    return Where(columnName, "IN", [](auto const& values) {
+        using namespace std::string_view_literals;
+        std::ostringstream fragment;
+        fragment << '(';
+        for (auto const&& [index, value]: values | std::views::enumerate)
+        {
+            if (index > 0)
+                fragment << ", "sv;
+            fragment << value;
+        }
+        fragment << ')';
+        return detail::RawSqlCondition { fragment.str() };
+    }(std::forward<InputRange>(values)));
 }
 
 template <typename T>
@@ -194,6 +230,10 @@ SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, std::strin
     {
         m_query.condition += "?";
         m_query.inputBindings.emplace_back(std::monostate());
+    }
+    else if constexpr (std::is_same_v<T, detail::RawSqlCondition>)
+    {
+        m_query.condition += value.condition;
     }
     else if constexpr (!WhereConditionLiteralType<T>::needsQuotes)
     {

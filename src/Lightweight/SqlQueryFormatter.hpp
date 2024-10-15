@@ -45,9 +45,14 @@ class SqlQueryFormatter
                                                   std::string const& tableJoins,
                                                   std::string const& whereCondition) const = 0;
 
+    [[nodiscard]] virtual std::string Delete(std::string const& fromTable,
+                                             std::string const& tableJoins,
+                                             std::string const& whereCondition) const = 0;
+
     static SqlQueryFormatter const& Sqlite();
     static SqlQueryFormatter const& SqlServer();
     static SqlQueryFormatter const& PostgrSQL();
+    static SqlQueryFormatter const& OracleSQL();
 
     static SqlQueryFormatter const* Get(SqlServerType serverType) noexcept;
 };
