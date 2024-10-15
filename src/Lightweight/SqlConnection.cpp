@@ -252,13 +252,13 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
     auto const& connectionString = std::get<SqlConnectionString>(m_connectInfo).value;
 
     SQLRETURN sqlResult = SQLDriverConnectA(m_hDbc,
-                                             (SQLHWND) nullptr,
-                                             (SQLCHAR*) connectionString.data(),
-                                             (SQLSMALLINT) connectionString.size(),
-                                             nullptr,
-                                             0,
-                                             nullptr,
-                                             SQL_DRIVER_NOPROMPT);
+                                            (SQLHWND) nullptr,
+                                            (SQLCHAR*) connectionString.data(),
+                                            (SQLSMALLINT) connectionString.size(),
+                                            nullptr,
+                                            0,
+                                            nullptr,
+                                            SQL_DRIVER_NOPROMPT);
     if (!SQL_SUCCEEDED(sqlResult))
         return false;
 
