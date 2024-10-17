@@ -556,18 +556,17 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
     CHECK(std::get<SqlTime>(actual) == std::get<SqlTime>(expected));
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "std::optional: NULL values")
+TEST_CASE_METHOD(SqlTestFixture, "std::optional: InputParameter")
 {
     auto stmt = SqlStatement {};
-    stmt.ExecuteDirect("CREATE TABLE Test (Remarks VARCHAR(50) NULL)");
-    stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
-    stmt.Execute(SqlNullValue);
+    stmt.ExecuteDirect("CREATE TABLE Test (Remarks1 VARCHAR(50) NULL, Remarks2 VARCHAR(50) NULL)");
+    stmt.Prepare("INSERT INTO Test (Remarks1, Remarks2) VALUES (?, ?)");
+    stmt.Execute("Blurb", std::optional<std::string> {});
 
-    stmt.ExecuteDirect("SELECT Remarks FROM Test");
+    stmt.ExecuteDirect("SELECT Remarks1, Remarks2 FROM Test");
     REQUIRE(stmt.FetchRow());
-
-    auto const actual = stmt.GetColumn<std::optional<std::string>>(1);
-    CHECK(!actual.has_value());
+    CHECK(stmt.GetColumn<std::string>(1) == "Blurb");
+    CHECK(!stmt.GetColumn<std::optional<std::string>>(2).has_value());
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "std::optional: BindOutputColumns")
