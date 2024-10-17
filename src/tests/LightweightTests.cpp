@@ -907,7 +907,15 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereInRange", "[SqlQueryBuilder]")
 {
+    // Check functionality of container overloads for IN
     checkSqlQueryBuilder(SqlQueryBuilder::From("That").Where("foo", std::vector { 1, 2, 3 }).Delete(),
+                         QueryExpectations {
+                             .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
+                             .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
+                         });
+
+    // Check functionality of the initializer_list overload for IN
+    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Where("foo", { 1, 2, 3 }).Delete(),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",

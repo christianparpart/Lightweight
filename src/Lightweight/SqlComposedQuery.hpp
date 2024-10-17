@@ -104,6 +104,9 @@ class [[nodiscard]] SqlQueryBuilder
     template <typename ColumnName, std::ranges::input_range InputRange>
     [[nodiscard]] SqlQueryBuilder& Where(ColumnName const& columnName, InputRange&& values);
 
+    template <typename ColumnName, typename T>
+    [[nodiscard]] SqlQueryBuilder& Where(ColumnName const& columnName, std::initializer_list<T>&& values);
+
     // Constructs or extends a ORDER BY clause.
     [[nodiscard]] SqlQueryBuilder& OrderBy(std::string_view columnName,
                                            SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
@@ -169,22 +172,34 @@ SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, T const& v
     return Where(columnName, "=", value);
 }
 
+namespace detail
+{
+RawSqlCondition PopulateSqlSetExpression(auto const&& values)
+{
+    using namespace std::string_view_literals;
+    std::ostringstream fragment;
+    fragment << '(';
+    for (auto const&& [index, value]: values | std::views::enumerate)
+    {
+        if (index > 0)
+            fragment << ", "sv;
+        fragment << value;
+    }
+    fragment << ')';
+    return RawSqlCondition { fragment.str() };
+}
+} // namespace detail
+
 template <typename ColumnName, std::ranges::input_range InputRange>
 SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, InputRange&& values)
 {
-    return Where(columnName, "IN", [](auto const& values) {
-        using namespace std::string_view_literals;
-        std::ostringstream fragment;
-        fragment << '(';
-        for (auto const&& [index, value]: values | std::views::enumerate)
-        {
-            if (index > 0)
-                fragment << ", "sv;
-            fragment << value;
-        }
-        fragment << ')';
-        return detail::RawSqlCondition { fragment.str() };
-    }(std::forward<InputRange>(values)));
+    return Where(columnName, "IN", detail::PopulateSqlSetExpression(std::forward<InputRange>(values)));
+}
+
+template <typename ColumnName, typename T>
+SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, std::initializer_list<T>&& values)
+{
+    return Where(columnName, "IN", detail::PopulateSqlSetExpression(std::forward<std::initializer_list<T>>(values)));
 }
 
 template <typename T>
