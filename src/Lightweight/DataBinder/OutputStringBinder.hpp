@@ -48,11 +48,16 @@ struct SqlDataBinder<StringType>
         cb.PlanPostProcessOutputColumn([indicator, result]() {
             // Now resize the string to the actual length of the data
             // NB: If the indicator is greater than the buffer size, we have a truncation.
-            auto const bufferSize = StringTraits::Size(result);
-            auto const len = std::cmp_greater_equal(*indicator, bufferSize) || *indicator == SQL_NO_TOTAL
-                                 ? bufferSize - 1
-                                 : *indicator;
-            StringTraits::Resize(result, len);
+            if (*indicator != SQL_NULL_DATA)
+            {
+                auto const bufferSize = StringTraits::Size(result);
+                auto const len = std::cmp_greater_equal(*indicator, bufferSize) || *indicator == SQL_NO_TOTAL
+                                    ? bufferSize - 1
+                                    : *indicator;
+                StringTraits::Resize(result, len);
+            }
+            else
+                StringTraits::Resize(result, 0);
         });
         return SQLBindCol(stmt,
                           column,

@@ -125,11 +125,10 @@ struct SqlDataBinder<SqlTime>
     static SQLRETURN OutputColumn(SQLHSTMT stmt,
                                   SQLUSMALLINT column,
                                   SqlTime* result,
-                                  SQLLEN* /*indicator*/,
+                                  SQLLEN* indicator,
                                   SqlDataBinderCallback& /*cb*/) noexcept
     {
-        // TODO: handle indicator to check for NULL values
-        return SQLBindCol(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), nullptr);
+        return SQLBindCol(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }
 
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlTime* result, SQLLEN* indicator) noexcept

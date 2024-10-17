@@ -225,6 +225,8 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
         {
             ValueType* boundOutputString = result;
             cb.PlanPostProcessOutputColumn([indicator, boundOutputString]() {
+                if (*indicator == SQL_NULL_DATA)
+                    return;
                 // NB: If the indicator is greater than the buffer size, we have a truncation.
                 auto const len =
                     std::cmp_greater_equal(*indicator, N + 1) || *indicator == SQL_NO_TOTAL ? N : *indicator;
