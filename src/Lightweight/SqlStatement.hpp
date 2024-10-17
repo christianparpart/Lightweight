@@ -40,7 +40,7 @@ class SqlStatement final: public SqlDataBinderCallback
     // Construct a new SqlStatement object, using the given connection.
     SqlStatement(SqlConnection& relatedConnection);
 
-    ~SqlStatement() noexcept;
+    ~SqlStatement() noexcept final;
 
     // Retrieves the connection associated with this statement.
     [[nodiscard]] SqlConnection& Connection() noexcept;
