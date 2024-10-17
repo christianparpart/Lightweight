@@ -1,9 +1,9 @@
-#include "../Lightweight/SqlScopedTraceLogger.hpp"
 #include "Utils.hpp"
 
 #include <Lightweight/SqlComposedQuery.hpp>
 #include <Lightweight/SqlConnection.hpp>
 #include <Lightweight/SqlQueryFormatter.hpp>
+#include <Lightweight/SqlScopedTraceLogger.hpp>
 #include <Lightweight/SqlStatement.hpp>
 #include <Lightweight/SqlTransaction.hpp>
 
