@@ -37,17 +37,14 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                                         std::string const& orderBy,
                                         std::string const& groupBy) const override
     {
-        const auto* const delimiter = tableJoins.empty() ? "" : "\n  ";
-        // clang-format off
         std::stringstream sqlQueryString;
-        sqlQueryString << "SELECT " << fields
-                       << delimiter << " FROM \"" << fromTable << "\""
-                       << tableJoins
-                       << delimiter << whereCondition
-                       << delimiter << groupBy
-                       << delimiter << orderBy;
+        sqlQueryString << "SELECT " << fields << " FROM \"" << fromTable << '"';
+        sqlQueryString << tableJoins;
+        sqlQueryString << whereCondition;
+        sqlQueryString << groupBy;
+        sqlQueryString << orderBy;
+
         return sqlQueryString.str();
-        // clang-format on
     }
 
     [[nodiscard]] std::string SelectFirst(std::string const& fields,

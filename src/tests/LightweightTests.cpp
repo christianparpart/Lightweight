@@ -920,3 +920,24 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereInRange", "[SqlQueryBuild
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                          });
 }
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(
+        SqlQueryBuilder::From("That").Select("foo", "bar").InnerJoin("Other", "id", "that_id").All(),
+        QueryExpectations {
+            // clang-format off
+            .sqlite    = R"(SELECT "foo", "bar" FROM "That" INNER JOIN "Other" ON "Other"."id" = "That"."that_id")",
+            .sqlServer = R"(SELECT "foo", "bar" FROM "That" INNER JOIN "Other" ON "Other"."id" = "That"."that_id")",
+            // clang-format on
+        });
+
+    checkSqlQueryBuilder(
+        SqlQueryBuilder::From("That").Select("foo", "bar").Join(JoinType::LEFT, "Other", "id", "that_id").All(),
+        QueryExpectations {
+            // clang-format off
+            .sqlite    = R"(SELECT "foo", "bar" FROM "That" LEFT JOIN "Other" ON "Other"."id" = "That"."that_id")",
+            .sqlServer = R"(SELECT "foo", "bar" FROM "That" LEFT JOIN "Other" ON "Other"."id" = "That"."that_id")",
+            // clang-format on
+        });
+}

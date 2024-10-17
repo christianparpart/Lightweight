@@ -74,6 +74,14 @@ struct [[nodiscard]] SqlComposedQuery
     [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
 };
 
+enum class JoinType : uint8_t
+{
+    INNER,
+    LEFT,
+    RIGHT,
+    FULL
+};
+
 class [[nodiscard]] SqlQueryBuilder
 {
   public:
@@ -113,6 +121,18 @@ class [[nodiscard]] SqlQueryBuilder
 
     // Constructs or extends a GROUP BY clause.
     [[nodiscard]] SqlQueryBuilder& GroupBy(std::string_view columnName);
+
+    // Constructs an INNER JOIN clause.
+    [[nodiscard]] SqlQueryBuilder& Join(JoinType joinType,
+                                        std::string_view joinTable,
+                                        std::string_view joinColumnName,
+                                        SqlQualifiedTableColumnName onOtherColumn);
+
+    // Constructs an INNER JOIN clause.
+    [[nodiscard]] SqlQueryBuilder& Join(JoinType joinType,
+                                        std::string_view joinTable,
+                                        std::string_view joinColumnName,
+                                        std::string_view onMainTableColumn);
 
     // Constructs an INNER JOIN clause.
     [[nodiscard]] SqlQueryBuilder& InnerJoin(std::string_view joinTable,
