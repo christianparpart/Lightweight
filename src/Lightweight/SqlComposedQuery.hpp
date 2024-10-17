@@ -229,7 +229,7 @@ SqlQueryBuilder& SqlQueryBuilder::Where(ColumnName const& columnName, std::strin
     if constexpr (std::is_same_v<T, SqlQueryWildcard>)
     {
         m_query.condition += "?";
-        m_query.inputBindings.emplace_back(std::monostate());
+        m_query.inputBindings.emplace_back(SqlNullValue);
     }
     else if constexpr (std::is_same_v<T, detail::RawSqlCondition>)
     {

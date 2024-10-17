@@ -77,8 +77,11 @@ struct SqlDataBinder<StringType>
                 case SQL_SUCCESS:
                 case SQL_NO_DATA:
                     // last successive call
-                    StringTraits::Resize(result, writeIndex + *indicator);
-                    *indicator = StringTraits::Size(result);
+                    if (*indicator != SQL_NULL_DATA)
+                    {
+                        StringTraits::Resize(result, writeIndex + *indicator);
+                        *indicator = StringTraits::Size(result);
+                    }
                     return SQL_SUCCESS;
                 case SQL_SUCCESS_WITH_INFO: {
                     // more data pending
