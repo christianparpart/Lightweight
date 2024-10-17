@@ -5,15 +5,17 @@
 #include "Primitives.hpp"
 #include "SqlDate.hpp"
 #include "SqlDateTime.hpp"
+#include "SqlNullValue.hpp"
 #include "SqlText.hpp"
 #include "SqlTime.hpp"
 
 #include <format>
 #include <print>
+#include <variant>
 
 // Helper struct to store a timestamp that should be automatically converted to/from a SQL_TIMESTAMP_STRUCT.
 // Helper struct to generically store and load a variant of different SQL types.
-using SqlVariant = std::variant<std::monostate,
+using SqlVariant = std::variant<SqlNullType,
                                 bool,
                                 short,
                                 unsigned short,
@@ -29,9 +31,29 @@ using SqlVariant = std::variant<std::monostate,
                                 SqlTime,
                                 SqlDateTime>;
 
+namespace detail
+{
+template <class... Ts>
+struct overloaded: Ts... // NOLINT(readability-identifier-naming)
+{
+    using Ts::operator()...;
+};
+
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+} // namespace detail
+
 template <>
 struct SqlDataBinder<SqlVariant>
 {
+    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlVariant const& variantValue) noexcept
+    {
+        return std::visit(detail::overloaded { [&]<typename T>(T const& value) {
+                              return SqlDataBinder<T>::InputParameter(stmt, column, value);
+                          } },
+                          variantValue);
+    }
+
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlVariant* result, SQLLEN* indicator) noexcept
     {
         SQLLEN columnType {};
@@ -119,8 +141,8 @@ struct SqlDataBinder<SqlVariant>
                 SqlLogger::GetLogger().OnError(SqlError::UNSUPPORTED_TYPE);
                 returnCode = SQL_ERROR; // std::errc::invalid_argument;
         }
-        if (*indicator == SQL_NULL_DATA)
-            *result = std::monostate {};
+        if (indicator && *indicator == SQL_NULL_DATA)
+            *result = SqlNullValue;
         return returnCode;
     }
 };

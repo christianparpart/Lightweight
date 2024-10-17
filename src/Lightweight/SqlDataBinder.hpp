@@ -7,6 +7,7 @@
 #include "DataBinder/SqlDate.hpp"
 #include "DataBinder/SqlDateTime.hpp"
 #include "DataBinder/SqlFixedString.hpp"
+#include "DataBinder/SqlNullValue.hpp"
 #include "DataBinder/SqlText.hpp"
 #include "DataBinder/SqlTime.hpp"
 #include "DataBinder/SqlTrimmedString.hpp"

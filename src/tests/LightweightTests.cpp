@@ -499,13 +499,28 @@ TEST_CASE_METHOD(SqlTestFixture, "GetColumn in-place store variant")
     CHECK(std::get<int>(salary) == 50'000);
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values")
+{
+    auto stmt = SqlStatement();
+    stmt.ExecuteDirect("CREATE TABLE Test (Remarks VARCHAR(50) NULL)");
+
+    stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
+    stmt.Execute(SqlNullValue);
+
+    stmt.ExecuteDirect("SELECT Remarks FROM Test");
+    REQUIRE(stmt.FetchRow());
+
+    auto const actual = stmt.GetColumn<SqlVariant>(1);
+    CHECK(std::holds_alternative<SqlNullType>(actual));
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate")
 {
     auto stmt = SqlStatement {};
     stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NOT NULL)");
 
     using namespace std::chrono_literals;
-    auto const expected = SqlDate { 2017y, std::chrono::August, 16d };
+    auto const expected = SqlVariant { SqlDate { 2017y, std::chrono::August, 16d } };
 
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
     stmt.Execute(expected);
@@ -513,7 +528,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate")
     stmt.ExecuteDirect("SELECT Value FROM Test");
     REQUIRE(stmt.FetchRow());
     auto const actual = stmt.GetColumn<SqlVariant>(1);
-    CHECK(std::get<SqlDate>(actual) == expected);
+    CHECK(std::get<SqlDate>(actual) == std::get<SqlDate>(expected));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
@@ -522,7 +537,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
     stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NOT NULL)");
 
     using namespace std::chrono_literals;
-    auto const expected = SqlTime { 12h, 34min, 56s };
+    auto const expected = SqlVariant { SqlTime { 12h, 34min, 56s } };
 
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
     stmt.Execute(expected);
@@ -538,7 +553,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
         return;
     }
 
-    CHECK(std::get<SqlTime>(actual) == expected);
+    CHECK(std::get<SqlTime>(actual) == std::get<SqlTime>(expected));
 }
 
 static std::string MakeLargeText(size_t size)
