@@ -51,7 +51,7 @@ SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fi
     return *this;
 }
 
-SqlQueryBuilder& SqlQueryBuilder::Join(JoinType joinType,
+SqlQueryBuilder& SqlQueryBuilder::Join(SqlJoinType joinType,
                                        std::string_view joinTable,
                                        std::string_view joinColumnName,
                                        SqlQualifiedTableColumnName onOtherColumn)
@@ -67,7 +67,7 @@ SqlQueryBuilder& SqlQueryBuilder::Join(JoinType joinType,
     return *this;
 }
 
-SqlQueryBuilder& SqlQueryBuilder::Join(JoinType joinType,
+SqlQueryBuilder& SqlQueryBuilder::Join(SqlJoinType joinType,
                                        std::string_view joinTable,
                                        std::string_view joinColumnName,
                                        std::string_view onMainTableColumn)
@@ -82,14 +82,14 @@ SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
                                             std::string_view joinColumnName,
                                             SqlQualifiedTableColumnName onOtherColumn)
 {
-    return Join(JoinType::INNER, joinTable, joinColumnName, onOtherColumn);
+    return Join(SqlJoinType::INNER, joinTable, joinColumnName, onOtherColumn);
 }
 
 SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
                                             std::string_view joinColumnName,
                                             std::string_view onMainTableColumn)
 {
-    return Join(JoinType::INNER, joinTable, joinColumnName, onMainTableColumn);
+    return Join(SqlJoinType::INNER, joinTable, joinColumnName, onMainTableColumn);
 }
 
 SqlQueryBuilder& SqlQueryBuilder::Where(std::string_view sqlConditionExpression)
