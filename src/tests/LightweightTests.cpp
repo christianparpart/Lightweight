@@ -570,7 +570,7 @@ TEST_CASE_METHOD(SqlTestFixture, "std::optional: NULL values")
     CHECK(!actual.has_value());
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "std::optional: via BindOutputColumns")
+TEST_CASE_METHOD(SqlTestFixture, "std::optional: BindOutputColumns")
 {
     auto stmt = SqlStatement {};
     stmt.ExecuteDirect("CREATE TABLE Test (Remarks1 VARCHAR(50) NULL, Remarks2 VARCHAR(50) NULL)");
@@ -583,25 +583,23 @@ TEST_CASE_METHOD(SqlTestFixture, "std::optional: via BindOutputColumns")
     auto actual2 = std::optional<std::string> {};
     stmt.BindOutputColumns(&actual1, &actual2);
     REQUIRE(stmt.FetchRow());
-
     CHECK(actual1.value_or("IS_NULL") == "Blurb");
     CHECK(!actual2.has_value());
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "std::optional: non-NULL values via GetColumn")
+TEST_CASE_METHOD(SqlTestFixture, "std::optional: GetColumn")
 {
     auto stmt = SqlStatement {};
-    stmt.ExecuteDirect("CREATE TABLE Test (Remarks VARCHAR(50) NULL)");
+    stmt.ExecuteDirect("CREATE TABLE Test (Remarks1 VARCHAR(50) NULL, Remarks2 VARCHAR(50) NULL)");
+    stmt.Prepare("INSERT INTO Test (Remarks1, Remarks2) VALUES (?, ?)");
+    stmt.Execute("Blurb", SqlNullValue);
 
-    stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
-    stmt.Execute("Blurb");
-
-    stmt.ExecuteDirect("SELECT Remarks FROM Test");
+    stmt.ExecuteDirect("SELECT Remarks1, Remarks2 FROM Test");
     REQUIRE(stmt.FetchRow());
-
-    auto const actual = stmt.GetColumn<std::optional<std::string>>(1);
-    REQUIRE(actual.has_value());
-    CHECK(*actual == "Blurb");
+    auto const actual1 = stmt.GetColumn<std::optional<std::string>>(1);
+    auto const actual2 = stmt.GetColumn<std::optional<std::string>>(2);
+    CHECK(actual1.value_or("IS_NULL") == "Blurb");
+    CHECK(!actual2.has_value());
 }
 
 static std::string MakeLargeText(size_t size)
