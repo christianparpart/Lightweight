@@ -131,7 +131,7 @@ jobs:
           CC_VERSION=$( echo "${{ matrix.compiler }}" | awk '{ print $2; }')
           echo "CC_VERSION=${CC_VERSION}" >> "$GITHUB_OUTPUT"
       - name: "install dependencies"
-        run: sudo apt install -y cmake ninja-build catch2 unixodbc-dev sqlite3 libsqlite3-dev libsqliteodbc
+        run: sudo apt install -y cmake ninja-build catch2 unixodbc-dev sqlite3 libsqlite3-dev libsqliteodbc valgrind
       - name: "inspect"
         run: |
           dpkg -L unixodbc-common
@@ -169,9 +169,16 @@ jobs:
         run: cmake --build --preset linux-gcc-release -- -j3
       - name: "tests"
         run: ctest --preset linux-gcc-release
-      - name: "Move tests to root directory"
+      - name: "Run tests through valgrind (without model tests)"
         run: |
-          mv out/build/linux-gcc-release/src/tests/LightweightTest .
+          valgrind \
+            --error-exitcode=1 \
+            --leak-check=full \
+            --leak-resolution=high \
+            --num-callers=64 \
+            out/build/linux-gcc-release/src/tests/LightweightTest '~[model]'
+      - name: "Move tests to root directory"
+        run: mv out/build/linux-gcc-release/src/tests/LightweightTest .
       - name: "Upload unit tests"
         if: ${{ matrix.compiler == 'GCC 14' && matrix.cxx == '23' }}
         uses: actions/upload-artifact@v4

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Core.hpp"
+#include "SqlNullValue.hpp"
 
 #include <concepts>
 #include <optional>

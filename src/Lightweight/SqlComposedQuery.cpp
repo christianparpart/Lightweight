@@ -29,6 +29,12 @@ SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fi
     return *this;
 }
 
+SqlQueryBuilder& SqlQueryBuilder::Distinct() noexcept
+{
+    m_query.distinct = true;
+    return *this;
+}
+
 SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames, std::string_view tableName)
 {
     for (auto const& fieldName: fieldNames)
@@ -45,12 +51,15 @@ SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fi
     return *this;
 }
 
-SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
-                                            std::string_view joinColumnName,
-                                            SqlQualifiedTableColumnName onOtherColumn)
+SqlQueryBuilder& SqlQueryBuilder::Join(JoinType joinType,
+                                       std::string_view joinTable,
+                                       std::string_view joinColumnName,
+                                       SqlQualifiedTableColumnName onOtherColumn)
 {
-    m_query.tableJoins += std::format("\n   "
-                                      R"(INNER JOIN "{0}" ON "{0}"."{1}" = "{2}"."{3}")",
+    static constexpr std::array<std::string_view, 4> JoinTypeStrings = { "INNER", "LEFT", "RIGHT", "FULL" };
+
+    m_query.tableJoins += std::format(R"( {0} JOIN "{1}" ON "{1}"."{2}" = "{3}"."{4}")",
+                                      JoinTypeStrings[static_cast<std::size_t>(joinType)],
                                       joinTable,
                                       joinColumnName,
                                       onOtherColumn.tableName,
@@ -58,13 +67,29 @@ SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
     return *this;
 }
 
+SqlQueryBuilder& SqlQueryBuilder::Join(JoinType joinType,
+                                       std::string_view joinTable,
+                                       std::string_view joinColumnName,
+                                       std::string_view onMainTableColumn)
+{
+    return Join(joinType,
+                joinTable,
+                joinColumnName,
+                SqlQualifiedTableColumnName { .tableName = m_query.table, .columnName = onMainTableColumn });
+}
+
+SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
+                                            std::string_view joinColumnName,
+                                            SqlQualifiedTableColumnName onOtherColumn)
+{
+    return Join(JoinType::INNER, joinTable, joinColumnName, onOtherColumn);
+}
+
 SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
                                             std::string_view joinColumnName,
                                             std::string_view onMainTableColumn)
 {
-    return InnerJoin(joinTable,
-                     joinColumnName,
-                     SqlQualifiedTableColumnName { .tableName = m_query.table, .columnName = onMainTableColumn });
+    return Join(JoinType::INNER, joinTable, joinColumnName, onMainTableColumn);
 }
 
 SqlQueryBuilder& SqlQueryBuilder::Where(std::string_view sqlConditionExpression)
@@ -176,13 +201,14 @@ std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
         case SqlQueryType::UNDEFINED:
             break;
         case SqlQueryType::SELECT_ALL:
-            return formatter.SelectAll(fields, table, tableJoins, *finalCondition, orderBy, groupBy);
+            return formatter.SelectAll(distinct, fields, table, tableJoins, *finalCondition, orderBy, groupBy);
         case SqlQueryType::SELECT_FIRST:
-            return formatter.SelectFirst(fields, table, tableJoins, *finalCondition, orderBy, limit);
+            return formatter.SelectFirst(distinct, fields, table, tableJoins, *finalCondition, orderBy, limit);
         case SqlQueryType::SELECT_RANGE:
-            return formatter.SelectRange(fields, table, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
+            return formatter.SelectRange(
+                distinct, fields, table, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
         case SqlQueryType::SELECT_COUNT:
-            return formatter.SelectCount(table, tableJoins, *finalCondition);
+            return formatter.SelectCount(distinct, table, tableJoins, *finalCondition);
         case SqlQueryType::DELETE_:
             return formatter.Delete(table, tableJoins, *finalCondition);
     }
