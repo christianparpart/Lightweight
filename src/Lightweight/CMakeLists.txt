@@ -18,16 +18,26 @@ if(NOT WIN32)
 endif()
 
 set(HEADER_FILES
-    Model/Associations/BelongsTo.hpp
-    Model/Associations/HasMany.hpp
-    Model/Associations/HasOne.hpp
-    Model/ColumnType.hpp
-    Model/Detail.hpp
-    Model/Logger.hpp
-    Model/Record.hpp
-    Model/Relation.hpp
-    Model/StringLiteral.hpp
-    Model/Utils.hpp
+    # Model/Associations/BelongsTo.hpp
+    # Model/Associations/HasMany.hpp
+    # Model/Associations/HasOne.hpp
+    # Model/ColumnType.hpp
+    # Model/DataMapper.hpp
+    # Model/Detail.hpp
+    # Model/Logger.hpp
+    # Model/Record.hpp
+    # Model/Relation.hpp
+    # Model/StringLiteral.hpp
+
+    # DataMapper/Associations/BelongsTo.hpp
+    # DataMapper/Associations/HasMany.hpp
+    # DataMapper/Associations/HasOne.hpp
+    DataMapper/DataMapper.hpp
+    DataMapper/Detail.hpp
+    DataMapper/Field.hpp
+    DataMapper/Logger.hpp
+    DataMapper/RecordId.hpp
+
     SqlComposedQuery.hpp
     SqlConcepts.hpp
     SqlConnectInfo.hpp
@@ -41,8 +51,8 @@ set(HEADER_FILES
 )
 
 set(SOURCE_FILES
-    Model/AbstractRecord.cpp
-    Model/Logger.cpp
+    DataMapper/Logger.cpp
+
     SqlComposedQuery.cpp
     SqlConnectInfo.cpp
     SqlConnection.cpp
