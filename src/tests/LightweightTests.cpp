@@ -860,7 +860,7 @@ void checkSqlQueryBuilder(SqlComposedQuery const& sqlQuery,
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Count")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::From("Table").Count(),
+    checkSqlQueryBuilder(SqlQueryBuilder::From("Table").Select().Count(),
                          QueryExpectations {
                              .sqlite = "SELECT COUNT(*) FROM \"Table\"",
                              .sqlServer = "SELECT COUNT(*) FROM \"Table\"",
@@ -933,7 +933,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
         });
 
     checkSqlQueryBuilder(
-        SqlQueryBuilder::From("That").Select("foo", "bar").Join(JoinType::LEFT, "Other", "id", "that_id").All(),
+        SqlQueryBuilder::From("That").Select("foo", "bar").Join(SqlJoinType::LEFT, "Other", "id", "that_id").All(),
         QueryExpectations {
             // clang-format off
             .sqlite    = R"(SELECT "foo", "bar" FROM "That" LEFT JOIN "Other" ON "Other"."id" = "That"."that_id")",
