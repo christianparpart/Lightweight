@@ -491,11 +491,11 @@ TEST_CASE_METHOD(SqlTestFixture, "GetColumn in-place store variant")
     CHECK(stmt.GetColumn<std::string>(1) == "Alice");
 
     SqlVariant lastName;
-    stmt.GetColumn(2, &lastName);
+    CHECK(stmt.GetColumn(2, &lastName));
     CHECK(std::get<std::string>(lastName) == "Smith");
 
     SqlVariant salary;
-    stmt.GetColumn(3, &salary);
+    CHECK(stmt.GetColumn(3, &salary));
     CHECK(std::get<int>(salary) == 50'000);
 }
 
@@ -601,6 +601,21 @@ TEST_CASE_METHOD(SqlTestFixture, "std::optional: GetColumn")
     CHECK(!actual2.has_value());
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "TryGetColumn")
+{
+    auto stmt = SqlStatement {};
+    stmt.ExecuteDirect("CREATE TABLE Test (Remarks1 VARCHAR(50) NULL, Remarks2 VARCHAR(50) NULL)");
+    stmt.Prepare("INSERT INTO Test (Remarks1, Remarks2) VALUES (?, ?)");
+    stmt.Execute("Blurb", SqlNullValue);
+
+    stmt.ExecuteDirect("SELECT Remarks1, Remarks2 FROM Test");
+    REQUIRE(stmt.FetchRow());
+    auto const actual1 = stmt.TryGetColumn<std::string>(1);
+    auto const actual2 = stmt.TryGetColumn<std::string>(2);
+    CHECK(actual1.value_or("IS_NULL") == "Blurb");
+    CHECK(!actual2.has_value());
+}
+
 static std::string MakeLargeText(size_t size)
 {
     auto text = std::string(size, '\0');
@@ -628,7 +643,7 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
         stmt.ExecuteDirect("SELECT Value FROM Test");
         REQUIRE(stmt.FetchRow());
         std::string actualText;
-        stmt.GetColumn(1, &actualText);
+        CHECK(stmt.GetColumn(1, &actualText));
         CHECK(actualText == expectedText);
     }
 

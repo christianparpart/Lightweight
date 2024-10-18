@@ -111,12 +111,17 @@ class SqlStatement final: public SqlDataBinderCallback
     [[nodiscard]] bool FetchRow();
 
     // Retrieves the value of the column at the given index for the currently selected row.
+    //
+    // Returns true if the value is not NULL, false otherwise.
     template <SqlGetColumnNativeType T>
-    void GetColumn(SQLUSMALLINT column, T* result) const;
+    [[nodiscard]] bool GetColumn(SQLUSMALLINT column, T* result) const;
 
     // Retrieves the value of the column at the given index for the currently selected row.
     template <SqlGetColumnNativeType T>
     [[nodiscard]] T GetColumn(SQLUSMALLINT column) const;
+
+    template <SqlGetColumnNativeType T>
+    [[nodiscard]] std::optional<T> TryGetColumn(SQLUSMALLINT column) const;
 
   private:
     void RequireSuccess(SQLRETURN error, std::source_location sourceLocation = std::source_location::current()) const;
@@ -291,10 +296,11 @@ void SqlStatement::ExecuteBatch(FirstColumnBatch const& firstColumnBatch, MoreCo
 }
 
 template <SqlGetColumnNativeType T>
-inline void SqlStatement::GetColumn(SQLUSMALLINT column, T* result) const
+inline bool SqlStatement::GetColumn(SQLUSMALLINT column, T* result) const
 {
     SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.
     RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, result, &indicator));
+    return indicator != SQL_NULL_DATA;
 }
 
 template <SqlGetColumnNativeType T>
@@ -304,6 +310,17 @@ template <SqlGetColumnNativeType T>
     SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.
     RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, &result, &indicator));
     return result;
+}
+
+template <SqlGetColumnNativeType T>
+[[nodiscard]] std::optional<T> SqlStatement::TryGetColumn(SQLUSMALLINT column) const
+{
+    T result {};
+    SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.
+    RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, &result, &indicator));
+    if (indicator == SQL_NULL_DATA)
+        return std::nullopt;
+    return { std::move(result) };
 }
 
 inline void SqlStatement::PlanPostExecuteCallback(std::function<void()>&& cb)
