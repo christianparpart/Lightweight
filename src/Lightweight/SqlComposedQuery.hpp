@@ -70,6 +70,7 @@ struct [[nodiscard]] SqlComposedQuery
     std::string groupBy;
     size_t offset = 0;
     size_t limit = (std::numeric_limits<size_t>::max)();
+    bool distinct = false; // If true and a select query, then SELECT DISTINCT is used.
 
     [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
 };
@@ -96,6 +97,9 @@ class [[nodiscard]] SqlQueryBuilder
     // Adds a sequence of columns to the SELECT clause.
     template <typename... MoreFields>
     [[nodiscard]] SqlQueryBuilder& Select(std::string_view const& firstField, MoreFields&&... moreFields);
+
+    // Adds a DISTINCT clause to the SELECT query.
+    [[nodiscard]] SqlQueryBuilder& Distinct() noexcept;
 
     // Constructs or extends a raw WHERE clause.
     [[nodiscard]] SqlQueryBuilder& Where(std::string_view sqlConditionExpression);

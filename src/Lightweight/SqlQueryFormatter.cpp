@@ -23,14 +23,17 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
             return std::format(R"("{}" {} {})", column.columnName, op, literalValueStr);
     }
 
-    [[nodiscard]] std::string SelectCount(std::string const& fromTable,
+    [[nodiscard]] std::string SelectCount(bool distinct,
+                                          std::string const& fromTable,
                                           std::string const& tableJoins,
                                           std::string const& whereCondition) const override
     {
-        return std::format("SELECT COUNT(*) FROM \"{}\"{}{}", fromTable, tableJoins, whereCondition);
+        return std::format(
+            "SELECT{} COUNT(*) FROM \"{}\"{}{}", distinct ? " DISTINCT" : "", fromTable, tableJoins, whereCondition);
     }
 
-    [[nodiscard]] std::string SelectAll(std::string const& fields,
+    [[nodiscard]] std::string SelectAll(bool distinct,
+                                        std::string const& fields,
                                         std::string const& fromTable,
                                         std::string const& tableJoins,
                                         std::string const& whereCondition,
@@ -38,7 +41,10 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                                         std::string const& groupBy) const override
     {
         std::stringstream sqlQueryString;
-        sqlQueryString << "SELECT " << fields << " FROM \"" << fromTable << '"';
+        sqlQueryString << "SELECT ";
+        if (distinct)
+            sqlQueryString << "DISTINCT ";
+        sqlQueryString << fields << " FROM \"" << fromTable << '"';
         sqlQueryString << tableJoins;
         sqlQueryString << whereCondition;
         sqlQueryString << groupBy;
@@ -47,26 +53,28 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         return sqlQueryString.str();
     }
 
-    [[nodiscard]] std::string SelectFirst(std::string const& fields,
+    [[nodiscard]] std::string SelectFirst(bool distinct,
+                                          std::string const& fields,
                                           std::string const& fromTable,
                                           std::string const& tableJoins,
                                           std::string const& whereCondition,
                                           std::string const& orderBy,
                                           size_t count) const override
     {
-        // clang-format off
         std::stringstream sqlQueryString;
-        sqlQueryString << "SELECT " << fields
-                       << " FROM \"" << fromTable << "\""
-                       << tableJoins
-                       << whereCondition
-                       << orderBy
-                       << " LIMIT " << count;
+        sqlQueryString << "SELECT " << fields;
+        if (distinct)
+            sqlQueryString << " DISTINCT";
+        sqlQueryString << " FROM \"" << fromTable << "\"";
+        sqlQueryString << tableJoins;
+        sqlQueryString << whereCondition;
+        sqlQueryString << orderBy;
+        sqlQueryString << " LIMIT " << count;
         return sqlQueryString.str();
-        // clang-format on
     }
 
-    [[nodiscard]] std::string SelectRange(std::string const& fields,
+    [[nodiscard]] std::string SelectRange(bool distinct,
+                                          std::string const& fields,
                                           std::string const& fromTable,
                                           std::string const& tableJoins,
                                           std::string const& whereCondition,
@@ -75,17 +83,17 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                                           std::size_t offset,
                                           std::size_t limit) const override
     {
-        // clang-format off
         std::stringstream sqlQueryString;
-        sqlQueryString << "SELECT " << fields
-                       << " FROM \"" << fromTable << "\""
-                       << tableJoins
-                       << whereCondition
-                       << groupBy
-                       << orderBy
-                       << " LIMIT " << limit << " OFFSET " << offset;
+        sqlQueryString << "SELECT " << fields;
+        if (distinct)
+            sqlQueryString << " DISTINCT";
+        sqlQueryString << " FROM \"" << fromTable << "\"";
+        sqlQueryString << tableJoins;
+        sqlQueryString << whereCondition;
+        sqlQueryString << groupBy;
+        sqlQueryString << orderBy;
+        sqlQueryString << " LIMIT " << limit << " OFFSET " << offset;
         return sqlQueryString.str();
-        // clang-format on
     }
 
     [[nodiscard]] std::string Delete(std::string const& fromTable,
@@ -110,26 +118,30 @@ class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
             return std::format(R"("{}" {} {})", column.columnName, op, literalValueStr);
     }
 
-    std::string SelectFirst(std::string const& fields,
+    std::string SelectFirst(bool distinct,
+                            std::string const& fields,
                             std::string const& fromTable,
                             std::string const& tableJoins,
                             std::string const& whereCondition,
                             std::string const& orderBy,
                             size_t count) const override
     {
-        // clang-format off
         std::stringstream sqlQueryString;
-        sqlQueryString << "SELECT TOP " << count << " "
-                       << fields
-                       << " FROM \"" << fromTable << "\""
-                       << tableJoins
-                       << whereCondition
-                       << orderBy;
+        sqlQueryString << "SELECT";
+        if (distinct)
+            sqlQueryString << " DISTINCT";
+        sqlQueryString << " TOP " << count;
+        sqlQueryString << ' ' << fields;
+        sqlQueryString << " FROM \"" << fromTable << '"';
+        sqlQueryString << tableJoins;
+        sqlQueryString << whereCondition;
+        sqlQueryString << orderBy;
+        ;
         return sqlQueryString.str();
-        // clang-format on
     }
 
-    std::string SelectRange(std::string const& fields,
+    std::string SelectRange(bool distinct,
+                            std::string const& fields,
                             std::string const& fromTable,
                             std::string const& tableJoins,
                             std::string const& whereCondition,
@@ -139,17 +151,17 @@ class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
                             std::size_t limit) const override
     {
         assert(!orderBy.empty());
-        // clang-format off
         std::stringstream sqlQueryString;
-        sqlQueryString << "SELECT " << fields
-                       << " FROM \"" << fromTable << "\""
-                       << tableJoins
-                       << whereCondition
-                       << groupBy
-                       << orderBy
-                       << " OFFSET " << offset << " ROWS FETCH NEXT " << limit << " ROWS ONLY";
+        sqlQueryString << "SELECT " << fields;
+        if (distinct)
+            sqlQueryString << " DISTINCT";
+        sqlQueryString << " FROM \"" << fromTable << "\"";
+        sqlQueryString << tableJoins;
+        sqlQueryString << whereCondition;
+        sqlQueryString << groupBy;
+        sqlQueryString << orderBy;
+        sqlQueryString << " OFFSET " << offset << " ROWS FETCH NEXT " << limit << " ROWS ONLY";
         return sqlQueryString.str();
-        // clang-format on
     }
 };
 

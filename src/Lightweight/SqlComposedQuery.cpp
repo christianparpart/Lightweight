@@ -29,6 +29,12 @@ SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fi
     return *this;
 }
 
+SqlQueryBuilder& SqlQueryBuilder::Distinct() noexcept
+{
+    m_query.distinct = true;
+    return *this;
+}
+
 SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames, std::string_view tableName)
 {
     for (auto const& fieldName: fieldNames)
@@ -195,13 +201,14 @@ std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
         case SqlQueryType::UNDEFINED:
             break;
         case SqlQueryType::SELECT_ALL:
-            return formatter.SelectAll(fields, table, tableJoins, *finalCondition, orderBy, groupBy);
+            return formatter.SelectAll(distinct, fields, table, tableJoins, *finalCondition, orderBy, groupBy);
         case SqlQueryType::SELECT_FIRST:
-            return formatter.SelectFirst(fields, table, tableJoins, *finalCondition, orderBy, limit);
+            return formatter.SelectFirst(distinct, fields, table, tableJoins, *finalCondition, orderBy, limit);
         case SqlQueryType::SELECT_RANGE:
-            return formatter.SelectRange(fields, table, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
+            return formatter.SelectRange(
+                distinct, fields, table, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
         case SqlQueryType::SELECT_COUNT:
-            return formatter.SelectCount(table, tableJoins, *finalCondition);
+            return formatter.SelectCount(distinct, table, tableJoins, *finalCondition);
         case SqlQueryType::DELETE_:
             return formatter.Delete(table, tableJoins, *finalCondition);
     }

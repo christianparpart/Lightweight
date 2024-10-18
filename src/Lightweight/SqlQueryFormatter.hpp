@@ -18,21 +18,24 @@ class SqlQueryFormatter
                                                          std::string_view op,
                                                          bool literalValue) const = 0;
 
-    [[nodiscard]] virtual std::string SelectAll(std::string const& fields,
+    [[nodiscard]] virtual std::string SelectAll(bool distinct,
+                                                std::string const& fields,
                                                 std::string const& fromTable,
                                                 std::string const& tableJoins,
                                                 std::string const& whereCondition,
                                                 std::string const& orderBy,
                                                 std::string const& groupBy) const = 0;
 
-    [[nodiscard]] virtual std::string SelectFirst(std::string const& fields,
+    [[nodiscard]] virtual std::string SelectFirst(bool distinct,
+                                                  std::string const& fields,
                                                   std::string const& fromTable,
                                                   std::string const& tableJoins,
                                                   std::string const& whereCondition,
                                                   std::string const& orderBy,
                                                   size_t count) const = 0;
 
-    [[nodiscard]] virtual std::string SelectRange(std::string const& fields,
+    [[nodiscard]] virtual std::string SelectRange(bool distinct,
+                                                  std::string const& fields,
                                                   std::string const& fromTable,
                                                   std::string const& tableJoins,
                                                   std::string const& whereCondition,
@@ -41,7 +44,8 @@ class SqlQueryFormatter
                                                   std::size_t offset,
                                                   std::size_t limit) const = 0;
 
-    [[nodiscard]] virtual std::string SelectCount(std::string const& fromTable,
+    [[nodiscard]] virtual std::string SelectCount(bool distinct,
+                                                  std::string const& fromTable,
                                                   std::string const& tableJoins,
                                                   std::string const& whereCondition) const = 0;
 
