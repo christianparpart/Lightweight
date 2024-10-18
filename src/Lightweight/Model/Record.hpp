@@ -51,14 +51,14 @@ template <typename TargetModel>
 class RecordQueryBuilder
 {
   private:
-    explicit RecordQueryBuilder(SqlQueryBuilder queryBuilder):
+    explicit RecordQueryBuilder(SqlSelectQueryBuilder queryBuilder):
         m_queryBuilder { std::move(queryBuilder) }
     {
     }
 
   public:
     explicit RecordQueryBuilder():
-        m_queryBuilder { SqlQueryBuilder::From(TargetModel().TableName()) }
+        m_queryBuilder { SqlQueryBuilder::From(TargetModel().TableName()).Select() }
     {
     }
 
@@ -171,7 +171,7 @@ class RecordQueryBuilder
     }
 
   private:
-    SqlQueryBuilder m_queryBuilder;
+    SqlSelectQueryBuilder m_queryBuilder;
 };
 
 template <typename Derived>

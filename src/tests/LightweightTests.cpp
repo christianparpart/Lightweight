@@ -860,7 +860,7 @@ void checkSqlQueryBuilder(SqlComposedQuery const& sqlQuery,
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Count")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::From("Table").Count(),
+    checkSqlQueryBuilder(SqlQueryBuilder::From("Table").Select().Count(),
                          QueryExpectations {
                              .sqlite = "SELECT COUNT(*) FROM \"Table\"",
                              .sqlServer = "SELECT COUNT(*) FROM \"Table\"",

@@ -1,8 +1,6 @@
 #include "SqlComposedQuery.hpp"
 #include "SqlQueryFormatter.hpp"
 
-#include <sstream>
-
 // {{{ SqlQueryBuilder impl
 
 SqlQueryBuilder SqlQueryBuilder::From(std::string_view table)
@@ -15,7 +13,39 @@ SqlQueryBuilder::SqlQueryBuilder(std::string_view table)
     m_query.table = table;
 }
 
-SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames)
+SqlSelectQueryBuilder SqlQueryBuilder::Select() && noexcept
+{
+    return SqlSelectQueryBuilder(std::move(m_query));
+}
+
+SqlSelectQueryBuilder SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames) &&
+{
+    return SqlSelectQueryBuilder(std::move(m_query)).Select(fieldNames);
+}
+
+SqlSelectQueryBuilder SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames,
+                                              std::string_view tableName) &&
+{
+    return SqlSelectQueryBuilder(std::move(m_query)).Select(fieldNames, tableName);
+}
+
+SqlComposedQuery SqlQueryBuilder::Delete()
+{
+    m_query.type = SqlQueryType::DELETE_;
+
+    return std::move(m_query);
+}
+
+// }}}
+
+// {{{ SqlSelectQueryBuilder impl
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::Distinct() noexcept
+{
+    m_query.distinct = true;
+    return *this;
+}
+
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::Select(std::vector<std::string_view> const& fieldNames)
 {
     for (auto const& fieldName: fieldNames)
     {
@@ -29,13 +59,8 @@ SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fi
     return *this;
 }
 
-SqlQueryBuilder& SqlQueryBuilder::Distinct() noexcept
-{
-    m_query.distinct = true;
-    return *this;
-}
-
-SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames, std::string_view tableName)
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::Select(std::vector<std::string_view> const& fieldNames,
+                                                     std::string_view tableName)
 {
     for (auto const& fieldName: fieldNames)
     {
@@ -51,62 +76,7 @@ SqlQueryBuilder& SqlQueryBuilder::Select(std::vector<std::string_view> const& fi
     return *this;
 }
 
-SqlQueryBuilder& SqlQueryBuilder::Join(SqlJoinType joinType,
-                                       std::string_view joinTable,
-                                       std::string_view joinColumnName,
-                                       SqlQualifiedTableColumnName onOtherColumn)
-{
-    static constexpr std::array<std::string_view, 4> JoinTypeStrings = { "INNER", "LEFT", "RIGHT", "FULL" };
-
-    m_query.tableJoins += std::format(R"( {0} JOIN "{1}" ON "{1}"."{2}" = "{3}"."{4}")",
-                                      JoinTypeStrings[static_cast<std::size_t>(joinType)],
-                                      joinTable,
-                                      joinColumnName,
-                                      onOtherColumn.tableName,
-                                      onOtherColumn.columnName);
-    return *this;
-}
-
-SqlQueryBuilder& SqlQueryBuilder::Join(SqlJoinType joinType,
-                                       std::string_view joinTable,
-                                       std::string_view joinColumnName,
-                                       std::string_view onMainTableColumn)
-{
-    return Join(joinType,
-                joinTable,
-                joinColumnName,
-                SqlQualifiedTableColumnName { .tableName = m_query.table, .columnName = onMainTableColumn });
-}
-
-SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
-                                            std::string_view joinColumnName,
-                                            SqlQualifiedTableColumnName onOtherColumn)
-{
-    return Join(SqlJoinType::INNER, joinTable, joinColumnName, onOtherColumn);
-}
-
-SqlQueryBuilder& SqlQueryBuilder::InnerJoin(std::string_view joinTable,
-                                            std::string_view joinColumnName,
-                                            std::string_view onMainTableColumn)
-{
-    return Join(SqlJoinType::INNER, joinTable, joinColumnName, onMainTableColumn);
-}
-
-SqlQueryBuilder& SqlQueryBuilder::Where(std::string_view sqlConditionExpression)
-{
-    if (m_query.condition.empty())
-        m_query.condition += " WHERE ";
-    else
-        m_query.condition += " AND ";
-
-    m_query.condition += "(";
-    m_query.condition += std::string(sqlConditionExpression);
-    m_query.condition += ")";
-
-    return *this;
-}
-
-SqlQueryBuilder& SqlQueryBuilder::OrderBy(std::string_view columnName, SqlResultOrdering ordering)
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::OrderBy(std::string_view columnName, SqlResultOrdering ordering)
 {
     if (m_query.orderBy.empty())
         m_query.orderBy += " ORDER BY ";
@@ -124,7 +94,7 @@ SqlQueryBuilder& SqlQueryBuilder::OrderBy(std::string_view columnName, SqlResult
     return *this;
 }
 
-SqlQueryBuilder& SqlQueryBuilder::GroupBy(std::string_view columnName)
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::GroupBy(std::string_view columnName)
 {
     if (m_query.groupBy.empty())
         m_query.groupBy += " GROUP BY ";
@@ -138,21 +108,21 @@ SqlQueryBuilder& SqlQueryBuilder::GroupBy(std::string_view columnName)
     return *this;
 }
 
-SqlComposedQuery SqlQueryBuilder::Count()
+SqlComposedQuery SqlSelectQueryBuilder::Count()
 {
     m_query.type = SqlQueryType::SELECT_COUNT;
 
     return std::move(m_query);
 }
 
-SqlComposedQuery SqlQueryBuilder::All()
+SqlComposedQuery SqlSelectQueryBuilder::All()
 {
     m_query.type = SqlQueryType::SELECT_ALL;
 
     return std::move(m_query);
 }
 
-SqlComposedQuery SqlQueryBuilder::First(size_t count)
+SqlComposedQuery SqlSelectQueryBuilder::First(size_t count)
 {
     m_query.type = SqlQueryType::SELECT_FIRST;
     m_query.limit = count;
@@ -160,7 +130,7 @@ SqlComposedQuery SqlQueryBuilder::First(size_t count)
     return std::move(m_query);
 }
 
-SqlComposedQuery SqlQueryBuilder::Range(std::size_t offset, std::size_t limit)
+SqlComposedQuery SqlSelectQueryBuilder::Range(std::size_t offset, std::size_t limit)
 {
     m_query.type = SqlQueryType::SELECT_RANGE;
     m_query.offset = offset;
@@ -169,12 +139,7 @@ SqlComposedQuery SqlQueryBuilder::Range(std::size_t offset, std::size_t limit)
     return std::move(m_query);
 }
 
-SqlComposedQuery SqlQueryBuilder::Delete()
-{
-    m_query.type = SqlQueryType::DELETE_;
-
-    return std::move(m_query);
-}
+// }}}
 
 std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
 {
@@ -214,5 +179,3 @@ std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
     }
     return "";
 }
-
-// }}}
