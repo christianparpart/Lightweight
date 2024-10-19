@@ -859,7 +859,8 @@ struct QueryExpectations
     std::string_view sqlServer;
 };
 
-void checkSqlQueryBuilder(SqlComposedQuery const& sqlQuery,
+template <typename TheSqlQuery>
+void checkSqlQueryBuilder(TheSqlQuery const& sqlQuery,
                           QueryExpectations const& expectations,
                           std::source_location const& location = std::source_location::current())
 {
@@ -928,7 +929,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Range", "[SqlQueryBuild
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().Where("foo", 42).Where("bar", "baz").Build(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().Where("foo", 42).Where("bar", "baz"),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
@@ -938,14 +939,14 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereIn", "[SqlQueryBuilder]")
 {
     // Check functionality of container overloads for IN
-    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().WhereIn("foo", std::vector { 1, 2, 3 }).Build(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().WhereIn("foo", std::vector { 1, 2, 3 }),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                          });
 
     // Check functionality of the initializer_list overload for IN
-    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().WhereIn("foo", { 1, 2, 3 }).Build(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().WhereIn("foo", { 1, 2, 3 }),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
@@ -1006,14 +1007,29 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Insert", "[SqlQueryBuilder]")
                              .Insert(&boundValues)
                              .Set("foo", 42)
                              .Set("bar", "baz")
-                             .Set("baz", SqlNullValue)
-                             .Build(),
+                             .Set("baz", SqlNullValue),
                          QueryExpectations {
-                             .sqlite = R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (?, ?, NULL))",
-                             .sqlServer = R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (?, ?, NULL))",
+                             .sqlite = R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (42, ?, NULL))",
+                             .sqlServer = R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (42, ?, NULL))",
                          });
 
-    CHECK(boundValues.size() == 2);
-    CHECK(std::get<int>(boundValues[0]) == 42);
-    CHECK(std::get<std::string>(boundValues[1]) == "baz");
+    CHECK(boundValues.size() == 1);
+    CHECK(std::get<std::string>(boundValues[0]) == "baz");
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Update", "[SqlQueryBuilder]")
+{
+    std::vector<SqlVariant> boundValues;
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTableAs("Other", "O")
+                             .Update(&boundValues)
+                             .Set("foo", 42)
+                             .Set("bar", "baz")
+                             .Where("id", 123),
+                         QueryExpectations {
+                             .sqlite = R"(UPDATE "Other" AS "O" SET "foo" = 42, "bar" = ? WHERE "id" = 123)",
+                             .sqlServer = R"(UPDATE "Other" AS "O" SET "foo" = 42, "bar" = ? WHERE "id" = 123)",
+                         });
+
+    CHECK(boundValues.size() == 1);
+    CHECK(std::get<std::string>(boundValues[0]) == "baz");
 }

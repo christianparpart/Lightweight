@@ -13,8 +13,8 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
 {
   public:
     [[nodiscard]] std::string Insert(std::string const& intoTable,
-                                             std::string const& fields,
-                                             std::string const& values) const override
+                                     std::string const& fields,
+                                     std::string const& values) const override
     {
         return std::format(R"(INSERT INTO "{}" ({}) VALUES ({}))", intoTable, fields, values);
     }

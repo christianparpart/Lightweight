@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -163,6 +164,7 @@ class [[nodiscard]] SqlInsertQueryBuilder final
         m_query { std::move(query) },
         m_boundInputs { boundInputs }
     {
+        m_query.type = SqlQueryType::INSERT;
     }
 
     // Adds a single column to the INSERT query.
@@ -170,7 +172,7 @@ class [[nodiscard]] SqlInsertQueryBuilder final
     SqlInsertQueryBuilder& Set(std::string_view columnName, ColumnValue const& value);
 
     // Finalizes building the query as INSERT INTO ... query.
-    [[nodiscard]] SqlComposedQuery Build() noexcept;
+    [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
 
   private:
     SqlComposedQuery m_query;
@@ -230,22 +232,25 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
     SqlComposedQuery Range(std::size_t offset, std::size_t limit);
 };
 
-class [[nodiscard]] SqlUpdateQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
+class [[nodiscard]] SqlUpdateQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlUpdateQueryBuilder>
 {
   public:
-    SqlUpdateQueryBuilder(SqlComposedQuery&& query) noexcept:
-        detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder> { std::move(query) }
+    SqlUpdateQueryBuilder(SqlComposedQuery&& query, std::vector<SqlVariant>* boundInputs) noexcept:
+        detail::SqlWhereClauseBuilder<SqlUpdateQueryBuilder> { std::move(query) },
+        m_boundInputs { boundInputs }
     {
+        m_query.type = SqlQueryType::UPDATE;
     }
 
     // Adds a single column to the SET clause.
-    SqlUpdateQueryBuilder& Set(std::string_view columnName, std::string_view value);
-
-    // Adds a single column to the SET clause.
-    SqlUpdateQueryBuilder& Set(SqlQualifiedTableColumnName columnName, std::string_view value);
+    template <typename ColumnValue>
+    SqlUpdateQueryBuilder& Set(std::string_view columnName, ColumnValue const& value);
 
     // Finalizes building the query as UPDATE ... query.
-    SqlComposedQuery Build();
+    [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
+
+  private:
+    std::vector<SqlVariant>* m_boundInputs;
 };
 
 class [[nodiscard]] SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
@@ -255,9 +260,6 @@ class [[nodiscard]] SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBu
         detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder> { std::move(query) }
     {
     }
-
-    // Finalizes building the query as DELETE FROM ... query.
-    [[nodiscard]] SqlComposedQuery Build() noexcept;
 
     // Finalizes building the query as DELETE FROM ... query.
     [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
@@ -279,7 +281,7 @@ class [[nodiscard]] SqlQueryBuilder final
     SqlSelectQueryBuilder Select() && noexcept;
 
     // Initiates UPDATE query building
-    // TODO: SqlUpdateQueryBuilder Update() && noexcept;
+    SqlUpdateQueryBuilder Update(std::vector<SqlVariant>* boundInputs) && noexcept;
 
     // Initiates DELETE query building
     SqlDeleteQueryBuilder Delete() && noexcept;
@@ -503,6 +505,8 @@ SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, C
 
     if constexpr (std::is_same_v<ColumnValue, SqlNullType>)
         m_query.inputValues += "NULL";
+    else if constexpr (std::is_arithmetic_v<ColumnValue>)
+        m_query.inputValues += std::format("{}", value);
     else if constexpr (std::is_same_v<ColumnValue, SqlQueryWildcard>)
     {
         m_query.inputValues += "?";
@@ -517,12 +521,34 @@ SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, C
     return *this;
 }
 
-inline SqlComposedQuery SqlInsertQueryBuilder::Build() noexcept
+template <typename ColumnValue>
+SqlUpdateQueryBuilder& SqlUpdateQueryBuilder::Set(std::string_view columnName, ColumnValue const& value)
 {
-    m_query.type = SqlQueryType::INSERT;
-    return std::move(m_query);
-}
+    if (!m_query.inputValues.empty())
+        m_query.inputValues += ", ";
 
+    m_query.inputValues += '"';
+    m_query.inputValues += columnName;
+    m_query.inputValues += '"';
+    m_query.inputValues += " = ";
+
+    if constexpr (std::is_same_v<ColumnValue, SqlNullType>)
+        m_query.inputValues += "NULL";
+    else if constexpr (std::is_arithmetic_v<ColumnValue>)
+        m_query.inputValues += std::format("{}", value);
+    else if constexpr (std::is_same_v<ColumnValue, SqlQueryWildcard>)
+    {
+        m_query.inputValues += "?";
+        m_boundInputs->emplace_back(SqlNullValue);
+    }
+    else
+    {
+        m_query.inputValues += "?";
+        m_boundInputs->emplace_back(value);
+    }
+
+    return *this;
+}
 // }}}
 
 // {{{ SqlSelectQueryBuilder impl

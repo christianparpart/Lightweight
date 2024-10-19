@@ -37,6 +37,11 @@ SqlSelectQueryBuilder SqlQueryBuilder::Select() && noexcept
     return SqlSelectQueryBuilder(std::move(m_query));
 }
 
+SqlUpdateQueryBuilder SqlQueryBuilder::Update(std::vector<SqlVariant>* boundInputs) && noexcept
+{
+    return SqlUpdateQueryBuilder(std::move(m_query), boundInputs);
+}
+
 SqlDeleteQueryBuilder SqlQueryBuilder::Delete() && noexcept
 {
     m_query.type = SqlQueryType::DELETE_;
@@ -206,13 +211,21 @@ SqlComposedQuery SqlSelectQueryBuilder::Range(std::size_t offset, std::size_t li
 
 // }}}
 
-SqlComposedQuery SqlDeleteQueryBuilder::Build() noexcept
+std::string SqlInsertQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
 {
-    return std::move(m_query);
+    // TODO(pr) don't depend on SqlComposedQuery
+    return m_query.ToSql(formatter);
+}
+
+std::string SqlUpdateQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
+{
+    // TODO(pr) don't depend on SqlComposedQuery
+    return m_query.ToSql(formatter);
 }
 
 std::string SqlDeleteQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
 {
+    // TODO(pr) don't depend on SqlComposedQuery
     return m_query.ToSql(formatter);
 }
 
@@ -254,7 +267,7 @@ std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
         case SqlQueryType::SELECT_COUNT:
             return formatter.SelectCount(distinct, table, tableAlias, tableJoins, *finalCondition);
         case SqlQueryType::UPDATE:
-            // TODO(pr) return formatter.Update(table, tableAlias, fields, *boundInputs, *finalCondition);
+            return formatter.Update(table, tableAlias, inputValues, *finalCondition);
         case SqlQueryType::DELETE_:
             return formatter.Delete(table, tableAlias, tableJoins, *finalCondition);
     }
