@@ -62,7 +62,7 @@ struct [[nodiscard]] SqlComposedQuery
     SqlQueryType type = SqlQueryType::UNDEFINED;
     std::string fields;
     std::string table;
-    std::optional<std::string> tableAlias;
+    std::string tableAlias;
     std::vector<SqlVariant> inputBindings;
     std::string tableJoins;
     std::string condition;
@@ -162,18 +162,30 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
     {
     }
 
-    // Adds a single column to the SELECT clause.
-    SqlSelectQueryBuilder& Select(std::vector<std::string_view> const& fieldNames);
-
-    // Adds a sequence of columns from the given table to the SELECT clause.
-    SqlSelectQueryBuilder& Select(std::vector<std::string_view> const& fieldNames, std::string_view tableName);
+    // Adds a DISTINCT clause to the SELECT query.
+    SqlSelectQueryBuilder& Distinct() noexcept;
 
     // Adds a sequence of columns to the SELECT clause.
     template <typename... MoreFields>
-    SqlSelectQueryBuilder& Select(std::string_view const& firstField, MoreFields&&... moreFields);
+    SqlSelectQueryBuilder& Fields(std::string_view const& firstField, MoreFields&&... moreFields);
 
-    // Adds a DISTINCT clause to the SELECT query.
-    SqlSelectQueryBuilder& Distinct() noexcept;
+    // Adds a single column to the SELECT clause.
+    SqlSelectQueryBuilder& Field(std::string_view  const& fieldName);
+
+    // Adds a single column to the SELECT clause.
+    SqlSelectQueryBuilder& Field(SqlQualifiedTableColumnName const& fieldName);
+
+    // Adds a single column to the SELECT clause.
+    SqlSelectQueryBuilder& Fields(std::vector<std::string_view> const& fieldNames);
+
+    // Adds a sequence of columns from the given table to the SELECT clause.
+    SqlSelectQueryBuilder& Fields(std::vector<std::string_view> const& fieldNames, std::string_view tableName);
+
+    // Adds a single column with an alias to the SELECT clause.
+    SqlSelectQueryBuilder& FieldAs(std::string_view const& fieldName, std::string_view const& alias);
+
+    // Adds a single column with an alias to the SELECT clause.
+    SqlSelectQueryBuilder& FieldAs(SqlQualifiedTableColumnName const& fieldName, std::string_view const& alias);
 
     // Constructs or extends a ORDER BY clause.
     SqlSelectQueryBuilder& OrderBy(std::string_view columnName,
@@ -195,7 +207,40 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
     SqlComposedQuery Range(std::size_t offset, std::size_t limit);
 };
 
-class [[nodiscard]] SqlQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlQueryBuilder>
+class [[nodiscard]] SqlUpdateQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
+{
+  public:
+    SqlUpdateQueryBuilder(SqlComposedQuery&& query) noexcept:
+        detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder> { std::move(query) }
+    {
+    }
+
+    // Adds a single column to the SET clause.
+    SqlUpdateQueryBuilder& Set(std::string_view columnName, std::string_view value);
+
+    // Adds a single column to the SET clause.
+    SqlUpdateQueryBuilder& Set(SqlQualifiedTableColumnName columnName, std::string_view value);
+
+    // Finalizes building the query as UPDATE ... query.
+    SqlComposedQuery Build();
+};
+
+class [[nodiscard]] SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
+{
+  public:
+    explicit SqlDeleteQueryBuilder(SqlComposedQuery&& query) noexcept:
+        detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder> { std::move(query) }
+    {
+    }
+
+    // Finalizes building the query as DELETE FROM ... query.
+    [[nodiscard]] SqlComposedQuery Build() noexcept;
+
+    // Finalizes building the query as DELETE FROM ... query.
+    [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
+};
+
+class [[nodiscard]] SqlQueryBuilder final
 {
   public:
     // Constructs a new query builder for the given table.
@@ -204,27 +249,23 @@ class [[nodiscard]] SqlQueryBuilder final: public detail::SqlWhereClauseBuilder<
     // Constructs a new query builder for the given table with an alias.
     static SqlQueryBuilder FromTableAs(std::string_view table, std::string_view alias);
 
+    // Initiates INSERT query building
+    // TODO: SqlInsertQueryBuilder Insert() && noexcept;
+
     // Initiates SELECT query building
     SqlSelectQueryBuilder Select() && noexcept;
 
-    // Adds a single column to the SELECT clause.
-    SqlSelectQueryBuilder Select(std::vector<std::string_view> const& fieldNames) &&;
+    // Initiates UPDATE query building
+    // TODO: SqlUpdateQueryBuilder Update() && noexcept;
 
-    // Adds a sequence of columns from the given table to the SELECT clause.
-    SqlSelectQueryBuilder Select(std::vector<std::string_view> const& fieldNames, std::string_view tableName) &&;
-
-    // Adds a sequence of columns to the SELECT clause.
-    template <typename... MoreFields>
-    SqlSelectQueryBuilder Select(std::string_view const& firstField, MoreFields&&... moreFields) &&;
-
-    // final methods
-
-    // Finalizes building the query as DELETE FROM ... query.
-    SqlComposedQuery Delete();
+    // Initiates DELETE query building
+    SqlDeleteQueryBuilder Delete() && noexcept;
 
   private:
     explicit SqlQueryBuilder(std::string table);
     explicit SqlQueryBuilder(std::string table, std::string alias);
+
+    SqlComposedQuery m_query;
 };
 
 // {{{ detail::SqlWhereClauseBuilder
@@ -425,7 +466,7 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(std::string_view sqlConditionExpr
 
 // {{{ SqlSelectQueryBuilder impl
 template <typename... MoreFields>
-SqlSelectQueryBuilder& SqlSelectQueryBuilder::Select(std::string_view const& firstField, MoreFields&&... moreFields)
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields(std::string_view const& firstField, MoreFields&&... moreFields)
 {
     std::ostringstream fragment;
 
@@ -439,13 +480,5 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::Select(std::string_view const& fir
 
     m_query.fields += fragment.str();
     return *this;
-}
-// }}}
-
-// {{{ SqlQueryBuilder template implementations and inlines
-template <typename... MoreFields>
-SqlSelectQueryBuilder SqlQueryBuilder::Select(std::string_view const& firstField, MoreFields&&... moreFields) &&
-{
-    return SqlSelectQueryBuilder { std::move(m_query) }.Select(firstField, std::forward<MoreFields>(moreFields)...);
 }
 // }}}

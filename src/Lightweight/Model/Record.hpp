@@ -8,7 +8,6 @@
 #include "Logger.hpp"
 
 #include <array>
-#include <limits>
 #include <optional>
 #include <ranges>
 #include <string_view>
@@ -123,7 +122,7 @@ class RecordQueryBuilder
 
         auto stmt = SqlStatement {};
 
-        auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
+        auto const sqlQueryString = m_queryBuilder.Fields(targetRecord.AllFieldNames(), targetRecord.TableName())
                                         .First(count)
                                         .ToSql(stmt.Connection().QueryFormatter());
 
@@ -145,7 +144,7 @@ class RecordQueryBuilder
     [[nodiscard]] std::vector<TargetModel> Range(std::size_t offset, std::size_t limit)
     {
         auto const targetRecord = TargetModel();
-        auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
+        auto const sqlQueryString = m_queryBuilder.Field(targetRecord.AllFieldNames(), targetRecord.TableName())
                                         .Range(offset, limit)
                                         .ToSql(SqlConnection().QueryFormatter());
         return TargetModel::Query(sqlQueryString).value_or(std::vector<TargetModel> {});
@@ -155,7 +154,7 @@ class RecordQueryBuilder
     void Each(Callback&& callback)
     {
         auto const targetRecord = TargetModel();
-        auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
+        auto const sqlQueryString = m_queryBuilder.Fields(targetRecord.AllFieldNames(), targetRecord.TableName())
                                         .All()
                                         .ToSql(SqlConnection().QueryFormatter());
         TargetModel::Each(std::forward<Callback>(callback), sqlQueryString);
@@ -164,7 +163,7 @@ class RecordQueryBuilder
     [[nodiscard]] std::vector<TargetModel> All()
     {
         auto const targetRecord = TargetModel();
-        auto const sqlQueryString = m_queryBuilder.Select(targetRecord.AllFieldNames(), targetRecord.TableName())
+        auto const sqlQueryString = m_queryBuilder.Fields(targetRecord.AllFieldNames(), targetRecord.TableName())
                                         .All()
                                         .ToSql(SqlConnection().QueryFormatter());
         return TargetModel::Query(sqlQueryString);
@@ -184,8 +183,8 @@ struct Record: AbstractRecord
     Record() = delete;
     Record(Record const&) = default;
     Record& operator=(Record const&) = delete;
-    Record& operator=(Record&&) = default;
-    ~Record() = default;
+    Record& operator=(Record&&) noexcept = default;
+    ~Record() override = default;
 
     Record(Record&& other) noexcept:
         AbstractRecord(std::move(other))
@@ -492,7 +491,8 @@ bool Record<Derived>::Load(std::string_view const& columnName, T const& value)
     SqlStatement stmt;
 
     auto const sqlQueryString = SqlQueryBuilder::FromTable(TableName())
-                                    .Select(AllFieldNames())
+                                    .Select()
+                                    .Fields(AllFieldNames())
                                     .Where(columnName, SqlQueryWildcard())
                                     .First()
                                     .ToSql(stmt.Connection().QueryFormatter());

@@ -1,7 +1,7 @@
 #include "SqlComposedQuery.hpp"
+#include "SqlQueryFormatter.hpp"
 
 #include <utility>
-#include "SqlQueryFormatter.hpp"
 
 // {{{ SqlQueryBuilder impl
 
@@ -28,25 +28,15 @@ SqlQueryBuilder::SqlQueryBuilder(std::string table, std::string alias)
 
 SqlSelectQueryBuilder SqlQueryBuilder::Select() && noexcept
 {
+    m_query.fields.reserve(256);
     return SqlSelectQueryBuilder(std::move(m_query));
 }
 
-SqlSelectQueryBuilder SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames) &&
-{
-    return SqlSelectQueryBuilder(std::move(m_query)).Select(fieldNames);
-}
-
-SqlSelectQueryBuilder SqlQueryBuilder::Select(std::vector<std::string_view> const& fieldNames,
-                                              std::string_view tableName) &&
-{
-    return SqlSelectQueryBuilder(std::move(m_query)).Select(fieldNames, tableName);
-}
-
-SqlComposedQuery SqlQueryBuilder::Delete()
+SqlDeleteQueryBuilder SqlQueryBuilder::Delete() && noexcept
 {
     m_query.type = SqlQueryType::DELETE_;
 
-    return std::move(m_query);
+    return SqlDeleteQueryBuilder { std::move(m_query) };
 }
 
 // }}}
@@ -58,7 +48,64 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::Distinct() noexcept
     return *this;
 }
 
-SqlSelectQueryBuilder& SqlSelectQueryBuilder::Select(std::vector<std::string_view> const& fieldNames)
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::Field(std::string_view const& fieldName)
+{
+    if (!m_query.fields.empty())
+        m_query.fields += ", ";
+
+    m_query.fields += '"';
+    m_query.fields += fieldName;
+    m_query.fields += '"';
+
+    return *this;
+}
+
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::Field(SqlQualifiedTableColumnName const& fieldName)
+{
+    if (!m_query.fields.empty())
+        m_query.fields += ", ";
+
+    m_query.fields += '"';
+    m_query.fields += fieldName.tableName;
+    m_query.fields += "\".\"";
+    m_query.fields += fieldName.columnName;
+    m_query.fields += '"';
+
+    return *this;
+}
+
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::FieldAs(std::string_view const& fieldName, std::string_view const& alias)
+{
+    if (!m_query.fields.empty())
+        m_query.fields += ", ";
+
+    m_query.fields += '"';
+    m_query.fields += fieldName;
+    m_query.fields += "\" AS \"";
+    m_query.fields += alias;
+    m_query.fields += '"';
+
+    return *this;
+}
+
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::FieldAs(SqlQualifiedTableColumnName const& fieldName,
+                                                      std::string_view const& alias)
+{
+    if (!m_query.fields.empty())
+        m_query.fields += ", ";
+
+    m_query.fields += '"';
+    m_query.fields += fieldName.tableName;
+    m_query.fields += "\".\"";
+    m_query.fields += fieldName.columnName;
+    m_query.fields += "\" AS \"";
+    m_query.fields += alias;
+    m_query.fields += '"';
+
+    return *this;
+}
+
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields(std::vector<std::string_view> const& fieldNames)
 {
     for (auto const& fieldName: fieldNames)
     {
@@ -72,7 +119,7 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::Select(std::vector<std::string_vie
     return *this;
 }
 
-SqlSelectQueryBuilder& SqlSelectQueryBuilder::Select(std::vector<std::string_view> const& fieldNames,
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields(std::vector<std::string_view> const& fieldNames,
                                                      std::string_view tableName)
 {
     for (auto const& fieldName: fieldNames)
@@ -154,6 +201,16 @@ SqlComposedQuery SqlSelectQueryBuilder::Range(std::size_t offset, std::size_t li
 
 // }}}
 
+SqlComposedQuery SqlDeleteQueryBuilder::Build() noexcept
+{
+    return std::move(m_query);
+}
+
+std::string SqlDeleteQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
+{
+    return m_query.ToSql(formatter);
+}
+
 std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
 {
     std::string finalConditionBuffer;
@@ -179,16 +236,18 @@ std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
         case SqlQueryType::UNDEFINED:
             break;
         case SqlQueryType::SELECT_ALL:
-            return formatter.SelectAll(distinct, fields, table, tableJoins, *finalCondition, orderBy, groupBy);
+            return formatter.SelectAll(
+                distinct, fields, table, tableAlias, tableJoins, *finalCondition, orderBy, groupBy);
         case SqlQueryType::SELECT_FIRST:
-            return formatter.SelectFirst(distinct, fields, table, tableJoins, *finalCondition, orderBy, limit);
+            return formatter.SelectFirst(
+                distinct, fields, table, tableAlias, tableJoins, *finalCondition, orderBy, limit);
         case SqlQueryType::SELECT_RANGE:
             return formatter.SelectRange(
-                distinct, fields, table, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
+                distinct, fields, table, tableAlias, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
         case SqlQueryType::SELECT_COUNT:
-            return formatter.SelectCount(distinct, table, tableJoins, *finalCondition);
+            return formatter.SelectCount(distinct, table, tableAlias, tableJoins, *finalCondition);
         case SqlQueryType::DELETE_:
-            return formatter.Delete(table, tableJoins, *finalCondition);
+            return formatter.Delete(table, tableAlias, tableJoins, *finalCondition);
     }
     return "";
 }

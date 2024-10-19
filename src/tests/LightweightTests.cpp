@@ -16,7 +16,6 @@
 #include <cstdlib>
 #include <format>
 #include <list>
-#include <ostream>
 
 #if defined(_MSC_VER)
     // Disable the warning C4834: discarding return value of function with 'nodiscard' attribute.
@@ -885,7 +884,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Count", "[SqlQueryBuild
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.All", "[SqlQueryBuilder]")
 {
     checkSqlQueryBuilder(
-        SqlQueryBuilder::FromTable("That").Select("a", "b").Select("c").GroupBy("a").OrderBy("b").All(),
+        SqlQueryBuilder::FromTable("That").Select().Fields("a", "b").Field("c").GroupBy("a").OrderBy("b").All(),
         QueryExpectations {
             .sqlite = R"(SELECT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
             .sqlServer = R"(SELECT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
@@ -894,17 +893,23 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.All", "[SqlQueryBuilder
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Distinct.All", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder(
-        SqlQueryBuilder::FromTable("That").Select("a", "b").Select("c").Distinct().GroupBy("a").OrderBy("b").All(),
-        QueryExpectations {
-            .sqlite = R"(SELECT DISTINCT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
-            .sqlServer = R"(SELECT DISTINCT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
-        });
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That")
+                             .Select()
+                             .Distinct()
+                             .Fields("a", "b")
+                             .Field("c")
+                             .GroupBy("a")
+                             .OrderBy("b")
+                             .All(),
+                         QueryExpectations {
+                             .sqlite = R"(SELECT DISTINCT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
+                             .sqlServer = R"(SELECT DISTINCT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
+                         });
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.First", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Select("field1").OrderBy("id").First(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Select().Field("field1").OrderBy("id").First(),
                          QueryExpectations {
                              .sqlite = R"(SELECT "field1" FROM "That" ORDER BY "id" ASC LIMIT 1)",
                              .sqlServer = R"(SELECT TOP 1 "field1" FROM "That" ORDER BY "id" ASC)",
@@ -914,7 +919,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.First", "[SqlQueryBuild
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Range", "[SqlQueryBuilder]")
 {
     checkSqlQueryBuilder(
-        SqlQueryBuilder::FromTable("That").Select("foo", "bar").OrderBy("id").Range(200, 50),
+        SqlQueryBuilder::FromTable("That").Select().Fields("foo", "bar").OrderBy("id").Range(200, 50),
         QueryExpectations {
             .sqlite = R"(SELECT "foo", "bar" FROM "That" ORDER BY "id" ASC LIMIT 50 OFFSET 200)",
             .sqlServer = R"(SELECT "foo", "bar" FROM "That" ORDER BY "id" ASC OFFSET 200 ROWS FETCH NEXT 50 ROWS ONLY)",
@@ -923,7 +928,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Range", "[SqlQueryBuild
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Where("foo", 42).Where("bar", "baz").Delete(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().Where("foo", 42).Where("bar", "baz").Build(),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
@@ -933,14 +938,14 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereIn", "[SqlQueryBuilder]")
 {
     // Check functionality of container overloads for IN
-    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").WhereIn("foo", std::vector { 1, 2, 3 }).Delete(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().WhereIn("foo", std::vector { 1, 2, 3 }).Build(),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                          });
 
     // Check functionality of the initializer_list overload for IN
-    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").WhereIn("foo", { 1, 2, 3 }).Delete(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().WhereIn("foo", { 1, 2, 3 }).Build(),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
@@ -950,7 +955,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereIn", "[SqlQueryBuilder]")
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
 {
     checkSqlQueryBuilder(
-        SqlQueryBuilder::FromTable("That").Select("foo", "bar").InnerJoin("Other", "id", "that_id").All(),
+        SqlQueryBuilder::FromTable("That").Select().Fields("foo", "bar").InnerJoin("Other", "id", "that_id").All(),
         QueryExpectations {
             // clang-format off
             .sqlite    = R"(SELECT "foo", "bar" FROM "That" INNER JOIN "Other" ON "Other"."id" = "That"."that_id")",
@@ -959,7 +964,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
         });
 
     checkSqlQueryBuilder(
-        SqlQueryBuilder::FromTable("That").Select("foo", "bar").Join(SqlJoinType::LEFT, "Other", "id", "that_id").All(),
+        SqlQueryBuilder::FromTable("That")
+            .Select()
+            .Fields("foo", "bar")
+            .Join(SqlJoinType::LEFT, "Other", "id", "that_id")
+            .All(),
         QueryExpectations {
             // clang-format off
             .sqlite    = R"(SELECT "foo", "bar" FROM "That" LEFT JOIN "Other" ON "Other"."id" = "That"."that_id")",
@@ -968,11 +977,24 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
         });
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.SelectAs", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Select().FieldAs("foo", "F").FieldAs("bar", "B").All(),
+                         QueryExpectations {
+                             .sqlite = R"(SELECT "foo" AS "F", "bar" AS "B" FROM "That")",
+                             .sqlServer = R"(SELECT "foo" AS "F", "bar" AS "B" FROM "That")",
+                         });
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FromTableAs", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::FromTableAs("Other", "O").Select("O.foo", "O.bar").All(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTableAs("Other", "O")
+                             .Select()
+                             .Field(SqlQualifiedTableColumnName { "O", "foo" })
+                             .Field(SqlQualifiedTableColumnName { "O", "bar" })
+                             .All(),
                          QueryExpectations {
-                             .sqlite = R"(SELECT "O"."foo", "O"."bar" FROM "That" AS "O")",
-                             .sqlServer = R"(SELECT "O"."foo", "O"."bar" FROM "That" AS "O")",
+                             .sqlite = R"(SELECT "O"."foo", "O"."bar" FROM "Other" AS "O")",
+                             .sqlServer = R"(SELECT "O"."foo", "O"."bar" FROM "Other" AS "O")",
                          });
 }
