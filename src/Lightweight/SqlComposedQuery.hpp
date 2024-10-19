@@ -106,12 +106,23 @@ class [[nodiscard]] SqlWhereClauseBuilder
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& Where(ColumnName const& columnName, T const& value);
 
-    // Constructs or extends a WHERE clause to test for a range of values.
     template <typename ColumnName, std::ranges::input_range InputRange>
-    [[nodiscard]] Derived& Where(ColumnName const& columnName, InputRange&& values);
+    [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, InputRange&& values);
 
     template <typename ColumnName, typename T>
-    [[nodiscard]] Derived& Where(ColumnName const& columnName, std::initializer_list<T>&& values);
+    [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, std::initializer_list<T>&& values);
+
+    template <typename ColumnName>
+    [[nodiscard]] Derived& WhereNull(ColumnName const& columnName);
+
+    template <typename ColumnName>
+    [[nodiscard]] Derived& WhereNotNull(ColumnName const& columnName);
+
+    template <typename ColumnName>
+    [[nodiscard]] Derived& WhereTrue(ColumnName const& columnName);
+
+    template <typename ColumnName>
+    [[nodiscard]] Derived& WhereFalse(ColumnName const& columnName);
 
     // Constructs an INNER JOIN clause.
     [[nodiscard]] Derived& Join(SqlJoinType joinType,
@@ -144,7 +155,7 @@ class [[nodiscard]] SqlWhereClauseBuilder
 class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
 {
   public:
-    explicit SqlSelectQueryBuilder(SqlComposedQuery&& query):
+    explicit SqlSelectQueryBuilder(SqlComposedQuery&& query) noexcept:
         detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder> { std::move(query) }
     {
     }
@@ -237,16 +248,44 @@ RawSqlCondition PopulateSqlSetExpression(auto const&& values)
 
 template <typename Derived>
 template <typename ColumnName, std::ranges::input_range InputRange>
-Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, InputRange&& values)
+Derived& SqlWhereClauseBuilder<Derived>::WhereIn(ColumnName const& columnName, InputRange&& values)
 {
     return Where(columnName, "IN", detail::PopulateSqlSetExpression(std::forward<InputRange>(values)));
 }
 
 template <typename Derived>
 template <typename ColumnName, typename T>
-Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, std::initializer_list<T>&& values)
+Derived& SqlWhereClauseBuilder<Derived>::WhereIn(ColumnName const& columnName, std::initializer_list<T>&& values)
 {
     return Where(columnName, "IN", detail::PopulateSqlSetExpression(std::forward<std::initializer_list<T>>(values)));
+}
+
+template <typename Derived>
+template <typename ColumnName>
+Derived& SqlWhereClauseBuilder<Derived>::WhereNotNull(ColumnName const& columnName)
+{
+    return Where(columnName, "!=", "NULL");
+}
+
+template <typename Derived>
+template <typename ColumnName>
+Derived& SqlWhereClauseBuilder<Derived>::WhereNull(ColumnName const& columnName)
+{
+    return Where(columnName, "=", "NULL");
+}
+
+template <typename Derived>
+template <typename ColumnName>
+Derived& SqlWhereClauseBuilder<Derived>::WhereTrue(ColumnName const& columnName)
+{
+    return Where(columnName, "=", true);
+}
+
+template <typename Derived>
+template <typename ColumnName>
+Derived& SqlWhereClauseBuilder<Derived>::WhereFalse(ColumnName const& columnName)
+{
+    return Where(columnName, "=", false);
 }
 
 template <typename T>
