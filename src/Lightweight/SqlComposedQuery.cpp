@@ -26,6 +26,11 @@ SqlQueryBuilder::SqlQueryBuilder(std::string table, std::string alias)
     m_query.tableAlias = std::move(alias);
 }
 
+SqlInsertQueryBuilder SqlQueryBuilder::Insert(std::vector<SqlVariant>* boundInputs) && noexcept
+{
+    return SqlInsertQueryBuilder(std::move(m_query), boundInputs);
+}
+
 SqlSelectQueryBuilder SqlQueryBuilder::Select() && noexcept
 {
     m_query.fields.reserve(256);
@@ -235,6 +240,8 @@ std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
     {
         case SqlQueryType::UNDEFINED:
             break;
+        case SqlQueryType::INSERT:
+            return formatter.Insert(table, fields, inputValues);
         case SqlQueryType::SELECT_ALL:
             return formatter.SelectAll(
                 distinct, fields, table, tableAlias, tableJoins, *finalCondition, orderBy, groupBy);
@@ -246,6 +253,8 @@ std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
                 distinct, fields, table, tableAlias, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
         case SqlQueryType::SELECT_COUNT:
             return formatter.SelectCount(distinct, table, tableAlias, tableJoins, *finalCondition);
+        case SqlQueryType::UPDATE:
+            // TODO(pr) return formatter.Update(table, tableAlias, fields, *boundInputs, *finalCondition);
         case SqlQueryType::DELETE_:
             return formatter.Delete(table, tableAlias, tableJoins, *finalCondition);
     }

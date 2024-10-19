@@ -998,3 +998,22 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FromTableAs", "[SqlQueryBuilde
                              .sqlServer = R"(SELECT "O"."foo", "O"."bar" FROM "Other" AS "O")",
                          });
 }
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Insert", "[SqlQueryBuilder]")
+{
+    std::vector<SqlVariant> boundValues;
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTableAs("Other", "O")
+                             .Insert(&boundValues)
+                             .Set("foo", 42)
+                             .Set("bar", "baz")
+                             .Set("baz", SqlNullValue)
+                             .Build(),
+                         QueryExpectations {
+                             .sqlite = R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (?, ?, NULL))",
+                             .sqlServer = R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (?, ?, NULL))",
+                         });
+
+    CHECK(boundValues.size() == 2);
+    CHECK(std::get<int>(boundValues[0]) == 42);
+    CHECK(std::get<std::string>(boundValues[1]) == "baz");
+}

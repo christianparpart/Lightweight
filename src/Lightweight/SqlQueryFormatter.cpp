@@ -12,6 +12,13 @@ namespace
 class BasicSqlQueryFormatter: public SqlQueryFormatter
 {
   public:
+    [[nodiscard]] std::string Insert(std::string const& intoTable,
+                                             std::string const& fields,
+                                             std::string const& values) const override
+    {
+        return std::format(R"(INSERT INTO "{}" ({}) VALUES ({}))", intoTable, fields, values);
+    }
+
     [[nodiscard]] std::string BooleanWhereClause(SqlQualifiedTableColumnName const& column,
                                                  std::string_view op,
                                                  bool literalValue) const override
@@ -116,6 +123,17 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         sqlQueryString << orderBy;
         sqlQueryString << " LIMIT " << limit << " OFFSET " << offset;
         return sqlQueryString.str();
+    }
+
+    [[nodiscard]] std::string Update(std::string const& table,
+                                     std::string const& tableAlias,
+                                     std::string const& setFields,
+                                     std::string const& whereCondition) const override
+    {
+        if (tableAlias.empty())
+            return std::format(R"(UPDATE "{}" SET {}{})", table, setFields, whereCondition);
+        else
+            return std::format(R"(UPDATE "{}" AS "{}" SET {}{})", table, tableAlias, setFields, whereCondition);
     }
 
     [[nodiscard]] std::string Delete(std::string const& fromTable,
