@@ -1,16 +1,29 @@
 #include "SqlComposedQuery.hpp"
+
+#include <utility>
 #include "SqlQueryFormatter.hpp"
 
 // {{{ SqlQueryBuilder impl
 
-SqlQueryBuilder SqlQueryBuilder::From(std::string_view table)
+SqlQueryBuilder SqlQueryBuilder::FromTable(std::string_view table)
 {
-    return SqlQueryBuilder(table);
+    return SqlQueryBuilder(std::string(table));
 }
 
-SqlQueryBuilder::SqlQueryBuilder(std::string_view table)
+SqlQueryBuilder SqlQueryBuilder::FromTableAs(std::string_view table, std::string_view alias)
 {
-    m_query.table = table;
+    return SqlQueryBuilder(std::string(table), std::string(alias));
+}
+
+SqlQueryBuilder::SqlQueryBuilder(std::string table)
+{
+    m_query.table = std::move(table);
+}
+
+SqlQueryBuilder::SqlQueryBuilder(std::string table, std::string alias)
+{
+    m_query.table = std::move(table);
+    m_query.tableAlias = std::move(alias);
 }
 
 SqlSelectQueryBuilder SqlQueryBuilder::Select() && noexcept

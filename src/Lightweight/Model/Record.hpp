@@ -58,7 +58,7 @@ class RecordQueryBuilder
 
   public:
     explicit RecordQueryBuilder():
-        m_queryBuilder { SqlQueryBuilder::From(TargetModel().TableName()).Select() }
+        m_queryBuilder { SqlQueryBuilder::FromTable(TargetModel().TableName()).Select() }
     {
     }
 
@@ -491,7 +491,7 @@ bool Record<Derived>::Load(std::string_view const& columnName, T const& value)
 {
     SqlStatement stmt;
 
-    auto const sqlQueryString = SqlQueryBuilder::From(TableName())
+    auto const sqlQueryString = SqlQueryBuilder::FromTable(TableName())
                                     .Select(AllFieldNames())
                                     .Where(columnName, SqlQueryWildcard())
                                     .First()

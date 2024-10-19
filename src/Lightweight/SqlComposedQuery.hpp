@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 enum class SqlResultOrdering : uint8_t
@@ -61,6 +62,7 @@ struct [[nodiscard]] SqlComposedQuery
     SqlQueryType type = SqlQueryType::UNDEFINED;
     std::string fields;
     std::string table;
+    std::optional<std::string> tableAlias;
     std::vector<SqlVariant> inputBindings;
     std::string tableJoins;
     std::string condition;
@@ -196,7 +198,11 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
 class [[nodiscard]] SqlQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlQueryBuilder>
 {
   public:
-    static SqlQueryBuilder From(std::string_view table);
+    // Constructs a new query builder for the given table.
+    static SqlQueryBuilder FromTable(std::string_view table);
+
+    // Constructs a new query builder for the given table with an alias.
+    static SqlQueryBuilder FromTableAs(std::string_view table, std::string_view alias);
 
     // Initiates SELECT query building
     SqlSelectQueryBuilder Select() && noexcept;
@@ -217,7 +223,8 @@ class [[nodiscard]] SqlQueryBuilder final: public detail::SqlWhereClauseBuilder<
     SqlComposedQuery Delete();
 
   private:
-    explicit SqlQueryBuilder(std::string_view table);
+    explicit SqlQueryBuilder(std::string table);
+    explicit SqlQueryBuilder(std::string table, std::string alias);
 };
 
 // {{{ detail::SqlWhereClauseBuilder
