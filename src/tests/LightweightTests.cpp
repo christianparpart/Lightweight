@@ -16,7 +16,6 @@
 #include <cstdlib>
 #include <format>
 #include <list>
-#include <ostream>
 
 #if defined(_MSC_VER)
     // Disable the warning C4834: discarding return value of function with 'nodiscard' attribute.
@@ -860,7 +859,8 @@ struct QueryExpectations
     std::string_view sqlServer;
 };
 
-void checkSqlQueryBuilder(SqlComposedQuery const& sqlQuery,
+template <typename TheSqlQuery>
+void checkSqlQueryBuilder(TheSqlQuery const& sqlQuery,
                           QueryExpectations const& expectations,
                           std::source_location const& location = std::source_location::current())
 {
@@ -873,37 +873,54 @@ void checkSqlQueryBuilder(SqlComposedQuery const& sqlQuery,
     CHECK(sqlQuery.ToSql(sqlServerFormatter) == expectations.sqlServer);
 };
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Count")
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Count", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::From("Table").Select().Count(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("Table").Select().Count(),
                          QueryExpectations {
                              .sqlite = "SELECT COUNT(*) FROM \"Table\"",
                              .sqlServer = "SELECT COUNT(*) FROM \"Table\"",
                          });
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.All")
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.All", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Select("a", "b").Select("c").GroupBy("a").OrderBy("b").All(),
+    checkSqlQueryBuilder(
+        SqlQueryBuilder::FromTable("That").Select().Fields("a", "b").Field("c").GroupBy("a").OrderBy("b").All(),
+        QueryExpectations {
+            .sqlite = R"(SELECT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
+            .sqlServer = R"(SELECT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
+        });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Distinct.All", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That")
+                             .Select()
+                             .Distinct()
+                             .Fields("a", "b")
+                             .Field("c")
+                             .GroupBy("a")
+                             .OrderBy("b")
+                             .All(),
                          QueryExpectations {
-                             .sqlite = R"(SELECT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
-                             .sqlServer = R"(SELECT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
+                             .sqlite = R"(SELECT DISTINCT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
+                             .sqlServer = R"(SELECT DISTINCT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)",
                          });
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.First")
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.First", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Select("field1").OrderBy("id").First(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Select().Field("field1").OrderBy("id").First(),
                          QueryExpectations {
                              .sqlite = R"(SELECT "field1" FROM "That" ORDER BY "id" ASC LIMIT 1)",
                              .sqlServer = R"(SELECT TOP 1 "field1" FROM "That" ORDER BY "id" ASC)",
                          });
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Range")
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Range", "[SqlQueryBuilder]")
 {
     checkSqlQueryBuilder(
-        SqlQueryBuilder::From("That").Select("foo", "bar").OrderBy("id").Range(200, 50),
+        SqlQueryBuilder::FromTable("That").Select().Fields("foo", "bar").OrderBy("id").Range(200, 50),
         QueryExpectations {
             .sqlite = R"(SELECT "foo", "bar" FROM "That" ORDER BY "id" ASC LIMIT 50 OFFSET 200)",
             .sqlServer = R"(SELECT "foo", "bar" FROM "That" ORDER BY "id" ASC OFFSET 200 ROWS FETCH NEXT 50 ROWS ONLY)",
@@ -912,24 +929,24 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Range")
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Where("foo", 42).Where("bar", "baz").Delete(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().Where("foo", 42).Where("bar", "baz"),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')",
                          });
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereInRange", "[SqlQueryBuilder]")
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereIn", "[SqlQueryBuilder]")
 {
     // Check functionality of container overloads for IN
-    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Where("foo", std::vector { 1, 2, 3 }).Delete(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().WhereIn("foo", std::vector { 1, 2, 3 }),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                          });
 
     // Check functionality of the initializer_list overload for IN
-    checkSqlQueryBuilder(SqlQueryBuilder::From("That").Where("foo", { 1, 2, 3 }).Delete(),
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Delete().WhereIn("foo", { 1, 2, 3 }),
                          QueryExpectations {
                              .sqlite = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
                              .sqlServer = R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))",
@@ -939,7 +956,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereInRange", "[SqlQueryBuild
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
 {
     checkSqlQueryBuilder(
-        SqlQueryBuilder::From("That").Select("foo", "bar").InnerJoin("Other", "id", "that_id").All(),
+        SqlQueryBuilder::FromTable("That").Select().Fields("foo", "bar").InnerJoin("Other", "id", "that_id").All(),
         QueryExpectations {
             // clang-format off
             .sqlite    = R"(SELECT "foo", "bar" FROM "That" INNER JOIN "Other" ON "Other"."id" = "That"."that_id")",
@@ -948,11 +965,71 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
         });
 
     checkSqlQueryBuilder(
-        SqlQueryBuilder::From("That").Select("foo", "bar").Join(SqlJoinType::LEFT, "Other", "id", "that_id").All(),
+        SqlQueryBuilder::FromTable("That")
+            .Select()
+            .Fields("foo", "bar")
+            .Join(SqlJoinType::LEFT, "Other", "id", "that_id")
+            .All(),
         QueryExpectations {
             // clang-format off
             .sqlite    = R"(SELECT "foo", "bar" FROM "That" LEFT JOIN "Other" ON "Other"."id" = "That"."that_id")",
             .sqlServer = R"(SELECT "foo", "bar" FROM "That" LEFT JOIN "Other" ON "Other"."id" = "That"."that_id")",
             // clang-format on
         });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.SelectAs", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That").Select().FieldAs("foo", "F").FieldAs("bar", "B").All(),
+                         QueryExpectations {
+                             .sqlite = R"(SELECT "foo" AS "F", "bar" AS "B" FROM "That")",
+                             .sqlServer = R"(SELECT "foo" AS "F", "bar" AS "B" FROM "That")",
+                         });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FromTableAs", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTableAs("Other", "O")
+                             .Select()
+                             .Field(SqlQualifiedTableColumnName { "O", "foo" })
+                             .Field(SqlQualifiedTableColumnName { "O", "bar" })
+                             .All(),
+                         QueryExpectations {
+                             .sqlite = R"(SELECT "O"."foo", "O"."bar" FROM "Other" AS "O")",
+                             .sqlServer = R"(SELECT "O"."foo", "O"."bar" FROM "Other" AS "O")",
+                         });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Insert", "[SqlQueryBuilder]")
+{
+    std::vector<SqlVariant> boundValues;
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTableAs("Other", "O")
+                             .Insert(&boundValues)
+                             .Set("foo", 42)
+                             .Set("bar", "baz")
+                             .Set("baz", SqlNullValue),
+                         QueryExpectations {
+                             .sqlite = R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (42, ?, NULL))",
+                             .sqlServer = R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (42, ?, NULL))",
+                         });
+
+    CHECK(boundValues.size() == 1);
+    CHECK(std::get<std::string>(boundValues[0]) == "baz");
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Update", "[SqlQueryBuilder]")
+{
+    std::vector<SqlVariant> boundValues;
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTableAs("Other", "O")
+                             .Update(&boundValues)
+                             .Set("foo", 42)
+                             .Set("bar", "baz")
+                             .Where("id", 123),
+                         QueryExpectations {
+                             .sqlite = R"(UPDATE "Other" AS "O" SET "foo" = 42, "bar" = ? WHERE "id" = 123)",
+                             .sqlServer = R"(UPDATE "Other" AS "O" SET "foo" = 42, "bar" = ? WHERE "id" = 123)",
+                         });
+
+    CHECK(boundValues.size() == 1);
+    CHECK(std::get<std::string>(boundValues[0]) == "baz");
 }

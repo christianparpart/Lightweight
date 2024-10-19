@@ -9,12 +9,56 @@
 - **Extensible** - support for custom data types for writing to and reading from columns
 - **Exception safe** - no need to worry about resource management
 - **Open Collaboration** - code directly integrated into the main project
-- **Monad-like** - simple error handling with `std::expected`-like API
 
 ## Non-Goals
 
 - Feature creeping (ODBC is a huge API, we are not going to wrap everything)
 - No intend to support non-ODBC connectors directly, in order to keep the codebase simple and focused
+
+## Query builder examples
+
+```cpp
+auto sqlStatement = SqlStatement();
+auto const& queryFormatter = sqlStatemnt.Connection().QueryFormatter();
+
+// SELECT "employee_id", "first_name", "last_name"
+// FROM "employees"
+// WHERE "employee_id" = 100
+// ORDER BY "last_name" ASC LIMIT 5 OFFSET 10
+SqlQueryBuilder::FromTable("employees")
+                .Select()
+                .Fields("employee_id", "first_name", "last_name")
+                .Where("employee_id", "=", 100)
+                .OrderBy("last_name", SqlQueryBuilder::Ascending)
+                .Range(5, 10)
+                .ToSql(queryFormatter);
+
+// UPDATE "employees"
+// SET "first_name" = 'John', "last_name" = 'Doe'
+// WHERE "employee_id" = 100
+SqlQueryBuilder::FromTable("employees")
+                .Update()
+                .Set("first_name", "John")
+                .Set("last_name", "Doe")
+                .Where("employee_id", "=", 100)
+                .ToSql(queryFormatter);
+
+// INSERT INTO "employees" ("employee_id", "first_name", "last_name")
+// VALUES (100, 'John', 'Doe')
+SqlQueryBuilder::FromTable("employees")
+                .Insert()
+                .Values("employee_id", 100)
+                .Values("first_name", "John")
+                .Values("last_name", "Doe")
+                .ToSql(queryFormatter);
+
+// DELETE FROM "employees"
+// WHERE "employee_id" = 100
+SqlQueryBuilder::FromTable("employees")
+                .Delete()
+                .Where("employee_id", "=", 100)
+                .ToSql(queryFormatter);
+```
 
 ## C++ Language requirements
 

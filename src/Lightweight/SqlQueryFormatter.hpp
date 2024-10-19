@@ -18,9 +18,14 @@ class SqlQueryFormatter
                                                          std::string_view op,
                                                          bool literalValue) const = 0;
 
+    [[nodiscard]] virtual std::string Insert(std::string const& intoTable,
+                                             std::string const& fields,
+                                             std::string const& values) const = 0;
+
     [[nodiscard]] virtual std::string SelectAll(bool distinct,
                                                 std::string const& fields,
                                                 std::string const& fromTable,
+                                                std::string const& fromTableAlias,
                                                 std::string const& tableJoins,
                                                 std::string const& whereCondition,
                                                 std::string const& orderBy,
@@ -29,6 +34,7 @@ class SqlQueryFormatter
     [[nodiscard]] virtual std::string SelectFirst(bool distinct,
                                                   std::string const& fields,
                                                   std::string const& fromTable,
+                                                  std::string const& fromTableAlias,
                                                   std::string const& tableJoins,
                                                   std::string const& whereCondition,
                                                   std::string const& orderBy,
@@ -37,6 +43,7 @@ class SqlQueryFormatter
     [[nodiscard]] virtual std::string SelectRange(bool distinct,
                                                   std::string const& fields,
                                                   std::string const& fromTable,
+                                                  std::string const& fromTableAlias,
                                                   std::string const& tableJoins,
                                                   std::string const& whereCondition,
                                                   std::string const& orderBy,
@@ -46,10 +53,17 @@ class SqlQueryFormatter
 
     [[nodiscard]] virtual std::string SelectCount(bool distinct,
                                                   std::string const& fromTable,
+                                                  std::string const& fromTableAlias,
                                                   std::string const& tableJoins,
                                                   std::string const& whereCondition) const = 0;
 
+    [[nodiscard]] virtual std::string Update(std::string const& table,
+                                             std::string const& tableAlias,
+                                             std::string const& setFields,
+                                             std::string const& whereCondition) const = 0;
+
     [[nodiscard]] virtual std::string Delete(std::string const& fromTable,
+                                             std::string const& fromTableAlias,
                                              std::string const& tableJoins,
                                              std::string const& whereCondition) const = 0;
 

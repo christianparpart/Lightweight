@@ -22,6 +22,26 @@
                     "uncaught": "Y"
                 }
             }
+        },
+        "CoreTest": {
+            "adapter": "vscode-cpptools",
+            "configuration": {
+                "request": "launch",
+                "program": "${workspaceRoot}/out/build/linux-gcc-debug/src/tests/LightweightTest",
+                "args": [
+                    "--trace-sql", "~[model]"
+                ],
+                "cwd": "${workspaceRoot}",
+                "externalConsole": true,
+                "stopAtEntry": false,
+                "MIMode": "gdb"
+            },
+            "breakpoints": {
+                "exception": {
+                    "caught": "Y",
+                    "uncaught": "Y"
+                }
+            }
         }
     }
 }
