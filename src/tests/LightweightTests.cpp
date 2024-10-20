@@ -1000,10 +1000,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Update", "[SqlQueryBuilder]")
                              .Set("foo", 42)
                              .Set("bar", "baz")
                              .Where("id", 123),
-                         QueryExpectations::All(R"(UPDATE "Other" AS "O" SET "foo" = 42, "bar" = ? WHERE "id" = 123)"));
+                         QueryExpectations::All(R"(UPDATE "Other" AS "O" SET "foo" = ?, "bar" = ? WHERE "id" = 123)"));
 
-    CHECK(boundValues.size() == 1);
-    CHECK(std::get<std::string>(boundValues[0]) == "baz");
+    CHECK(boundValues.size() == 2);
+    CHECK(std::get<int>(boundValues[0]) == 42);
+    CHECK(std::get<std::string>(boundValues[1]) == "baz");
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Where.Lambda", "[SqlQueryBuilder]")
@@ -1022,4 +1023,43 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereColumn", "[SqlQueryBuilde
     checkSqlQueryBuilder(
         SqlQueryBuilder::FromTable("That").Select().Field("foo").WhereColumn("left", "=", "right").All(),
         QueryExpectations::All(R"(SELECT "foo" FROM "That" WHERE "left" = "right")"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.ExecuteDirct", "[SqlQueryBuilder]")
+{
+    auto stmt = SqlStatement {};
+
+    CreateEmployeesTable(stmt);
+    FillEmployeesTable(stmt);
+
+    auto const sqlQuery = SqlQueryBuilder::FromTable("Employees").Select().Fields("FirstName", "LastName").All();
+    stmt.ExecuteDirect(sqlQuery.ToSql(stmt.Connection().QueryFormatter()));
+
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Alice");
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare", "[SqlQueryBuilder]")
+{
+    auto stmt = SqlStatement {};
+
+    CreateEmployeesTable(stmt);
+    FillEmployeesTable(stmt);
+
+    std::vector<SqlVariant> inputBindings;
+
+    auto const sqlQuery =
+        SqlQueryBuilder::FromTable("Employees").Update(&inputBindings).Set("Salary", 55'000).Where("Salary", 50'000);
+
+    REQUIRE(inputBindings.size() == 1);
+    CHECK(std::get<int>(inputBindings[0]) == 55'000);
+
+    stmt.Prepare(sqlQuery.ToSql(stmt.Connection().QueryFormatter()));
+    stmt.ExecuteWithVariants(inputBindings);
+
+    stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees WHERE Salary = 55000");
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Alice");
+    CHECK(stmt.GetColumn<std::string>(2) == "Smith");
+    CHECK(stmt.GetColumn<int>(3) == 55'000);
 }

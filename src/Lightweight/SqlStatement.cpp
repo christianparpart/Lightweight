@@ -48,6 +48,26 @@ void SqlStatement::ExecuteDirect(const std::string_view& query, std::source_loca
     RequireSuccess(SQLExecDirectA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()), location);
 }
 
+void SqlStatement::ExecuteWithVariants(std::vector<SqlVariant> const& args)
+{
+    SqlLogger::GetLogger().OnExecute();
+
+    if (!(m_expectedParameterCount == (std::numeric_limits<decltype(m_expectedParameterCount)>::max)() && args.empty())
+        && !(static_cast<size_t>(m_expectedParameterCount) == args.size()))
+        throw std::invalid_argument { "Invalid argument count" };
+
+    SQLUSMALLINT i = 0;
+    for (auto const& arg: args)
+    {
+        if (std::holds_alternative<SqlNullType>(arg))
+            continue;
+        SqlDataBinder<SqlVariant>::InputParameter(m_hStmt, ++i, arg);
+    }
+
+    RequireSuccess(SQLExecute(m_hStmt));
+    ProcessPostExecuteCallbacks();
+}
+
 // Retrieves the number of rows affected by the last query.
 size_t SqlStatement::NumRowsAffected() const
 {

@@ -402,7 +402,7 @@ Derived& SqlWhereClauseBuilder<Derived>::OrWhere(Callable&& callable)
 {
     if (m_nextWhereJunctor != WhereJunctor::Where)
         m_nextWhereJunctor = WhereJunctor::Or;
-    return Where(callable);
+    return Where(std::forward<Callable>(callable));
 }
 
 template <typename Derived>
@@ -631,9 +631,9 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(std::string_view sqlConditionExpr
 
     AppendWhereJunctor();
 
-    condition += "(";
+    condition += '(';
     condition += std::string(sqlConditionExpression);
-    condition += ")";
+    condition += ')';
 
     return static_cast<Derived&>(*this);
 }
@@ -647,6 +647,8 @@ inline SqlSearchCondition& SqlWhereClauseBuilder<Derived>::SearchCondition() noe
 template <typename Derived>
 void SqlWhereClauseBuilder<Derived>::AppendWhereJunctor()
 {
+    using namespace std::string_view_literals;
+
     auto& condition = SearchCondition().condition;
 
     switch (m_nextWhereJunctor)
@@ -654,13 +656,13 @@ void SqlWhereClauseBuilder<Derived>::AppendWhereJunctor()
         case WhereJunctor::Null:
             break;
         case WhereJunctor::Where:
-            condition += "\n WHERE ";
+            condition += "\n WHERE "sv;
             break;
         case WhereJunctor::And:
-            condition += " AND ";
+            condition += " AND "sv;
             break;
         case WhereJunctor::Or:
-            condition += " OR ";
+            condition += " OR "sv;
             break;
     }
 
@@ -673,12 +675,14 @@ template <typename ColumnName>
              || std::is_convertible_v<ColumnName, std::string_view> || std::is_convertible_v<ColumnName, std::string>)
 void SqlWhereClauseBuilder<Derived>::AppendColumnName(ColumnName const& columnName)
 {
+    using namespace std::string_view_literals;
+
     auto& condition = SearchCondition().condition;
     if constexpr (std::is_same_v<ColumnName, SqlQualifiedTableColumnName>)
     {
         condition += '"';
         condition += columnName.tableName;
-        condition += "\".\"";
+        condition += R"(".")"sv;
         condition += columnName.columnName;
         condition += '"';
     }
@@ -733,18 +737,20 @@ Derived& SqlWhereClauseBuilder<Derived>::Join(JoinType joinType,
 template <typename ColumnValue>
 SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, ColumnValue const& value)
 {
+    using namespace std::string_view_literals;
+
     if (!m_fields.empty())
-        m_fields += ", ";
+        m_fields += ", "sv;
 
     m_fields += '"';
     m_fields += columnName;
     m_fields += '"';
 
     if (!m_values.empty())
-        m_values += ", ";
+        m_values += ", "sv;
 
     if constexpr (std::is_same_v<ColumnValue, SqlNullType>)
-        m_values += "NULL";
+        m_values += "NULL"sv;
     else if constexpr (std::is_arithmetic_v<ColumnValue>)
         m_values += std::format("{}", value);
     else if constexpr (std::is_same_v<ColumnValue, SqlQueryWildcard>)
@@ -764,26 +770,20 @@ SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, C
 template <typename ColumnValue>
 SqlUpdateQueryBuilder& SqlUpdateQueryBuilder::Set(std::string_view columnName, ColumnValue const& value)
 {
+    using namespace std::string_view_literals;
+
     if (!m_values.empty())
-        m_values += ", ";
+        m_values += ", "sv;
 
     m_values += '"';
     m_values += columnName;
-    m_values += '"';
-    m_values += " = ";
+    m_values += R"(" = )"sv;
 
     if constexpr (std::is_same_v<ColumnValue, SqlNullType>)
-        m_values += "NULL";
-    else if constexpr (std::is_arithmetic_v<ColumnValue>)
-        m_values += std::format("{}", value);
-    else if constexpr (std::is_same_v<ColumnValue, SqlQueryWildcard>)
-    {
-        m_values += "?";
-        m_boundInputs->emplace_back(SqlNullValue);
-    }
+        m_values += "NULL"sv;
     else
     {
-        m_values += "?";
+        m_values += '?';
         m_boundInputs->emplace_back(value);
     }
 
@@ -795,15 +795,17 @@ SqlUpdateQueryBuilder& SqlUpdateQueryBuilder::Set(std::string_view columnName, C
 template <typename... MoreFields>
 SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields(std::string_view const& firstField, MoreFields&&... moreFields)
 {
+    using namespace std::string_view_literals;
+
     std::ostringstream fragment;
 
     if (!m_query.fields.empty())
-        fragment << ", ";
+        fragment << ", "sv;
 
-    fragment << "\"" << firstField << "\"";
+    fragment << '"' << firstField << '"';
 
     if constexpr (sizeof...(MoreFields) > 0)
-        ((fragment << ", \"" << std::forward<MoreFields>(moreFields) << "\"") << ...);
+        ((fragment << R"(, ")"sv << std::forward<MoreFields>(moreFields) << '"') << ...);
 
     m_query.fields += fragment.str();
     return *this;

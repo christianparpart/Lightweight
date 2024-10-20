@@ -70,6 +70,9 @@ class SqlStatement final: public SqlDataBinderCallback
     template <SqlInputParameterBinder... Args>
     void Execute(Args const&... args);
 
+    // Binds the given arguments to the prepared statement and executes it.
+    void ExecuteWithVariants(std::vector<SqlVariant> const& args);
+
     // Executes the prepared statement on a a batch of data.
     //
     // Each parameter represents a column, to be bound as input parameter.
