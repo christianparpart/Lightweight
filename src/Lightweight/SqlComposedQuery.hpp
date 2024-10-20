@@ -97,6 +97,10 @@ class [[nodiscard]] SqlWhereClauseBuilder
     template <typename ColumnName>
     [[nodiscard]] Derived& WhereFalse(ColumnName const& columnName);
 
+    // Construts or extends a WHERE clause to test for a binary operation between two columns.
+    template <typename LeftColumn, typename RightColumn>
+    [[nodiscard]] Derived& WhereColumn(LeftColumn const& left, std::string_view binaryOp, RightColumn const& right);
+
     // Constructs an INNER JOIN clause.
     [[nodiscard]] Derived& InnerJoin(std::string_view joinTable,
                                      std::string_view joinColumnName,
@@ -151,6 +155,12 @@ class [[nodiscard]] SqlWhereClauseBuilder
     WhereJunctor m_nextWhereJunctor = WhereJunctor::Where;
 
     void AppendWhereJunctor();
+
+    template <typename ColumnName>
+        requires(std::is_same_v<ColumnName, SqlQualifiedTableColumnName>
+                 || std::is_convertible_v<ColumnName, std::string_view>
+                 || std::is_convertible_v<ColumnName, std::string>)
+    void AppendColumnName(ColumnName const& columnName);
 
     enum class JoinType : uint8_t
     {
@@ -477,6 +487,25 @@ Derived& SqlWhereClauseBuilder<Derived>::WhereFalse(ColumnName const& columnName
     return Where(columnName, "=", false);
 }
 
+template <typename Derived>
+template <typename LeftColumn, typename RightColumn>
+Derived& SqlWhereClauseBuilder<Derived>::WhereColumn(LeftColumn const& left,
+                                                     std::string_view binaryOp,
+                                                     RightColumn const& right)
+{
+    AppendWhereJunctor();
+
+    AppendColumnName(left);
+
+    SearchCondition().condition += ' ';
+    SearchCondition().condition += binaryOp;
+    SearchCondition().condition += ' ';
+
+    AppendColumnName(right);
+
+    return static_cast<Derived&>(*this);
+}
+
 template <typename T>
 struct WhereConditionLiteralType
 {
@@ -500,24 +529,15 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, std
 
     AppendWhereJunctor();
 
-    if constexpr (std::is_same_v<ColumnName, SqlQualifiedTableColumnName>)
-    {
-        searchCondition.condition += std::format(R"("{}"."{}")", columnName.tableName, columnName.columnName);
-    }
-    else
-    {
-        searchCondition.condition += "\"";
-        searchCondition.condition += columnName;
-        searchCondition.condition += "\"";
-    }
+    AppendColumnName(columnName);
 
-    searchCondition.condition += " ";
+    searchCondition.condition += ' ';
     searchCondition.condition += binaryOp;
-    searchCondition.condition += " ";
+    searchCondition.condition += ' ';
 
     if constexpr (std::is_same_v<T, SqlQueryWildcard>)
     {
-        searchCondition.condition += "?";
+        searchCondition.condition += '?';
         searchCondition.inputBindings.emplace_back(SqlNullValue);
     }
     else if constexpr (std::is_same_v<T, detail::RawSqlCondition>)
@@ -530,9 +550,9 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, std
     }
     else
     {
-        searchCondition.condition += "'";
+        searchCondition.condition += '\'';
         searchCondition.condition += std::format("{}", value);
-        searchCondition.condition += "'";
+        searchCondition.condition += '\'';
         // TODO: This should be bound as an input parameter in the future instead.
         // searchCondition.inputBindings.emplace_back(value);
     }
@@ -645,6 +665,29 @@ void SqlWhereClauseBuilder<Derived>::AppendWhereJunctor()
     }
 
     m_nextWhereJunctor = WhereJunctor::And;
+}
+
+template <typename Derived>
+template <typename ColumnName>
+    requires(std::is_same_v<ColumnName, SqlQualifiedTableColumnName>
+             || std::is_convertible_v<ColumnName, std::string_view> || std::is_convertible_v<ColumnName, std::string>)
+void SqlWhereClauseBuilder<Derived>::AppendColumnName(ColumnName const& columnName)
+{
+    auto& condition = SearchCondition().condition;
+    if constexpr (std::is_same_v<ColumnName, SqlQualifiedTableColumnName>)
+    {
+        condition += '"';
+        condition += columnName.tableName;
+        condition += "\".\"";
+        condition += columnName.columnName;
+        condition += '"';
+    }
+    else
+    {
+        condition += '"';
+        condition += columnName;
+        condition += '"';
+    }
 }
 
 template <typename Derived>

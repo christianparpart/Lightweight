@@ -1051,3 +1051,13 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Where.Lambda", "[SqlQueryBuild
                              .sqlServer = R"(SELECT "foo" FROM "That" WHERE "a" = 1 OR ("b" = 2 AND "c" = 3))",
                          });
 }
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereColumn", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(
+        SqlQueryBuilder::FromTable("That").Select().Field("foo").WhereColumn("left", "=", "right").All(),
+        QueryExpectations {
+            .sqlite = R"(SELECT "foo" FROM "That" WHERE "left" = "right")",
+            .sqlServer = R"(SELECT "foo" FROM "That" WHERE "left" = "right")",
+        });
+}
