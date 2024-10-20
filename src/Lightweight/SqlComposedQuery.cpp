@@ -7,46 +7,32 @@
 
 SqlQueryBuilder SqlQueryBuilder::FromTable(std::string_view table)
 {
-    return SqlQueryBuilder(std::string(table));
+    return SqlQueryBuilder { std::string(table), {} };
 }
 
 SqlQueryBuilder SqlQueryBuilder::FromTableAs(std::string_view table, std::string_view alias)
 {
-    return SqlQueryBuilder(std::string(table), std::string(alias));
-}
-
-SqlQueryBuilder::SqlQueryBuilder(std::string table)
-{
-    m_query.table = std::move(table);
-}
-
-SqlQueryBuilder::SqlQueryBuilder(std::string table, std::string alias)
-{
-    m_query.table = std::move(table);
-    m_query.tableAlias = std::move(alias);
+    return SqlQueryBuilder { std::string(table), std::string(alias) };
 }
 
 SqlInsertQueryBuilder SqlQueryBuilder::Insert(std::vector<SqlVariant>* boundInputs) && noexcept
 {
-    return SqlInsertQueryBuilder(std::move(m_query), boundInputs);
+    return SqlInsertQueryBuilder(std::move(m_table), boundInputs);
 }
 
 SqlSelectQueryBuilder SqlQueryBuilder::Select() && noexcept
 {
-    m_query.fields.reserve(256);
-    return SqlSelectQueryBuilder(std::move(m_query));
+    return SqlSelectQueryBuilder(std::move(m_table), std::move(m_tableAlias));
 }
 
 SqlUpdateQueryBuilder SqlQueryBuilder::Update(std::vector<SqlVariant>* boundInputs) && noexcept
 {
-    return SqlUpdateQueryBuilder(std::move(m_query), boundInputs);
+    return SqlUpdateQueryBuilder(std::move(m_table), std::move(m_tableAlias), boundInputs);
 }
 
 SqlDeleteQueryBuilder SqlQueryBuilder::Delete() && noexcept
 {
-    m_query.type = SqlQueryType::DELETE_;
-
-    return SqlDeleteQueryBuilder { std::move(m_query) };
+    return SqlDeleteQueryBuilder { std::move(m_table), std::move(m_tableAlias) };
 }
 
 // }}}
@@ -149,7 +135,7 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields(std::vector<std::string_vie
 SqlSelectQueryBuilder& SqlSelectQueryBuilder::OrderBy(std::string_view columnName, SqlResultOrdering ordering)
 {
     if (m_query.orderBy.empty())
-        m_query.orderBy += " ORDER BY ";
+        m_query.orderBy += "\n ORDER BY ";
     else
         m_query.orderBy += ", ";
 
@@ -167,7 +153,7 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::OrderBy(std::string_view columnNam
 SqlSelectQueryBuilder& SqlSelectQueryBuilder::GroupBy(std::string_view columnName)
 {
     if (m_query.groupBy.empty())
-        m_query.groupBy += " GROUP BY ";
+        m_query.groupBy += "\n GROUP BY ";
     else
         m_query.groupBy += ", ";
 
@@ -178,31 +164,31 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::GroupBy(std::string_view columnNam
     return *this;
 }
 
-SqlComposedQuery SqlSelectQueryBuilder::Count()
+SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::Count()
 {
-    m_query.type = SqlQueryType::SELECT_COUNT;
+    m_query.selectType = SelectType::Count;
 
     return std::move(m_query);
 }
 
-SqlComposedQuery SqlSelectQueryBuilder::All()
+SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::All()
 {
-    m_query.type = SqlQueryType::SELECT_ALL;
+    m_query.selectType = SelectType::All;
 
     return std::move(m_query);
 }
 
-SqlComposedQuery SqlSelectQueryBuilder::First(size_t count)
+SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::First(size_t count)
 {
-    m_query.type = SqlQueryType::SELECT_FIRST;
+    m_query.selectType = SelectType::First;
     m_query.limit = count;
 
     return std::move(m_query);
 }
 
-SqlComposedQuery SqlSelectQueryBuilder::Range(std::size_t offset, std::size_t limit)
+SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::Range(std::size_t offset, std::size_t limit)
 {
-    m_query.type = SqlQueryType::SELECT_RANGE;
+    m_query.selectType = SelectType::Range;
     m_query.offset = offset;
     m_query.limit = limit;
 
@@ -213,63 +199,95 @@ SqlComposedQuery SqlSelectQueryBuilder::Range(std::size_t offset, std::size_t li
 
 std::string SqlInsertQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
 {
-    // TODO(pr) don't depend on SqlComposedQuery
-    return m_query.ToSql(formatter);
+    return formatter.Insert(m_tableName, m_fields, m_values);
 }
 
 std::string SqlUpdateQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
 {
-    // TODO(pr) don't depend on SqlComposedQuery
-    return m_query.ToSql(formatter);
+    return formatter.Update(
+        m_searchCondition.tableName, m_searchCondition.tableAlias, m_values, m_searchCondition.ToSql(formatter));
 }
 
 std::string SqlDeleteQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
 {
     // TODO(pr) don't depend on SqlComposedQuery
-    return m_query.ToSql(formatter);
+    return formatter.Delete(m_searchCondition.tableName,
+                            m_searchCondition.tableAlias,
+                            m_searchCondition.tableJoins,
+                            m_searchCondition.ToSql(formatter));
 }
 
-std::string SqlComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
+std::string SqlSearchCondition::ToSql(SqlQueryFormatter const& formatter) const
 {
-    std::string finalConditionBuffer;
-    std::string const* finalCondition = &condition;
-
-    if (!booleanLiteralConditions.empty())
+    if (booleanLiteralConditions.empty())
     {
-        finalConditionBuffer = condition;
-        finalCondition = &finalConditionBuffer;
-        for (auto&& [column, binaryOp, literalValue]: booleanLiteralConditions)
-        {
-            if (finalConditionBuffer.empty())
-                finalConditionBuffer += " WHERE ";
-            else
-                finalConditionBuffer += " AND ";
-
-            finalConditionBuffer += formatter.BooleanWhereClause(column, binaryOp, literalValue);
-        }
+        return condition;
     }
 
-    switch (type)
+    std::string finalCondition;
+    finalCondition += condition;
+    auto const needsSurrondingParentheses = !condition.empty() && !booleanLiteralConditions.empty();
+
+    if (needsSurrondingParentheses)
+        finalCondition += " (";
+
+    for (auto&& [column, binaryOp, literalValue]: booleanLiteralConditions)
     {
-        case SqlQueryType::UNDEFINED:
+        if (finalCondition.empty())
+            finalCondition += " WHERE ";
+        else
+            finalCondition += " AND ";
+
+        finalCondition += formatter.BooleanWhereClause(column, binaryOp, literalValue);
+    }
+
+    if (needsSurrondingParentheses)
+        finalCondition += ")";
+
+    return finalCondition;
+}
+
+std::string SqlSelectQueryBuilder::ComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
+{
+    switch (selectType)
+    {
+        case SelectType::All:
+            return formatter.SelectAll(distinct,
+                                       fields,
+                                       searchCondition.tableName,
+                                       searchCondition.tableAlias,
+                                       searchCondition.tableJoins,
+                                       searchCondition.ToSql(formatter),
+                                       orderBy,
+                                       groupBy);
+        case SelectType::First:
+            return formatter.SelectFirst(distinct,
+                                         fields,
+                                         searchCondition.tableName,
+                                         searchCondition.tableAlias,
+                                         searchCondition.tableJoins,
+                                         searchCondition.ToSql(formatter),
+                                         orderBy,
+                                         limit);
+        case SelectType::Range:
+            return formatter.SelectRange(distinct,
+                                         fields,
+                                         searchCondition.tableName,
+                                         searchCondition.tableAlias,
+                                         searchCondition.tableJoins,
+                                         searchCondition.ToSql(formatter),
+                                         orderBy,
+                                         groupBy,
+                                         offset,
+                                         limit);
+        case SelectType::Count:
+            return formatter.SelectCount(distinct,
+                                         searchCondition.tableName,
+                                         searchCondition.tableAlias,
+                                         searchCondition.tableJoins,
+                                         searchCondition.ToSql(formatter));
+        case SelectType::Undefined:
             break;
-        case SqlQueryType::INSERT:
-            return formatter.Insert(table, fields, inputValues);
-        case SqlQueryType::SELECT_ALL:
-            return formatter.SelectAll(
-                distinct, fields, table, tableAlias, tableJoins, *finalCondition, orderBy, groupBy);
-        case SqlQueryType::SELECT_FIRST:
-            return formatter.SelectFirst(
-                distinct, fields, table, tableAlias, tableJoins, *finalCondition, orderBy, limit);
-        case SqlQueryType::SELECT_RANGE:
-            return formatter.SelectRange(
-                distinct, fields, table, tableAlias, tableJoins, *finalCondition, orderBy, groupBy, offset, limit);
-        case SqlQueryType::SELECT_COUNT:
-            return formatter.SelectCount(distinct, table, tableAlias, tableJoins, *finalCondition);
-        case SqlQueryType::UPDATE:
-            return formatter.Update(table, tableAlias, inputValues, *finalCondition);
-        case SqlQueryType::DELETE_:
-            return formatter.Delete(table, tableAlias, tableJoins, *finalCondition);
     }
     return "";
 }

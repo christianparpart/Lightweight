@@ -47,9 +47,9 @@ SqlQueryBuilder::FromTable("employees")
 // VALUES (100, 'John', 'Doe')
 SqlQueryBuilder::FromTable("employees")
                 .Insert()
-                .Values("employee_id", 100)
-                .Values("first_name", "John")
-                .Values("last_name", "Doe")
+                .Set("employee_id", 100)
+                .Set("first_name", "John")
+                .Set("last_name", "Doe")
                 .ToSql(queryFormatter);
 
 // DELETE FROM "employees"

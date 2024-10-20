@@ -65,7 +65,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         if (distinct)
             sqlQueryString << "DISTINCT ";
         sqlQueryString << fields;
-        sqlQueryString << " FROM \"" << fromTable << '"';
+        sqlQueryString << "\n FROM \"" << fromTable << '"';
         if (!fromTableAlias.empty())
             sqlQueryString << " AS \"" << fromTableAlias << '"';
         sqlQueryString << tableJoins;
@@ -89,7 +89,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         sqlQueryString << "SELECT " << fields;
         if (distinct)
             sqlQueryString << " DISTINCT";
-        sqlQueryString << " FROM \"" << fromTable << "\"";
+        sqlQueryString << "\n FROM \"" << fromTable << "\"";
         if (!fromTableAlias.empty())
             sqlQueryString << " AS \"" << fromTableAlias << "\"";
         sqlQueryString << tableJoins;
@@ -114,7 +114,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         sqlQueryString << "SELECT " << fields;
         if (distinct)
             sqlQueryString << " DISTINCT";
-        sqlQueryString << " FROM \"" << fromTable << "\"";
+        sqlQueryString << "\n FROM \"" << fromTable << "\"";
         if (!fromTableAlias.empty())
             sqlQueryString << " AS \"" << fromTableAlias << "\"";
         sqlQueryString << tableJoins;

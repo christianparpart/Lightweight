@@ -864,13 +864,21 @@ void checkSqlQueryBuilder(TheSqlQuery const& sqlQuery,
                           QueryExpectations const& expectations,
                           std::source_location const& location = std::source_location::current())
 {
+    auto const eraseLinefeeds = [](std::string str) noexcept -> std::string {
+        // Remove all LFs from str:
+        str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
+        return str;
+    };
     INFO(std::format("Test source location: {}:{}", location.file_name(), location.line()));
 
     auto const& sqliteFormatter = SqlQueryFormatter::Sqlite();
     auto const& sqlServerFormatter = SqlQueryFormatter::SqlServer();
 
-    CHECK(sqlQuery.ToSql(sqliteFormatter) == expectations.sqlite);
-    CHECK(sqlQuery.ToSql(sqlServerFormatter) == expectations.sqlServer);
+    auto const actualSqlite = eraseLinefeeds(sqlQuery.ToSql(sqliteFormatter));
+    auto const actualSqlServer = eraseLinefeeds(sqlQuery.ToSql(sqlServerFormatter));
+
+    CHECK(actualSqlite == expectations.sqlite);
+    CHECK(actualSqlServer == expectations.sqlServer);
 };
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Count", "[SqlQueryBuilder]")
@@ -965,15 +973,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
         });
 
     checkSqlQueryBuilder(
-        SqlQueryBuilder::FromTable("That")
-            .Select()
-            .Fields("foo", "bar")
-            .Join(SqlJoinType::LEFT, "Other", "id", "that_id")
-            .All(),
+        SqlQueryBuilder::FromTable("That").Select().Fields("foo", "bar").LeftOuterJoin("Other", "id", "that_id").All(),
         QueryExpectations {
             // clang-format off
-            .sqlite    = R"(SELECT "foo", "bar" FROM "That" LEFT JOIN "Other" ON "Other"."id" = "That"."that_id")",
-            .sqlServer = R"(SELECT "foo", "bar" FROM "That" LEFT JOIN "Other" ON "Other"."id" = "That"."that_id")",
+            .sqlite    = R"(SELECT "foo", "bar" FROM "That" LEFT OUTER JOIN "Other" ON "Other"."id" = "That"."that_id")",
+            .sqlServer = R"(SELECT "foo", "bar" FROM "That" LEFT OUTER JOIN "Other" ON "Other"."id" = "That"."that_id")",
             // clang-format on
         });
 }
