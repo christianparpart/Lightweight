@@ -220,9 +220,7 @@ std::string SqlDeleteQueryBuilder::ToSql(SqlQueryFormatter const& formatter) con
 std::string SqlSearchCondition::ToSql(SqlQueryFormatter const& formatter) const
 {
     if (booleanLiteralConditions.empty())
-    {
         return condition;
-    }
 
     std::string finalCondition;
     finalCondition += condition;

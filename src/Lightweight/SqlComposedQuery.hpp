@@ -69,6 +69,16 @@ class [[nodiscard]] SqlWhereClauseBuilder
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& Where(ColumnName const& columnName, T const& value);
 
+    // Constructs or extends a WHERE/AND clause to test for a group of values.
+    template <typename Callable>
+        requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
+    [[nodiscard]] Derived& Where(Callable&& callable);
+
+    // Constructs or extends an WHERE/OR clause to test for a group of values.
+    template <typename Callable>
+        requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
+    [[nodiscard]] Derived& OrWhere(Callable&& callable);
+
     template <typename ColumnName, std::ranges::input_range InputRange>
     [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, InputRange&& values);
 
@@ -128,10 +138,19 @@ class [[nodiscard]] SqlWhereClauseBuilder
                                          std::string_view onMainTableColumn);
 
   private:
-    SqlSearchCondition& SearchCondition() noexcept
+    SqlSearchCondition& SearchCondition() noexcept;
+
+    enum class WhereJunctor : uint8_t
     {
-        return static_cast<Derived*>(this)->SearchCondition();
-    }
+        Null,
+        Where,
+        And,
+        Or,
+    };
+
+    WhereJunctor m_nextWhereJunctor = WhereJunctor::Where;
+
+    void AppendWhereJunctor();
 
     enum class JoinType : uint8_t
     {
@@ -366,6 +385,41 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, T c
     return Where(columnName, "=", value);
 }
 
+template <typename Derived>
+template <typename Callable>
+    requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
+Derived& SqlWhereClauseBuilder<Derived>::OrWhere(Callable&& callable)
+{
+    if (m_nextWhereJunctor != WhereJunctor::Where)
+        m_nextWhereJunctor = WhereJunctor::Or;
+    return Where(callable);
+}
+
+template <typename Derived>
+template <typename Callable>
+    requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
+Derived& SqlWhereClauseBuilder<Derived>::Where(Callable&& callable)
+{
+    auto& condition = SearchCondition().condition;
+
+    auto const originalSize = condition.size();
+
+    AppendWhereJunctor();
+    m_nextWhereJunctor = WhereJunctor::Null;
+    condition += '(';
+
+    auto const sizeBeforeCallable = condition.size();
+
+    (void) callable(*this);
+
+    if (condition.size() == sizeBeforeCallable)
+        condition.resize(originalSize);
+    else
+        condition += ')';
+
+    return static_cast<Derived&>(*this);
+}
+
 RawSqlCondition PopulateSqlSetExpression(auto const&& values)
 {
     using namespace std::string_view_literals;
@@ -444,10 +498,7 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, std
         return static_cast<Derived&>(*this);
     }
 
-    if (searchCondition.condition.empty())
-        searchCondition.condition += "\n WHERE ";
-    else
-        searchCondition.condition += " AND ";
+    AppendWhereJunctor();
 
     if constexpr (std::is_same_v<ColumnName, SqlQualifiedTableColumnName>)
     {
@@ -487,42 +538,6 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, std
     }
 
     return static_cast<Derived&>(*this);
-}
-
-template <typename Derived>
-Derived& SqlWhereClauseBuilder<Derived>::Join(JoinType joinType,
-                                              std::string_view joinTable,
-                                              std::string_view joinColumnName,
-                                              SqlQualifiedTableColumnName onOtherColumn)
-{
-    static constexpr std::array<std::string_view, 4> JoinTypeStrings = {
-        "INNER",
-        "LEFT OUTER",
-        "RIGHT OUTER",
-        "FULL OUTER",
-    };
-
-    SearchCondition().tableJoins += std::format("\n"
-                                                R"( {0} JOIN "{1}" ON "{1}"."{2}" = "{3}"."{4}")",
-                                                JoinTypeStrings[static_cast<std::size_t>(joinType)],
-                                                joinTable,
-                                                joinColumnName,
-                                                onOtherColumn.tableName,
-                                                onOtherColumn.columnName);
-    return static_cast<Derived&>(*this);
-}
-
-template <typename Derived>
-Derived& SqlWhereClauseBuilder<Derived>::Join(JoinType joinType,
-                                              std::string_view joinTable,
-                                              std::string_view joinColumnName,
-                                              std::string_view onMainTableColumn)
-{
-    return Join(
-        joinType,
-        joinTable,
-        joinColumnName,
-        SqlQualifiedTableColumnName { .tableName = SearchCondition().tableName, .columnName = onMainTableColumn });
 }
 
 template <typename Derived>
@@ -594,16 +609,78 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(std::string_view sqlConditionExpr
 {
     auto& condition = SearchCondition().condition;
 
-    if (condition.empty())
-        condition += "\n WHERE ";
-    else
-        condition += " AND ";
+    AppendWhereJunctor();
 
     condition += "(";
     condition += std::string(sqlConditionExpression);
     condition += ")";
 
     return static_cast<Derived&>(*this);
+}
+
+template <typename Derived>
+inline SqlSearchCondition& SqlWhereClauseBuilder<Derived>::SearchCondition() noexcept
+{
+    return static_cast<Derived*>(this)->SearchCondition();
+}
+
+template <typename Derived>
+void SqlWhereClauseBuilder<Derived>::AppendWhereJunctor()
+{
+    auto& condition = SearchCondition().condition;
+
+    switch (m_nextWhereJunctor)
+    {
+        case WhereJunctor::Null:
+            break;
+        case WhereJunctor::Where:
+            condition += "\n WHERE ";
+            break;
+        case WhereJunctor::And:
+            condition += " AND ";
+            break;
+        case WhereJunctor::Or:
+            condition += " OR ";
+            break;
+    }
+
+    m_nextWhereJunctor = WhereJunctor::And;
+}
+
+template <typename Derived>
+Derived& SqlWhereClauseBuilder<Derived>::Join(JoinType joinType,
+                                              std::string_view joinTable,
+                                              std::string_view joinColumnName,
+                                              SqlQualifiedTableColumnName onOtherColumn)
+{
+    static constexpr std::array<std::string_view, 4> JoinTypeStrings = {
+        "INNER",
+        "LEFT OUTER",
+        "RIGHT OUTER",
+        "FULL OUTER",
+    };
+
+    SearchCondition().tableJoins += std::format("\n"
+                                                R"( {0} JOIN "{1}" ON "{1}"."{2}" = "{3}"."{4}")",
+                                                JoinTypeStrings[static_cast<std::size_t>(joinType)],
+                                                joinTable,
+                                                joinColumnName,
+                                                onOtherColumn.tableName,
+                                                onOtherColumn.columnName);
+    return static_cast<Derived&>(*this);
+}
+
+template <typename Derived>
+Derived& SqlWhereClauseBuilder<Derived>::Join(JoinType joinType,
+                                              std::string_view joinTable,
+                                              std::string_view joinColumnName,
+                                              std::string_view onMainTableColumn)
+{
+    return Join(
+        joinType,
+        joinTable,
+        joinColumnName,
+        SqlQualifiedTableColumnName { .tableName = SearchCondition().tableName, .columnName = onMainTableColumn });
 }
 
 } // namespace detail

@@ -1037,3 +1037,17 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Update", "[SqlQueryBuilder]")
     CHECK(boundValues.size() == 1);
     CHECK(std::get<std::string>(boundValues[0]) == "baz");
 }
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Where.Lambda", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(SqlQueryBuilder::FromTable("That")
+                             .Select()
+                             .Field("foo")
+                             .Where("a", 1)
+                             .OrWhere([](auto& q) { return q.Where("b", 2).Where("c", 3); })
+                             .All(),
+                         QueryExpectations {
+                             .sqlite = R"(SELECT "foo" FROM "That" WHERE "a" = 1 OR ("b" = 2 AND "c" = 3))",
+                             .sqlServer = R"(SELECT "foo" FROM "That" WHERE "a" = 1 OR ("b" = 2 AND "c" = 3))",
+                         });
+}
