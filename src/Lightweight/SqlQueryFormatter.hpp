@@ -9,14 +9,12 @@
 struct SqlQualifiedTableColumnName;
 
 // API to format SQL queries for different SQL dialects.
-class SqlQueryFormatter
+class [[nodiscard]] SqlQueryFormatter
 {
   public:
     virtual ~SqlQueryFormatter() = default;
 
-    [[nodiscard]] virtual std::string BooleanWhereClause(SqlQualifiedTableColumnName const& column,
-                                                         std::string_view op,
-                                                         bool literalValue) const = 0;
+    [[nodiscard]] virtual std::string_view BooleanLiteral(bool value) const noexcept = 0;
 
     [[nodiscard]] virtual std::string Insert(std::string const& intoTable,
                                              std::string const& fields,

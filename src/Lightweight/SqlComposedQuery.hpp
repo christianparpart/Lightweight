@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SqlDataBinder.hpp"
+#include "SqlQueryFormatter.hpp"
 
 #include <concepts>
 #include <cstdint>
@@ -8,7 +9,6 @@
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -36,7 +36,34 @@ struct SqlQualifiedTableColumnName
     std::string_view columnName;
 };
 
-class SqlQueryFormatter;
+namespace detail
+{
+
+template <typename ColumnName>
+std::string MakeSqlColumnName(ColumnName const& columnName)
+{
+    using namespace std::string_view_literals;
+    std::string output;
+
+    if constexpr (std::is_same_v<ColumnName, SqlQualifiedTableColumnName>)
+    {
+        output.reserve(columnName.tableName.size() + columnName.columnName.size() + 5);
+        output += '"';
+        output += columnName.tableName;
+        output += R"(".")"sv;
+        output += columnName.columnName;
+        output += '"';
+    }
+    else
+    {
+        output += '"';
+        output += columnName;
+        output += '"';
+    }
+    return output;
+}
+
+} // namespace detail
 
 struct [[nodiscard]] SqlSearchCondition
 {
@@ -44,11 +71,7 @@ struct [[nodiscard]] SqlSearchCondition
     std::string tableAlias;
     std::string tableJoins;
     std::string condition;
-    std::vector<std::tuple<SqlQualifiedTableColumnName /*LHS*/, std::string_view /*op*/, bool /*RHS*/>>
-        booleanLiteralConditions;
-    std::vector<SqlVariant> inputBindings;
-
-    [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
+    std::vector<SqlVariant>* inputBindings = nullptr;
 };
 
 namespace detail
@@ -59,7 +82,7 @@ class [[nodiscard]] SqlWhereClauseBuilder
 {
   public:
     // Constructs or extends a raw WHERE clause.
-    [[nodiscard]] Derived& Where(std::string_view sqlConditionExpression);
+    [[nodiscard]] Derived& WhereRaw(std::string_view sqlConditionExpression);
 
     // Constructs or extends a WHERE clause to test for a binary operation.
     template <typename ColumnName, typename T>
@@ -143,6 +166,7 @@ class [[nodiscard]] SqlWhereClauseBuilder
 
   private:
     SqlSearchCondition& SearchCondition() noexcept;
+    [[nodiscard]] SqlQueryFormatter const& Formatter() const noexcept;
 
     enum class WhereJunctor : uint8_t
     {
@@ -188,7 +212,10 @@ class [[nodiscard]] SqlWhereClauseBuilder
 class [[nodiscard]] SqlInsertQueryBuilder final
 {
   public:
-    explicit SqlInsertQueryBuilder(std::string tableName, std::vector<SqlVariant>* boundInputs) noexcept:
+    explicit SqlInsertQueryBuilder(SqlQueryFormatter const& formatter,
+                                   std::string tableName,
+                                   std::vector<SqlVariant>* boundInputs) noexcept:
+        m_formatter { formatter },
         m_tableName { std::move(tableName) },
         m_boundInputs { boundInputs }
     {
@@ -199,9 +226,10 @@ class [[nodiscard]] SqlInsertQueryBuilder final
     SqlInsertQueryBuilder& Set(std::string_view columnName, ColumnValue const& value);
 
     // Finalizes building the query as INSERT INTO ... query.
-    [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
+    [[nodiscard]] std::string ToSql() const;
 
   private:
+    SqlQueryFormatter const& m_formatter;
     std::string m_tableName;
     std::string m_fields;
     std::string m_values;
@@ -229,6 +257,8 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
     struct ComposedQuery
     {
         SelectType selectType = SelectType::Undefined;
+        SqlQueryFormatter const* formatter = nullptr;
+
         bool distinct = false;
         SqlSearchCondition searchCondition {};
 
@@ -240,12 +270,14 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
         size_t offset = 0;
         size_t limit = (std::numeric_limits<size_t>::max)();
 
-        [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
+        [[nodiscard]] std::string ToSql() const;
     };
 
-    explicit SqlSelectQueryBuilder(std::string table, std::string tableAlias) noexcept:
-        detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder> {}
+    explicit SqlSelectQueryBuilder(SqlQueryFormatter const& formatter, std::string table, std::string tableAlias) noexcept:
+        detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder> {},
+        m_formatter { formatter }
     {
+        m_query.formatter = &formatter;
         m_query.searchCondition.tableName = std::move(table);
         m_query.searchCondition.tableAlias = std::move(tableAlias);
         m_query.fields.reserve(256);
@@ -300,24 +332,39 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
         return m_query.searchCondition;
     }
 
+    [[nodiscard]] SqlQueryFormatter const& Formatter() const noexcept
+    {
+        return m_formatter;
+    }
+
   private:
+    SqlQueryFormatter const& m_formatter;
     ComposedQuery m_query;
 };
 
 class [[nodiscard]] SqlUpdateQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlUpdateQueryBuilder>
 {
   public:
-    SqlUpdateQueryBuilder(std::string table, std::string tableAlias, std::vector<SqlVariant>* boundInputs) noexcept:
+    SqlUpdateQueryBuilder(SqlQueryFormatter const& formatter,
+                          std::string table,
+                          std::string tableAlias,
+                          std::vector<SqlVariant>* inputBindings) noexcept:
         detail::SqlWhereClauseBuilder<SqlUpdateQueryBuilder> {},
-        m_boundInputs { boundInputs }
+        m_formatter { formatter }
     {
         m_searchCondition.tableName = std::move(table);
         m_searchCondition.tableAlias = std::move(tableAlias);
+        m_searchCondition.inputBindings = inputBindings;
     }
 
     SqlSearchCondition& SearchCondition() noexcept
     {
         return m_searchCondition;
+    }
+
+    [[nodiscard]] SqlQueryFormatter const& Formatter() const noexcept
+    {
+        return m_formatter;
     }
 
     // Adds a single column to the SET clause.
@@ -325,19 +372,20 @@ class [[nodiscard]] SqlUpdateQueryBuilder final: public detail::SqlWhereClauseBu
     SqlUpdateQueryBuilder& Set(std::string_view columnName, ColumnValue const& value);
 
     // Finalizes building the query as UPDATE ... query.
-    [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
+    [[nodiscard]] std::string ToSql() const;
 
   private:
+    SqlQueryFormatter const& m_formatter;
     std::string m_values;
     SqlSearchCondition m_searchCondition;
-    std::vector<SqlVariant>* m_boundInputs;
 };
 
 class [[nodiscard]] SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
 {
   public:
-    explicit SqlDeleteQueryBuilder(std::string table, std::string tableAlias) noexcept:
-        detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder> {}
+    explicit SqlDeleteQueryBuilder(SqlQueryFormatter const& formatter, std::string table, std::string tableAlias) noexcept:
+        detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder> {},
+        m_formatter { formatter }
     {
         m_searchCondition.tableName = std::move(table);
         m_searchCondition.tableAlias = std::move(tableAlias);
@@ -348,10 +396,16 @@ class [[nodiscard]] SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBu
         return m_searchCondition;
     }
 
+    [[nodiscard]] SqlQueryFormatter const& Formatter() const noexcept
+    {
+        return m_formatter;
+    }
+
     // Finalizes building the query as DELETE FROM ... query.
-    [[nodiscard]] std::string ToSql(SqlQueryFormatter const& formatter) const;
+    [[nodiscard]] std::string ToSql() const;
 
   private:
+    SqlQueryFormatter const& m_formatter;
     SqlSearchCondition m_searchCondition;
 };
 
@@ -359,27 +413,30 @@ class [[nodiscard]] SqlQueryBuilder final
 {
   public:
     // Constructs a new query builder for the given table.
-    static SqlQueryBuilder FromTable(std::string_view table);
+    explicit SqlQueryBuilder(SqlQueryFormatter const& formatter,
+                             std::string&& table = {},
+                             std::string&& alias = {}) noexcept;
+
+    // Constructs a new query builder for the given table.
+    SqlQueryBuilder& FromTable(std::string table);
 
     // Constructs a new query builder for the given table with an alias.
-    static SqlQueryBuilder FromTableAs(std::string_view table, std::string_view alias);
+    SqlQueryBuilder& FromTableAs(std::string table, std::string alias);
 
     // Initiates INSERT query building
-    SqlInsertQueryBuilder Insert(std::vector<SqlVariant>* boundInputs) && noexcept;
+    SqlInsertQueryBuilder Insert(std::vector<SqlVariant>* boundInputs) noexcept;
 
     // Initiates SELECT query building
-    SqlSelectQueryBuilder Select() && noexcept;
+    SqlSelectQueryBuilder Select() noexcept;
 
     // Initiates UPDATE query building
-    SqlUpdateQueryBuilder Update(std::vector<SqlVariant>* boundInputs) && noexcept;
+    SqlUpdateQueryBuilder Update(std::vector<SqlVariant>* boundInputs) noexcept;
 
     // Initiates DELETE query building
-    SqlDeleteQueryBuilder Delete() && noexcept;
+    SqlDeleteQueryBuilder Delete() noexcept;
 
   private:
-    explicit SqlQueryBuilder(std::string&& table) noexcept;
-    explicit SqlQueryBuilder(std::string&& table, std::string&& alias) noexcept;
-
+    SqlQueryFormatter const& m_formatter;
     std::string m_table;
     std::string m_tableAlias;
 };
@@ -496,11 +553,9 @@ Derived& SqlWhereClauseBuilder<Derived>::WhereColumn(LeftColumn const& left,
     AppendWhereJunctor();
 
     AppendColumnName(left);
-
     SearchCondition().condition += ' ';
     SearchCondition().condition += binaryOp;
     SearchCondition().condition += ' ';
-
     AppendColumnName(right);
 
     return static_cast<Derived&>(*this);
@@ -517,20 +572,9 @@ template <typename ColumnName, typename T>
 Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, std::string_view binaryOp, T const& value)
 {
     auto& searchCondition = SearchCondition();
-    if constexpr (std::is_same_v<T, bool>)
-    {
-        if constexpr (std::is_same_v<ColumnName, SqlQualifiedTableColumnName>)
-            searchCondition.booleanLiteralConditions.emplace_back(columnName, binaryOp, value);
-        else
-            searchCondition.booleanLiteralConditions.emplace_back(
-                SqlQualifiedTableColumnName { "", columnName }, binaryOp, value);
-        return static_cast<Derived&>(*this);
-    }
 
     AppendWhereJunctor();
-
     AppendColumnName(columnName);
-
     searchCondition.condition += ' ';
     searchCondition.condition += binaryOp;
     searchCondition.condition += ' ';
@@ -538,11 +582,21 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, std
     if constexpr (std::is_same_v<T, SqlQueryWildcard>)
     {
         searchCondition.condition += '?';
-        searchCondition.inputBindings.emplace_back(SqlNullValue);
+        if (searchCondition.inputBindings)
+            searchCondition.inputBindings->emplace_back(SqlNullValue);
     }
     else if constexpr (std::is_same_v<T, detail::RawSqlCondition>)
     {
         searchCondition.condition += value.condition;
+    }
+    else if (searchCondition.inputBindings)
+    {
+        searchCondition.condition += '?';
+        searchCondition.inputBindings->emplace_back(value);
+    }
+    else if constexpr (std::is_same_v<T, bool>)
+    {
+        searchCondition.condition += Formatter().BooleanLiteral(value);
     }
     else if constexpr (!WhereConditionLiteralType<T>::needsQuotes)
     {
@@ -550,11 +604,10 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, std
     }
     else
     {
+        // TODO: Escape single quotes
         searchCondition.condition += '\'';
         searchCondition.condition += std::format("{}", value);
         searchCondition.condition += '\'';
-        // TODO: This should be bound as an input parameter in the future instead.
-        // searchCondition.inputBindings.emplace_back(value);
     }
 
     return static_cast<Derived&>(*this);
@@ -625,14 +678,13 @@ Derived& SqlWhereClauseBuilder<Derived>::FullOuterJoin(std::string_view joinTabl
 }
 
 template <typename Derived>
-Derived& SqlWhereClauseBuilder<Derived>::Where(std::string_view sqlConditionExpression)
+Derived& SqlWhereClauseBuilder<Derived>::WhereRaw(std::string_view sqlConditionExpression)
 {
-    auto& condition = SearchCondition().condition;
-
     AppendWhereJunctor();
 
+    auto& condition = SearchCondition().condition;
     condition += '(';
-    condition += std::string(sqlConditionExpression);
+    condition += sqlConditionExpression;
     condition += ')';
 
     return static_cast<Derived&>(*this);
@@ -642,6 +694,12 @@ template <typename Derived>
 inline SqlSearchCondition& SqlWhereClauseBuilder<Derived>::SearchCondition() noexcept
 {
     return static_cast<Derived*>(this)->SearchCondition();
+}
+
+template <typename Derived>
+SqlQueryFormatter const& SqlWhereClauseBuilder<Derived>::Formatter() const noexcept
+{
+    return static_cast<Derived const*>(this)->Formatter();
 }
 
 template <typename Derived>
@@ -675,23 +733,7 @@ template <typename ColumnName>
              || std::is_convertible_v<ColumnName, std::string_view> || std::is_convertible_v<ColumnName, std::string>)
 void SqlWhereClauseBuilder<Derived>::AppendColumnName(ColumnName const& columnName)
 {
-    using namespace std::string_view_literals;
-
-    auto& condition = SearchCondition().condition;
-    if constexpr (std::is_same_v<ColumnName, SqlQualifiedTableColumnName>)
-    {
-        condition += '"';
-        condition += columnName.tableName;
-        condition += R"(".")"sv;
-        condition += columnName.columnName;
-        condition += '"';
-    }
-    else
-    {
-        condition += '"';
-        condition += columnName;
-        condition += '"';
-    }
+    SearchCondition().condition += detail::MakeSqlColumnName(columnName);
 }
 
 template <typename Derived>
@@ -781,10 +823,22 @@ SqlUpdateQueryBuilder& SqlUpdateQueryBuilder::Set(std::string_view columnName, C
 
     if constexpr (std::is_same_v<ColumnValue, SqlNullType>)
         m_values += "NULL"sv;
-    else
+    else if (m_searchCondition.inputBindings)
     {
         m_values += '?';
-        m_boundInputs->emplace_back(value);
+        m_searchCondition.inputBindings->emplace_back(value);
+    }
+    else if constexpr (std::is_arithmetic_v<ColumnValue>)
+        m_values += std::format("{}", value);
+    else if constexpr (std::is_same_v<ColumnValue, SqlQueryWildcard>)
+        m_values += '?';
+    else if constexpr (!detail::WhereConditionLiteralType<ColumnValue>::needsQuotes)
+        m_values += std::format("{}", value);
+    else
+    {
+        m_values += '\'';
+        m_values += std::format("{}", value);
+        m_values += '\'';
     }
 
     return *this;
@@ -813,12 +867,10 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields(std::string_view const& fir
 // }}}
 
 // {{{ SqlQueryBuilder impl
-inline SqlQueryBuilder::SqlQueryBuilder(std::string&& table) noexcept:
-    m_table { std::move(table) }
-{
-}
-
-inline SqlQueryBuilder::SqlQueryBuilder(std::string&& table, std::string&& alias) noexcept:
+inline SqlQueryBuilder::SqlQueryBuilder(SqlQueryFormatter const& formatter,
+                                        std::string&& table,
+                                        std::string&& alias) noexcept:
+    m_formatter { formatter },
     m_table { std::move(table) },
     m_tableAlias { std::move(alias) }
 {

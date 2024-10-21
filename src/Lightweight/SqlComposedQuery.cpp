@@ -1,38 +1,42 @@
 #include "SqlComposedQuery.hpp"
 #include "SqlQueryFormatter.hpp"
 
+#include <cassert>
 #include <utility>
 
 // {{{ SqlQueryBuilder impl
 
-SqlQueryBuilder SqlQueryBuilder::FromTable(std::string_view table)
+SqlQueryBuilder& SqlQueryBuilder::FromTable(std::string table)
 {
-    return SqlQueryBuilder { std::string(table), {} };
+    m_table = std::move(table);
+    return *this;
 }
 
-SqlQueryBuilder SqlQueryBuilder::FromTableAs(std::string_view table, std::string_view alias)
+SqlQueryBuilder& SqlQueryBuilder::FromTableAs(std::string table, std::string alias)
 {
-    return SqlQueryBuilder { std::string(table), std::string(alias) };
+    m_table = std::move(table);
+    m_tableAlias = std::move(alias);
+    return *this;
 }
 
-SqlInsertQueryBuilder SqlQueryBuilder::Insert(std::vector<SqlVariant>* boundInputs) && noexcept
+SqlInsertQueryBuilder SqlQueryBuilder::Insert(std::vector<SqlVariant>* boundInputs) noexcept
 {
-    return SqlInsertQueryBuilder(std::move(m_table), boundInputs);
+    return SqlInsertQueryBuilder(m_formatter, std::move(m_table), boundInputs);
 }
 
-SqlSelectQueryBuilder SqlQueryBuilder::Select() && noexcept
+SqlSelectQueryBuilder SqlQueryBuilder::Select() noexcept
 {
-    return SqlSelectQueryBuilder(std::move(m_table), std::move(m_tableAlias));
+    return SqlSelectQueryBuilder(m_formatter, std::move(m_table), std::move(m_tableAlias));
 }
 
-SqlUpdateQueryBuilder SqlQueryBuilder::Update(std::vector<SqlVariant>* boundInputs) && noexcept
+SqlUpdateQueryBuilder SqlQueryBuilder::Update(std::vector<SqlVariant>* boundInputs) noexcept
 {
-    return SqlUpdateQueryBuilder(std::move(m_table), std::move(m_tableAlias), boundInputs);
+    return SqlUpdateQueryBuilder(m_formatter, std::move(m_table), std::move(m_tableAlias), boundInputs);
 }
 
-SqlDeleteQueryBuilder SqlQueryBuilder::Delete() && noexcept
+SqlDeleteQueryBuilder SqlQueryBuilder::Delete() noexcept
 {
-    return SqlDeleteQueryBuilder { std::move(m_table), std::move(m_tableAlias) };
+    return SqlDeleteQueryBuilder(m_formatter, std::move(m_table), std::move(m_tableAlias));
 }
 
 // }}}
@@ -197,93 +201,65 @@ SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::Range(std::size_t of
 
 // }}}
 
-std::string SqlInsertQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
+std::string SqlInsertQueryBuilder::ToSql() const
 {
-    return formatter.Insert(m_tableName, m_fields, m_values);
+    return m_formatter.Insert(m_tableName, m_fields, m_values);
 }
 
-std::string SqlUpdateQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
+std::string SqlUpdateQueryBuilder::ToSql() const
 {
-    return formatter.Update(
-        m_searchCondition.tableName, m_searchCondition.tableAlias, m_values, m_searchCondition.ToSql(formatter));
+    return m_formatter.Update(
+        m_searchCondition.tableName, m_searchCondition.tableAlias, m_values, m_searchCondition.condition);
 }
 
-std::string SqlDeleteQueryBuilder::ToSql(SqlQueryFormatter const& formatter) const
+std::string SqlDeleteQueryBuilder::ToSql() const
 {
-    // TODO(pr) don't depend on SqlComposedQuery
-    return formatter.Delete(m_searchCondition.tableName,
-                            m_searchCondition.tableAlias,
-                            m_searchCondition.tableJoins,
-                            m_searchCondition.ToSql(formatter));
+    return m_formatter.Delete(m_searchCondition.tableName,
+                              m_searchCondition.tableAlias,
+                              m_searchCondition.tableJoins,
+                              m_searchCondition.condition);
 }
 
-std::string SqlSearchCondition::ToSql(SqlQueryFormatter const& formatter) const
+std::string SqlSelectQueryBuilder::ComposedQuery::ToSql() const
 {
-    if (booleanLiteralConditions.empty())
-        return condition;
-
-    std::string finalCondition;
-    finalCondition += condition;
-    auto const needsSurrondingParentheses = !condition.empty() && !booleanLiteralConditions.empty();
-
-    if (needsSurrondingParentheses)
-        finalCondition += " (";
-
-    for (auto&& [column, binaryOp, literalValue]: booleanLiteralConditions)
-    {
-        if (finalCondition.empty())
-            finalCondition += " WHERE ";
-        else
-            finalCondition += " AND ";
-
-        finalCondition += formatter.BooleanWhereClause(column, binaryOp, literalValue);
-    }
-
-    if (needsSurrondingParentheses)
-        finalCondition += ")";
-
-    return finalCondition;
-}
-
-std::string SqlSelectQueryBuilder::ComposedQuery::ToSql(SqlQueryFormatter const& formatter) const
-{
+    assert(formatter != nullptr);
     switch (selectType)
     {
         case SelectType::All:
-            return formatter.SelectAll(distinct,
-                                       fields,
-                                       searchCondition.tableName,
-                                       searchCondition.tableAlias,
-                                       searchCondition.tableJoins,
-                                       searchCondition.ToSql(formatter),
-                                       orderBy,
-                                       groupBy);
+            return formatter->SelectAll(distinct,
+                                        fields,
+                                        searchCondition.tableName,
+                                        searchCondition.tableAlias,
+                                        searchCondition.tableJoins,
+                                        searchCondition.condition,
+                                        orderBy,
+                                        groupBy);
         case SelectType::First:
-            return formatter.SelectFirst(distinct,
-                                         fields,
-                                         searchCondition.tableName,
-                                         searchCondition.tableAlias,
-                                         searchCondition.tableJoins,
-                                         searchCondition.ToSql(formatter),
-                                         orderBy,
-                                         limit);
+            return formatter->SelectFirst(distinct,
+                                          fields,
+                                          searchCondition.tableName,
+                                          searchCondition.tableAlias,
+                                          searchCondition.tableJoins,
+                                          searchCondition.condition,
+                                          orderBy,
+                                          limit);
         case SelectType::Range:
-            return formatter.SelectRange(distinct,
-                                         fields,
-                                         searchCondition.tableName,
-                                         searchCondition.tableAlias,
-                                         searchCondition.tableJoins,
-                                         searchCondition.ToSql(formatter),
-                                         orderBy,
-                                         groupBy,
-                                         offset,
-                                         limit);
+            return formatter->SelectRange(distinct,
+                                          fields,
+                                          searchCondition.tableName,
+                                          searchCondition.tableAlias,
+                                          searchCondition.tableJoins,
+                                          searchCondition.condition,
+                                          orderBy,
+                                          groupBy,
+                                          offset,
+                                          limit);
         case SelectType::Count:
-            return formatter.SelectCount(distinct,
-                                         searchCondition.tableName,
-                                         searchCondition.tableAlias,
-                                         searchCondition.tableJoins,
-                                         searchCondition.ToSql(formatter));
+            return formatter->SelectCount(distinct,
+                                          searchCondition.tableName,
+                                          searchCondition.tableAlias,
+                                          searchCondition.tableJoins,
+                                          searchCondition.condition);
         case SelectType::Undefined:
             break;
     }

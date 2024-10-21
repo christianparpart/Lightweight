@@ -25,6 +25,7 @@
 #include <sqlspi.h>
 #include <sqltypes.h>
 
+class SqlQueryBuilder;
 class SqlQueryFormatter;
 
 // @brief Represents a connection to a SQL database.
@@ -113,6 +114,12 @@ class SqlConnection final
 
     // Retrieves a query formatter suitable for the SQL server being connected.
     [[nodiscard]] SqlQueryFormatter const& QueryFormatter() const noexcept;
+
+    // Creates a new query builder for the given table, compatible with the SQL server being connected.
+    [[nodiscard]] SqlQueryBuilder Query(std::string_view const& table = {}) const;
+
+    // Creates a new query builder for the given table with an alias, compatible with the SQL server being connected.
+    [[nodiscard]] SqlQueryBuilder QueryAs(std::string_view const& table, std::string_view const& tableAlias) const;
 
     // Retrieves the SQL traits for the server.
     [[nodiscard]] SqlTraits const& Traits() const noexcept

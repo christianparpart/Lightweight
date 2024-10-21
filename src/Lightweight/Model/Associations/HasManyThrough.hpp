@@ -78,7 +78,7 @@ size_t HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::C
         .Join(m_record->TableName(),
               m_record->PrimaryKeyName(),
               SqlQualifiedTableColumnName(throughRecordMeta.TableName(), RightKeyName.value))
-        .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), m_record->Id())
+        .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), *m_record->Id())
         .Count();
 }
 
@@ -138,7 +138,7 @@ inline void HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyNam
             .Join(m_record->TableName(),
                   m_record->PrimaryKeyName(),
                   SqlQualifiedTableColumnName(throughRecordMeta.TableName(), RightKeyName.value))
-            .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), m_record->Id())
+            .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), *m_record->Id())
             .Each(callback);
     }
 }
@@ -165,7 +165,7 @@ void HasManyThrough<TargetRecord, LeftKeyName, ThroughRecord, RightKeyName>::Loa
             .Join(m_record->TableName(),
                   m_record->PrimaryKeyName(),
                   SqlQualifiedTableColumnName(throughRecordMeta.TableName(), RightKeyName.value))
-            .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), m_record->Id())
+            .Where(SqlQualifiedTableColumnName(m_record->TableName(), m_record->PrimaryKeyName()), *m_record->Id())
             .All();
 
     m_loaded = true;

@@ -1,3 +1,4 @@
+#include "SqlComposedQuery.hpp"
 #include "SqlConnection.hpp"
 #include "SqlQueryFormatter.hpp"
 
@@ -367,4 +368,14 @@ void SqlConnection::RequireSuccess(SQLRETURN error, std::source_location sourceL
     auto errorInfo = SqlErrorInfo::fromConnectionHandle(m_hDbc);
     SqlLogger::GetLogger().OnError(errorInfo, sourceLocation);
     throw std::runtime_error(std::format("SQL error: {}", errorInfo));
+}
+
+SqlQueryBuilder SqlConnection::Query(std::string_view const& table) const
+{
+    return SqlQueryBuilder(QueryFormatter(), std::string(table));
+}
+
+SqlQueryBuilder SqlConnection::QueryAs(std::string_view const& table, std::string_view const& tableAlias) const
+{
+    return SqlQueryBuilder(QueryFormatter(), std::string(table), std::string(tableAlias));
 }

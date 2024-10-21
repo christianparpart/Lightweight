@@ -16,18 +16,12 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                                      std::string const& fields,
                                      std::string const& values) const override
     {
-        return std::format(R"(INSERT INTO "{}" ({}) VALUES ({}))", intoTable, fields, values);
+        return std::format(R"(INSERT INTO {} ({}) VALUES ({}))", intoTable, fields, values);
     }
 
-    [[nodiscard]] std::string BooleanWhereClause(SqlQualifiedTableColumnName const& column,
-                                                 std::string_view op,
-                                                 bool literalValue) const override
+    [[nodiscard]] std::string_view BooleanLiteral(bool literalValue) const noexcept override
     {
-        auto const literalValueStr = literalValue ? "TRUE"sv : "FALSE"sv;
-        if (!column.tableName.empty())
-            return std::format(R"("{}"."{}" {} {})", column.tableName, column.columnName, op, literalValueStr);
-        else
-            return std::format(R"("{}" {} {})", column.columnName, op, literalValueStr);
+        return literalValue ? "TRUE"sv : "FALSE"sv;
     }
 
     [[nodiscard]] std::string SelectCount(bool distinct,
@@ -152,15 +146,9 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
 class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
 {
   public:
-    [[nodiscard]] std::string BooleanWhereClause(SqlQualifiedTableColumnName const& column,
-                                                 std::string_view op,
-                                                 bool literalValue) const override
+    [[nodiscard]] std::string_view BooleanLiteral(bool literalValue) const noexcept override
     {
-        auto const literalValueStr = literalValue ? '1' : '0';
-        if (!column.tableName.empty())
-            return std::format(R"("{}"."{}" {} {})", column.columnName, column.columnName, op, literalValueStr);
-        else
-            return std::format(R"("{}" {} {})", column.columnName, op, literalValueStr);
+        return literalValue ? "1"sv : "0"sv;
     }
 
     [[nodiscard]] std::string SelectFirst(bool distinct,
