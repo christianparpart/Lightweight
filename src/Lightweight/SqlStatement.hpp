@@ -21,6 +21,12 @@
 #include <sqlspi.h>
 #include <sqltypes.h>
 
+template <typename QueryObject>
+concept SqlQueryObject = requires(QueryObject const& queryObject)
+{
+    { queryObject.ToSql() } -> std::convertible_to<std::string>;
+};
+
 // High level API for (prepared) raw SQL statements
 //
 // SQL prepared statement lifecycle:
@@ -53,6 +59,9 @@ class SqlStatement final: public SqlDataBinderCallback
 
     // Prepares the statement for execution.
     void Prepare(std::string_view query);
+
+    // Prepares the statement for execution.
+    void Prepare(SqlQueryObject auto const& queryObject);
 
     template <SqlInputParameterBinder Arg>
     void BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg);
@@ -93,12 +102,21 @@ class SqlStatement final: public SqlDataBinderCallback
     void ExecuteBatch(FirstColumnBatch const& firstColumnBatch, MoreColumnBatches const&... moreColumnBatches);
 
     // Executes the given query directly.
-    void ExecuteDirect(const std::string_view& query, std::source_location location = std::source_location::current());
+    void ExecuteDirect(std::string_view const& query, std::source_location location = std::source_location::current());
+
+    // Executes the given query directly.
+    void ExecuteDirect(SqlQueryObject auto const& query, std::source_location location = std::source_location::current());
 
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
     template <typename T>
-    [[nodiscard]] std::optional<T> ExecuteDirectScalar(const std::string_view& query,
+    [[nodiscard]] std::optional<T> ExecuteDirectSingle(const std::string_view& query,
+                                                       std::source_location location = std::source_location::current());
+
+    // Executes the given query, assuming that only one result row and column is affected, that one will be
+    // returned.
+    template <typename T>
+    [[nodiscard]] std::optional<T> ExecuteDirectSingle(SqlQueryObject auto const& query,
                                                        std::source_location location = std::source_location::current());
 
     // Retrieves the number of rows affected by the last query.
@@ -157,6 +175,11 @@ inline SqlConnection const& SqlStatement::Connection() const noexcept
 [[nodiscard]] inline SQLHSTMT SqlStatement::NativeHandle() const noexcept
 {
     return m_hStmt;
+}
+
+inline void SqlStatement::Prepare(SqlQueryObject auto const& queryObject)
+{
+    Prepare(queryObject.ToSql());
 }
 
 template <SqlOutputColumnBinder... Args>
@@ -343,13 +366,25 @@ inline void SqlStatement::PlanPostProcessOutputColumn(std::function<void()>&& cb
     m_postProcessOutputColumnCallbacks.emplace_back(std::move(cb));
 }
 
+inline void SqlStatement::ExecuteDirect(SqlQueryObject auto const& query, std::source_location location)
+{
+    return ExecuteDirect(query.ToSql(), location);
+}
+
 template <typename T>
-std::optional<T> SqlStatement::ExecuteDirectScalar(const std::string_view& query, std::source_location location)
+std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query, std::source_location location)
 {
     ExecuteDirect(query, location);
     if (FetchRow())
         return { GetColumn<T>(1) };
     return std::nullopt;
+}
+
+template <typename T>
+inline std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
+                                                   std::source_location location)
+{
+    return ExecuteDirectSingle<T>(query.ToSql(), location);
 }
 
 // }}}

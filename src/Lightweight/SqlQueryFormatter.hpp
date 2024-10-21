@@ -16,6 +16,10 @@ class [[nodiscard]] SqlQueryFormatter
 
     [[nodiscard]] virtual std::string_view BooleanLiteral(bool value) const noexcept = 0;
 
+    [[nodiscard]] virtual std::string StringLiteral(std::string_view value) const noexcept = 0;
+
+    [[nodiscard]] virtual std::string StringLiteral(char value) const noexcept = 0;
+
     [[nodiscard]] virtual std::string Insert(std::string const& intoTable,
                                              std::string const& fields,
                                              std::string const& values) const = 0;

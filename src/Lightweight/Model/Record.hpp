@@ -115,7 +115,7 @@ class RecordQueryBuilder
         auto stmt = SqlStatement();
         auto const sqlQueryString = m_queryBuilder.Count().ToSql();
         auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-        return stmt.ExecuteDirectScalar<size_t>(sqlQueryString).value();
+        return stmt.ExecuteDirectSingle<size_t>(sqlQueryString).value();
     }
 
     [[nodiscard]] std::optional<TargetModel> First(size_t count = 1)
@@ -282,7 +282,7 @@ template <typename Derived>
 size_t Record<Derived>::Count() noexcept
 {
     SqlStatement stmt;
-    return stmt.ExecuteDirectScalar<size_t>(std::format("SELECT COUNT(*) FROM {}", Derived().TableName())).value();
+    return stmt.ExecuteDirectSingle<size_t>(std::format("SELECT COUNT(*) FROM {}", Derived().TableName())).value();
 }
 
 template <typename Derived>
@@ -492,7 +492,7 @@ bool Record<Derived>::Load(std::string_view const& columnName, T const& value)
                                     .FromTable(std::string(TableName()))
                                     .Select()
                                     .Fields(AllFieldNames())
-                                    .Where(columnName, SqlQueryWildcard())
+                                    .Where(columnName, SqlWildcard)
                                     .First()
                                     .ToSql();
 
