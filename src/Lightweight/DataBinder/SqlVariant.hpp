@@ -8,6 +8,8 @@
 #include "SqlNullValue.hpp"
 #include "SqlText.hpp"
 #include "SqlTime.hpp"
+#include "StdString.hpp"
+#include "StdStringView.hpp"
 
 #include <format>
 #include <print>
@@ -26,6 +28,7 @@ using SqlVariant = std::variant<SqlNullType,
                                 float,
                                 double,
                                 std::string,
+                                std::string_view,
                                 SqlText,
                                 SqlDate,
                                 SqlTime,

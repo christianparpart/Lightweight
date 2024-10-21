@@ -12,16 +12,15 @@ class [[nodiscard]] SqlInsertQueryBuilder final
   public:
     explicit SqlInsertQueryBuilder(SqlQueryFormatter const& formatter,
                                    std::string tableName,
-                                   std::vector<SqlVariant>* inputBindings) noexcept:
-        m_formatter { formatter },
-        m_tableName { std::move(tableName) },
-        m_inputBindings { inputBindings }
-    {
-    }
+                                   std::vector<SqlVariant>* inputBindings) noexcept;
 
     // Adds a single column to the INSERT query.
     template <typename ColumnValue>
     SqlInsertQueryBuilder& Set(std::string_view columnName, ColumnValue const& value);
+
+    // Adds a single column to the INSERT query with the value being a string literal.
+    template <std::size_t N>
+    SqlInsertQueryBuilder& Set(std::string_view columnName, char const (&value)[N]);
 
     // Finalizes building the query as INSERT INTO ... query.
     [[nodiscard]] std::string ToSql() const;
@@ -33,6 +32,15 @@ class [[nodiscard]] SqlInsertQueryBuilder final
     std::string m_values;
     std::vector<SqlVariant>* m_inputBindings;
 };
+
+inline SqlInsertQueryBuilder::SqlInsertQueryBuilder(SqlQueryFormatter const& formatter,
+                                                    std::string tableName,
+                                                    std::vector<SqlVariant>* inputBindings) noexcept:
+    m_formatter { formatter },
+    m_tableName { std::move(tableName) },
+    m_inputBindings { inputBindings }
+{
+}
 
 template <typename ColumnValue>
 SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, ColumnValue const& value)
@@ -74,6 +82,12 @@ SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, C
     }
 
     return *this;
+}
+
+template <std::size_t N>
+inline SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, char const (&value)[N])
+{
+    return Set(columnName, std::string_view { value, N - 1 });
 }
 
 inline std::string SqlInsertQueryBuilder::ToSql() const

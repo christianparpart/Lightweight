@@ -1046,7 +1046,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Insert", "[SqlQueryBuilder]")
         [&]() {
             CHECK(boundValues.size() == 2);
             CHECK(std::get<int>(boundValues[0]) == 42);
-            CHECK(std::get<std::string>(boundValues[1]) == "baz");
+            CHECK(std::get<std::string_view>(boundValues[1]) == "baz");
             boundValues.clear();
         });
 }
@@ -1062,7 +1062,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Update", "[SqlQueryBuilder]")
         [&]() {
             CHECK(boundValues.size() == 3);
             CHECK(std::get<int>(boundValues[0]) == 42);
-            CHECK(std::get<std::string>(boundValues[1]) == "baz");
+            CHECK(std::get<std::string_view>(boundValues[1]) == "baz");
             CHECK(std::get<int>(boundValues[2]) == 123);
             boundValues.clear();
         });
