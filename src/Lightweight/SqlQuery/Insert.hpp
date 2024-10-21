@@ -2,8 +2,9 @@
 
 #include "Core.hpp"
 
-#include <string_view>
+#include <cassert>
 #include <string>
+#include <string_view>
 #include <vector>
 
 class [[nodiscard]] SqlInsertQueryBuilder final
@@ -50,17 +51,28 @@ SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, C
 
     if constexpr (std::is_same_v<ColumnValue, SqlNullType>)
         m_values += "NULL"sv;
+    else if constexpr (std::is_same_v<ColumnValue, char>)
+        m_values += m_formatter.StringLiteral(value);
     else if constexpr (std::is_arithmetic_v<ColumnValue>)
         m_values += std::format("{}", value);
     else if constexpr (std::is_same_v<ColumnValue, SqlWildcardType>)
     {
         m_values += '?';
-        m_boundInputs->emplace_back(SqlNullValue);
     }
-    else
+    else if (m_boundInputs)
     {
         m_values += '?';
         m_boundInputs->emplace_back(value);
+    }
+    else if constexpr (std::is_convertible_v<ColumnValue, std::string>
+                       || std::is_convertible_v<ColumnValue, std::string_view>
+                       || std::is_convertible_v<ColumnValue, char const*>)
+    {
+        m_values += m_formatter.StringLiteral(value);
+    }
+    else
+    {
+        m_values += m_formatter.StringLiteral(std::format("{}", value));
     }
 
     return *this;

@@ -15,12 +15,24 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                                      std::string const& fields,
                                      std::string const& values) const override
     {
-        return std::format(R"(INSERT INTO {} ({}) VALUES ({}))", intoTable, fields, values);
+        return std::format(R"(INSERT INTO "{}" ({}) VALUES ({}))", intoTable, fields, values);
     }
 
     [[nodiscard]] std::string_view BooleanLiteral(bool literalValue) const noexcept override
     {
         return literalValue ? "TRUE"sv : "FALSE"sv;
+    }
+
+    [[nodiscard]] std::string StringLiteral(std::string_view value) const noexcept override
+    {
+        // TODO: Implement escaping of special characters.
+        return std::format("'{}'", value);
+    }
+
+    [[nodiscard]] std::string StringLiteral(char value) const noexcept override
+    {
+        // TODO: Implement escaping of special characters.
+        return std::format("'{}'", value);
     }
 
     [[nodiscard]] std::string SelectCount(bool distinct,

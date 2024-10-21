@@ -7,7 +7,7 @@
                 "request": "launch",
                 "program": "${workspaceRoot}/out/build/linux-gcc-debug/src/tests/LightweightTest",
                 "args": [
-                    "Use SqlQueryBuilder for SqlStatement.Prepare: iterative fill"
+                    "Use SqlQueryBuilder for SqlStatement.Prepare: iterative"
                 ],
                 "cwd": "${workspaceRoot}",
                 "externalConsole": true,

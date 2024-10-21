@@ -89,7 +89,7 @@ size_t HasMany<OtherRecord, ForeignKeyName>::Count() const
     auto const sqlQueryString = std::format(
         "SELECT COUNT(*) FROM {} WHERE {} = {}", OtherRecord().TableName(), *ForeignKeyName, *m_record->Id());
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
-    return stmt.ExecuteDirectScalar<size_t>(sqlQueryString).value();
+    return stmt.ExecuteDirectSingle<size_t>(sqlQueryString).value();
 }
 
 template <typename OtherRecord, StringLiteral ForeignKeyName>
