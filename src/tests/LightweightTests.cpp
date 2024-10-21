@@ -74,6 +74,25 @@ void CreateEmployeesTable(SqlStatement& stmt,
                            sourceLocation);
 }
 
+void CreateLargeTable(SqlStatement& stmt, bool quote = false)
+{
+    std::stringstream sqlQueryStr;
+    auto const quoted = [quote](auto&& str) {
+        return quote ? std::format("\"{}\"", str) : str;
+    };
+    sqlQueryStr << "CREATE TABLE " << quoted("LargeTable") << " (\n";
+    for (char c = 'A'; c <= 'Z'; ++c)
+    {
+        sqlQueryStr << "    " << quoted(std::string(1, c)) << " VARCHAR(50) NULL";
+        if (c != 'Z')
+            sqlQueryStr << ",";
+        sqlQueryStr << "\n";
+    }
+    sqlQueryStr << ")\n";
+
+    stmt.ExecuteDirect(sqlQueryStr.str());
+}
+
 void FillEmployeesTable(SqlStatement& stmt, bool quoted = false)
 {
     if (quoted)
@@ -1110,4 +1129,25 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare",
     CHECK(stmt.GetColumn<std::string>(1) == "Alice");
     CHECK(stmt.GetColumn<std::string>(2) == "Smith");
     CHECK(stmt.GetColumn<int>(3) == 55'000);
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare: iterative fill", "[SqlQueryBuilder]")
+{
+    auto stmt = SqlStatement {};
+
+    bool constexpr quoted = true;
+    CreateLargeTable(stmt, quoted);
+
+    std::vector<SqlVariant> inputBindings;
+    auto insertQuery = stmt.Connection().Query("LargeTable").Insert(nullptr);
+
+    for (char c = 'A'; c <= 'Z'; ++c)
+    {
+        auto const columnName = std::string(1, c);
+        //auto const columnValue = c;
+        insertQuery.Set(columnName, std::string(1, c));
+    }
+
+    stmt.Prepare(insertQuery.ToSql());
+    stmt.ExecuteWithVariants(inputBindings);
 }

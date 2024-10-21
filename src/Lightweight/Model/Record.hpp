@@ -492,7 +492,7 @@ bool Record<Derived>::Load(std::string_view const& columnName, T const& value)
                                     .FromTable(std::string(TableName()))
                                     .Select()
                                     .Fields(AllFieldNames())
-                                    .Where(columnName, SqlQueryWildcard())
+                                    .Where(columnName, SqlWildcard)
                                     .First()
                                     .ToSql();
 

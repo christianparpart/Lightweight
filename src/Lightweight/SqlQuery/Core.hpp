@@ -5,12 +5,14 @@
 
 #include <ranges>
 
-// SqlQueryWildcard is a placeholder for an explicit wildcard input parameter in a SQL query.
+// SqlWildcardType is a placeholder for an explicit wildcard input parameter in a SQL query.
 //
 // Use this in the SqlQueryBuilder::Where method to insert a '?' placeholder for a wildcard.
-struct SqlQueryWildcard
+struct SqlWildcardType
 {
 };
+
+static constexpr inline auto SqlWildcard = SqlWildcardType {};
 
 namespace detail
 {
@@ -333,11 +335,9 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, std
     searchCondition.condition += binaryOp;
     searchCondition.condition += ' ';
 
-    if constexpr (std::is_same_v<T, SqlQueryWildcard>)
+    if constexpr (std::is_same_v<T, SqlWildcardType>)
     {
         searchCondition.condition += '?';
-        if (searchCondition.inputBindings)
-            searchCondition.inputBindings->emplace_back(SqlNullValue);
     }
     else if constexpr (std::is_same_v<T, detail::RawSqlCondition>)
     {
@@ -527,4 +527,3 @@ Derived& SqlWhereClauseBuilder<Derived>::Join(JoinType joinType,
 }
 
 } // namespace detail
-

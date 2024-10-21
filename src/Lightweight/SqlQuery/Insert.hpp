@@ -52,7 +52,7 @@ SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, C
         m_values += "NULL"sv;
     else if constexpr (std::is_arithmetic_v<ColumnValue>)
         m_values += std::format("{}", value);
-    else if constexpr (std::is_same_v<ColumnValue, SqlQueryWildcard>)
+    else if constexpr (std::is_same_v<ColumnValue, SqlWildcardType>)
     {
         m_values += '?';
         m_boundInputs->emplace_back(SqlNullValue);

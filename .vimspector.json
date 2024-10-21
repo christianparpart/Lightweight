@@ -1,35 +1,13 @@
 {
     "$schema": "https://puremourning.github.io/vimspector/schema/vimspector.schema.json#",
     "configurations": {
-        "ModelTest": {
-            "adapter": "vscode-cpptools",
-            "configuration": {
-                "request": "launch",
-                "program": "${workspaceRoot}/out/build/linux-gcc-debug/tools/ddl2cpp",
-                "args": [
-                    "--connection-string", "DRIVER=SQLite3;DATABASE=file::memory:", 
-                    "--create-test-tables",
-                    "--output", "blurb.hpp"
-                ],
-                "cwd": "${workspaceRoot}",
-                "externalConsole": true,
-                "stopAtEntry": false,
-                "MIMode": "gdb"
-            },
-            "breakpoints": {
-                "exception": {
-                    "caught": "Y",
-                    "uncaught": "Y"
-                }
-            }
-        },
         "CoreTest": {
             "adapter": "vscode-cpptools",
             "configuration": {
                 "request": "launch",
                 "program": "${workspaceRoot}/out/build/linux-gcc-debug/src/tests/LightweightTest",
                 "args": [
-                    "SqlQueryBuilder.Insert"
+                    "Use SqlQueryBuilder for SqlStatement.Prepare: iterative fill"
                 ],
                 "cwd": "${workspaceRoot}",
                 "externalConsole": true,

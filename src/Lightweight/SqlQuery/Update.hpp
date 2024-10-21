@@ -65,7 +65,7 @@ SqlUpdateQueryBuilder& SqlUpdateQueryBuilder::Set(std::string_view columnName, C
     }
     else if constexpr (std::is_arithmetic_v<ColumnValue>)
         m_values += std::format("{}", value);
-    else if constexpr (std::is_same_v<ColumnValue, SqlQueryWildcard>)
+    else if constexpr (std::is_same_v<ColumnValue, SqlWildcardType>)
         m_values += '?';
     else if constexpr (!detail::WhereConditionLiteralType<ColumnValue>::needsQuotes)
         m_values += std::format("{}", value);

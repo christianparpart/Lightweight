@@ -20,13 +20,21 @@ class [[nodiscard]] SqlQueryBuilder final
     SqlQueryBuilder& FromTableAs(std::string table, std::string alias);
 
     // Initiates INSERT query building
-    SqlInsertQueryBuilder Insert(std::vector<SqlVariant>* boundInputs) noexcept;
+    //
+    // @param boundInputs Optional vector to store bound inputs.
+    //                    If provided, the inputs will be appended to this vector and can be used
+    //                    to bind the values to the query via SqlStatement::ExecuteWithVariants(...)
+    SqlInsertQueryBuilder Insert(std::vector<SqlVariant>* boundInputs = nullptr) noexcept;
 
     // Initiates SELECT query building
     SqlSelectQueryBuilder Select() noexcept;
 
     // Initiates UPDATE query building
-    SqlUpdateQueryBuilder Update(std::vector<SqlVariant>* boundInputs) noexcept;
+    //
+    // @param boundInputs Optional vector to store bound inputs.
+    //                    If provided, the inputs will be appended to this vector and can be used
+    //                    to bind the values to the query via SqlStatement::ExecuteWithVariants(...)
+    SqlUpdateQueryBuilder Update(std::vector<SqlVariant>* boundInputs = nullptr) noexcept;
 
     // Initiates DELETE query building
     SqlDeleteQueryBuilder Delete() noexcept;
