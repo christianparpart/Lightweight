@@ -1042,10 +1042,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Insert", "[SqlQueryBuilder]")
                 .Set("bar", "baz")
                 .Set("baz", SqlNullValue);
         },
-        QueryExpectations::All(R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (42, ?, NULL))"),
+        QueryExpectations::All(R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (?, ?, NULL))"),
         [&]() {
-            CHECK(boundValues.size() == 1);
-            CHECK(std::get<std::string>(boundValues[0]) == "baz");
+            CHECK(boundValues.size() == 2);
+            CHECK(std::get<int>(boundValues[0]) == 42);
+            CHECK(std::get<std::string>(boundValues[1]) == "baz");
             boundValues.clear();
         });
 }

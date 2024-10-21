@@ -71,6 +71,9 @@ struct [[nodiscard]] SqlSearchCondition
 namespace detail
 {
 
+// Helper CRTP-based class for building WHERE clauses.
+//
+// This class is inherited by the SqlSelectQueryBuilder, SqlUpdateQueryBuilder, and SqlDeleteQueryBuilder
 template <typename Derived>
 class [[nodiscard]] SqlWhereClauseBuilder
 {

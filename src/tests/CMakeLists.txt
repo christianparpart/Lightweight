@@ -13,7 +13,7 @@ endif()
 target_link_libraries(LightweightTest PRIVATE ${TEST_LIBRARIES})
 
 target_sources(LightweightTest PRIVATE 
-    LightweightTests.cpp
+    CoreTests.cpp
     ModelTests.cpp
     ModelAssociationsTests.cpp
 )

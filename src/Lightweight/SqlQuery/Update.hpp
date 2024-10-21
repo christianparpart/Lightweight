@@ -58,15 +58,17 @@ SqlUpdateQueryBuilder& SqlUpdateQueryBuilder::Set(std::string_view columnName, C
 
     if constexpr (std::is_same_v<ColumnValue, SqlNullType>)
         m_values += "NULL"sv;
+    else if constexpr (std::is_same_v<ColumnValue, SqlWildcardType>)
+        m_values += '?';
     else if (m_searchCondition.inputBindings)
     {
         m_values += '?';
         m_searchCondition.inputBindings->emplace_back(value);
     }
+    else if constexpr (std::is_same_v<ColumnValue, char>)
+        m_values += m_formatter.StringLiteral(value);
     else if constexpr (std::is_arithmetic_v<ColumnValue>)
         m_values += std::format("{}", value);
-    else if constexpr (std::is_same_v<ColumnValue, SqlWildcardType>)
-        m_values += '?';
     else if constexpr (!detail::WhereConditionLiteralType<ColumnValue>::needsQuotes)
         m_values += std::format("{}", value);
     else

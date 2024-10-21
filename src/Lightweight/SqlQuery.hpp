@@ -5,6 +5,7 @@
 #include "SqlQuery/Update.hpp"
 #include "SqlQuery/Delete.hpp"
 
+// API Entry point for building SQL queries.
 class [[nodiscard]] SqlQueryBuilder final
 {
   public:

@@ -39,7 +39,9 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
         [[nodiscard]] std::string ToSql() const;
     };
 
-    explicit SqlSelectQueryBuilder(SqlQueryFormatter const& formatter, std::string table, std::string tableAlias) noexcept:
+    explicit SqlSelectQueryBuilder(SqlQueryFormatter const& formatter,
+                                   std::string table,
+                                   std::string tableAlias) noexcept:
         detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder> {},
         m_formatter { formatter }
     {

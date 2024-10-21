@@ -12,10 +12,10 @@ class [[nodiscard]] SqlInsertQueryBuilder final
   public:
     explicit SqlInsertQueryBuilder(SqlQueryFormatter const& formatter,
                                    std::string tableName,
-                                   std::vector<SqlVariant>* boundInputs) noexcept:
+                                   std::vector<SqlVariant>* inputBindings) noexcept:
         m_formatter { formatter },
         m_tableName { std::move(tableName) },
-        m_boundInputs { boundInputs }
+        m_inputBindings { inputBindings }
     {
     }
 
@@ -31,7 +31,7 @@ class [[nodiscard]] SqlInsertQueryBuilder final
     std::string m_tableName;
     std::string m_fields;
     std::string m_values;
-    std::vector<SqlVariant>* m_boundInputs;
+    std::vector<SqlVariant>* m_inputBindings;
 };
 
 template <typename ColumnValue>
@@ -51,19 +51,17 @@ SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, C
 
     if constexpr (std::is_same_v<ColumnValue, SqlNullType>)
         m_values += "NULL"sv;
+    else if constexpr (std::is_same_v<ColumnValue, SqlWildcardType>)
+        m_values += '?';
+    else if (m_inputBindings)
+    {
+        m_values += '?';
+        m_inputBindings->emplace_back(value);
+    }
     else if constexpr (std::is_same_v<ColumnValue, char>)
         m_values += m_formatter.StringLiteral(value);
     else if constexpr (std::is_arithmetic_v<ColumnValue>)
         m_values += std::format("{}", value);
-    else if constexpr (std::is_same_v<ColumnValue, SqlWildcardType>)
-    {
-        m_values += '?';
-    }
-    else if (m_boundInputs)
-    {
-        m_values += '?';
-        m_boundInputs->emplace_back(value);
-    }
     else if constexpr (std::is_convertible_v<ColumnValue, std::string>
                        || std::is_convertible_v<ColumnValue, std::string_view>
                        || std::is_convertible_v<ColumnValue, char const*>)
