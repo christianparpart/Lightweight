@@ -7,7 +7,9 @@
 class [[nodiscard]] SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
 {
   public:
-    explicit SqlDeleteQueryBuilder(SqlQueryFormatter const& formatter, std::string table, std::string tableAlias) noexcept:
+    explicit SqlDeleteQueryBuilder(SqlQueryFormatter const& formatter,
+                                   std::string table,
+                                   std::string tableAlias) noexcept:
         detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder> {},
         m_formatter { formatter }
     {
@@ -40,4 +42,3 @@ inline std::string SqlDeleteQueryBuilder::ToSql() const
                               m_searchCondition.tableJoins,
                               m_searchCondition.condition);
 }
-
