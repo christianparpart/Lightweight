@@ -527,11 +527,11 @@ TEST_CASE_METHOD(SqlTestFixture, "GetColumn in-place store variant")
 
     SqlVariant lastName;
     CHECK(stmt.GetColumn(2, &lastName));
-    CHECK(std::get<std::string>(lastName) == "Smith");
+    CHECK(std::get<std::string>(lastName.value) == "Smith");
 
     SqlVariant salary;
     CHECK(stmt.GetColumn(3, &salary));
-    CHECK(std::get<int>(salary) == 50'000);
+    CHECK(salary.TryInt().value_or(0) == 50'000);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values")
@@ -546,7 +546,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values")
     REQUIRE(stmt.FetchRow());
 
     auto const actual = stmt.GetColumn<SqlVariant>(1);
-    CHECK(std::holds_alternative<SqlNullType>(actual));
+    CHECK(std::holds_alternative<SqlNullType>(actual.value));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate")
@@ -563,7 +563,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate")
     stmt.ExecuteDirect("SELECT Value FROM Test");
     REQUIRE(stmt.FetchRow());
     auto const actual = stmt.GetColumn<SqlVariant>(1);
-    CHECK(std::get<SqlDate>(actual) == std::get<SqlDate>(expected));
+    CHECK(std::get<SqlDate>(actual.value) == std::get<SqlDate>(expected.value));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
@@ -588,7 +588,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
         return;
     }
 
-    CHECK(std::get<SqlTime>(actual) == std::get<SqlTime>(expected));
+    CHECK(std::get<SqlTime>(actual.value) == std::get<SqlTime>(expected.value));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "std::optional: InputParameter")
@@ -1045,8 +1045,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Insert", "[SqlQueryBuilder]")
         QueryExpectations::All(R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (?, ?, NULL))"),
         [&]() {
             CHECK(boundValues.size() == 2);
-            CHECK(std::get<int>(boundValues[0]) == 42);
-            CHECK(std::get<std::string_view>(boundValues[1]) == "baz");
+            CHECK(std::get<int>(boundValues[0].value) == 42);
+            CHECK(std::get<std::string_view>(boundValues[1].value) == "baz");
             boundValues.clear();
         });
 }
@@ -1061,9 +1061,9 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Update", "[SqlQueryBuilder]")
         QueryExpectations::All(R"(UPDATE "Other" AS "O" SET "foo" = ?, "bar" = ? WHERE "id" = ?)"),
         [&]() {
             CHECK(boundValues.size() == 3);
-            CHECK(std::get<int>(boundValues[0]) == 42);
-            CHECK(std::get<std::string_view>(boundValues[1]) == "baz");
-            CHECK(std::get<int>(boundValues[2]) == 123);
+            CHECK(std::get<int>(boundValues[0].value) == 42);
+            CHECK(std::get<std::string_view>(boundValues[1].value) == "baz");
+            CHECK(std::get<int>(boundValues[2].value) == 123);
             boundValues.clear();
         });
 }
@@ -1119,8 +1119,8 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare",
         stmt.Connection().Query("Employees").Update(&inputBindings).Set("Salary", 55'000).Where("Salary", 50'000);
 
     REQUIRE(inputBindings.size() == 2);
-    CHECK(std::get<int>(inputBindings[0]) == 55'000);
-    CHECK(std::get<int>(inputBindings[1]) == 50'000);
+    CHECK(std::get<int>(inputBindings[0].value) == 55'000);
+    CHECK(std::get<int>(inputBindings[1].value) == 50'000);
 
     stmt.Prepare(sqlQuery);
     stmt.ExecuteWithVariants(inputBindings);

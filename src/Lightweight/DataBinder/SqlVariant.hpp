@@ -15,25 +15,6 @@
 #include <print>
 #include <variant>
 
-// Helper struct to store a timestamp that should be automatically converted to/from a SQL_TIMESTAMP_STRUCT.
-// Helper struct to generically store and load a variant of different SQL types.
-using SqlVariant = std::variant<SqlNullType,
-                                bool,
-                                short,
-                                unsigned short,
-                                int,
-                                unsigned int,
-                                long long,
-                                unsigned long long,
-                                float,
-                                double,
-                                std::string,
-                                std::string_view,
-                                SqlText,
-                                SqlDate,
-                                SqlTime,
-                                SqlDateTime>;
-
 namespace detail
 {
 template <class... Ts>
@@ -46,6 +27,137 @@ template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 } // namespace detail
 
+struct SqlVariant
+{
+    using InnerType = std::variant<SqlNullType,
+                                   bool,
+                                   short,
+                                   unsigned short,
+                                   int,
+                                   unsigned int,
+                                   long long,
+                                   unsigned long long,
+                                   float,
+                                   double,
+                                   std::string,
+                                   std::string_view,
+                                   SqlText,
+                                   SqlDate,
+                                   SqlTime,
+                                   SqlDateTime>;
+
+    InnerType value;
+
+    // Check if the value is NULL.
+    [[nodiscard]] bool IsNull() const noexcept
+    {
+        return std::holds_alternative<SqlNullType>(value);
+    }
+
+    // Check if the value is of the specified type.
+    template <typename T>
+    [[nodiscard]] bool Is() const noexcept
+    {
+        return std::holds_alternative<T>(value);
+    }
+
+    // Retrieve the value as the specified type.
+    template <typename T>
+    [[nodiscard]] T& Get() noexcept
+    {
+        return std::get<T>(value);
+    }
+
+    // Retrieve the value as the specified type, or return the default value if the value is NULL.
+    template <typename T>
+    [[nodiscard]] T ValueOr(T&& defaultValue) const noexcept
+    {
+        if (IsNull())
+            return defaultValue;
+
+        return std::get<T>(value);
+    }
+
+    // clang-format off
+    [[nodiscard]] std::optional<bool> TryBool() const noexcept { return TryIntegral<bool>(); }
+    [[nodiscard]] std::optional<short> TryShort() const noexcept { return TryIntegral<short>(); }
+    [[nodiscard]] std::optional<unsigned short> TryUShort() const noexcept { return TryIntegral<unsigned short>(); }
+    [[nodiscard]] std::optional<int> TryInt() const noexcept { return TryIntegral<int>(); }
+    [[nodiscard]] std::optional<unsigned int> TryUInt() const noexcept { return TryIntegral<unsigned int>(); }
+    [[nodiscard]] std::optional<long long> TryLongLong() const noexcept { return TryIntegral<long long>(); }
+    [[nodiscard]] std::optional<unsigned long long> TryULongLong() const noexcept { return TryIntegral<unsigned long long>(); }
+    // clang-format on
+
+    [[nodiscard]] std::optional<std::string_view> TryStringView() const noexcept
+    {
+        if (IsNull())
+            return std::nullopt;
+
+        // clang-format off
+        return std::visit(detail::overloaded {
+            [](std::string_view v) { return v; },
+            [](std::string const& v) { return std::string_view(v.data(), v.size()); },
+            [](SqlText const& v) { return std::string_view(v.value.data(), v.value.size()); },
+            [](auto) -> std::string_view { throw std::bad_variant_access(); }
+        }, value);
+        // clang-format on
+    }
+
+    [[nodiscard]] std::optional<SqlDate> TryDate() const noexcept
+    {
+        if (IsNull())
+            return std::nullopt;
+
+        // clang-format off
+        return std::visit(detail::overloaded {
+            [](SqlDate const& v) { return v; },
+            [](auto) -> SqlDate { throw std::bad_variant_access(); }
+        }, value);
+        // clang-format on
+    }
+
+    [[nodiscard]] std::optional<SqlTime> TryTime() const noexcept
+    {
+        if (IsNull())
+            return std::nullopt;
+
+        // clang-format off
+        return std::visit(detail::overloaded {
+            [](SqlTime const& v) { return v; },
+            [](auto) -> SqlTime { throw std::bad_variant_access(); }
+        }, value);
+        // clang-format on
+    }
+
+    [[nodiscard]] std::optional<SqlDateTime> TryDateTime() const noexcept
+    {
+        if (IsNull())
+            return std::nullopt;
+
+        // clang-format off
+        return std::visit(detail::overloaded {
+            [](SqlDateTime const& v) { return v; },
+            [](auto) -> SqlDateTime { throw std::bad_variant_access(); }
+        }, value);
+        // clang-format on
+    }
+
+  private:
+    template <typename ResultType>
+    [[nodiscard]] std::optional<ResultType> TryIntegral() const noexcept
+    {
+        if (IsNull())
+            return std::nullopt;
+
+        // clang-format off
+        return std::visit(detail::overloaded {
+            []<typename T>(T v) -> ResultType requires(std::is_integral_v<T>) { return static_cast<ResultType>(v); },
+            [](auto) -> ResultType { throw std::bad_variant_access(); }
+        }, value);
+        // clang-format on
+    }
+};
+
 template <>
 struct SqlDataBinder<SqlVariant>
 {
@@ -54,7 +166,7 @@ struct SqlDataBinder<SqlVariant>
         return std::visit(detail::overloaded { [&]<typename T>(T const& value) {
                               return SqlDataBinder<T>::InputParameter(stmt, column, value);
                           } },
-                          variantValue);
+                          variantValue.value);
     }
 
     static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlVariant* result, SQLLEN* indicator) noexcept
@@ -65,38 +177,33 @@ struct SqlDataBinder<SqlVariant>
         if (!SQL_SUCCEEDED(returnCode))
             return returnCode;
 
+        auto& variant = result->value;
+
         switch (columnType)
         {
             case SQL_BIT:
-                result->emplace<bool>();
-                returnCode = SqlDataBinder<bool>::GetColumn(stmt, column, &std::get<bool>(*result), indicator);
+                returnCode = SqlDataBinder<bool>::GetColumn(stmt, column, &variant.emplace<bool>(), indicator);
                 break;
             case SQL_TINYINT:
-                result->emplace<short>();
-                returnCode = SqlDataBinder<short>::GetColumn(stmt, column, &std::get<short>(*result), indicator);
+                returnCode = SqlDataBinder<short>::GetColumn(stmt, column, &variant.emplace<short>(), indicator);
                 break;
             case SQL_SMALLINT:
-                result->emplace<unsigned short>();
                 returnCode = SqlDataBinder<unsigned short>::GetColumn(
-                    stmt, column, &std::get<unsigned short>(*result), indicator);
+                    stmt, column, &variant.emplace<unsigned short>(), indicator);
                 break;
             case SQL_INTEGER:
-                result->emplace<int>();
-                returnCode = SqlDataBinder<int>::GetColumn(stmt, column, &std::get<int>(*result), indicator);
+                returnCode = SqlDataBinder<int>::GetColumn(stmt, column, &variant.emplace<int>(), indicator);
                 break;
             case SQL_BIGINT:
-                result->emplace<long long>();
                 returnCode =
-                    SqlDataBinder<long long>::GetColumn(stmt, column, &std::get<long long>(*result), indicator);
+                    SqlDataBinder<long long>::GetColumn(stmt, column, &variant.emplace<long long>(), indicator);
                 break;
             case SQL_REAL:
-                result->emplace<float>();
-                returnCode = SqlDataBinder<float>::GetColumn(stmt, column, &std::get<float>(*result), indicator);
+                returnCode = SqlDataBinder<float>::GetColumn(stmt, column, &variant.emplace<float>(), indicator);
                 break;
             case SQL_FLOAT:
             case SQL_DOUBLE:
-                result->emplace<double>();
-                returnCode = SqlDataBinder<double>::GetColumn(stmt, column, &std::get<double>(*result), indicator);
+                returnCode = SqlDataBinder<double>::GetColumn(stmt, column, &variant.emplace<double>(), indicator);
                 break;
             case SQL_CHAR:          // fixed-length string
             case SQL_VARCHAR:       // variable-length string
@@ -107,17 +214,15 @@ struct SqlDataBinder<SqlVariant>
             case SQL_BINARY:        // fixed-length binary
             case SQL_VARBINARY:     // variable-length binary
             case SQL_LONGVARBINARY: // long binary
-                result->emplace<std::string>();
                 returnCode =
-                    SqlDataBinder<std::string>::GetColumn(stmt, column, &std::get<std::string>(*result), indicator);
+                    SqlDataBinder<std::string>::GetColumn(stmt, column, &variant.emplace<std::string>(), indicator);
                 break;
             case SQL_DATE:
                 SqlLogger::GetLogger().OnWarning(
                     std::format("SQL_DATE is from ODBC 2. SQL_TYPE_DATE should have been received instead."));
                 [[fallthrough]];
             case SQL_TYPE_DATE:
-                result->emplace<SqlDate>();
-                returnCode = SqlDataBinder<SqlDate>::GetColumn(stmt, column, &std::get<SqlDate>(*result), indicator);
+                returnCode = SqlDataBinder<SqlDate>::GetColumn(stmt, column, &variant.emplace<SqlDate>(), indicator);
                 break;
             case SQL_TIME:
                 SqlLogger::GetLogger().OnWarning(
@@ -125,13 +230,11 @@ struct SqlDataBinder<SqlVariant>
                 [[fallthrough]];
             case SQL_TYPE_TIME:
             case SQL_SS_TIME2:
-                result->emplace<SqlTime>();
-                returnCode = SqlDataBinder<SqlTime>::GetColumn(stmt, column, &std::get<SqlTime>(*result), indicator);
+                returnCode = SqlDataBinder<SqlTime>::GetColumn(stmt, column, &variant.emplace<SqlTime>(), indicator);
                 break;
             case SQL_TYPE_TIMESTAMP:
-                result->emplace<SqlDateTime>();
                 returnCode =
-                    SqlDataBinder<SqlDateTime>::GetColumn(stmt, column, &std::get<SqlDateTime>(*result), indicator);
+                    SqlDataBinder<SqlDateTime>::GetColumn(stmt, column, &variant.emplace<SqlDateTime>(), indicator);
                 break;
             case SQL_TYPE_NULL:
             case SQL_DECIMAL:
@@ -140,12 +243,11 @@ struct SqlDataBinder<SqlVariant>
                 // TODO: Get them implemented on demand
                 [[fallthrough]];
             default:
-                std::println("Unsupported column type: {}", columnType);
                 SqlLogger::GetLogger().OnError(SqlError::UNSUPPORTED_TYPE);
                 returnCode = SQL_ERROR; // std::errc::invalid_argument;
         }
         if (indicator && *indicator == SQL_NULL_DATA)
-            *result = SqlNullValue;
+            variant = SqlNullValue;
         return returnCode;
     }
 };
