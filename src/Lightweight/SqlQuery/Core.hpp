@@ -71,6 +71,9 @@ struct [[nodiscard]] SqlSearchCondition
 namespace detail
 {
 
+// Helper CRTP-based class for building WHERE clauses.
+//
+// This class is inherited by the SqlSelectQueryBuilder, SqlUpdateQueryBuilder, and SqlDeleteQueryBuilder
 template <typename Derived>
 class [[nodiscard]] SqlWhereClauseBuilder
 {
@@ -81,6 +84,10 @@ class [[nodiscard]] SqlWhereClauseBuilder
     // Constructs or extends a WHERE clause to test for a binary operation.
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& Where(ColumnName const& columnName, std::string_view binaryOp, T const& value);
+
+    // Constructs or extends a WHERE clause to test for a binary operation for RHS as string literal.
+    template <typename ColumnName, std::size_t N>
+    Derived& Where(ColumnName const& columnName, std::string_view binaryOp, char const (&value)[N]);
 
     // Constructs or extends a WHERE clause to test for equality.
     template <typename ColumnName, typename T>
@@ -322,6 +329,15 @@ struct WhereConditionLiteralType
 {
     constexpr static bool needsQuotes = !std::is_integral_v<T> && !std::is_floating_point_v<T>;
 };
+
+template <typename Derived>
+template <typename ColumnName, std::size_t N>
+Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName,
+                                               std::string_view binaryOp,
+                                               char const (&value)[N])
+{
+    return Where(columnName, binaryOp, std::string_view { value, N - 1 });
+}
 
 template <typename Derived>
 template <typename ColumnName, typename T>

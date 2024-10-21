@@ -59,7 +59,7 @@ void SqlStatement::ExecuteWithVariants(std::vector<SqlVariant> const& args)
     SQLUSMALLINT i = 0;
     for (auto const& arg: args)
     {
-        if (std::holds_alternative<SqlNullType>(arg))
+        if (arg.IsNull())
             continue;
         SqlDataBinder<SqlVariant>::InputParameter(m_hStmt, ++i, arg);
     }
