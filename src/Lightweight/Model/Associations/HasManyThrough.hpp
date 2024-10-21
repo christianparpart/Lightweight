@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "../../SqlComposedQuery.hpp"
+#include "../../SqlQuery.hpp"
 #include "../AbstractRecord.hpp"
 #include "../StringLiteral.hpp"
 

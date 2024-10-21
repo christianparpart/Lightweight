@@ -1,7 +1,7 @@
 #include "Utils.hpp"
 
-#include <Lightweight/SqlComposedQuery.hpp>
 #include <Lightweight/SqlConnection.hpp>
+#include <Lightweight/SqlQuery.hpp>
 #include <Lightweight/SqlQueryFormatter.hpp>
 #include <Lightweight/SqlScopedTraceLogger.hpp>
 #include <Lightweight/SqlStatement.hpp>
@@ -48,22 +48,38 @@ int main(int argc, char** argv)
 namespace
 {
 
-void CreateEmployeesTable(SqlStatement& stmt, std::source_location sourceLocation = std::source_location::current())
+void CreateEmployeesTable(SqlStatement& stmt,
+                          bool quoted = false,
+                          std::source_location sourceLocation = std::source_location::current())
 {
-    stmt.ExecuteDirect(std::format(R"SQL(CREATE TABLE Employees (
+    if (quoted)
+        stmt.ExecuteDirect(std::format(R"SQL(CREATE TABLE "Employees" (
+                                                         "EmployeeID" {},
+                                                         "FirstName" VARCHAR(50) NOT NULL,
+                                                         "LastName" VARCHAR(50),
+                                                         "Salary" INT NOT NULL
+                                                     );
+                                                    )SQL",
+                                       stmt.Connection().Traits().PrimaryKeyAutoIncrement),
+                           sourceLocation);
+    else
+        stmt.ExecuteDirect(std::format(R"SQL(CREATE TABLE Employees (
                                                          EmployeeID {},
                                                          FirstName VARCHAR(50) NOT NULL,
                                                          LastName VARCHAR(50),
                                                          Salary INT NOT NULL
                                                      );
                                                     )SQL",
-                                   stmt.Connection().Traits().PrimaryKeyAutoIncrement),
-                       sourceLocation);
+                                       stmt.Connection().Traits().PrimaryKeyAutoIncrement),
+                           sourceLocation);
 }
 
-void FillEmployeesTable(SqlStatement& stmt)
+void FillEmployeesTable(SqlStatement& stmt, bool quoted = false)
 {
-    stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    if (quoted)
+        stmt.Prepare(R"(INSERT INTO "Employees" ("FirstName", "LastName", "Salary") VALUES (?, ?, ?))");
+    else
+        stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
     stmt.Execute("Alice", "Smith", 50'000);
     stmt.Execute("Bob", "Johnson", 60'000);
     stmt.Execute("Charlie", "Brown", 70'000);
@@ -1007,7 +1023,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Insert", "[SqlQueryBuilder]")
                 .Set("bar", "baz")
                 .Set("baz", SqlNullValue);
         },
-        QueryExpectations::All(R"(INSERT INTO "Other" ("foo", "bar", "baz") VALUES (42, ?, NULL))"),
+        QueryExpectations::All(R"(INSERT INTO Other ("foo", "bar", "baz") VALUES (42, ?, NULL))"),
         [&]() {
             CHECK(boundValues.size() == 1);
             CHECK(std::get<std::string>(boundValues[0]) == "baz");
@@ -1059,11 +1075,11 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.ExecuteDi
 {
     auto stmt = SqlStatement {};
 
-    CreateEmployeesTable(stmt);
-    FillEmployeesTable(stmt);
+    bool constexpr quoted = true;
+    CreateEmployeesTable(stmt, quoted);
+    FillEmployeesTable(stmt, quoted);
 
-    auto const sqlQuery = stmt.Connection().Query("Employees").Select().Fields("FirstName", "LastName").All();
-    stmt.ExecuteDirect(sqlQuery.ToSql());
+    stmt.ExecuteDirect(stmt.Connection().Query("Employees").Select().Fields("FirstName", "LastName").All().ToSql());
 
     REQUIRE(stmt.FetchRow());
     CHECK(stmt.GetColumn<std::string>(1) == "Alice");
@@ -1073,8 +1089,9 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare",
 {
     auto stmt = SqlStatement {};
 
-    CreateEmployeesTable(stmt);
-    FillEmployeesTable(stmt);
+    bool constexpr quoted = true;
+    CreateEmployeesTable(stmt, quoted);
+    FillEmployeesTable(stmt, quoted);
 
     std::vector<SqlVariant> inputBindings;
 
@@ -1088,7 +1105,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare",
     stmt.Prepare(sqlQuery.ToSql());
     stmt.ExecuteWithVariants(inputBindings);
 
-    stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees WHERE Salary = 55000");
+    stmt.ExecuteDirect(R"(SELECT "FirstName", "LastName", "Salary" FROM "Employees" WHERE "Salary" = 55000)");
     REQUIRE(stmt.FetchRow());
     CHECK(stmt.GetColumn<std::string>(1) == "Alice");
     CHECK(stmt.GetColumn<std::string>(2) == "Smith");

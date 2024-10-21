@@ -1,5 +1,5 @@
-#include "SqlComposedQuery.hpp"
 #include "SqlConnection.hpp"
+#include "SqlQuery.hpp"
 #include "SqlQueryFormatter.hpp"
 
 #include <list>

@@ -57,7 +57,7 @@ dbConnection.Query("employees")
             .Delete()
             .Where("employee_id", "=", 100)
             .ToSql();
-            ```
+```
 
 ## C++ Language requirements
 

@@ -1,4 +1,3 @@
-#include "SqlComposedQuery.hpp"
 #include "SqlQueryFormatter.hpp"
 
 #include <cassert>
@@ -59,7 +58,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         if (distinct)
             sqlQueryString << "DISTINCT ";
         sqlQueryString << fields;
-        sqlQueryString << "\n FROM \"" << fromTable << '"';
+        sqlQueryString << " FROM \"" << fromTable << '"';
         if (!fromTableAlias.empty())
             sqlQueryString << " AS \"" << fromTableAlias << '"';
         sqlQueryString << tableJoins;
@@ -83,7 +82,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         sqlQueryString << "SELECT " << fields;
         if (distinct)
             sqlQueryString << " DISTINCT";
-        sqlQueryString << "\n FROM \"" << fromTable << "\"";
+        sqlQueryString << " FROM \"" << fromTable << "\"";
         if (!fromTableAlias.empty())
             sqlQueryString << " AS \"" << fromTableAlias << "\"";
         sqlQueryString << tableJoins;
@@ -108,7 +107,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         sqlQueryString << "SELECT " << fields;
         if (distinct)
             sqlQueryString << " DISTINCT";
-        sqlQueryString << "\n FROM \"" << fromTable << "\"";
+        sqlQueryString << " FROM \"" << fromTable << "\"";
         if (!fromTableAlias.empty())
             sqlQueryString << " AS \"" << fromTableAlias << "\"";
         sqlQueryString << tableJoins;

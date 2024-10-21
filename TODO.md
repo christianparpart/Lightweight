@@ -8,7 +8,6 @@
 - [x] Add insert query builder
 - [x] Add update query builder
 - [ ] Better address boolean `Where` clauses wrt association priorities
-- [ ] -> then rename SqlComposedQuery.hpp to SqlQuery(Builder?).hpp (and maybe classes to Sql...Query ?)
 - [ ] fix readme's qeury builder examples
 
 - [x] check for more use of `ExecuteDirectScalar`

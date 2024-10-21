@@ -28,12 +28,17 @@ set(HEADER_FILES
     Model/Relation.hpp
     Model/StringLiteral.hpp
     Model/Utils.hpp
-    SqlComposedQuery.hpp
     SqlConcepts.hpp
     SqlConnectInfo.hpp
     SqlConnection.hpp
     SqlError.hpp
     SqlLogger.hpp
+    SqlQuery.hpp
+    SqlQuery/Core.hpp
+    SqlQuery/Delete.hpp
+    SqlQuery/Insert.hpp
+    SqlQuery/Select.hpp
+    SqlQuery/Update.hpp
     SqlQueryFormatter.hpp
     SqlSchema.hpp
     SqlScopedTraceLogger.hpp
@@ -43,11 +48,12 @@ set(HEADER_FILES
 set(SOURCE_FILES
     Model/AbstractRecord.cpp
     Model/Logger.cpp
-    SqlComposedQuery.cpp
     SqlConnectInfo.cpp
     SqlConnection.cpp
     SqlError.cpp
     SqlLogger.cpp
+    SqlQuery.cpp
+    SqlQuery/Select.cpp
     SqlQueryFormatter.cpp
     SqlSchema.cpp
     SqlStatement.cpp
