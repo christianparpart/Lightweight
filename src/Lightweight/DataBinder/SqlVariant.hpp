@@ -2,6 +2,7 @@
 #pragma once
 
 #include "../SqlLogger.hpp"
+#include "MFCStringLike.hpp"
 #include "Primitives.hpp"
 #include "SqlDate.hpp"
 #include "SqlDateTime.hpp"
@@ -47,6 +48,46 @@ struct SqlVariant
                                    SqlDateTime>;
 
     InnerType value;
+
+    explicit SqlVariant() = default;
+
+    template <typename T>
+    explicit SqlVariant(T const& newValue):
+        value { newValue }
+    {
+    }
+
+    template <typename T>
+    explicit SqlVariant(T&& newValue) noexcept:
+        value { std::forward<T>(newValue) }
+    {
+    }
+
+    template <typename T>
+    SqlVariant& operator=(T const& newValue)
+    {
+        value = newValue;
+        return *this;
+    }
+
+    template <typename T>
+        requires(!MFCStringLike<T>)
+    SqlVariant& operator=(T&& newValue) noexcept
+    {
+        value = std::forward<T>(newValue);
+        return *this;
+    }
+
+    explicit SqlVariant(MFCStringLike auto * newValue):
+        value { std::string_view(newValue->GetString(), newValue->GetLength()) }
+    {
+    }
+
+    SqlVariant& operator=(MFCStringLike auto const* newValue) noexcept
+    {
+        value = std::string_view(newValue->GetString(), newValue->GetLength());
+        return *this;
+    }
 
     // Check if the value is NULL.
     [[nodiscard]] bool IsNull() const noexcept

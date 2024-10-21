@@ -42,6 +42,7 @@ class SqlStatement final: public SqlDataBinderCallback
     SqlStatement() noexcept;
 
     SqlStatement(SqlStatement&&) noexcept = default;
+    SqlStatement& operator=(SqlStatement&&) noexcept = default;
 
     // Construct a new SqlStatement object, using the given connection.
     SqlStatement(SqlConnection& relatedConnection);
@@ -53,6 +54,12 @@ class SqlStatement final: public SqlDataBinderCallback
 
     // Retrieves the connection associated with this statement.
     [[nodiscard]] SqlConnection const& Connection() const noexcept;
+
+    // Creates a new query builder for the given table, compatible with the SQL server being connected.
+    [[nodiscard]] SqlQueryBuilder Query(std::string_view const& table = {}) const;
+
+    // Creates a new query builder for the given table with an alias, compatible with the SQL server being connected.
+    [[nodiscard]] SqlQueryBuilder QueryAs(std::string_view const& table, std::string_view const& tableAlias) const;
 
     // Retrieves the native handle of the statement.
     [[nodiscard]] SQLHSTMT NativeHandle() const noexcept;

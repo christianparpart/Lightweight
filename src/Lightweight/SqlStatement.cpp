@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#include "SqlQuery.hpp"
 #include "SqlStatement.hpp"
 
 SqlStatement::SqlStatement() noexcept:
@@ -119,4 +120,14 @@ void SqlStatement::RequireSuccess(SQLRETURN error, std::source_location sourceLo
         throw std::invalid_argument(std::format("SQL error: {}", errorInfo));
     else
         throw SqlException(errorInfo);
+}
+
+SqlQueryBuilder SqlStatement::Query(std::string_view const& table) const
+{
+    return Connection().Query(table);
+}
+
+SqlQueryBuilder SqlStatement::QueryAs(std::string_view const& table, std::string_view const& tableAlias) const
+{
+    return Connection().QueryAs(table, tableAlias);
 }

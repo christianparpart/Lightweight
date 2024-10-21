@@ -28,7 +28,6 @@ set(HEADER_FILES
     Model/Relation.hpp
     Model/StringLiteral.hpp
     Model/Utils.hpp
-    SqlConcepts.hpp
     SqlConnectInfo.hpp
     SqlConnection.hpp
     SqlError.hpp

@@ -22,6 +22,9 @@ class [[nodiscard]] SqlInsertQueryBuilder final
     template <std::size_t N>
     SqlInsertQueryBuilder& Set(std::string_view columnName, char const (&value)[N]);
 
+    // Adds a single column to the INSERT query with the value being a MFC like CString.
+    SqlInsertQueryBuilder& Set(std::string_view columnName, MFCStringLike auto const* value);
+
     // Finalizes building the query as INSERT INTO ... query.
     [[nodiscard]] std::string ToSql() const;
 
@@ -88,6 +91,11 @@ template <std::size_t N>
 inline SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, char const (&value)[N])
 {
     return Set(columnName, std::string_view { value, N - 1 });
+}
+
+inline SqlInsertQueryBuilder& SqlInsertQueryBuilder::Set(std::string_view columnName, MFCStringLike auto const* value)
+{
+    return Set(columnName, std::string_view { value->GetString(), value->GetLength() });
 }
 
 inline std::string SqlInsertQueryBuilder::ToSql() const

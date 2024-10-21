@@ -4,7 +4,6 @@
     #include <Windows.h>
 #endif
 
-#include "SqlConcepts.hpp"
 #include "SqlConnectInfo.hpp"
 #include "SqlError.hpp"
 #include "SqlLogger.hpp"

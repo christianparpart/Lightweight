@@ -39,6 +39,9 @@ class [[nodiscard]] SqlUpdateQueryBuilder final: public detail::SqlWhereClauseBu
     template <std::size_t N>
     SqlUpdateQueryBuilder& Set(std::string_view columnName, char const (&value)[N]);
 
+    // Adds a single column to the SET clause with the value being a MFC like CString.
+    SqlUpdateQueryBuilder& Set(std::string_view columnName, MFCStringLike auto const* value);
+
     // Finalizes building the query as UPDATE ... query.
     [[nodiscard]] std::string ToSql() const;
 
@@ -89,6 +92,11 @@ template <std::size_t N>
 SqlUpdateQueryBuilder& SqlUpdateQueryBuilder::Set(std::string_view columnName, char const (&value)[N])
 {
     return Set(columnName, std::string_view { value, N - 1 });
+}
+
+inline SqlUpdateQueryBuilder& SqlUpdateQueryBuilder::Set(std::string_view columnName, MFCStringLike auto const* value)
+{
+    return Set(columnName, std::string_view { value->GetString(), value->GetLength() });
 }
 
 inline std::string SqlUpdateQueryBuilder::ToSql() const
