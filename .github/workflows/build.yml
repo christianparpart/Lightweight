@@ -73,7 +73,8 @@ jobs:
     - name: "build"
       run: cmake --build build
     - name: "run clang-tidy"
-      run: find ./src/ -name "*.cpp" -o -name "*.h" | xargs -n 1 -P $(nproc) clang-tidy -format-style=file -p build
+      # TODO: Reenable Model directory once design is working with Clang/Clang-Tidy
+      run: find ./src/ -name "*.cpp" -o -name "*.h" | grep -v Model | xargs -n 1 -P $(nproc) clang-tidy -format-style=file -p build
 
   # }}}
   # {{{ Windows

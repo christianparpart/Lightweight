@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "../SqlComposedQuery.hpp"
+#include "../SqlQuery.hpp"
 #include "AbstractRecord.hpp"
 #include "Detail.hpp"
 #include "Field.hpp"
@@ -57,7 +57,9 @@ class RecordQueryBuilder
 
   public:
     explicit RecordQueryBuilder():
-        m_queryBuilder { SqlQueryBuilder::FromTable(TargetModel().TableName()).Select() }
+        m_queryBuilder {
+            SqlQueryBuilder(SqlConnection().QueryFormatter()).FromTable(std::string(TargetModel().TableName())).Select()
+        }
     {
     }
 
@@ -111,7 +113,7 @@ class RecordQueryBuilder
     [[nodiscard]] std::size_t Count()
     {
         auto stmt = SqlStatement();
-        auto const sqlQueryString = m_queryBuilder.Count().ToSql(stmt.Connection().QueryFormatter());
+        auto const sqlQueryString = m_queryBuilder.Count().ToSql();
         auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
         return stmt.ExecuteDirectScalar<size_t>(sqlQueryString).value();
     }
@@ -122,9 +124,8 @@ class RecordQueryBuilder
 
         auto stmt = SqlStatement {};
 
-        auto const sqlQueryString = m_queryBuilder.Fields(targetRecord.AllFieldNames(), targetRecord.TableName())
-                                        .First(count)
-                                        .ToSql(stmt.Connection().QueryFormatter());
+        auto const sqlQueryString =
+            m_queryBuilder.Fields(targetRecord.AllFieldNames(), targetRecord.TableName()).First(count).ToSql();
 
         auto const _ = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
 
@@ -144,9 +145,8 @@ class RecordQueryBuilder
     [[nodiscard]] std::vector<TargetModel> Range(std::size_t offset, std::size_t limit)
     {
         auto const targetRecord = TargetModel();
-        auto const sqlQueryString = m_queryBuilder.Field(targetRecord.AllFieldNames(), targetRecord.TableName())
-                                        .Range(offset, limit)
-                                        .ToSql(SqlConnection().QueryFormatter());
+        auto const sqlQueryString =
+            m_queryBuilder.Field(targetRecord.AllFieldNames(), targetRecord.TableName()).Range(offset, limit).ToSql();
         return TargetModel::Query(sqlQueryString).value_or(std::vector<TargetModel> {});
     }
 
@@ -154,18 +154,16 @@ class RecordQueryBuilder
     void Each(Callback&& callback)
     {
         auto const targetRecord = TargetModel();
-        auto const sqlQueryString = m_queryBuilder.Fields(targetRecord.AllFieldNames(), targetRecord.TableName())
-                                        .All()
-                                        .ToSql(SqlConnection().QueryFormatter());
+        auto const sqlQueryString =
+            m_queryBuilder.Fields(targetRecord.AllFieldNames(), targetRecord.TableName()).All().ToSql();
         TargetModel::Each(std::forward<Callback>(callback), sqlQueryString);
     }
 
     [[nodiscard]] std::vector<TargetModel> All()
     {
         auto const targetRecord = TargetModel();
-        auto const sqlQueryString = m_queryBuilder.Fields(targetRecord.AllFieldNames(), targetRecord.TableName())
-                                        .All()
-                                        .ToSql(SqlConnection().QueryFormatter());
+        auto const sqlQueryString =
+            m_queryBuilder.Fields(targetRecord.AllFieldNames(), targetRecord.TableName()).All().ToSql();
         return TargetModel::Query(sqlQueryString);
     }
 
@@ -490,12 +488,13 @@ bool Record<Derived>::Load(std::string_view const& columnName, T const& value)
 {
     SqlStatement stmt;
 
-    auto const sqlQueryString = SqlQueryBuilder::FromTable(TableName())
+    auto const sqlQueryString = SqlQueryBuilder(stmt.Connection().QueryFormatter())
+                                    .FromTable(std::string(TableName()))
                                     .Select()
                                     .Fields(AllFieldNames())
                                     .Where(columnName, SqlQueryWildcard())
                                     .First()
-                                    .ToSql(stmt.Connection().QueryFormatter());
+                                    .ToSql();
 
     auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, AllFields());
 

@@ -60,7 +60,7 @@ void HasMany<OtherRecord, ForeignKeyName>::Load()
     if (m_loaded)
         return;
 
-    m_models = OtherRecord::Where(*ForeignKeyName, m_record->Id()).All();
+    m_models = OtherRecord::Where(*ForeignKeyName, *m_record->Id()).All();
     m_loaded = true;
 }
 

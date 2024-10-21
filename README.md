@@ -18,46 +18,45 @@
 ## Query builder examples
 
 ```cpp
-auto sqlStatement = SqlStatement();
-auto const& queryFormatter = sqlStatemnt.Connection().QueryFormatter();
+auto dbConnection = SqlConnection();
 
 // SELECT "employee_id", "first_name", "last_name"
 // FROM "employees"
 // WHERE "employee_id" = 100
 // ORDER BY "last_name" ASC LIMIT 5 OFFSET 10
-SqlQueryBuilder::FromTable("employees")
-                .Select()
-                .Fields("employee_id", "first_name", "last_name")
-                .Where("employee_id", "=", 100)
-                .OrderBy("last_name", SqlQueryBuilder::Ascending)
-                .Range(5, 10)
-                .ToSql(queryFormatter);
+dbConnection.Query("employees")
+            .Select()
+            .Fields("employee_id", "first_name", "last_name")
+            .Where("employee_id", "=", 100)
+            .OrderBy("last_name", SqlQueryBuilder::Ascending)
+            .Range(5, 10)
+            .ToSql();
 
 // UPDATE "employees"
 // SET "first_name" = 'John', "last_name" = 'Doe'
 // WHERE "employee_id" = 100
-SqlQueryBuilder::FromTable("employees")
-                .Update()
-                .Set("first_name", "John")
-                .Set("last_name", "Doe")
-                .Where("employee_id", "=", 100)
-                .ToSql(queryFormatter);
+dbConnection.Query("employees")
+            .Update()
+            .Set("first_name", "John")
+            .Set("last_name", "Doe")
+            .Where("employee_id", "=", 100)
+            .ToSql();
 
 // INSERT INTO "employees" ("employee_id", "first_name", "last_name")
 // VALUES (100, 'John', 'Doe')
-SqlQueryBuilder::FromTable("employees")
-                .Insert()
-                .Values("employee_id", 100)
-                .Values("first_name", "John")
-                .Values("last_name", "Doe")
-                .ToSql(queryFormatter);
+dbConnection.Query("employees")
+            .Insert()
+            .Set("employee_id", 100)
+            .Set("first_name", "John")
+            .Set("last_name", "Doe")
+            .ToSql();
 
 // DELETE FROM "employees"
 // WHERE "employee_id" = 100
-SqlQueryBuilder::FromTable("employees")
-                .Delete()
-                .Where("employee_id", "=", 100)
-                .ToSql(queryFormatter);
+dbConnection.Query("employees")
+            .Delete()
+            .Where("employee_id", "=", 100)
+            .ToSql();
 ```
 
 ## C++ Language requirements
