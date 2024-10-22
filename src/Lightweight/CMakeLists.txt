@@ -18,6 +18,7 @@ if(NOT WIN32)
 endif()
 
 set(HEADER_FILES
+    DataBinder/UnicodeConverter.hpp
     Model/Associations/BelongsTo.hpp
     Model/Associations/HasMany.hpp
     Model/Associations/HasOne.hpp
@@ -45,6 +46,7 @@ set(HEADER_FILES
 )
 
 set(SOURCE_FILES
+    DataBinder/UnicodeConverter.cpp
     Model/AbstractRecord.cpp
     Model/Logger.cpp
     SqlConnectInfo.cpp

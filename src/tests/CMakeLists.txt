@@ -16,6 +16,7 @@ target_sources(LightweightTest PRIVATE
     CoreTests.cpp
     ModelTests.cpp
     ModelAssociationsTests.cpp
+    UnicodeConverterTests.cpp
 )
 
 enable_testing()
