@@ -49,40 +49,41 @@ struct SqlVariant
 
     InnerType value;
 
-    explicit SqlVariant() = default;
+    SqlVariant() = default;
+    SqlVariant(SqlVariant const&) = default;
+    SqlVariant(SqlVariant&&) noexcept = default;
+    SqlVariant& operator=(SqlVariant const&) = default;
+    SqlVariant& operator=(SqlVariant&&) noexcept = default;
 
-    template <typename T>
-    explicit SqlVariant(T const& newValue):
-        value { newValue }
+    SqlVariant(InnerType const& other):
+        value(other)
     {
     }
 
-    template <typename T>
-    explicit SqlVariant(T&& newValue) noexcept:
-        value { std::forward<T>(newValue) }
+    SqlVariant(InnerType&& other) noexcept:
+        value(std::move(other))
     {
     }
 
-    template <typename T>
-    SqlVariant& operator=(T const& newValue)
+    SqlVariant& operator=(InnerType const& other)
     {
-        value = newValue;
+        value = other;
         return *this;
     }
 
-    template <typename T>
-        requires(!MFCStringLike<T>)
-    SqlVariant& operator=(T&& newValue) noexcept
+    SqlVariant& operator=(InnerType&& other) noexcept
     {
-        value = std::forward<T>(newValue);
+        value = std::move(other);
         return *this;
     }
 
-    explicit SqlVariant(MFCStringLike auto * newValue):
+    // Construct from an MFC-string-like object.
+    explicit SqlVariant(MFCStringLike auto* newValue):
         value { std::string_view(newValue->GetString(), newValue->GetLength()) }
     {
     }
 
+    // Assign from an MFC-string-like object.
     SqlVariant& operator=(MFCStringLike auto const* newValue) noexcept
     {
         value = std::string_view(newValue->GetString(), newValue->GetLength());
@@ -113,6 +114,9 @@ struct SqlVariant
     template <typename T>
     [[nodiscard]] T ValueOr(T&& defaultValue) const noexcept
     {
+        if constexpr (std::is_integral_v<T>)
+            return TryGetIntegral<T>().value_or(defaultValue);
+
         if (IsNull())
             return defaultValue;
 
@@ -120,16 +124,30 @@ struct SqlVariant
     }
 
     // clang-format off
-    [[nodiscard]] std::optional<bool> TryBool() const noexcept { return TryIntegral<bool>(); }
-    [[nodiscard]] std::optional<short> TryShort() const noexcept { return TryIntegral<short>(); }
-    [[nodiscard]] std::optional<unsigned short> TryUShort() const noexcept { return TryIntegral<unsigned short>(); }
-    [[nodiscard]] std::optional<int> TryInt() const noexcept { return TryIntegral<int>(); }
-    [[nodiscard]] std::optional<unsigned int> TryUInt() const noexcept { return TryIntegral<unsigned int>(); }
-    [[nodiscard]] std::optional<long long> TryLongLong() const noexcept { return TryIntegral<long long>(); }
-    [[nodiscard]] std::optional<unsigned long long> TryULongLong() const noexcept { return TryIntegral<unsigned long long>(); }
+    [[nodiscard]] std::optional<bool> TryGetBool() const noexcept { return TryGetIntegral<bool>(); }
+    [[nodiscard]] std::optional<short> TryGetShort() const noexcept { return TryGetIntegral<short>(); }
+    [[nodiscard]] std::optional<unsigned short> TryGetUShort() const noexcept { return TryGetIntegral<unsigned short>(); }
+    [[nodiscard]] std::optional<int> TryGetInt() const noexcept { return TryGetIntegral<int>(); }
+    [[nodiscard]] std::optional<unsigned int> TryGetUInt() const noexcept { return TryGetIntegral<unsigned int>(); }
+    [[nodiscard]] std::optional<long long> TryGetLongLong() const noexcept { return TryGetIntegral<long long>(); }
+    [[nodiscard]] std::optional<unsigned long long> TryGetULongLong() const noexcept { return TryGetIntegral<unsigned long long>(); }
     // clang-format on
 
-    [[nodiscard]] std::optional<std::string_view> TryStringView() const noexcept
+    template <typename ResultType>
+    [[nodiscard]] std::optional<ResultType> TryGetIntegral() const noexcept
+    {
+        if (IsNull())
+            return std::nullopt;
+
+        // clang-format off
+        return std::visit(detail::overloaded {
+            []<typename T>(T v) -> ResultType requires(std::is_integral_v<T>) { return static_cast<ResultType>(v); },
+            [](auto) -> ResultType { throw std::bad_variant_access(); }
+        }, value);
+        // clang-format on
+    }
+
+    [[nodiscard]] std::optional<std::string_view> TryGetStringView() const noexcept
     {
         if (IsNull())
             return std::nullopt;
@@ -144,58 +162,37 @@ struct SqlVariant
         // clang-format on
     }
 
-    [[nodiscard]] std::optional<SqlDate> TryDate() const noexcept
+    [[nodiscard]] std::optional<SqlDate> TryGetDate() const
     {
         if (IsNull())
             return std::nullopt;
 
-        // clang-format off
-        return std::visit(detail::overloaded {
-            [](SqlDate const& v) { return v; },
-            [](auto) -> SqlDate { throw std::bad_variant_access(); }
-        }, value);
-        // clang-format on
+        if (auto const* date = std::get_if<SqlDate>(&value))
+            return *date;
+
+        throw std::bad_variant_access();
     }
 
-    [[nodiscard]] std::optional<SqlTime> TryTime() const noexcept
+    [[nodiscard]] std::optional<SqlTime> TryGetTime() const
     {
         if (IsNull())
             return std::nullopt;
 
-        // clang-format off
-        return std::visit(detail::overloaded {
-            [](SqlTime const& v) { return v; },
-            [](auto) -> SqlTime { throw std::bad_variant_access(); }
-        }, value);
-        // clang-format on
+        if (auto const* time = std::get_if<SqlTime>(&value))
+            return *time;
+
+        throw std::bad_variant_access();
     }
 
-    [[nodiscard]] std::optional<SqlDateTime> TryDateTime() const noexcept
+    [[nodiscard]] std::optional<SqlDateTime> TryGetDateTime() const
     {
         if (IsNull())
             return std::nullopt;
 
-        // clang-format off
-        return std::visit(detail::overloaded {
-            [](SqlDateTime const& v) { return v; },
-            [](auto) -> SqlDateTime { throw std::bad_variant_access(); }
-        }, value);
-        // clang-format on
-    }
+        if (auto const* dateTime = std::get_if<SqlDateTime>(&value))
+            return *dateTime;
 
-  private:
-    template <typename ResultType>
-    [[nodiscard]] std::optional<ResultType> TryIntegral() const noexcept
-    {
-        if (IsNull())
-            return std::nullopt;
-
-        // clang-format off
-        return std::visit(detail::overloaded {
-            []<typename T>(T v) -> ResultType requires(std::is_integral_v<T>) { return static_cast<ResultType>(v); },
-            [](auto) -> ResultType { throw std::bad_variant_access(); }
-        }, value);
-        // clang-format on
+        throw std::bad_variant_access();
     }
 };
 

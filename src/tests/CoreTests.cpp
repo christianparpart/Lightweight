@@ -531,7 +531,7 @@ TEST_CASE_METHOD(SqlTestFixture, "GetColumn in-place store variant")
 
     SqlVariant salary;
     CHECK(stmt.GetColumn(3, &salary));
-    CHECK(salary.TryInt().value_or(0) == 50'000);
+    CHECK(salary.TryGetInt().value_or(0) == 50'000);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values")
@@ -1160,4 +1160,80 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare: 
         // Execute the query with the prepared data
         stmt.ExecuteWithVariants(inputBindings);
     }
+}
+
+struct MFCLikeCString
+{
+    std::string value;
+
+    [[nodiscard]] decltype(auto) GetString() const noexcept
+    {
+        return value.c_str();
+    }
+
+    [[nodiscard]] int GetLength() const noexcept
+    {
+        return static_cast<int>(value.size());
+    }
+};
+
+struct TestBusinessObject
+{
+    SqlStatement sqlInsertEmployee;
+    SqlStatement sqlSelectEmployee;
+};
+
+TEST_CASE_METHOD(SqlTestFixture,
+                 "Use SqlQueryBuilder for SqlStatement.Prepare: iterative with MFC-like CString",
+                 "[SqlQueryBuilder],[MFC],[BusinessObject]")
+{
+    // We intentionally share the connection here only for Sqlite MEMORY database,
+    // because follow-up queries would not find the initially created tables otherwise.
+
+    auto sharedConnection = SqlConnection {};
+    auto stmt = SqlStatement { sharedConnection };
+
+    bool constexpr quoted = true;
+    CreateEmployeesTable(stmt, quoted);
+
+    auto businessObject = TestBusinessObject {
+        .sqlInsertEmployee = { sharedConnection },
+        .sqlSelectEmployee = { sharedConnection },
+    };
+
+    auto const insertQuery = stmt.Query("Employees")
+                                 .Insert(nullptr)
+                                 .Set("FirstName", SqlWildcard)
+                                 .Set("LastName", SqlWildcard)
+                                 .Set("Salary", SqlWildcard);
+    businessObject.sqlInsertEmployee.Prepare(insertQuery);
+
+    auto const selectQuery = stmt.Query("Employees").Select().Fields({ "FirstName", "LastName", "Salary" }).All();
+    businessObject.sqlSelectEmployee.Prepare(selectQuery);
+
+    // Insert a record with values explicitly in-place (most efficient)
+    businessObject.sqlInsertEmployee.Execute("Alice", "Smith", 50'000);
+
+    // Insert second with MFC-like CString objects (these are not copied but only borrowed) during binding
+    MFCLikeCString firstName = { "Bob" };
+    MFCLikeCString lastName = { "Johnson" };
+    auto const salary = 60'000;
+    businessObject.sqlInsertEmployee.Execute(firstName, lastName, salary);
+
+    // Insert third with SqlVariant as intermediate storage.
+    // MFC-like CString objects are held as *view* in SqlVariant and must thus be passed as pointer.
+    std::vector<SqlVariant> boundValues;
+    boundValues.emplace_back(&firstName);
+    boundValues.emplace_back(&lastName);
+    boundValues.emplace_back(salary);
+    businessObject.sqlInsertEmployee.ExecuteWithVariants(boundValues);
+
+    // businessObject.sqlSelectEmployee.Execute();
+    // while (businessObject.sqlSelectEmployee.FetchRow())
+    // {
+    //     auto const firstName = businessObject.sqlSelectEmployee.GetColumn<MFCLikeCString>(1);
+    //     CHECK(firstName.value == "Alice");
+    //     // auto const lastName = businessjsonObject.sqlSelectEmployee.GetColumn<MFCLikeCString>(2);
+    //     // CHECK(lastName.value == "Smith");
+    // }
 }
