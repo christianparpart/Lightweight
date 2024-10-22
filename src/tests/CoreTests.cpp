@@ -982,6 +982,24 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
         QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')"));
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Where.Junctors", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            // clang-format off
+            return q.FromTable("Table")
+                .Select()
+                .WhereRaw("a")
+                .And().WhereRaw("b")
+                .Or().WhereRaw("c")
+                .And().WhereRaw("d")
+                .And().Not().WhereRaw("e")
+                .Count();
+            // clang-format on
+        },
+        QueryExpectations::All(R"SQL(SELECT COUNT(*) FROM "Table" WHERE a AND b OR c AND d AND NOT e)SQL"));
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereIn", "[SqlQueryBuilder]")
 {
     // Check functionality of container overloads for IN

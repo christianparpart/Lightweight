@@ -78,6 +78,15 @@ template <typename Derived>
 class [[nodiscard]] SqlWhereClauseBuilder
 {
   public:
+    // Indicates, that the next WHERE clause should be AND-ed (default).
+    [[nodiscard]] Derived& And() noexcept;
+
+    // Indicates, that the next WHERE clause should be OR-ed.
+    [[nodiscard]] Derived& Or() noexcept;
+
+    // Indicates, that the next WHERE clause should be negated.
+    [[nodiscard]] Derived& Not() noexcept;
+
     // Constructs or extends a raw WHERE clause.
     [[nodiscard]] Derived& WhereRaw(std::string_view sqlConditionExpression);
 
@@ -178,6 +187,7 @@ class [[nodiscard]] SqlWhereClauseBuilder
     };
 
     WhereJunctor m_nextWhereJunctor = WhereJunctor::Where;
+    bool m_nextIsNot = false;
 
     void AppendWhereJunctor();
 
@@ -209,6 +219,27 @@ class [[nodiscard]] SqlWhereClauseBuilder
 };
 
 template <typename Derived>
+Derived& SqlWhereClauseBuilder<Derived>::And() noexcept
+{
+    m_nextWhereJunctor = WhereJunctor::And;
+    return static_cast<Derived&>(*this);
+}
+
+template <typename Derived>
+Derived& SqlWhereClauseBuilder<Derived>::Or() noexcept
+{
+    m_nextWhereJunctor = WhereJunctor::Or;
+    return static_cast<Derived&>(*this);
+}
+
+template <typename Derived>
+Derived& SqlWhereClauseBuilder<Derived>::Not() noexcept
+{
+    m_nextIsNot = !m_nextIsNot;
+    return static_cast<Derived&>(*this);
+}
+
+template <typename Derived>
 template <typename ColumnName, typename T>
 Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName, T const& value)
 {
@@ -220,9 +251,7 @@ template <typename Callable>
     requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
 Derived& SqlWhereClauseBuilder<Derived>::OrWhere(Callable&& callable)
 {
-    if (m_nextWhereJunctor != WhereJunctor::Where)
-        m_nextWhereJunctor = WhereJunctor::Or;
-    return Where(std::forward<Callable>(callable));
+    return Or().Where(std::forward<Callable>(callable));
 }
 
 template <typename Derived>
@@ -453,9 +482,7 @@ Derived& SqlWhereClauseBuilder<Derived>::WhereRaw(std::string_view sqlConditionE
     AppendWhereJunctor();
 
     auto& condition = SearchCondition().condition;
-    condition += '(';
     condition += sqlConditionExpression;
-    condition += ')';
 
     return static_cast<Derived&>(*this);
 }
@@ -492,6 +519,12 @@ void SqlWhereClauseBuilder<Derived>::AppendWhereJunctor()
         case WhereJunctor::Or:
             condition += " OR "sv;
             break;
+    }
+
+    if (m_nextIsNot)
+    {
+        condition += "NOT "sv;
+        m_nextIsNot = false;
     }
 
     m_nextWhereJunctor = WhereJunctor::And;
