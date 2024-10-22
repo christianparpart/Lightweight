@@ -35,7 +35,7 @@ struct SqlDataBinder<T>
 
 // template <typename T>
 //     requires(MFCStringLike<T>)
-// struct SqlOutputStringTraits<T>
+// struct SqlCommonStringBinder<T>
 // {
 //     static char const* Data(MFCStringLike auto const* str) noexcept
 //     {

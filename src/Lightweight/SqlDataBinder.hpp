@@ -3,7 +3,7 @@
 #pragma once
 
 #include "DataBinder/MFCStringLike.hpp"
-#include "DataBinder/OutputStringBinder.hpp"
+#include "DataBinder/BasicStringBinder.hpp"
 #include "DataBinder/Primitives.hpp"
 #include "DataBinder/SqlDate.hpp"
 #include "DataBinder/SqlDateTime.hpp"

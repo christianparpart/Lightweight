@@ -8,7 +8,7 @@
 
 // Specialized traits for std::string as output string parameter
 template <>
-struct SqlOutputStringTraits<std::string>
+struct SqlCommonStringBinder<std::string>
 {
     static char const* Data(std::string const* str) noexcept
     {

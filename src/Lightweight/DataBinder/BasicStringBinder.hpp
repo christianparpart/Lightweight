@@ -6,11 +6,11 @@
 
 #include <utility>
 
-template <SqlOutputStringTraitsConcept StringType>
+template <SqlCommonStringBinderConcept StringType>
 struct SqlDataBinder<StringType>
 {
     using ValueType = StringType;
-    using StringTraits = SqlOutputStringTraits<ValueType>;
+    using StringTraits = SqlCommonStringBinder<ValueType>;
 
     static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, ValueType const& value) noexcept
     {
