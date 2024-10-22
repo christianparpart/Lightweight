@@ -1,11 +1,9 @@
 #pragma once
 
-#include "SqlConnectInfo.hpp"
 #include "SqlError.hpp"
 
 #include <source_location>
 #include <string_view>
-#include <system_error>
 
 class SqlConnection;
 
@@ -28,8 +26,7 @@ class SqlLogger
     virtual void OnWarning(std::string_view const& message) = 0;
 
     // An ODBC SQL error occurred.
-    virtual void OnError(SqlError errorCode,
-                         std::source_location sourceLocation = std::source_location::current()) = 0;
+    virtual void OnError(SqlError errorCode, std::source_location sourceLocation = std::source_location::current()) = 0;
     virtual void OnError(SqlErrorInfo const& errorInfo,
                          std::source_location sourceLocation = std::source_location::current()) = 0;
 

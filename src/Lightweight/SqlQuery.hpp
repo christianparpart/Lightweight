@@ -1,9 +1,9 @@
 #pragma once
 
+#include "SqlQuery/Delete.hpp"
 #include "SqlQuery/Insert.hpp"
 #include "SqlQuery/Select.hpp"
 #include "SqlQuery/Update.hpp"
-#include "SqlQuery/Delete.hpp"
 
 // API Entry point for building SQL queries.
 class [[nodiscard]] SqlQueryBuilder final
