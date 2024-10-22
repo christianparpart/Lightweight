@@ -108,6 +108,17 @@ void FillEmployeesTable(SqlStatement& stmt, bool quoted = false)
 
 } // namespace
 
+TEST_CASE_METHOD(SqlTestFixture, "UTF-32 to UTF-16 conversion")
+{
+    // U+1F600 -> 0xD83D 0xDE00 (UTF-16)
+    auto const u32String = detail::ToUtf16(U"A\U0001F600]"sv);
+    REQUIRE(u32String.size() == 4);
+    CHECK(u32String[0] == U'A');
+    CHECK(u32String[1] == 0xD83D);
+    CHECK(u32String[2] == 0xDE00);
+    CHECK(u32String[3] == U']');
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear")
 {
     SqlFixedString<8> str;
@@ -1180,6 +1191,42 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare: 
         // Execute the query with the prepared data
         stmt.ExecuteWithVariants(inputBindings);
     }
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Unicode]")
+{
+    // NOTE: I've done this preprocessor stuff only to have a single test for UTF-16 (UCS-2) regardless of platform.
+#if !defined(_WIN32)
+    using WideString = std::u16string;
+    #define U16TEXT(x) u##x
+#else
+    using WideString = std::wstring;
+    #define U16TEXT(x) L##x
+#endif
+
+    auto stmt = SqlStatement {};
+
+    if (stmt.Connection().ServerType() == SqlServerType::SQLITE)
+        // SQLite does UTF-8 by default, so we need to switch to UTF-16
+        stmt.ExecuteDirect("PRAGMA encoding = 'UTF-16'");
+
+    stmt.ExecuteDirect("DROP TABLE IF EXISTS Test");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value NVARCHAR(50) NOT NULL)");
+
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+
+    // Insert some wide string literal
+    stmt.Execute(U16TEXT("Wide string literal"));
+
+    // Insert some std::wstring
+    WideString const inputValue = U16TEXT("Wide string literal");
+    stmt.Execute(inputValue);
+
+    stmt.ExecuteDirect("SELECT Value FROM Test");
+
+    REQUIRE(stmt.FetchRow());
+    auto const actualValue = stmt.GetColumn<std::u16string>(1);
+    CHECK(actualValue == inputValue);
 }
 
 struct MFCLikeCString
