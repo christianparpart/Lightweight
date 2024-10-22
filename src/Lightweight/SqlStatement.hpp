@@ -21,11 +21,13 @@
 #include <sqlspi.h>
 #include <sqltypes.h>
 
+// clang-format off
 template <typename QueryObject>
 concept SqlQueryObject = requires(QueryObject const& queryObject)
 {
     { queryObject.ToSql() } -> std::convertible_to<std::string>;
 };
+// clang-format on
 
 // High level API for (prepared) raw SQL statements
 //
@@ -89,7 +91,7 @@ class SqlStatement final: public SqlDataBinderCallback
     // Binds the given arguments to the prepared statement and executes it.
     void ExecuteWithVariants(std::vector<SqlVariant> const& args);
 
-    // Executes the prepared statement on a a batch of data.
+    // Executes the prepared statement on a batch of data.
     //
     // Each parameter represents a column, to be bound as input parameter.
     // The element types of each column container must be explicitly supported.
@@ -100,7 +102,7 @@ class SqlStatement final: public SqlDataBinderCallback
     template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::contiguous_range... MoreColumnBatches>
     void ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch, MoreColumnBatches const&... moreColumnBatches);
 
-    // Executes the prepared statement on a a batch of data.
+    // Executes the prepared statement on a batch of data.
     //
     // Each parameter represents a column, to be bound as input parameter,
     // and the number of elements in these bound column containers will
