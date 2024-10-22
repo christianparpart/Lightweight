@@ -8,8 +8,10 @@
 
 #include "../Lightweight/Model/All.hpp"
 #include "../Lightweight/SqlConnectInfo.hpp"
+#include "../Lightweight/SqlConnection.hpp"
 #include "../Lightweight/SqlDataBinder.hpp"
 #include "../Lightweight/SqlLogger.hpp"
+#include "../Lightweight/SqlStatement.hpp"
 
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -111,14 +113,14 @@ class SqlTestFixture
         if (i < argc)
             argv[i - 1] = argv[0];
 
-        #if defined(_MSC_VER)
+#if defined(_MSC_VER)
         char* envBuffer = nullptr;
         size_t envBufferLen = 0;
         _dupenv_s(&envBuffer, &envBufferLen, "ODBC_CONNECTION_STRING");
         if (auto const* s = envBuffer; s && *s)
-        #else
+#else
         if (auto const* s = std::getenv("ODBC_CONNECTION_STRING"); s && *s)
-        #endif
+#endif
 
         {
             std::println("Using ODBC connection string: '{}'", SanitizePwd(s));
