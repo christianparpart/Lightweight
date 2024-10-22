@@ -70,7 +70,7 @@ class ScopedSqlNullLogger: public SqlLogger
     void OnConnectionReuse(SqlConnection const&) override {}
     void OnExecuteDirect(std::string_view const&) override {}
     void OnPrepare(std::string_view const&) override {}
-    void OnExecute() override {}
+    void OnExecute(std::string_view const&) override {}
     void OnExecuteBatch() override {}
     void OnFetchedRow() override {}
     void OnStats(SqlConnectionStats const&) override {}

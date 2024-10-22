@@ -70,7 +70,7 @@ class SqlStandardLogger: public SqlLogger
     void OnConnectionReuse(SqlConnection const&) override {}
     void OnExecuteDirect(std::string_view const&) override {}
     void OnPrepare(std::string_view const&) override {}
-    void OnExecute() override {}
+    void OnExecute(std::string_view const&) override {}
     void OnExecuteBatch() override {}
     void OnFetchedRow() override {}
     void OnStats(SqlConnectionStats const&) override {}
@@ -128,11 +128,10 @@ class SqlTraceLogger: public SqlStandardLogger
         m_lastPreparedQuery = query;
     }
 
-    void OnExecute() override
+    void OnExecute(std::string_view const& query) override
     {
         Tick();
-        WriteMessage("Execute: {}", m_lastPreparedQuery);
-        m_lastPreparedQuery.clear();
+        WriteMessage("Execute: {}", query);
     }
 
     void OnExecuteBatch() override

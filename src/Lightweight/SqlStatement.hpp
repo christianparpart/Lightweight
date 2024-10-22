@@ -162,6 +162,7 @@ class SqlStatement final: public SqlDataBinderCallback
     std::optional<SqlConnection> m_ownedConnection; // The connection object (if owned)
     SqlConnection* m_connection {};                 // Pointer to the connection object
     SQLHSTMT m_hStmt {};                            // The native oDBC statement handle
+    std::string m_preparedQuery;                    // The last prepared query
     SQLSMALLINT m_expectedParameterCount {};        // The number of parameters expected by the query
     std::vector<SQLLEN> m_indicators;               // Holds the indicators for the bound output columns
     std::vector<std::function<void()>> m_postExecuteCallbacks;
@@ -223,7 +224,7 @@ void SqlStatement::Execute(Args const&... args)
     // such that we can call SQLBindParameter() without needing to copy it.
     // The memory region behind the input parameter must exist until the SQLExecute() call.
 
-    SqlLogger::GetLogger().OnExecute();
+    SqlLogger::GetLogger().OnExecute(m_preparedQuery);
 
     if (!(m_expectedParameterCount == (std::numeric_limits<decltype(m_expectedParameterCount)>::max)()
           && sizeof...(args) == 0)

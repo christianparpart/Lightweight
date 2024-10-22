@@ -26,6 +26,8 @@ void SqlStatement::Prepare(std::string_view query)
 {
     SqlLogger::GetLogger().OnPrepare(query);
 
+    m_preparedQuery = std::string(query);
+
     m_postExecuteCallbacks.clear();
     m_postProcessOutputColumnCallbacks.clear();
 
@@ -51,7 +53,7 @@ void SqlStatement::ExecuteDirect(const std::string_view& query, std::source_loca
 
 void SqlStatement::ExecuteWithVariants(std::vector<SqlVariant> const& args)
 {
-    SqlLogger::GetLogger().OnExecute();
+    SqlLogger::GetLogger().OnExecute(m_preparedQuery);
 
     if (!(m_expectedParameterCount == (std::numeric_limits<decltype(m_expectedParameterCount)>::max)() && args.empty())
         && !(static_cast<size_t>(m_expectedParameterCount) == args.size()))

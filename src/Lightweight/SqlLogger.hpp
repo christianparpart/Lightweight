@@ -39,7 +39,7 @@ class SqlLogger
     virtual void OnConnectionReuse(SqlConnection const& connection) = 0;
     virtual void OnExecuteDirect(std::string_view const& query) = 0;
     virtual void OnPrepare(std::string_view const& query) = 0;
-    virtual void OnExecute() = 0;
+    virtual void OnExecute(std::string_view const& query) = 0;
     virtual void OnExecuteBatch() = 0;
     virtual void OnFetchedRow() = 0;
     virtual void OnStats(SqlConnectionStats const& stats) = 0;
