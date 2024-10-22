@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #include "SqlConnectInfo.hpp"
 
 #include <algorithm>

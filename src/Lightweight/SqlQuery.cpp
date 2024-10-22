@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #include "SqlQuery.hpp"
 
 SqlQueryBuilder& SqlQueryBuilder::FromTable(std::string table)

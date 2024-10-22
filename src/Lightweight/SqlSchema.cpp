@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #include "SqlConnection.hpp"
 #include "SqlSchema.hpp"
 #include "SqlStatement.hpp"

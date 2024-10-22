@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 #pragma once
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -110,7 +111,15 @@ class SqlTestFixture
         if (i < argc)
             argv[i - 1] = argv[0];
 
+        #if defined(_MSC_VER)
+        char* envBuffer = nullptr;
+        size_t envBufferLen = 0;
+        _dupenv_s(&envBuffer, &envBufferLen, "ODBC_CONNECTION_STRING");
+        if (auto const* s = envBuffer; s && *s)
+        #else
         if (auto const* s = std::getenv("ODBC_CONNECTION_STRING"); s && *s)
+        #endif
+
         {
             std::println("Using ODBC connection string: '{}'", SanitizePwd(s));
             SqlConnection::SetDefaultConnectInfo(SqlConnectionString { s });

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #include "../Lightweight/Model/All.hpp"
 #include "../Lightweight/SqlConnection.hpp"
 #include "Utils.hpp"

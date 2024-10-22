@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #include "SqlQueryFormatter.hpp"
 
 #include <cassert>

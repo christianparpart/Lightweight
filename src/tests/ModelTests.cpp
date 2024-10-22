@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #include "Utils.hpp"
 
 #include <Lightweight/Model/All.hpp>
