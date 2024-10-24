@@ -115,7 +115,8 @@ class SqlStatement final: public SqlDataBinderCallback
     void ExecuteDirect(std::string_view const& query, std::source_location location = std::source_location::current());
 
     // Executes the given query directly.
-    void ExecuteDirect(SqlQueryObject auto const& query, std::source_location location = std::source_location::current());
+    void ExecuteDirect(SqlQueryObject auto const& query,
+                       std::source_location location = std::source_location::current());
 
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
@@ -394,7 +395,7 @@ std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query
 
 template <typename T>
 inline std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
-                                                   std::source_location location)
+                                                          std::source_location location)
 {
     return ExecuteDirectSingle<T>(query.ToSql(), location);
 }

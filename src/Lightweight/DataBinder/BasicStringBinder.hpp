@@ -55,8 +55,8 @@ struct SqlDataBinder<StringType>
             {
                 auto const bufferSize = StringTraits::Size(result);
                 auto const len = std::cmp_greater_equal(*indicator, bufferSize) || *indicator == SQL_NO_TOTAL
-                                    ? bufferSize - 1
-                                    : *indicator;
+                                     ? bufferSize - 1
+                                     : *indicator;
                 StringTraits::Resize(result, len);
             }
             else
@@ -191,7 +191,8 @@ struct SqlDataBinder<StringType>
         // Get the data (take care of SQL_NULL_DATA and SQL_NO_TOTAL)
         auto* bufferStart = StringTraits::Data(result);
         SQLLEN bufferCharsAvailable = StringTraits::Size(result);
-        auto sqlResult = SQLGetData(stmt, column, CType, (SQLPOINTER) bufferStart, bufferCharsAvailable * sizeof(CharType), indicator);
+        auto sqlResult = SQLGetData(
+            stmt, column, CType, (SQLPOINTER) bufferStart, bufferCharsAvailable * sizeof(CharType), indicator);
 
         if (sqlResult == SQL_SUCCESS || sqlResult == SQL_NO_DATA)
         {
