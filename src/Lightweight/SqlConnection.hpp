@@ -41,7 +41,7 @@ class SqlConnection final
     SqlConnection() noexcept;
 
     // Constructs a new SQL connection to the given connect informaton.
-    explicit SqlConnection(SqlConnectInfo const& connectInfo) noexcept;
+    explicit SqlConnection(std::optional<SqlConnectInfo> connectInfo) noexcept;
 
     SqlConnection(SqlConnection&&) noexcept;
     SqlConnection& operator=(SqlConnection&&) noexcept;

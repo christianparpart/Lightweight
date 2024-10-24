@@ -426,6 +426,15 @@ TEST_CASE_METHOD(SqlTestFixture, "connection pool reusage", "[sql]")
     CHECK(id1 != id4);
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlConnection: manual connect")
+{
+    auto conn = SqlConnection { std::nullopt };
+    REQUIRE(!conn.IsAlive());
+
+    conn.Connect(SqlConnection::DefaultConnectInfo());
+    REQUIRE(conn.IsAlive());
+}
+
 struct CustomType
 {
     int value;
