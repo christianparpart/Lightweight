@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <format>
 #include <list>
+#include <set>
 #include <type_traits>
 
 #if defined(_MSC_VER)
@@ -1008,6 +1009,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereIn", "[SqlQueryBuilder]")
     checkSqlQueryBuilder(
         [](SqlQueryBuilder& q) { return q.FromTable("That").Delete().WhereIn("foo", std::vector { 1, 2, 3 }); },
         QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))"));
+
+    // Check functionality of an lvalue input range
+    auto const values = std::set { 1, 2, 3 };
+    checkSqlQueryBuilder([&](SqlQueryBuilder& q) { return q.FromTable("That").Delete().WhereIn("foo", values); },
+                         QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))"));
 
     // Check functionality of the initializer_list overload for IN
     checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("That").Delete().WhereIn("foo", { 1, 2, 3 }); },
