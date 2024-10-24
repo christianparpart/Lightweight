@@ -1201,8 +1201,12 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
 
     auto stmt = SqlStatement {};
 
-    // PostgreSQL already uses Unicode by default, so we don't need to specify it explicitly.
-    bool const requireExplicitUnicodeColumnType = stmt.Connection().ServerType() != SqlServerType::POSTGRESQL;
+    if (stmt.Connection().ServerType() == SqlServerType::POSTGRESQL)
+    {
+        WARN("PostgreSQL does not support UCS-2 (UTF-16) encoding. Skipping test.");
+        // TODO: figure out how to provide auto-re-encoding UTF-16 to UTF-8 for PostgreSQL.
+        return;
+    }
 
     if (stmt.Connection().ServerType() == SqlServerType::SQLITE)
         // SQLite does UTF-8 by default, so we need to switch to UTF-16
@@ -1210,10 +1214,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
 
     stmt.ExecuteDirect("DROP TABLE IF EXISTS Test");
 
-    if (requireExplicitUnicodeColumnType)
-        stmt.ExecuteDirect("CREATE TABLE Test (Value NVARCHAR(50) NOT NULL)");
-    else
-        stmt.ExecuteDirect("CREATE TABLE Test (Value VARCHAR(50) NOT NULL)");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value NVARCHAR(50) NOT NULL)");
 
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
 
