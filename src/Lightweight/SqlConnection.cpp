@@ -250,6 +250,8 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
 
         if (m_gPostConnectedHook)
             m_gPostConnectedHook(*this);
+
+        return true;
     }
 
     auto const& connectionString = std::get<SqlConnectionString>(m_connectInfo).value;
