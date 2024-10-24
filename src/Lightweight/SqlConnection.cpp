@@ -105,12 +105,14 @@ SqlConnection::SqlConnection() noexcept:
 {
 }
 
-SqlConnection::SqlConnection(SqlConnectInfo const& connectInfo) noexcept
+SqlConnection::SqlConnection(std::optional<SqlConnectInfo> connectInfo) noexcept
 {
     SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &m_hEnv);
     SQLSetEnvAttr(m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, 0);
     SQLAllocHandle(SQL_HANDLE_DBC, m_hEnv, &m_hDbc);
-    Connect(connectInfo);
+
+    if (connectInfo)
+        Connect(std::move(*connectInfo));
 }
 
 SqlConnection::SqlConnection(SqlConnection&& other) noexcept:
@@ -213,6 +215,9 @@ void SqlConnection::PostConnect()
 // Connects to the given database with the given username and password.
 bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
 {
+    if (m_hDbc)
+        SQLDisconnect(m_hDbc);
+
     m_connectInfo = std::move(connectInfo);
 
     if (auto const* info = std::get_if<SqlConnectionDataSource>(&m_connectInfo))
@@ -250,6 +255,8 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
 
         if (m_gPostConnectedHook)
             m_gPostConnectedHook(*this);
+
+        return true;
     }
 
     auto const& connectionString = std::get<SqlConnectionString>(m_connectInfo).value;

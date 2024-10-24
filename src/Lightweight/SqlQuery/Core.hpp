@@ -115,7 +115,7 @@ class [[nodiscard]] SqlWhereClauseBuilder
     [[nodiscard]] Derived& OrWhere(Callable&& callable);
 
     template <typename ColumnName, std::ranges::input_range InputRange>
-    [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, InputRange&& values);
+    [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, InputRange const& values);
 
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, std::initializer_list<T>&& values);
@@ -281,7 +281,7 @@ Derived& SqlWhereClauseBuilder<Derived>::Where(Callable&& callable)
     return static_cast<Derived&>(*this);
 }
 
-RawSqlCondition PopulateSqlSetExpression(auto const&& values)
+RawSqlCondition PopulateSqlSetExpression(auto const& values)
 {
     using namespace std::string_view_literals;
     std::ostringstream fragment;
@@ -298,9 +298,9 @@ RawSqlCondition PopulateSqlSetExpression(auto const&& values)
 
 template <typename Derived>
 template <typename ColumnName, std::ranges::input_range InputRange>
-Derived& SqlWhereClauseBuilder<Derived>::WhereIn(ColumnName const& columnName, InputRange&& values)
+Derived& SqlWhereClauseBuilder<Derived>::WhereIn(ColumnName const& columnName, InputRange const& values)
 {
-    return Where(columnName, "IN", detail::PopulateSqlSetExpression(std::forward<InputRange>(values)));
+    return Where(columnName, "IN", detail::PopulateSqlSetExpression(values));
 }
 
 template <typename Derived>

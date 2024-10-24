@@ -195,7 +195,7 @@ template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
 struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
 {
     using ValueType = SqlFixedString<N, T, PostOp>;
-    using StringTraits = SqlOutputStringTraits<ValueType>;
+    using StringTraits = SqlCommonStringBinder<ValueType>;
 
     static void TrimRight(ValueType* boundOutputString, SQLLEN indicator) noexcept
     {
@@ -269,7 +269,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
 };
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-struct SqlOutputStringTraits<SqlFixedString<N, T, PostOp>>
+struct SqlCommonStringBinder<SqlFixedString<N, T, PostOp>>
 {
     using ValueType = SqlFixedString<N, T, PostOp>;
     // clang-format off

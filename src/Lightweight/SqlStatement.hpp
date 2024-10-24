@@ -115,7 +115,8 @@ class SqlStatement final: public SqlDataBinderCallback
     void ExecuteDirect(std::string_view const& query, std::source_location location = std::source_location::current());
 
     // Executes the given query directly.
-    void ExecuteDirect(SqlQueryObject auto const& query, std::source_location location = std::source_location::current());
+    void ExecuteDirect(SqlQueryObject auto const& query,
+                       std::source_location location = std::source_location::current());
 
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
@@ -235,7 +236,7 @@ void SqlStatement::Execute(Args const&... args)
         throw std::invalid_argument { "Invalid argument count" };
 
     SQLUSMALLINT i = 0;
-    ((++i, SqlDataBinder<Args>::InputParameter(m_hStmt, i, args)), ...);
+    ((++i, RequireSuccess(SqlDataBinder<Args>::InputParameter(m_hStmt, i, args))), ...);
 
     RequireSuccess(SQLExecute(m_hStmt));
     ProcessPostExecuteCallbacks();
@@ -247,6 +248,7 @@ concept SqlNativeContiguousValueConcept =
        std::same_as<T, bool>
     || std::same_as<T, char>
     || std::same_as<T, unsigned char>
+    || std::same_as<T, wchar_t>
     || std::same_as<T, std::int16_t>
     || std::same_as<T, std::uint16_t>
     || std::same_as<T, std::int32_t>
@@ -393,7 +395,7 @@ std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query
 
 template <typename T>
 inline std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
-                                                   std::source_location location)
+                                                          std::source_location location)
 {
     return ExecuteDirectSingle<T>(query.ToSql(), location);
 }

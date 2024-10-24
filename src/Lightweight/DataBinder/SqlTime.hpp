@@ -123,11 +123,8 @@ struct SqlDataBinder<SqlTime>
                                 nullptr);
     }
 
-    static SQLRETURN OutputColumn(SQLHSTMT stmt,
-                                  SQLUSMALLINT column,
-                                  SqlTime* result,
-                                  SQLLEN* indicator,
-                                  SqlDataBinderCallback& /*cb*/) noexcept
+    static SQLRETURN OutputColumn(
+        SQLHSTMT stmt, SQLUSMALLINT column, SqlTime* result, SQLLEN* indicator, SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }

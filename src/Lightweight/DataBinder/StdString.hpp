@@ -3,43 +3,50 @@
 #pragma once
 
 #include "Core.hpp"
+#include "UnicodeConverter.hpp"
 
+#include <concepts>
+#include <cstdlib>
 #include <string>
+#include <type_traits>
 
-// Specialized traits for std::string as output string parameter
-template <>
-struct SqlOutputStringTraits<std::string>
+// Specialized traits for std::basic_string<> as output string parameter
+template <typename CharT>
+struct SqlCommonStringBinder<std::basic_string<CharT>>
 {
-    static char const* Data(std::string const* str) noexcept
+    using CharType = CharT;
+    using StringType = std::basic_string<CharT>;
+
+    static CharType const* Data(StringType const* str) noexcept
     {
         return str->data();
     }
 
-    static char* Data(std::string* str) noexcept
+    static CharType* Data(StringType* str) noexcept
     {
         return str->data();
     }
 
-    static SQLULEN Size(std::string const* str) noexcept
+    static SQLULEN Size(StringType const* str) noexcept
     {
         return str->size();
     }
 
-    static void Clear(std::string* str) noexcept
+    static void Clear(StringType* str) noexcept
     {
         str->clear();
     }
 
-    static void Reserve(std::string* str, size_t capacity) noexcept
+    static void Reserve(StringType* str, size_t capacity) noexcept
     {
-        // std::string tries to defer the allocation as long as possible.
-        // So we first tell std::string how much to reserve and then resize it to the *actually* reserved
+        // std::basic_string<> tries to defer the allocation as long as possible.
+        // So we first tell StringType how much to reserve and then resize it to the *actually* reserved
         // size.
         str->reserve(capacity);
         str->resize(str->capacity());
     }
 
-    static void Resize(std::string* str, SQLLEN indicator) noexcept
+    static void Resize(StringType* str, SQLLEN indicator) noexcept
     {
         if (indicator > 0)
             str->resize(indicator);

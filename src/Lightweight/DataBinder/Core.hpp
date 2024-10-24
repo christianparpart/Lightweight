@@ -51,7 +51,7 @@ struct SqlDataTraits
 // SqlDataBinder<>. An std::string specialization is provided below. Feel free to add more specializations for
 // other string types, such as CString, etc.
 template <typename>
-struct SqlOutputStringTraits;
+struct SqlCommonStringBinder;
 
 // -----------------------------------------------------------------------------------------------
 
@@ -81,12 +81,21 @@ concept SqlGetColumnNativeType = requires(SQLHSTMT hStmt, SQLUSMALLINT column, T
 };
 
 // clang-format off
-template <typename StringType>
-concept SqlOutputStringTraitsConcept = requires(StringType* str) {
-    { SqlOutputStringTraits<StringType>::Data(str) } -> std::same_as<char*>;
-    { SqlOutputStringTraits<StringType>::Size(str) } -> std::same_as<SQLULEN>;
-    { SqlOutputStringTraits<StringType>::Reserve(str, size_t {}) } -> std::same_as<void>;
-    { SqlOutputStringTraits<StringType>::Resize(str, SQLLEN {}) } -> std::same_as<void>;
-    { SqlOutputStringTraits<StringType>::Clear(str) } -> std::same_as<void>;
+template <typename StringType, typename CharType>
+concept SqlBasicStringBinderConcept = requires(StringType* str) {
+    { SqlCommonStringBinder<StringType>::Data(str) } -> std::same_as<CharType*>;
+    { SqlCommonStringBinder<StringType>::Size(str) } -> std::same_as<SQLULEN>;
+    { SqlCommonStringBinder<StringType>::Reserve(str, size_t {}) } -> std::same_as<void>;
+    { SqlCommonStringBinder<StringType>::Resize(str, SQLLEN {}) } -> std::same_as<void>;
+    { SqlCommonStringBinder<StringType>::Clear(str) } -> std::same_as<void>;
 };
+
+template <typename StringType>
+concept SqlCommonStringBinderConcept = SqlBasicStringBinderConcept<StringType, char>;
+
+template <typename StringType>
+concept SqlCommonWideStringBinderConcept = SqlBasicStringBinderConcept<StringType, wchar_t>
+                                        || SqlBasicStringBinderConcept<StringType, char16_t>
+                                        || SqlBasicStringBinderConcept<StringType, char32_t>;
+
 // clang-format on

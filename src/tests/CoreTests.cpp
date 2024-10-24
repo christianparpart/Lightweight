@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <format>
 #include <list>
+#include <set>
 #include <type_traits>
 
 #if defined(_MSC_VER)
@@ -423,6 +424,15 @@ TEST_CASE_METHOD(SqlTestFixture, "connection pool reusage", "[sql]")
     // Explicit constructor passing SqlConnectInfo always creates a new SqlConnection
     auto const id4 = SqlConnection(SqlConnection::DefaultConnectInfo()).ConnectionId();
     CHECK(id1 != id4);
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlConnection: manual connect")
+{
+    auto conn = SqlConnection { std::nullopt };
+    REQUIRE(!conn.IsAlive());
+
+    conn.Connect(SqlConnection::DefaultConnectInfo());
+    REQUIRE(conn.IsAlive());
 }
 
 struct CustomType
@@ -1009,6 +1019,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereIn", "[SqlQueryBuilder]")
         [](SqlQueryBuilder& q) { return q.FromTable("That").Delete().WhereIn("foo", std::vector { 1, 2, 3 }); },
         QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))"));
 
+    // Check functionality of an lvalue input range
+    auto const values = std::set { 1, 2, 3 };
+    checkSqlQueryBuilder([&](SqlQueryBuilder& q) { return q.FromTable("That").Delete().WhereIn("foo", values); },
+                         QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))"));
+
     // Check functionality of the initializer_list overload for IN
     checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("That").Delete().WhereIn("foo", { 1, 2, 3 }); },
                          QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))"));
@@ -1180,6 +1195,50 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare: 
         // Execute the query with the prepared data
         stmt.ExecuteWithVariants(inputBindings);
     }
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Unicode]")
+{
+    // NOTE: I've done this preprocessor stuff only to have a single test for UTF-16 (UCS-2) regardless of platform.
+#if !defined(_WIN32)
+    using WideString = std::u16string;
+    #define U16TEXT(x) (u##x)
+#else
+    using WideString = std::wstring;
+    #define U16TEXT(x) (L##x)
+#endif
+
+    auto stmt = SqlStatement {};
+
+    if (stmt.Connection().ServerType() == SqlServerType::POSTGRESQL)
+    {
+        WARN("PostgreSQL does not support UCS-2 (UTF-16) encoding. Skipping test.");
+        // TODO: figure out how to provide auto-re-encoding UTF-16 to UTF-8 for PostgreSQL.
+        return;
+    }
+
+    if (stmt.Connection().ServerType() == SqlServerType::SQLITE)
+        // SQLite does UTF-8 by default, so we need to switch to UTF-16
+        stmt.ExecuteDirect("PRAGMA encoding = 'UTF-16'");
+
+    stmt.ExecuteDirect("DROP TABLE IF EXISTS Test");
+
+    stmt.ExecuteDirect("CREATE TABLE Test (Value NVARCHAR(50) NOT NULL)");
+
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+
+    // Insert some wide string literal
+    stmt.Execute(U16TEXT("Wide string literal \U0001F600"));
+
+    // Insert some std::wstring
+    WideString const inputValue = U16TEXT("Wide string literal \U0001F600");
+    stmt.Execute(inputValue);
+
+    stmt.ExecuteDirect("SELECT Value FROM Test");
+
+    REQUIRE(stmt.FetchRow());
+    auto const actualValue = stmt.GetColumn<WideString>(1);
+    CHECK(actualValue == inputValue);
 }
 
 struct MFCLikeCString

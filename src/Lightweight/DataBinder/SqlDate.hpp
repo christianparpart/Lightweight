@@ -85,11 +85,8 @@ struct SqlDataBinder<SqlDate>
                                 nullptr);
     }
 
-    static SQLRETURN OutputColumn(SQLHSTMT stmt,
-                                  SQLUSMALLINT column,
-                                  SqlDate* result,
-                                  SQLLEN* indicator,
-                                  SqlDataBinderCallback& /*cb*/) noexcept
+    static SQLRETURN OutputColumn(
+        SQLHSTMT stmt, SQLUSMALLINT column, SqlDate* result, SQLLEN* indicator, SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindCol(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }
