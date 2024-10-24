@@ -61,11 +61,24 @@ set(SOURCE_FILES
     SqlTransaction.cpp
 )
 
-add_library(Lightweight STATIC)
+option(LIGHTWEIGHT_BUILD_SHARED "Build Lightweight as a shared library" OFF)
+
+if(LIGHTWEIGHT_BUILD_SHARED)
+    set(LIGHTWEIGHT_LIBRARY_TYPE SHARED)
+else()
+    set(LIGHTWEIGHT_LIBRARY_TYPE STATIC)
+endif()
+
+add_library(Lightweight ${LIGHTWEIGHT_LIBRARY_TYPE})
+
 add_library(Lightweight::Lightweight ALIAS Lightweight)
 target_compile_features(Lightweight PUBLIC cxx_std_23)
 target_sources(Lightweight PRIVATE ${SOURCE_FILES})
 #target_sources(Lightweight PUBLIC ${HEADER_FILES})
+
+if(LIGHTWEIGHT_BUILD_SHARED)
+    target_compile_definitions(Lightweight PRIVATE LIGHTWEIGHT_SHARED)
+endif()
 
 if(CLANG_TIDY_EXE)
     set_target_properties(Lightweight PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")

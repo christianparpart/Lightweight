@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Api.hpp"
 #include "SqlError.hpp"
 
 #include <source_location>
@@ -19,7 +20,7 @@ struct SqlConnectionStats
 };
 
 // Represents a logger for SQL operations.
-class SqlLogger
+class LIGHTWEIGHT_API SqlLogger
 {
   public:
     virtual ~SqlLogger() = default;

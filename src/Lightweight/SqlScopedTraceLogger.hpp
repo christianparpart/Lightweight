@@ -2,13 +2,14 @@
 
 #pragma once
 
+#include "Api.hpp"
 #include "SqlConnection.hpp"
 #include "SqlStatement.hpp"
 
 #include <filesystem>
 
 // TODO: move to public API
-class SqlScopedTraceLogger
+class LIGHTWEIGHT_API SqlScopedTraceLogger
 {
     SQLHDBC m_nativeConnection;
 

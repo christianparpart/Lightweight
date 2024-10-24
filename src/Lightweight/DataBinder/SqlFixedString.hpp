@@ -22,7 +22,7 @@ enum class SqlStringPostRetrieveOperation : uint8_t
 template <std::size_t N,
           typename T = char,
           SqlStringPostRetrieveOperation PostOp = SqlStringPostRetrieveOperation::NOTHING>
-class SqlFixedString
+class LIGHTWEIGHT_API SqlFixedString
 {
   private:
     T _data[N + 1] {};
@@ -192,7 +192,7 @@ template <std::size_t N, typename T = char>
 using SqlTrimmedFixedString = SqlFixedString<N, T, SqlStringPostRetrieveOperation::TRIM_RIGHT>;
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
+struct LIGHTWEIGHT_API SqlDataBinder<SqlFixedString<N, T, PostOp>>
 {
     using ValueType = SqlFixedString<N, T, PostOp>;
     using StringTraits = SqlCommonStringBinder<ValueType>;
@@ -269,7 +269,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
 };
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-struct SqlCommonStringBinder<SqlFixedString<N, T, PostOp>>
+struct LIGHTWEIGHT_API SqlCommonStringBinder<SqlFixedString<N, T, PostOp>>
 {
     using ValueType = SqlFixedString<N, T, PostOp>;
     // clang-format off
@@ -283,7 +283,7 @@ struct SqlCommonStringBinder<SqlFixedString<N, T, PostOp>>
 };
 
 template <std::size_t N, SqlStringPostRetrieveOperation PostOp>
-struct SqlDataTraits<SqlFixedString<N, char, PostOp>>
+struct LIGHTWEIGHT_API SqlDataTraits<SqlFixedString<N, char, PostOp>>
 {
     static constexpr inline unsigned Size = N;
     static constexpr inline SqlColumnType Type = SqlColumnType::CHAR;

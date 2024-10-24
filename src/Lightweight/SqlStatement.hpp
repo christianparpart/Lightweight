@@ -7,6 +7,7 @@
     #include <Windows.h>
 #endif
 
+#include "Api.hpp"
 #include "SqlConnection.hpp"
 #include "SqlDataBinder.hpp"
 
@@ -38,7 +39,7 @@ concept SqlQueryObject = requires(QueryObject const& queryObject)
 // 3. Execute the statement (optionally with input parameters)
 // 4. Fetch rows (if any)
 // 5. Repeat steps 3 and 4 as needed
-class SqlStatement final: public SqlDataBinderCallback
+class LIGHTWEIGHT_API SqlStatement final: public SqlDataBinderCallback
 {
   public:
     // Construct a new SqlStatement object, using a new connection, and connect to the default database.

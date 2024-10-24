@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Api.hpp"
+
 #include <chrono>
 #include <format>
 #include <map>
@@ -33,7 +35,7 @@ struct SqlConnectionDataSource
 using SqlConnectInfo = std::variant<SqlConnectionDataSource, SqlConnectionString>;
 
 template <>
-struct std::formatter<SqlConnectInfo>: std::formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlConnectInfo>: std::formatter<std::string>
 {
     auto format(SqlConnectInfo const& info, format_context& ctx) const -> format_context::iterator
     {

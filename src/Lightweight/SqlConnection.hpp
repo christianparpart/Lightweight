@@ -6,6 +6,7 @@
     #include <Windows.h>
 #endif
 
+#include "Api.hpp"
 #include "SqlConnectInfo.hpp"
 #include "SqlError.hpp"
 #include "SqlLogger.hpp"
@@ -30,7 +31,7 @@ class SqlQueryBuilder;
 class SqlQueryFormatter;
 
 // @brief Represents a connection to a SQL database.
-class SqlConnection final
+class LIGHTWEIGHT_API SqlConnection final
 {
   public:
     // Constructs a new SQL connection to the default connection.

@@ -6,6 +6,8 @@
     #include <Windows.h>
 #endif
 
+#include "Api.hpp"
+
 #include <format>
 #include <stdexcept>
 #include <system_error>
@@ -58,7 +60,7 @@ struct SqlErrorInfo
     static void RequireStatementSuccess(SQLRETURN result, SQLHSTMT hStmt, std::string_view message);
 };
 
-class SqlException: public std::runtime_error
+class LIGHTWEIGHT_API SqlException: public std::runtime_error
 {
   public:
     explicit SqlException(SqlErrorInfo info);
@@ -87,7 +89,7 @@ enum class SqlError : std::int16_t
     INVALID_ARGUMENT = 1'001,
 };
 
-struct SqlErrorCategory: std::error_category
+struct LIGHTWEIGHT_API SqlErrorCategory: std::error_category
 {
     static SqlErrorCategory const& get() noexcept
     {
@@ -142,7 +144,7 @@ inline std::error_code make_error_code(SqlError e)
 }
 
 template <>
-struct std::formatter<SqlError>: formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlError>: formatter<std::string>
 {
     auto format(SqlError value, format_context& ctx) const -> format_context::iterator
     {
@@ -152,7 +154,7 @@ struct std::formatter<SqlError>: formatter<std::string>
 };
 
 template <>
-struct std::formatter<SqlErrorInfo>: formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlErrorInfo>: formatter<std::string>
 {
     auto format(SqlErrorInfo const& info, format_context& ctx) const -> format_context::iterator
     {

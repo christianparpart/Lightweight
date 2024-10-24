@@ -9,7 +9,7 @@
 #include <utility>
 
 template <SqlCommonStringBinderConcept StringType>
-struct SqlDataBinder<StringType>
+struct LIGHTWEIGHT_API SqlDataBinder<StringType>
 {
     using ValueType = StringType;
     using StringTraits = SqlCommonStringBinder<ValueType>;
@@ -121,7 +121,7 @@ struct SqlDataBinder<StringType>
 };
 
 template <SqlCommonWideStringBinderConcept StringType>
-struct SqlDataBinder<StringType>
+struct LIGHTWEIGHT_API SqlDataBinder<StringType>
 {
     using ValueType = StringType;
     using StringTraits = SqlCommonStringBinder<ValueType>;

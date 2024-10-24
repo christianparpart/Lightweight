@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Api.hpp"
 #include "SqlQuery/Delete.hpp"
 #include "SqlQuery/Insert.hpp"
 #include "SqlQuery/Select.hpp"
 #include "SqlQuery/Update.hpp"
 
 // API Entry point for building SQL queries.
-class [[nodiscard]] SqlQueryBuilder final
+class [[nodiscard]] LIGHTWEIGHT_API SqlQueryBuilder final
 {
   public:
     // Constructs a new query builder for the given table.
