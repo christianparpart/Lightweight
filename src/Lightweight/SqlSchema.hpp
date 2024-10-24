@@ -6,6 +6,7 @@
     #include <Windows.h>
 #endif
 
+#include "Api.hpp"
 #include "SqlTraits.hpp"
 
 #include <format>
@@ -110,7 +111,7 @@ class EventHandler
     virtual void OnTableEnd() = 0;
 };
 
-void ReadAllTables(std::string_view database, std::string_view schema, EventHandler& eventHandler);
+LIGHTWEIGHT_API void ReadAllTables(std::string_view database, std::string_view schema, EventHandler& eventHandler);
 
 struct Table
 {
@@ -124,12 +125,12 @@ struct Table
 
 using TableList = std::vector<Table>;
 
-TableList ReadAllTables(std::string_view database, std::string_view schema = {});
+LIGHTWEIGHT_API TableList ReadAllTables(std::string_view database, std::string_view schema = {});
 
 } // namespace SqlSchema
 
 template <>
-struct std::formatter<SqlSchema::FullyQualifiedTableName>: std::formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableName>: std::formatter<std::string>
 {
     auto format(SqlSchema::FullyQualifiedTableName const& value, format_context& ctx) const -> format_context::iterator
     {
@@ -146,7 +147,7 @@ struct std::formatter<SqlSchema::FullyQualifiedTableName>: std::formatter<std::s
 };
 
 template <>
-struct std::formatter<SqlSchema::FullyQualifiedTableColumn>: std::formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableColumn>: std::formatter<std::string>
 {
     auto format(SqlSchema::FullyQualifiedTableColumn const& value,
                 format_context& ctx) const -> format_context::iterator
@@ -160,7 +161,7 @@ struct std::formatter<SqlSchema::FullyQualifiedTableColumn>: std::formatter<std:
 };
 
 template <>
-struct std::formatter<SqlSchema::FullyQualifiedTableColumnSequence>: std::formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableColumnSequence>: std::formatter<std::string>
 {
     auto format(SqlSchema::FullyQualifiedTableColumnSequence const& value,
                 format_context& ctx) const -> format_context::iterator

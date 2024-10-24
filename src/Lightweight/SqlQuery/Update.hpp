@@ -8,7 +8,8 @@
 #include <string_view>
 #include <vector>
 
-class [[nodiscard]] SqlUpdateQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlUpdateQueryBuilder>
+class [[nodiscard]] LIGHTWEIGHT_API SqlUpdateQueryBuilder final:
+    public detail::SqlWhereClauseBuilder<SqlUpdateQueryBuilder>
 {
   public:
     SqlUpdateQueryBuilder(SqlQueryFormatter const& formatter,

@@ -84,5 +84,21 @@
         { "name": "linux-gcc-release", "configurePreset": "linux-gcc-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
         { "name": "linux-clang-debug", "configurePreset": "linux-clang-debug", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } },
         { "name": "linux-clang-release", "configurePreset": "linux-clang-release", "output": {"outputOnFailure": true}, "execution": { "noTestsAction": "error", "stopOnFailure": true } }
+    ],
+    "packagePresets": [
+        {
+            "name": "linux-gcc-debug",
+            "packageName": "Lightweight",
+            "packageDirectory": "${sourceDir}/out/package/linux-gcc-debug",
+            "configurePreset": "linux-gcc-debug",
+            "generators": [ "TGZ" ]
+        },
+        {
+            "name": "linux-gcc-release",
+            "packageName": "Lightweight",
+            "packageDirectory": "${sourceDir}/out/package/linux-gcc-debug",
+            "configurePreset": "linux-gcc-release",
+            "generators": [ "TGZ" ]
+        }
     ]
 }

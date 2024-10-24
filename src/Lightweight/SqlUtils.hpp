@@ -6,20 +6,119 @@
     #include <Windows.h>
 #endif
 
-#include "SqlConnection.hpp"
-#include "SqlError.hpp"
-#include "SqlStatement.hpp"
+#include "Api.hpp"
+#include <optional>
 
-#include <sql.h>
-#include <sqlext.h>
-#include <sqlspi.h>
-#include <sqltypes.h>
-
-namespace SqlUtils
+namespace detail
 {
 
-std::vector<std::string> TableNames(std::string_view database, std::string_view schema = {});
+template <class T>
+struct LIGHTWEIGHT_API DefaultDeleter
+{
+    void operator()(T* object)
+    {
+        delete object;
+    }
+};
 
-std::vector<std::string> ColumnNames(std::string_view tableName, std::string_view schema = {});
+// We cannot use std::unique_ptr in Windows DLLs as struct/class members,
+// because of how Windows handles DLLs and the potential of incompatibilities (See C4251)
+template <class T, class Deleter = DefaultDeleter<T>>
+class LIGHTWEIGHT_API UniquePtr
+{
+  public:
+    explicit UniquePtr() noexcept = default;
 
-} // namespace SqlUtils
+    explicit UniquePtr(std::nullptr_t) noexcept:
+        _value { nullptr }
+    {
+    }
+
+    explicit UniquePtr(T* value, Deleter deleter):
+        _value { value },
+        _deleter { deleter }
+    {
+    }
+
+    UniquePtr(UniquePtr const&) = delete;
+    UniquePtr& operator=(UniquePtr const&) = delete;
+
+    UniquePtr(UniquePtr&& source) noexcept:
+        _value { source._value },
+        _deleter { std::move(source._deleter) }
+    {
+    }
+
+    UniquePtr& operator=(UniquePtr&& source) noexcept
+    {
+        _value = source._value;
+        _deleter = std::move(source._deleter);
+        return *this;
+    }
+
+    ~UniquePtr()
+    {
+        _deleter(_value);
+    }
+
+    T* release() noexcept
+    {
+        T* oldValue = _value;
+        _value = nullptr;
+        return oldValue;
+    }
+
+    void reset(T* newValue) noexcept
+    {
+        if (_value)
+            delete _value;
+        _value = newValue;
+    }
+
+    T* get() noexcept
+    {
+        return _value;
+    }
+
+    T const* get() const noexcept
+    {
+        return _value;
+    }
+
+    T& operator*() noexcept
+    {
+        return *_value;
+    }
+
+    T const& operator*() const noexcept
+    {
+        return *_value;
+    }
+
+    T& operator->() noexcept
+    {
+        return *_value;
+    }
+
+    T const& operator->() const noexcept
+    {
+        return *_value;
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return _value != nullptr;
+    }
+
+  private:
+    T* _value = nullptr;
+    Deleter _deleter = Deleter {};
+};
+
+template <typename T, typename... Args>
+UniquePtr<T> MakeUnique(Args&&... args)
+{
+    return UniquePtr<T>(new T(std::forward<Args>(args)...));
+}
+
+} // namespace detail

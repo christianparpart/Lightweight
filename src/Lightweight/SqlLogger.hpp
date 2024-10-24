@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Api.hpp"
 #include "SqlError.hpp"
 
 #include <source_location>
@@ -9,17 +10,8 @@
 
 class SqlConnection;
 
-struct SqlConnectionStats
-{
-    size_t created {};
-    size_t reused {};
-    size_t closed {};
-    size_t timedout {};
-    size_t released {};
-};
-
 // Represents a logger for SQL operations.
-class SqlLogger
+class LIGHTWEIGHT_API SqlLogger
 {
   public:
     virtual ~SqlLogger() = default;
@@ -41,7 +33,6 @@ class SqlLogger
     virtual void OnExecute(std::string_view const& query) = 0;
     virtual void OnExecuteBatch() = 0;
     virtual void OnFetchedRow() = 0;
-    virtual void OnStats(SqlConnectionStats const& stats) = 0;
 
     // Logs the most important events to standard output in a human-readable format.
     static SqlLogger& StandardLogger();

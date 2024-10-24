@@ -30,7 +30,7 @@ enum class SqlTransactionMode
 //
 // This class is designed with RAII in mind, so that the transaction is automatically committed or rolled back
 // when the object goes out of scope.
-class SqlTransaction
+class LIGHTWEIGHT_API SqlTransaction
 {
   public:
     // Construct a new SqlTransaction object, and disable the auto-commit mode, so that the transaction can be

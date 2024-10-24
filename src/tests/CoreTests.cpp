@@ -37,14 +37,6 @@ int main(int argc, char** argv)
 
     std::tie(argc, argv) = std::get<SqlTestFixture::MainProgramArgs>(result);
 
-    struct finally
-    {
-        ~finally()
-        {
-            SqlLogger::GetLogger().OnStats(SqlConnection::Stats());
-        }
-    } _;
-
     return Catch::Session().run(argc, argv);
 }
 
@@ -399,31 +391,6 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatchNative")
     CHECK(stmt.GetColumn<int>(3) == 50'000);
 
     REQUIRE(!stmt.FetchRow());
-}
-
-TEST_CASE_METHOD(SqlTestFixture, "connection pool reusage", "[sql]")
-{
-    // auto-instanciating an SqlConnection
-    auto const id1 = [] {
-        auto connection = SqlConnection {};
-        return connection.ConnectionId();
-    }();
-
-    // Explicitly passing a borrowed SqlConnection
-    auto const id2 = [] {
-        auto conn = SqlConnection {};
-        auto stmt = SqlStatement { conn };
-        return stmt.Connection().ConnectionId();
-    }();
-    CHECK(id1 == id2);
-
-    // &&-created SqlConnections are reused
-    auto const id3 = SqlConnection().ConnectionId();
-    CHECK(id1 == id3);
-
-    // Explicit constructor passing SqlConnectInfo always creates a new SqlConnection
-    auto const id4 = SqlConnection(SqlConnection::DefaultConnectInfo()).ConnectionId();
-    CHECK(id1 != id4);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlConnection: manual connect")

@@ -7,7 +7,9 @@
     #include <Windows.h>
 #endif
 
+#include "Api.hpp"
 #include "SqlConnection.hpp"
+#include "SqlQuery.hpp"
 #include "SqlDataBinder.hpp"
 
 #include <cstring>
@@ -38,11 +40,11 @@ concept SqlQueryObject = requires(QueryObject const& queryObject)
 // 3. Execute the statement (optionally with input parameters)
 // 4. Fetch rows (if any)
 // 5. Repeat steps 3 and 4 as needed
-class SqlStatement final: public SqlDataBinderCallback
+class LIGHTWEIGHT_API SqlStatement final: public SqlDataBinderCallback
 {
   public:
     // Construct a new SqlStatement object, using a new connection, and connect to the default database.
-    SqlStatement() noexcept;
+    SqlStatement();
 
     SqlStatement(SqlStatement&&) noexcept = default;
     SqlStatement& operator=(SqlStatement&&) noexcept = default;
@@ -59,7 +61,7 @@ class SqlStatement final: public SqlDataBinderCallback
     [[nodiscard]] SqlConnection const& Connection() const noexcept;
 
     // Creates a new query builder for the given table, compatible with the SQL server being connected.
-    [[nodiscard]] SqlQueryBuilder Query(std::string_view const& table = {}) const;
+    SqlQueryBuilder Query(std::string_view const& table = {}) const;
 
     // Creates a new query builder for the given table with an alias, compatible with the SQL server being connected.
     [[nodiscard]] SqlQueryBuilder QueryAs(std::string_view const& table, std::string_view const& tableAlias) const;
@@ -161,16 +163,16 @@ class SqlStatement final: public SqlDataBinderCallback
     void PlanPostProcessOutputColumn(std::function<void()>&& cb) override;
     void ProcessPostExecuteCallbacks();
 
-    // private data members
+    void RequireIndicators();
+    SQLLEN* GetIndicatorForColumn(SQLUSMALLINT column) noexcept;
 
-    std::optional<SqlConnection> m_ownedConnection; // The connection object (if owned)
+    // private data members
+    struct Data;
+    Data* m_data;
     SqlConnection* m_connection {};                 // Pointer to the connection object
     SQLHSTMT m_hStmt {};                            // The native oDBC statement handle
     std::string m_preparedQuery;                    // The last prepared query
     SQLSMALLINT m_expectedParameterCount {};        // The number of parameters expected by the query
-    std::vector<SQLLEN> m_indicators;               // Holds the indicators for the bound output columns
-    std::vector<std::function<void()>> m_postExecuteCallbacks;
-    std::vector<std::function<void()>> m_postProcessOutputColumnCallbacks;
 };
 
 // {{{ inline implementation
@@ -197,20 +199,18 @@ inline void SqlStatement::Prepare(SqlQueryObject auto const& queryObject)
 template <SqlOutputColumnBinder... Args>
 void SqlStatement::BindOutputColumns(Args*... args)
 {
-    auto const numColumns = NumColumnsAffected();
-    m_indicators.resize(numColumns + 1);
+    RequireIndicators();
 
     SQLUSMALLINT i = 0;
-    ((++i, SqlDataBinder<Args>::OutputColumn(m_hStmt, i, args, &m_indicators[i], *this)), ...);
+    ((++i, SqlDataBinder<Args>::OutputColumn(m_hStmt, i, args, GetIndicatorForColumn(i), *this)), ...);
 }
 
 template <SqlOutputColumnBinder T>
 void SqlStatement::BindOutputColumn(SQLUSMALLINT columnIndex, T* arg)
 {
-    if (m_indicators.size() <= columnIndex)
-        m_indicators.resize(NumColumnsAffected() + 1);
+    RequireIndicators();
 
-    SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, &m_indicators[columnIndex], *this);
+    SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, GetIndicatorForColumn(columnIndex), *this);
 }
 
 template <SqlInputParameterBinder Arg>
@@ -362,30 +362,15 @@ template <SqlGetColumnNativeType T>
     return { std::move(result) };
 }
 
-inline void SqlStatement::PlanPostExecuteCallback(std::function<void()>&& cb)
-{
-    m_postExecuteCallbacks.emplace_back(std::move(cb));
-}
-
-inline void SqlStatement::ProcessPostExecuteCallbacks()
-{
-    for (auto& cb: m_postExecuteCallbacks)
-        cb();
-    m_postExecuteCallbacks.clear();
-}
-
-inline void SqlStatement::PlanPostProcessOutputColumn(std::function<void()>&& cb)
-{
-    m_postProcessOutputColumnCallbacks.emplace_back(std::move(cb));
-}
-
-inline void SqlStatement::ExecuteDirect(SqlQueryObject auto const& query, std::source_location location)
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::ExecuteDirect(SqlQueryObject auto const& query,
+                                                                 std::source_location location)
 {
     return ExecuteDirect(query.ToSql(), location);
 }
 
 template <typename T>
-std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query, std::source_location location)
+inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query,
+                                                                                   std::source_location location)
 {
     ExecuteDirect(query, location);
     if (FetchRow())
@@ -394,8 +379,8 @@ std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query
 }
 
 template <typename T>
-inline std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
-                                                          std::source_location location)
+inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
+                                                                                   std::source_location location)
 {
     return ExecuteDirectSingle<T>(query.ToSql(), location);
 }

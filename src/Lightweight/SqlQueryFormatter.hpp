@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Api.hpp"
 #include "SqlConnection.hpp"
 #include "SqlDataBinder.hpp"
 
@@ -11,7 +12,7 @@
 struct SqlQualifiedTableColumnName;
 
 // API to format SQL queries for different SQL dialects.
-class [[nodiscard]] SqlQueryFormatter
+class [[nodiscard]] LIGHTWEIGHT_API SqlQueryFormatter
 {
   public:
     virtual ~SqlQueryFormatter() = default;

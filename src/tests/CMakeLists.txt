@@ -12,12 +12,16 @@ endif()
 
 target_link_libraries(LightweightTest PRIVATE ${TEST_LIBRARIES})
 
-target_sources(LightweightTest PRIVATE 
-    CoreTests.cpp
-    ModelTests.cpp
-    ModelAssociationsTests.cpp
-    UnicodeConverterTests.cpp
-)
+set(SOURCE_FILES CoreTests.cpp UnicodeConverterTests.cpp)
+
+if(LIGHTWEIGHT_ORM)
+    target_compile_definitions(LightweightTest PRIVATE LIGHTWEIGHT_ORM)
+    list(APPEND SOURCE_FILES ModelTests.cpp ModelAssociationsTests.cpp)
+endif()
+
+target_sources(LightweightTest PRIVATE ${SOURCE_FILES})
 
 enable_testing()
 add_test(NAME LightweightTest COMMAND LightweightTest)
+
+install(TARGETS LightweightTest DESTINATION bin)

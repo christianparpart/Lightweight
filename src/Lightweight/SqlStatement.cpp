@@ -3,16 +3,56 @@
 #include "SqlQuery.hpp"
 #include "SqlStatement.hpp"
 
-SqlStatement::SqlStatement() noexcept:
-    m_ownedConnection { SqlConnection() },
-    m_connection { &m_ownedConnection.value() }
+struct SqlStatement::Data
 {
+    std::optional<SqlConnection> ownedConnection; // The connection object (if owned)
+    std::vector<SQLLEN> indicators;               // Holds the indicators for the bound output columns
+    std::vector<std::function<void()>> postExecuteCallbacks;
+    std::vector<std::function<void()>> postProcessOutputColumnCallbacks;
+};
+
+void SqlStatement::RequireIndicators()
+{
+    auto const count = NumColumnsAffected() + 1;
+    if (m_data->indicators.size() <= count)
+        m_data->indicators.resize(count + 1);
+}
+
+SQLLEN* SqlStatement::GetIndicatorForColumn(SQLUSMALLINT column) noexcept
+{
+    return &m_data->indicators[column];
+}
+
+void SqlStatement::PlanPostExecuteCallback(std::function<void()>&& cb)
+{
+    m_data->postExecuteCallbacks.emplace_back(std::move(cb));
+}
+
+void SqlStatement::ProcessPostExecuteCallbacks()
+{
+    for (auto& cb: m_data->postExecuteCallbacks)
+        cb();
+    m_data->postExecuteCallbacks.clear();
+}
+
+void SqlStatement::PlanPostProcessOutputColumn(std::function<void()>&& cb)
+{
+    m_data->postProcessOutputColumnCallbacks.emplace_back(std::move(cb));
+}
+
+SqlStatement::SqlStatement():
+    m_data { new Data() }
+{
+    m_data->ownedConnection = SqlConnection();
+    m_connection = &*m_data->ownedConnection;
+
     if (m_connection->NativeHandle())
         RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
 }
 
 // Construct a new SqlStatement object, using the given connection.
 SqlStatement::SqlStatement(SqlConnection& relatedConnection):
+    m_data { new Data() },
     m_connection { &relatedConnection }
 {
     RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
@@ -21,6 +61,7 @@ SqlStatement::SqlStatement(SqlConnection& relatedConnection):
 SqlStatement::~SqlStatement() noexcept
 {
     SQLFreeHandle(SQL_HANDLE_STMT, m_hStmt);
+    delete m_data;
 }
 
 void SqlStatement::Prepare(std::string_view query)
@@ -29,8 +70,8 @@ void SqlStatement::Prepare(std::string_view query)
 
     m_preparedQuery = std::string(query);
 
-    m_postExecuteCallbacks.clear();
-    m_postProcessOutputColumnCallbacks.clear();
+    m_data->postExecuteCallbacks.clear();
+    m_data->postProcessOutputColumnCallbacks.clear();
 
     // Closes the cursor if it is open
     RequireSuccess(SQLFreeStmt(m_hStmt, SQL_CLOSE));
@@ -38,7 +79,7 @@ void SqlStatement::Prepare(std::string_view query)
     // Prepares the statement
     RequireSuccess(SQLPrepareA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()));
     RequireSuccess(SQLNumParams(m_hStmt, &m_expectedParameterCount));
-    m_indicators.resize(m_expectedParameterCount + 1);
+    m_data->indicators.resize(m_expectedParameterCount + 1);
 }
 
 void SqlStatement::ExecuteDirect(const std::string_view& query, std::source_location location)
@@ -105,9 +146,9 @@ bool SqlStatement::FetchRow()
         default:
             RequireSuccess(sqlResult);
             // post-process the output columns, if needed
-            for (auto const& postProcess: m_postProcessOutputColumnCallbacks)
+            for (auto const& postProcess: m_data->postProcessOutputColumnCallbacks)
                 postProcess();
-            m_postProcessOutputColumnCallbacks.clear();
+            m_data->postProcessOutputColumnCallbacks.clear();
             return true;
     }
 }

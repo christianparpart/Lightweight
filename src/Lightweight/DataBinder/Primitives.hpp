@@ -6,7 +6,7 @@
 
 // clang-format off
 template <typename T, SQLSMALLINT TheCType, SQLINTEGER TheSqlType, SqlColumnType TheColumnType>
-struct SqlSimpleDataBinder
+struct LIGHTWEIGHT_API SqlSimpleDataBinder
 {
     static constexpr inline SqlColumnType ColumnType = TheColumnType;
 

@@ -6,7 +6,8 @@
 
 #include <string>
 
-class [[nodiscard]] SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
+class [[nodiscard]] LIGHTWEIGHT_API SqlDeleteQueryBuilder final:
+    public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
 {
   public:
     explicit SqlDeleteQueryBuilder(SqlQueryFormatter const& formatter,
@@ -37,7 +38,7 @@ class [[nodiscard]] SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBu
     SqlSearchCondition m_searchCondition;
 };
 
-inline std::string SqlDeleteQueryBuilder::ToSql() const
+inline LIGHTWEIGHT_FORCE_INLINE std::string SqlDeleteQueryBuilder::ToSql() const
 {
     return m_formatter.Delete(m_searchCondition.tableName,
                               m_searchCondition.tableAlias,

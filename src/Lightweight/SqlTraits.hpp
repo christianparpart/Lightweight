@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Api.hpp"
+
 #include <array>
 #include <cstdint>
 #include <format>
@@ -159,7 +161,7 @@ inline SqlTraits const& GetSqlTraits(SqlServerType serverType) noexcept
 }
 
 template <>
-struct std::formatter<SqlServerType>: std::formatter<std::string_view>
+struct LIGHTWEIGHT_API std::formatter<SqlServerType>: std::formatter<std::string_view>
 {
     auto format(SqlServerType type, format_context& ctx) const -> format_context::iterator
     {

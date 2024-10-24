@@ -10,7 +10,8 @@ enum class SqlResultOrdering : uint8_t
     DESCENDING
 };
 
-class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
+class [[nodiscard]] LIGHTWEIGHT_API SqlSelectQueryBuilder final:
+    public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
 {
   public:
     enum class SelectType

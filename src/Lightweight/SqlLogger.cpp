@@ -75,7 +75,6 @@ class SqlStandardLogger: public SqlLogger
     void OnExecute(std::string_view const&) override {}
     void OnExecuteBatch() override {}
     void OnFetchedRow() override {}
-    void OnStats(SqlConnectionStats const&) override {}
 };
 
 class SqlTraceLogger: public SqlStandardLogger
@@ -146,18 +145,6 @@ class SqlTraceLogger: public SqlStandardLogger
     {
         Tick();
         WriteMessage("Fetched row");
-    }
-
-    void OnStats(SqlConnectionStats const& stats) override
-    {
-        Tick();
-        WriteMessage("[SqlConnectionPool stats] "
-                     "created: {}, reused: {}, closed: {}, timedout: {}, released: {}",
-                     stats.created,
-                     stats.reused,
-                     stats.closed,
-                     stats.timedout,
-                     stats.released);
     }
 
   private:

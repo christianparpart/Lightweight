@@ -6,6 +6,7 @@
     #include <Windows.h>
 #endif
 
+#include "../Api.hpp"
 #include "../SqlTraits.hpp"
 
 #include <concepts>
@@ -20,7 +21,7 @@
 // This is needed because the SQLBindCol() function does not allow to specify a callback function to be called
 // after the data has been fetched from the database. This is needed to trim strings to the correct size, for
 // example.
-class SqlDataBinderCallback
+class LIGHTWEIGHT_API SqlDataBinderCallback
 {
   public:
     virtual ~SqlDataBinderCallback() = default;

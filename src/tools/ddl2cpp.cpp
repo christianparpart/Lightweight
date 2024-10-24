@@ -373,8 +373,6 @@ int main(int argc, char const* argv[])
     SqlConnection::SetDefaultConnectInfo(SqlConnectionString { std::string(config.connectionString) });
     SqlConnection::SetPostConnectedHook(&PostConnectedHook);
 
-    auto const _ = finally([] { SqlConnection::KillAllIdle(); });
-
     if (config.createTestTables)
         CreateTestTables();
 
