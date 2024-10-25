@@ -123,7 +123,7 @@ class LIGHTWEIGHT_API SqlFixedString
             --_size;
     }
 
-    constexpr std::basic_string_view<T> substr(
+    [[nodiscard]] constexpr std::basic_string_view<T> substr(
         std::size_t offset = 0, std::size_t count = (std::numeric_limits<std::size_t>::max)()) const noexcept
     {
         if (offset >= _size)
@@ -136,19 +136,19 @@ class LIGHTWEIGHT_API SqlFixedString
     }
 
     // clang-format off
-    constexpr pointer_type c_str() noexcept { _data[_size] = '\0'; return _data; }
-    constexpr pointer_type data() noexcept { return _data; }
-    constexpr iterator begin() noexcept { return _data; }
-    constexpr iterator end() noexcept { return _data + size(); }
-    constexpr T& at(std::size_t i) noexcept { return _data[i]; }
-    constexpr T& operator[](std::size_t i) noexcept { return _data[i]; }
+    [[nodiscard]] constexpr pointer_type c_str() noexcept { _data[_size] = '\0'; return _data; }
+    [[nodiscard]] constexpr pointer_type data() noexcept { return _data; }
+    [[nodiscard]] constexpr iterator begin() noexcept { return _data; }
+    [[nodiscard]] constexpr iterator end() noexcept { return _data + size(); }
+    [[nodiscard]] constexpr T& at(std::size_t i) noexcept { return _data[i]; }
+    [[nodiscard]] constexpr T& operator[](std::size_t i) noexcept { return _data[i]; }
 
-    constexpr const_pointer_type c_str() const noexcept { const_cast<T*>(_data)[_size] = '\0'; return _data; }
-    constexpr const_pointer_type data() const noexcept { return _data; }
-    constexpr const_iterator begin() const noexcept { return _data; }
-    constexpr const_iterator end() const noexcept { return _data + size(); }
-    constexpr T const& at(std::size_t i) const noexcept { return _data[i]; }
-    constexpr T const& operator[](std::size_t i) const noexcept { return _data[i]; }
+    [[nodiscard]] constexpr const_pointer_type c_str() const noexcept { const_cast<T*>(_data)[_size] = '\0'; return _data; }
+    [[nodiscard]] constexpr const_pointer_type data() const noexcept { return _data; }
+    [[nodiscard]] constexpr const_iterator begin() const noexcept { return _data; }
+    [[nodiscard]] constexpr const_iterator end() const noexcept { return _data + size(); }
+    [[nodiscard]] constexpr T const& at(std::size_t i) const noexcept { return _data[i]; }
+    [[nodiscard]] constexpr T const& operator[](std::size_t i) const noexcept { return _data[i]; }
     // clang-format on
 
     template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
@@ -285,8 +285,8 @@ struct LIGHTWEIGHT_API SqlCommonStringBinder<SqlFixedString<N, T, PostOp>>
 template <std::size_t N, SqlStringPostRetrieveOperation PostOp>
 struct LIGHTWEIGHT_API SqlDataTraits<SqlFixedString<N, char, PostOp>>
 {
-    static constexpr inline unsigned Size = N;
-    static constexpr inline SqlColumnType Type = SqlColumnType::CHAR;
+    static constexpr unsigned Size = N;
+    static constexpr SqlColumnType Type = SqlColumnType::CHAR;
 };
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation P>

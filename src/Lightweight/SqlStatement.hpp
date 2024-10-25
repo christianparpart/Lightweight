@@ -9,8 +9,8 @@
 
 #include "Api.hpp"
 #include "SqlConnection.hpp"
-#include "SqlQuery.hpp"
 #include "SqlDataBinder.hpp"
+#include "SqlQuery.hpp"
 
 #include <cstring>
 #include <optional>
@@ -49,8 +49,11 @@ class LIGHTWEIGHT_API SqlStatement final: public SqlDataBinderCallback
     SqlStatement(SqlStatement&&) noexcept = default;
     SqlStatement& operator=(SqlStatement&&) noexcept = default;
 
+    SqlStatement(SqlStatement const&) noexcept = delete;
+    SqlStatement& operator=(SqlStatement const&) noexcept = delete;
+
     // Construct a new SqlStatement object, using the given connection.
-    SqlStatement(SqlConnection& relatedConnection);
+    explicit SqlStatement(SqlConnection& relatedConnection);
 
     ~SqlStatement() noexcept final;
 
@@ -169,10 +172,10 @@ class LIGHTWEIGHT_API SqlStatement final: public SqlDataBinderCallback
     // private data members
     struct Data;
     Data* m_data;
-    SqlConnection* m_connection {};                 // Pointer to the connection object
-    SQLHSTMT m_hStmt {};                            // The native oDBC statement handle
-    std::string m_preparedQuery;                    // The last prepared query
-    SQLSMALLINT m_expectedParameterCount {};        // The number of parameters expected by the query
+    SqlConnection* m_connection {};          // Pointer to the connection object
+    SQLHSTMT m_hStmt {};                     // The native oDBC statement handle
+    std::string m_preparedQuery;             // The last prepared query
+    SQLSMALLINT m_expectedParameterCount {}; // The number of parameters expected by the query
 };
 
 // {{{ inline implementation
@@ -288,6 +291,7 @@ void SqlStatement::ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch,
     size_t rowStart = 0;
 
     // clang-format off
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     RequireSuccess(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAMSET_SIZE, (SQLPOINTER) rowCount, 0));
     RequireSuccess(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAM_BIND_OFFSET_PTR, &rowStart, 0));
     RequireSuccess(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAM_BIND_TYPE, SQL_PARAM_BIND_BY_COLUMN, 0));

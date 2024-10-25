@@ -21,6 +21,8 @@
 #include <set>
 #include <type_traits>
 
+// NOLINTBEGIN(readability-container-size-empty)
+
 #if defined(_MSC_VER)
     // Disable the warning C4834: discarding return value of function with 'nodiscard' attribute.
     // Because we are simply testing and demonstrating the library and not using it in production code.
@@ -432,7 +434,7 @@ struct SqlDataBinder<CustomType>
 
     static constexpr int PostProcess(int value) noexcept
     {
-        return value |= 0x01;
+        return value | 0x01;
     }
 };
 
@@ -883,7 +885,7 @@ template <typename TheSqlQuery>
 // requires(std::is_invocable_v<TheSqlQuery, SqlQueryBuilder&>)
 void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
                           QueryExpectations const& expectations,
-                          std::function<void()>&& postCheck = {},
+                          std::function<void()> const& postCheck = {},
                           std::source_location const& location = std::source_location::current())
 {
     auto const eraseLinefeeds = [](std::string str) noexcept -> std::string {
@@ -906,7 +908,7 @@ void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
     CHECK(actualSqlServer == expectations.sqlServer);
     if (postCheck)
         postCheck();
-};
+}
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Count", "[SqlQueryBuilder]")
 {
@@ -1243,8 +1245,8 @@ TEST_CASE_METHOD(SqlTestFixture,
     CreateEmployeesTable(stmt, quoted);
 
     auto businessObject = TestBusinessObject {
-        .sqlInsertEmployee = { sharedConnection },
-        .sqlSelectEmployee = { sharedConnection },
+        .sqlInsertEmployee = SqlStatement { sharedConnection },
+        .sqlSelectEmployee = SqlStatement { sharedConnection },
     };
 
     auto const insertQuery = stmt.Query("Employees")
@@ -1283,3 +1285,5 @@ TEST_CASE_METHOD(SqlTestFixture,
     //     // CHECK(lastName.value == "Smith");
     // }
 }
+
+// NOLINTEND(readability-container-size-empty)

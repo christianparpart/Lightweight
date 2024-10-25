@@ -32,6 +32,11 @@ class LIGHTWEIGHT_API SqlScopedTraceLogger
         SQLSetConnectAttrA(m_nativeConnection, SQL_ATTR_TRACE, (SQLPOINTER) SQL_OPT_TRACE_ON, SQL_IS_UINTEGER);
     }
 
+    SqlScopedTraceLogger(SqlScopedTraceLogger&&) = delete;
+    SqlScopedTraceLogger& operator=(SqlScopedTraceLogger&&) = delete;
+    SqlScopedTraceLogger(SqlScopedTraceLogger const&) = delete;
+    SqlScopedTraceLogger& operator=(SqlScopedTraceLogger const&) = delete;
+
     ~SqlScopedTraceLogger()
     {
         SQLSetConnectAttrA(m_nativeConnection, SQL_ATTR_TRACE, (SQLPOINTER) SQL_OPT_TRACE_OFF, SQL_IS_UINTEGER);

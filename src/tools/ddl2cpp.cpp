@@ -19,6 +19,7 @@ namespace
 
 constexpr auto finally(auto&& cleanupRoutine) noexcept
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
     struct Finally
     {
         std::remove_cvref_t<decltype(cleanupRoutine)> cleanup;
@@ -70,6 +71,7 @@ std::string MakeType(SqlSchema::Column const& column)
 std::string MakeVariableName(SqlSchema::FullyQualifiedTableName const& table)
 {
     auto name = std::format("{}", table.table);
+    // NOLINTNEXTLINE(bugprone-narrowing-conversions,cppcoreguidelines-narrowing-conversions)
     name.at(0) = std::tolower(name.at(0));
     return name;
 }
@@ -95,11 +97,11 @@ std::string MakePluralVariableName(SqlSchema::FullyQualifiedTableName const& tab
     if (sqlName.back() == 'y' && sqlName.size() > 1 && !isVowel(sqlName.at(sqlName.size() - 2)))
     {
         auto name = std::format("{}ies", sqlName.substr(0, sqlName.size() - 1));
-        name.at(0) = std::tolower(name.at(0));
+        name.at(0) = static_cast<char>(std::tolower(name.at(0)));
         return name;
     }
     auto name = std::format("{}s", sqlName);
-    name.at(0) = std::tolower(name.at(0));
+    name.at(0) = static_cast<char>(std::tolower(name.at(0)));
     return name;
 }
 
@@ -128,6 +130,7 @@ class CxxModelPrinter
         return output.str();
     }
 
+    // NOLINTNEXTLINE(readability-function-cognitive-complexity)
     void PrintTable(SqlSchema::Table const& table)
     {
         m_forwwardDeclarations.push_back(table.name);
@@ -253,7 +256,7 @@ void PostConnectedHook(SqlConnection& connection)
         case SqlServerType::SQLITE: {
             auto stmt = SqlStatement { connection };
             // Enable foreign key constraints for SQLite
-            (void) stmt.ExecuteDirect("PRAGMA foreign_keys = ON");
+            stmt.ExecuteDirect("PRAGMA foreign_keys = ON");
             break;
         }
         case SqlServerType::MICROSOFT_SQL:
@@ -288,6 +291,7 @@ struct Configuration
     bool createTestTables = false;
 };
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 std::variant<Configuration, int> ParseArguments(int argc, char const* argv[])
 {
     using namespace std::string_view_literals;
@@ -360,7 +364,7 @@ std::variant<Configuration, int> ParseArguments(int argc, char const* argv[])
     if (i < argc)
         argv[i - 1] = argv[0];
 
-    return { std::move(config) };
+    return { config };
 }
 
 int main(int argc, char const* argv[])

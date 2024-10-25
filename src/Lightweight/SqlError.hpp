@@ -87,6 +87,7 @@ enum class SqlError : std::int16_t
     NO_DATA_FOUND = SQL_NO_DATA_FOUND,
     UNSUPPORTED_TYPE = 1'000,
     INVALID_ARGUMENT = 1'001,
+    TRANSACTION_ERROR = 1'002,
 };
 
 struct SqlErrorCategory: std::error_category
@@ -126,6 +127,8 @@ struct SqlErrorCategory: std::error_category
                 return "SQL_UNSUPPORTED_TYPE"s;
             case SqlError::INVALID_ARGUMENT:
                 return "SQL_INVALID_ARGUMENT"s;
+            case SqlError::TRANSACTION_ERROR:
+                return "SQL_TRANSACTION_ERROR"s;
         }
         return std::format("SQL error code {}", code);
     }

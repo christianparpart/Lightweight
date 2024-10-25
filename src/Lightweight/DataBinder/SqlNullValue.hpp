@@ -11,7 +11,7 @@ struct SqlNullType
 };
 
 // Used to indicate a NULL value in a SQL query.
-constexpr inline auto SqlNullValue = SqlNullType {};
+constexpr auto SqlNullValue = SqlNullType {};
 
 template <>
 struct SqlDataBinder<SqlNullType>
@@ -34,6 +34,6 @@ struct SqlDataBinder<SqlNullType>
 template <>
 struct SqlDataTraits<SqlNullType>
 {
-    static constexpr inline unsigned Size = 0;
-    static constexpr inline SqlColumnType Type = SqlColumnType::UNKNOWN;
+    static constexpr unsigned Size = 0;
+    static constexpr SqlColumnType Type = SqlColumnType::UNKNOWN;
 };

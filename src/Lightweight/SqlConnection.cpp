@@ -9,7 +9,7 @@
 using namespace std::chrono_literals;
 using namespace std::string_view_literals;
 
-static std::optional<SqlConnectInfo> gDefaultConnectInfo {};
+static SqlConnectInfo gDefaultConnectInfo {};
 static std::atomic<uint64_t> gNextConnectionId { 1 };
 static std::function<void(SqlConnection&)> gPostConnectedHook {};
 
@@ -85,7 +85,7 @@ SqlConnection::~SqlConnection() noexcept
 
 SqlConnectInfo const& SqlConnection::DefaultConnectInfo() noexcept
 {
-    return gDefaultConnectInfo.value();
+    return gDefaultConnectInfo;
 }
 
 void SqlConnection::SetDefaultConnectInfo(SqlConnectInfo connectInfo) noexcept
@@ -163,6 +163,7 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
 
     if (auto const* info = std::get_if<SqlConnectionDataSource>(&m_data->connectInfo))
     {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         SQLRETURN sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER) info->timeout.count(), 0);
         if (!SQL_SUCCEEDED(sqlReturn))
         {
@@ -280,7 +281,7 @@ std::string SqlConnection::ServerVersion() const
 bool SqlConnection::TransactionActive() const noexcept
 {
     SQLUINTEGER state {};
-    SQLRETURN sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, &state, 0, nullptr);
+    SQLRETURN const sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, &state, 0, nullptr);
     return sqlResult == SQL_SUCCESS && state == SQL_AUTOCOMMIT_OFF;
 }
 
@@ -295,7 +296,7 @@ bool SqlConnection::TransactionsAllowed() const noexcept
 bool SqlConnection::IsAlive() const noexcept
 {
     SQLUINTEGER state {};
-    SQLRETURN sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_CONNECTION_DEAD, &state, 0, nullptr);
+    SQLRETURN const sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_CONNECTION_DEAD, &state, 0, nullptr);
     return SQL_SUCCEEDED(sqlResult) && state == SQL_CD_FALSE;
 }
 

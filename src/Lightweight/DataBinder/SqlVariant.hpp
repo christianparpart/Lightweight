@@ -107,6 +107,7 @@ struct SqlVariant
     SqlVariant(SqlVariant&&) noexcept = default;
     SqlVariant& operator=(SqlVariant const&) = default;
     SqlVariant& operator=(SqlVariant&&) noexcept = default;
+    ~SqlVariant() = default;
 
     SqlVariant(InnerType const& other):
         value(other)
@@ -170,10 +171,10 @@ struct SqlVariant
     [[nodiscard]] T ValueOr(T&& defaultValue) const noexcept
     {
         if constexpr (std::is_integral_v<T>)
-            return TryGetIntegral<T>().value_or(defaultValue);
+            return TryGetIntegral<T>().value_or(std::forward<T>(defaultValue));
 
         if (IsNull())
-            return defaultValue;
+            return std::forward<T>(defaultValue);
 
         return std::get<T>(value);
     }

@@ -108,18 +108,18 @@ class [[nodiscard]] LIGHTWEIGHT_API SqlWhereClauseBuilder
     // Constructs or extends a WHERE/AND clause to test for a group of values.
     template <typename Callable>
         requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
-    [[nodiscard]] Derived& Where(Callable&& callable);
+    [[nodiscard]] Derived& Where(Callable const& callable);
 
     // Constructs or extends an WHERE/OR clause to test for a group of values.
     template <typename Callable>
         requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
-    [[nodiscard]] Derived& OrWhere(Callable&& callable);
+    [[nodiscard]] Derived& OrWhere(Callable const& callable);
 
     template <typename ColumnName, std::ranges::input_range InputRange>
     [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, InputRange const& values);
 
     template <typename ColumnName, typename T>
-    [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, std::initializer_list<T>&& values);
+    [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, std::initializer_list<T> const& values);
 
     template <typename ColumnName>
     [[nodiscard]] Derived& WhereNull(ColumnName const& columnName);
@@ -253,15 +253,15 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Where(C
 template <typename Derived>
 template <typename Callable>
     requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
-inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::OrWhere(Callable&& callable)
+inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::OrWhere(Callable const& callable)
 {
-    return Or().Where(std::forward<Callable>(callable));
+    return Or().Where(callable);
 }
 
 template <typename Derived>
 template <typename Callable>
     requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
-inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Where(Callable&& callable)
+inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Where(Callable const& callable)
 {
     auto& condition = SearchCondition().condition;
 
@@ -309,9 +309,9 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::WhereIn
 template <typename Derived>
 template <typename ColumnName, typename T>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::WhereIn(ColumnName const& columnName,
-                                                                                 std::initializer_list<T>&& values)
+                                                                                 std::initializer_list<T> const& values)
 {
-    return Where(columnName, "IN", detail::PopulateSqlSetExpression(std::forward<std::initializer_list<T>>(values)));
+    return Where(columnName, "IN", detail::PopulateSqlSetExpression(values));
 }
 
 template <typename Derived>

@@ -41,11 +41,15 @@ void SqlStatement::PlanPostProcessOutputColumn(std::function<void()>&& cb)
 }
 
 SqlStatement::SqlStatement():
-    m_data { new Data() }
+    m_data { new Data {
+        .ownedConnection = SqlConnection(),
+        .indicators = {},
+        .postExecuteCallbacks = {},
+        .postProcessOutputColumnCallbacks = {},
+    } },
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    m_connection { &*m_data->ownedConnection }
 {
-    m_data->ownedConnection = SqlConnection();
-    m_connection = &*m_data->ownedConnection;
-
     if (m_connection->NativeHandle())
         RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
 }

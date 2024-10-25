@@ -51,6 +51,7 @@ auto const inline DefaultTestConnectionString = SqlConnectionString {
                          "file::memory:"),
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 class ScopedSqlNullLogger: public SqlLogger
 {
   private:
@@ -67,20 +68,21 @@ class ScopedSqlNullLogger: public SqlLogger
         SqlLogger::SetLogger(m_previousLogger);
     }
 
-    void OnWarning(std::string_view const&) override {}
-    void OnError(SqlError, std::source_location) override {}
-    void OnError(SqlErrorInfo const&, std::source_location) override {}
-    void OnConnectionOpened(SqlConnection const&) override {}
-    void OnConnectionClosed(SqlConnection const&) override {}
-    void OnConnectionIdle(SqlConnection const&) override {}
-    void OnConnectionReuse(SqlConnection const&) override {}
-    void OnExecuteDirect(std::string_view const&) override {}
-    void OnPrepare(std::string_view const&) override {}
-    void OnExecute(std::string_view const&) override {}
+    void OnWarning(std::string_view const& /*message*/) override {}
+    void OnError(SqlError /*errorCode*/, std::source_location /*sourceLocation*/) override {}
+    void OnError(SqlErrorInfo const& /*errorInfo*/, std::source_location /*sourceLocation*/) override {}
+    void OnConnectionOpened(SqlConnection const& /*connection*/) override {}
+    void OnConnectionClosed(SqlConnection const& /*connection*/) override {}
+    void OnConnectionIdle(SqlConnection const& /*connection*/) override {}
+    void OnConnectionReuse(SqlConnection const& /*connection*/) override {}
+    void OnExecuteDirect(std::string_view const& /*query*/) override {}
+    void OnPrepare(std::string_view const& /*query*/) override {}
+    void OnExecute(std::string_view const& /*query*/) override {}
     void OnExecuteBatch() override {}
     void OnFetchedRow() override {}
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 class SqlTestFixture
 {
   public:
@@ -155,7 +157,7 @@ class SqlTestFixture
             case SqlServerType::SQLITE: {
                 auto stmt = SqlStatement { connection };
                 // Enable foreign key constraints for SQLite
-                (void) stmt.ExecuteDirect("PRAGMA foreign_keys = ON");
+                stmt.ExecuteDirect("PRAGMA foreign_keys = ON");
                 break;
             }
             case SqlServerType::MICROSOFT_SQL:
@@ -228,20 +230,20 @@ class SqlTestFixture
         switch (stmt.Connection().ServerType())
         {
             case SqlServerType::MICROSOFT_SQL:
-                (void) stmt.ExecuteDirect(std::format("USE {}", "master"));
-                (void) stmt.ExecuteDirect(std::format("DROP DATABASE IF EXISTS \"{}\"", testDatabaseName));
-                (void) stmt.ExecuteDirect(std::format("CREATE DATABASE \"{}\"", testDatabaseName));
-                (void) stmt.ExecuteDirect(std::format("USE {}", testDatabaseName));
+                stmt.ExecuteDirect(std::format("USE {}", "master"));
+                stmt.ExecuteDirect(std::format("DROP DATABASE IF EXISTS \"{}\"", testDatabaseName));
+                stmt.ExecuteDirect(std::format("CREATE DATABASE \"{}\"", testDatabaseName));
+                stmt.ExecuteDirect(std::format("USE {}", testDatabaseName));
                 break;
             case SqlServerType::POSTGRESQL:
                 if (m_createdTables.empty())
                     m_createdTables = GetAllTableNames();
                 for (auto& createdTable: std::views::reverse(m_createdTables))
-                    (void) stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\" CASCADE", createdTable));
+                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\" CASCADE", createdTable));
                 break;
             default:
                 for (auto& createdTable: std::views::reverse(m_createdTables))
-                    (void) stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", createdTable));
+                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", createdTable));
                 break;
         }
         m_createdTables.clear();

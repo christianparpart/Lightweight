@@ -24,6 +24,12 @@
 class LIGHTWEIGHT_API SqlDataBinderCallback
 {
   public:
+    SqlDataBinderCallback() = default;
+    SqlDataBinderCallback(SqlDataBinderCallback&&) = default;
+    SqlDataBinderCallback(SqlDataBinderCallback const&) = default;
+    SqlDataBinderCallback& operator=(SqlDataBinderCallback&&) = default;
+    SqlDataBinderCallback& operator=(SqlDataBinderCallback const&) = default;
+
     virtual ~SqlDataBinderCallback() = default;
 
     virtual void PlanPostExecuteCallback(std::function<void()>&&) = 0;

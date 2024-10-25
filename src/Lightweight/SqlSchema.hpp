@@ -29,9 +29,9 @@ namespace detail
 
 struct FullyQualifiedTableName
 {
-    std::string catalog {};
-    std::string schema {};
-    std::string table {};
+    std::string catalog;
+    std::string schema;
+    std::string table;
 
     bool operator==(FullyQualifiedTableName const& other) const noexcept
     {
@@ -90,7 +90,7 @@ struct Column
     bool isNullable = true;
     bool isUnique = false;
     size_t size = 0;
-    unsigned short decimalDigits;
+    unsigned short decimalDigits = 0;
     bool isAutoIncrement = false;
     bool isPrimaryKey = false;
     bool isForeignKey = false;
@@ -101,6 +101,11 @@ struct Column
 class EventHandler
 {
   public:
+    EventHandler() = default;
+    EventHandler(EventHandler&&) = default;
+    EventHandler(EventHandler const&) = default;
+    EventHandler& operator=(EventHandler&&) = default;
+    EventHandler& operator=(EventHandler const&) = default;
     virtual ~EventHandler() = default;
 
     virtual bool OnTable(std::string_view table) = 0;

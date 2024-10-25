@@ -11,7 +11,6 @@
 #include "SqlError.hpp"
 #include "SqlLogger.hpp"
 #include "SqlTraits.hpp"
-#include "SqlUtils.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -46,10 +45,10 @@ class LIGHTWEIGHT_API SqlConnection final
     // Constructs a new SQL connection to the given connect informaton.
     explicit SqlConnection(std::optional<SqlConnectInfo> connectInfo);
 
-    SqlConnection(SqlConnection&&) noexcept;
-    SqlConnection& operator=(SqlConnection&&) noexcept;
-    SqlConnection(SqlConnection const&) = delete;
-    SqlConnection& operator=(SqlConnection const&) = delete;
+    SqlConnection(SqlConnection&& /*other*/) noexcept;
+    SqlConnection& operator=(SqlConnection&& /*other*/) noexcept;
+    SqlConnection(SqlConnection const& /*other*/) = delete;
+    SqlConnection& operator=(SqlConnection const& /*other*/) = delete;
 
     // Destructs this SQL connection object,
     ~SqlConnection() noexcept;

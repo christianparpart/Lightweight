@@ -165,6 +165,7 @@ jobs:
               -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" \
               -DCMAKE_INSTALL_PREFIX="/usr/local" \
               -DPEDANTIC_COMPILER_WERROR=OFF \
+              -DLIGHTWEIGHT_BUILD_SHARED=ON \
               --preset linux-gcc-release
       - name: "build"
         run: cmake --build --preset linux-gcc-release -- -j3
@@ -226,7 +227,7 @@ jobs:
       - name: "Dump SQL connection string"
         run: echo "ODBC_CONNECTION_STRING=${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
       - name: "Run SQL Core tests"
-        run: LightweightTest --trace-sql --trace-model -s # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+        run: LightweightTest --trace-sql -s # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
         env:
           ODBC_CONNECTION_STRING: "${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
 

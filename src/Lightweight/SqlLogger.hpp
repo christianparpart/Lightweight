@@ -14,6 +14,11 @@ class SqlConnection;
 class LIGHTWEIGHT_API SqlLogger
 {
   public:
+    SqlLogger() = default;
+    SqlLogger(SqlLogger const& /*other*/) = default;
+    SqlLogger(SqlLogger&& /*other*/) = default;
+    SqlLogger& operator=(SqlLogger const& /*other*/) = default;
+    SqlLogger& operator=(SqlLogger&& /*other*/) = default;
     virtual ~SqlLogger() = default;
 
     // Logs a warning message.

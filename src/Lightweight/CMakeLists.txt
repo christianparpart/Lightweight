@@ -117,7 +117,7 @@ else()
     target_compile_options(Lightweight PUBLIC ${ODBC_CFLAGS})
     target_link_libraries(Lightweight PUBLIC ${ODBC_LDFLAGS})
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_link_libraries(Lightweight PUBLIC stdc++exp) # GCC >= 14
     endif()
 endif()

@@ -14,7 +14,7 @@ class [[nodiscard]] LIGHTWEIGHT_API SqlSelectQueryBuilder final:
     public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
 {
   public:
-    enum class SelectType
+    enum class SelectType: std::uint8_t
     {
         Undefined,
         Count,

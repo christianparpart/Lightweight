@@ -10,7 +10,7 @@ SqlTransaction::SqlTransaction(SqlConnection& connection, SqlTransactionMode def
     SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
 }
 
-SqlTransaction::~SqlTransaction()
+SqlTransaction::~SqlTransaction() noexcept
 {
     switch (m_defaultMode)
     {
@@ -25,29 +25,43 @@ SqlTransaction::~SqlTransaction()
     }
 }
 
-void SqlTransaction::Rollback()
+bool SqlTransaction::Rollback() noexcept
 {
     SQLRETURN sqlReturn = SQLEndTran(SQL_HANDLE_DBC, m_hDbc, SQL_ROLLBACK);
     if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
-        throw SqlException { SqlErrorInfo::fromConnectionHandle(m_hDbc) };
-    ;
+    {
+        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+        return false;
+    }
+
     sqlReturn = SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
     if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
-        throw SqlException { SqlErrorInfo::fromConnectionHandle(m_hDbc) };
+    {
+        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+        return false;
+    }
 
     m_defaultMode = SqlTransactionMode::NONE;
+    return true;
 }
 
 // Commit the transaction
-void SqlTransaction::Commit()
+bool SqlTransaction::Commit() noexcept
 {
     SQLRETURN sqlReturn = SQLEndTran(SQL_HANDLE_DBC, m_hDbc, SQL_COMMIT);
     if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
-        throw SqlException { SqlErrorInfo::fromConnectionHandle(m_hDbc) };
+    {
+        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+        return false;
+    }
 
     sqlReturn = SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
     if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
-        throw SqlException { SqlErrorInfo::fromConnectionHandle(m_hDbc) };
+    {
+        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+        return false;
+    }
 
     m_defaultMode = SqlTransactionMode::NONE;
+    return true;
 }

@@ -2,3 +2,15 @@ CompileFlags:
   Add:
     - "-std=c++23"
     - "-D__cpp_concepts=202002L"
+Diagnostics:
+  ClangTidy:
+    FastCheckFilter: None
+
+InlayHints:
+  Enabled: Yes
+  BlockEnd: No
+  Designators: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+  TypeNameLimit: 24
+

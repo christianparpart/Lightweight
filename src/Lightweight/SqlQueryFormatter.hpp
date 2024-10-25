@@ -15,6 +15,11 @@ struct SqlQualifiedTableColumnName;
 class [[nodiscard]] LIGHTWEIGHT_API SqlQueryFormatter
 {
   public:
+    SqlQueryFormatter() = default;
+    SqlQueryFormatter(SqlQueryFormatter&&) = default;
+    SqlQueryFormatter(SqlQueryFormatter const&) = default;
+    SqlQueryFormatter& operator=(SqlQueryFormatter&&) = default;
+    SqlQueryFormatter& operator=(SqlQueryFormatter const&) = default;
     virtual ~SqlQueryFormatter() = default;
 
     [[nodiscard]] virtual std::string_view BooleanLiteral(bool value) const noexcept = 0;
