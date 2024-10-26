@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "../Api.hpp"
+
 #include <concepts>
 #include <iterator>
 #include <string>
@@ -14,7 +16,7 @@ template <typename>
 struct UnicodeConverter;
 
 template <>
-struct UnicodeConverter<char8_t>
+struct LIGHTWEIGHT_API UnicodeConverter<char8_t>
 {
     // Converts a UTF-32 code point to one to four UTF-8 code units.
     template <typename OutputIterator>
@@ -47,7 +49,7 @@ struct UnicodeConverter<char8_t>
 };
 
 template <>
-struct UnicodeConverter<char16_t>
+struct LIGHTWEIGHT_API UnicodeConverter<char16_t>
 {
     // Converts a UTF-32 code point to one or two UTF-16 code units.
     template <typename OutputIterator>
@@ -81,10 +83,10 @@ struct UnicodeConverter<char16_t>
 } // namespace detail
 
 // Converts from UTF-32 to UTF-8.
-std::u8string ToUtf8(std::u32string_view u32InputString);
+LIGHTWEIGHT_API std::u8string ToUtf8(std::u32string_view u32InputString);
 
 // Converts from UTF-16 to UTF-8.
-std::u8string ToUtf8(std::u16string_view u16InputString);
+LIGHTWEIGHT_API std::u8string ToUtf8(std::u16string_view u16InputString);
 
 // Converts from UTF-32 to UTF-16.
 template <typename T>
@@ -100,4 +102,4 @@ std::u16string ToUtf16(const std::basic_string_view<T> u32InputString)
 }
 
 // Converts from UTF-8 to UTF-16.
-std::u16string ToUtf16(std::u8string_view u8InputString);
+LIGHTWEIGHT_API std::u16string ToUtf16(std::u8string_view u8InputString);

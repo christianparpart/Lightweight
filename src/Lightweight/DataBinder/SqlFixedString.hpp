@@ -39,44 +39,44 @@ class SqlFixedString
     static constexpr SqlStringPostRetrieveOperation PostRetrieveOperation = PostOp;
 
     template <std::size_t SourceSize>
-    SqlFixedString(T const (&text)[SourceSize]):
+    LIGHTWEIGHT_FORCE_INLINE SqlFixedString(T const (&text)[SourceSize]):
         _size { SourceSize - 1 }
     {
         static_assert(SourceSize <= N + 1, "RHS string size must not exceed target string's capacity.");
         std::copy_n(text, SourceSize, _data);
     }
 
-    SqlFixedString() = default;
-    SqlFixedString(SqlFixedString const&) = default;
-    SqlFixedString& operator=(SqlFixedString const&) = default;
-    SqlFixedString(SqlFixedString&&) = default;
-    SqlFixedString& operator=(SqlFixedString&&) = default;
-    ~SqlFixedString() = default;
+    LIGHTWEIGHT_FORCE_INLINE SqlFixedString() = default;
+    LIGHTWEIGHT_FORCE_INLINE SqlFixedString(SqlFixedString const&) = default;
+    LIGHTWEIGHT_FORCE_INLINE SqlFixedString& operator=(SqlFixedString const&) = default;
+    LIGHTWEIGHT_FORCE_INLINE SqlFixedString(SqlFixedString&&) = default;
+    LIGHTWEIGHT_FORCE_INLINE SqlFixedString& operator=(SqlFixedString&&) = default;
+    LIGHTWEIGHT_FORCE_INLINE ~SqlFixedString() = default;
 
-    void reserve(std::size_t capacity)
+    LIGHTWEIGHT_FORCE_INLINE void reserve(std::size_t capacity)
     {
         if (capacity > N)
             throw std::length_error(
                 std::format("SqlFixedString: capacity {} exceeds maximum capacity {}", capacity, N));
     }
 
-    [[nodiscard]] constexpr bool empty() const noexcept
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr bool empty() const noexcept
     {
         return _size == 0;
     }
 
-    [[nodiscard]] constexpr std::size_t size() const noexcept
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::size_t size() const noexcept
     {
         return _size;
     }
 
-    constexpr void setsize(std::size_t n) noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr void setsize(std::size_t n) noexcept
     {
         auto const newSize = (std::min)(n, N);
         _size = newSize;
     }
 
-    constexpr void resize(std::size_t n, T c = T {}) noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr void resize(std::size_t n, T c = T {}) noexcept
     {
         auto const newSize = (std::min)(n, N);
         if (newSize > _size)
@@ -84,31 +84,31 @@ class SqlFixedString
         _size = newSize;
     }
 
-    [[nodiscard]] constexpr std::size_t capacity() const noexcept
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::size_t capacity() const noexcept
     {
         return N;
     }
 
-    constexpr void clear() noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr void clear() noexcept
     {
         _size = 0;
     }
 
     template <std::size_t SourceSize>
-    constexpr void assign(T const (&source)[SourceSize]) noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr void assign(T const (&source)[SourceSize]) noexcept
     {
         static_assert(SourceSize <= N + 1, "Source string must not overflow the target string's capacity.");
         _size = SourceSize - 1;
         std::copy_n(source, SourceSize, _data);
     }
 
-    constexpr void assign(std::string_view s) noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr void assign(std::string_view s) noexcept
     {
         _size = (std::min)(N, s.size());
         std::copy_n(s.data(), _size, _data);
     }
 
-    constexpr void push_back(T c) noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr void push_back(T c) noexcept
     {
         if (_size < N)
         {
@@ -117,13 +117,13 @@ class SqlFixedString
         }
     }
 
-    constexpr void pop_back() noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr void pop_back() noexcept
     {
         if (_size > 0)
             --_size;
     }
 
-    constexpr std::basic_string_view<T> substr(
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::basic_string_view<T> substr(
         std::size_t offset = 0, std::size_t count = (std::numeric_limits<std::size_t>::max)()) const noexcept
     {
         if (offset >= _size)
@@ -136,23 +136,23 @@ class SqlFixedString
     }
 
     // clang-format off
-    constexpr pointer_type c_str() noexcept { _data[_size] = '\0'; return _data; }
-    constexpr pointer_type data() noexcept { return _data; }
-    constexpr iterator begin() noexcept { return _data; }
-    constexpr iterator end() noexcept { return _data + size(); }
-    constexpr T& at(std::size_t i) noexcept { return _data[i]; }
-    constexpr T& operator[](std::size_t i) noexcept { return _data[i]; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr pointer_type c_str() noexcept { _data[_size] = '\0'; return _data; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr pointer_type data() noexcept { return _data; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr iterator begin() noexcept { return _data; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr iterator end() noexcept { return _data + size(); }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr T& at(std::size_t i) noexcept { return _data[i]; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr T& operator[](std::size_t i) noexcept { return _data[i]; }
 
-    constexpr const_pointer_type c_str() const noexcept { const_cast<T*>(_data)[_size] = '\0'; return _data; }
-    constexpr const_pointer_type data() const noexcept { return _data; }
-    constexpr const_iterator begin() const noexcept { return _data; }
-    constexpr const_iterator end() const noexcept { return _data + size(); }
-    constexpr T const& at(std::size_t i) const noexcept { return _data[i]; }
-    constexpr T const& operator[](std::size_t i) const noexcept { return _data[i]; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr const_pointer_type c_str() const noexcept { const_cast<T*>(_data)[_size] = '\0'; return _data; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr const_pointer_type data() const noexcept { return _data; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr const_iterator begin() const noexcept { return _data; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr const_iterator end() const noexcept { return _data + size(); }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr T const& at(std::size_t i) const noexcept { return _data[i]; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr T const& operator[](std::size_t i) const noexcept { return _data[i]; }
     // clang-format on
 
     template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
-    std::weak_ordering operator<=>(SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE std::weak_ordering operator<=>(SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
     {
         if ((void*) this != (void*) &other)
         {
@@ -166,23 +166,23 @@ class SqlFixedString
     }
 
     template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
-    constexpr bool operator==(SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator==(SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
     {
         return (*this <=> other) == std::weak_ordering::equivalent;
     }
 
     template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
-    constexpr bool operator!=(SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator!=(SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
     {
         return !(*this == other);
     }
 
-    constexpr bool operator==(std::string_view other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator==(std::string_view other) const noexcept
     {
         return (substr() <=> other) == std::weak_ordering::equivalent;
     }
 
-    constexpr bool operator!=(std::string_view other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator!=(std::string_view other) const noexcept
     {
         return !(*this == other);
     }
@@ -197,7 +197,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
     using ValueType = SqlFixedString<N, T, PostOp>;
     using StringTraits = SqlCommonStringBinder<ValueType>;
 
-    static void TrimRight(ValueType* boundOutputString, SQLLEN indicator) noexcept
+    LIGHTWEIGHT_FORCE_INLINE static void TrimRight(ValueType* boundOutputString, SQLLEN indicator) noexcept
     {
         size_t n = indicator;
         while (n > 0 && std::isspace((*boundOutputString)[n - 1]))
@@ -205,7 +205,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
         boundOutputString->setsize(n);
     }
 
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, ValueType const& value) noexcept
+    LIGHTWEIGHT_FORCE_INLINE static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, ValueType const& value) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,
@@ -219,7 +219,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
                                 nullptr);
     }
 
-    static SQLRETURN OutputColumn(
+    LIGHTWEIGHT_FORCE_INLINE static SQLRETURN OutputColumn(
         SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
     {
         if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
@@ -241,7 +241,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
             stmt, column, SQL_C_CHAR, (SQLPOINTER) result->data(), (SQLLEN) result->capacity(), indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator) noexcept
+    LIGHTWEIGHT_FORCE_INLINE static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator) noexcept
     {
         *indicator = 0;
         const SQLRETURN rv = SQLGetData(stmt, column, SQL_C_CHAR, result->data(), result->capacity(), indicator);
@@ -285,8 +285,8 @@ struct SqlCommonStringBinder<SqlFixedString<N, T, PostOp>>
 template <std::size_t N, SqlStringPostRetrieveOperation PostOp>
 struct SqlDataTraits<SqlFixedString<N, char, PostOp>>
 {
-    static constexpr inline unsigned Size = N;
-    static constexpr inline SqlColumnType Type = SqlColumnType::CHAR;
+    static constexpr unsigned Size = N;
+    static constexpr SqlColumnType Type = SqlColumnType::CHAR;
 };
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation P>

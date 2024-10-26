@@ -22,13 +22,13 @@ class [[nodiscard]] SqlInsertQueryBuilder final
 
     // Adds a single column to the INSERT query with the value being a string literal.
     template <std::size_t N>
-    SqlInsertQueryBuilder& Set(std::string_view columnName, char const (&value)[N]);
+    inline SqlInsertQueryBuilder& Set(std::string_view columnName, char const (&value)[N]);
 
     // Adds a single column to the INSERT query with the value being a MFC like CString.
-    SqlInsertQueryBuilder& Set(std::string_view columnName, MFCStringLike auto const* value);
+    inline SqlInsertQueryBuilder& Set(std::string_view columnName, MFCStringLike auto const* value);
 
     // Finalizes building the query as INSERT INTO ... query.
-    [[nodiscard]] std::string ToSql() const;
+    [[nodiscard]] LIGHTWEIGHT_API std::string ToSql() const;
 
   private:
     SqlQueryFormatter const& m_formatter;
@@ -38,9 +38,8 @@ class [[nodiscard]] SqlInsertQueryBuilder final
     std::vector<SqlVariant>* m_inputBindings;
 };
 
-inline SqlInsertQueryBuilder::SqlInsertQueryBuilder(SqlQueryFormatter const& formatter,
-                                                    std::string tableName,
-                                                    std::vector<SqlVariant>* inputBindings) noexcept:
+inline LIGHTWEIGHT_FORCE_INLINE SqlInsertQueryBuilder::SqlInsertQueryBuilder(
+    SqlQueryFormatter const& formatter, std::string tableName, std::vector<SqlVariant>* inputBindings) noexcept:
     m_formatter { formatter },
     m_tableName { std::move(tableName) },
     m_inputBindings { inputBindings }

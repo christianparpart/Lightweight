@@ -203,7 +203,7 @@ void ReadAllTables(std::string_view database, std::string_view schema, EventHand
 {
     auto const tableNames = AllTables(database, schema);
 
-    for (auto& tableName: tableNames)
+    for (auto const& tableName: tableNames)
     {
         if (tableName == "sqlite_sequence")
             continue;

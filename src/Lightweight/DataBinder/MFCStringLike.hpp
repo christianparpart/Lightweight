@@ -14,7 +14,7 @@ concept MFCStringLike = requires(T const& t) {
 
 template <typename T>
     requires(MFCStringLike<T>)
-struct SqlDataBinder<T>
+struct LIGHTWEIGHT_API SqlDataBinder<T>
 {
     static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, T const& value) noexcept
     {

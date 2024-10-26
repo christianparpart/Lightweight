@@ -163,13 +163,18 @@ jobs:
               -DCMAKE_CXX_COMPILER="${CC_EXE}-${CC_VER}" \
               -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" \
               -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" \
-              -DCMAKE_INSTALL_PREFIX="/usr" \
+              -DCMAKE_INSTALL_PREFIX="/usr/local" \
               -DPEDANTIC_COMPILER_WERROR=OFF \
+              -DLIGHTWEIGHT_BUILD_SHARED=ON \
               --preset linux-gcc-release
       - name: "build"
         run: cmake --build --preset linux-gcc-release -- -j3
       - name: "tests"
         run: ctest --preset linux-gcc-release
+      - name: "package tar.gz"
+        run: |
+          cpack --preset linux-gcc-release
+          cp out/package/linux-gcc-debug/Lightweight-*-Linux.tar.gz ./Lightweight-Linux-CI.tar.gz
       - name: "Run tests through valgrind (without model tests)"
         run: |
           valgrind \
@@ -186,7 +191,7 @@ jobs:
         with:
           name: ubuntu2404-tests
           path: |
-            LightweightTest
+            Lightweight-Linux-CI.tar.gz
           retention-days: 1
 
   dbms_test_matrix:
@@ -213,15 +218,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ubuntu2404-tests
-      - name: "Mark unit tests as executable"
-        run: chmod 0755 LightweightTest
+      - name: "Extract package"
+        run: |
+          sudo tar -xvf Lightweight-Linux-CI.tar.gz --strip-components=1 -C /usr/local
       - name: "Setup ${{ matrix.database }}"
         id: setup
         run: bash ./.github/prepare-test-run.sh "${{ matrix.database }}"
       - name: "Dump SQL connection string"
         run: echo "ODBC_CONNECTION_STRING=${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
       - name: "Run SQL Core tests"
-        run: ./LightweightTest --trace-sql --trace-model -s # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+        run: LightweightTest --trace-sql -s # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
         env:
           ODBC_CONNECTION_STRING: "${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
 

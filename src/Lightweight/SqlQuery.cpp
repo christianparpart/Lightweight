@@ -27,7 +27,7 @@ SqlSelectQueryBuilder SqlQueryBuilder::Select() noexcept
 
 SqlUpdateQueryBuilder SqlQueryBuilder::Update(std::vector<SqlVariant>* boundInputs) noexcept
 {
-    return SqlUpdateQueryBuilder(m_formatter, std::move(m_table), std::move(m_tableAlias), boundInputs);
+    return SqlUpdateQueryBuilder { m_formatter, std::move(m_table), std::move(m_tableAlias), boundInputs };
 }
 
 SqlDeleteQueryBuilder SqlQueryBuilder::Delete() noexcept

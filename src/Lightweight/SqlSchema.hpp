@@ -6,6 +6,7 @@
     #include <Windows.h>
 #endif
 
+#include "Api.hpp"
 #include "SqlTraits.hpp"
 
 #include <format>
@@ -28,9 +29,9 @@ namespace detail
 
 struct FullyQualifiedTableName
 {
-    std::string catalog {};
-    std::string schema {};
-    std::string table {};
+    std::string catalog;
+    std::string schema;
+    std::string table;
 
     bool operator==(FullyQualifiedTableName const& other) const noexcept
     {
@@ -89,7 +90,7 @@ struct Column
     bool isNullable = true;
     bool isUnique = false;
     size_t size = 0;
-    unsigned short decimalDigits;
+    unsigned short decimalDigits = 0;
     bool isAutoIncrement = false;
     bool isPrimaryKey = false;
     bool isForeignKey = false;
@@ -100,6 +101,11 @@ struct Column
 class EventHandler
 {
   public:
+    EventHandler() = default;
+    EventHandler(EventHandler&&) = default;
+    EventHandler(EventHandler const&) = default;
+    EventHandler& operator=(EventHandler&&) = default;
+    EventHandler& operator=(EventHandler const&) = default;
     virtual ~EventHandler() = default;
 
     virtual bool OnTable(std::string_view table) = 0;
@@ -110,7 +116,7 @@ class EventHandler
     virtual void OnTableEnd() = 0;
 };
 
-void ReadAllTables(std::string_view database, std::string_view schema, EventHandler& eventHandler);
+LIGHTWEIGHT_API void ReadAllTables(std::string_view database, std::string_view schema, EventHandler& eventHandler);
 
 struct Table
 {
@@ -124,12 +130,12 @@ struct Table
 
 using TableList = std::vector<Table>;
 
-TableList ReadAllTables(std::string_view database, std::string_view schema = {});
+LIGHTWEIGHT_API TableList ReadAllTables(std::string_view database, std::string_view schema = {});
 
 } // namespace SqlSchema
 
 template <>
-struct std::formatter<SqlSchema::FullyQualifiedTableName>: std::formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableName>: std::formatter<std::string>
 {
     auto format(SqlSchema::FullyQualifiedTableName const& value, format_context& ctx) const -> format_context::iterator
     {
@@ -146,7 +152,7 @@ struct std::formatter<SqlSchema::FullyQualifiedTableName>: std::formatter<std::s
 };
 
 template <>
-struct std::formatter<SqlSchema::FullyQualifiedTableColumn>: std::formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableColumn>: std::formatter<std::string>
 {
     auto format(SqlSchema::FullyQualifiedTableColumn const& value,
                 format_context& ctx) const -> format_context::iterator
@@ -160,7 +166,7 @@ struct std::formatter<SqlSchema::FullyQualifiedTableColumn>: std::formatter<std:
 };
 
 template <>
-struct std::formatter<SqlSchema::FullyQualifiedTableColumnSequence>: std::formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableColumnSequence>: std::formatter<std::string>
 {
     auto format(SqlSchema::FullyQualifiedTableColumnSequence const& value,
                 format_context& ctx) const -> format_context::iterator

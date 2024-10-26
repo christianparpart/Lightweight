@@ -6,6 +6,8 @@
     #include <Windows.h>
 #endif
 
+#include "Api.hpp"
+
 #include <format>
 #include <stdexcept>
 #include <system_error>
@@ -61,7 +63,7 @@ struct SqlErrorInfo
 class SqlException: public std::runtime_error
 {
   public:
-    explicit SqlException(SqlErrorInfo info);
+    LIGHTWEIGHT_API explicit SqlException(SqlErrorInfo info);
 
     [[nodiscard]] SqlErrorInfo const& info() const noexcept
     {
@@ -85,6 +87,7 @@ enum class SqlError : std::int16_t
     NO_DATA_FOUND = SQL_NO_DATA_FOUND,
     UNSUPPORTED_TYPE = 1'000,
     INVALID_ARGUMENT = 1'001,
+    TRANSACTION_ERROR = 1'002,
 };
 
 struct SqlErrorCategory: std::error_category
@@ -124,6 +127,8 @@ struct SqlErrorCategory: std::error_category
                 return "SQL_UNSUPPORTED_TYPE"s;
             case SqlError::INVALID_ARGUMENT:
                 return "SQL_INVALID_ARGUMENT"s;
+            case SqlError::TRANSACTION_ERROR:
+                return "SQL_TRANSACTION_ERROR"s;
         }
         return std::format("SQL error code {}", code);
     }
@@ -142,7 +147,7 @@ inline std::error_code make_error_code(SqlError e)
 }
 
 template <>
-struct std::formatter<SqlError>: formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlError>: formatter<std::string>
 {
     auto format(SqlError value, format_context& ctx) const -> format_context::iterator
     {
@@ -152,7 +157,7 @@ struct std::formatter<SqlError>: formatter<std::string>
 };
 
 template <>
-struct std::formatter<SqlErrorInfo>: formatter<std::string>
+struct LIGHTWEIGHT_API std::formatter<SqlErrorInfo>: formatter<std::string>
 {
     auto format(SqlErrorInfo const& info, format_context& ctx) const -> format_context::iterator
     {

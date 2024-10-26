@@ -10,10 +10,11 @@ enum class SqlResultOrdering : uint8_t
     DESCENDING
 };
 
-class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
+class [[nodiscard]] SqlSelectQueryBuilder final:
+    public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
 {
   public:
-    enum class SelectType
+    enum class SelectType: std::uint8_t
     {
         Undefined,
         Count,
@@ -38,7 +39,7 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
         size_t offset = 0;
         size_t limit = (std::numeric_limits<size_t>::max)();
 
-        [[nodiscard]] std::string ToSql() const;
+        [[nodiscard]] LIGHTWEIGHT_API std::string ToSql() const;
     };
 
     explicit SqlSelectQueryBuilder(SqlQueryFormatter const& formatter,
@@ -54,48 +55,48 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
     }
 
     // Adds a DISTINCT clause to the SELECT query.
-    SqlSelectQueryBuilder& Distinct() noexcept;
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& Distinct() noexcept;
 
     // Adds a sequence of columns to the SELECT clause.
     template <typename... MoreFields>
     SqlSelectQueryBuilder& Fields(std::string_view const& firstField, MoreFields&&... moreFields);
 
     // Adds a single column to the SELECT clause.
-    SqlSelectQueryBuilder& Field(std::string_view const& fieldName);
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& Field(std::string_view const& fieldName);
 
     // Adds a single column to the SELECT clause.
-    SqlSelectQueryBuilder& Field(SqlQualifiedTableColumnName const& fieldName);
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& Field(SqlQualifiedTableColumnName const& fieldName);
 
     // Adds a single column to the SELECT clause.
-    SqlSelectQueryBuilder& Fields(std::vector<std::string_view> const& fieldNames);
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& Fields(std::vector<std::string_view> const& fieldNames);
 
     // Adds a sequence of columns from the given table to the SELECT clause.
-    SqlSelectQueryBuilder& Fields(std::vector<std::string_view> const& fieldNames, std::string_view tableName);
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& Fields(std::vector<std::string_view> const& fieldNames, std::string_view tableName);
 
     // Adds a single column with an alias to the SELECT clause.
-    SqlSelectQueryBuilder& FieldAs(std::string_view const& fieldName, std::string_view const& alias);
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& FieldAs(std::string_view const& fieldName, std::string_view const& alias);
 
     // Adds a single column with an alias to the SELECT clause.
-    SqlSelectQueryBuilder& FieldAs(SqlQualifiedTableColumnName const& fieldName, std::string_view const& alias);
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& FieldAs(SqlQualifiedTableColumnName const& fieldName, std::string_view const& alias);
 
     // Constructs or extends a ORDER BY clause.
-    SqlSelectQueryBuilder& OrderBy(std::string_view columnName,
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& OrderBy(std::string_view columnName,
                                    SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
 
     // Constructs or extends a GROUP BY clause.
-    SqlSelectQueryBuilder& GroupBy(std::string_view columnName);
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& GroupBy(std::string_view columnName);
 
     // Finalizes building the query as SELECT COUNT(*) ... query.
-    ComposedQuery Count();
+    LIGHTWEIGHT_API ComposedQuery Count();
 
     // Finalizes building the query as SELECT field names FROM ... query.
-    ComposedQuery All();
+    LIGHTWEIGHT_API ComposedQuery All();
 
     // Finalizes building the query as SELECT TOP n field names FROM ... query.
-    ComposedQuery First(size_t count = 1);
+    LIGHTWEIGHT_API ComposedQuery First(size_t count = 1);
 
     // Finalizes building the query as SELECT field names FROM ... query with a range.
-    ComposedQuery Range(std::size_t offset, std::size_t limit);
+    LIGHTWEIGHT_API ComposedQuery Range(std::size_t offset, std::size_t limit);
 
     SqlSearchCondition& SearchCondition() noexcept
     {

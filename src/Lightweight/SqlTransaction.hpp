@@ -16,7 +16,7 @@
 class SqlConnection;
 
 // Represents the mode of a SQL transaction to be applied, if not done so explicitly.
-enum class SqlTransactionMode
+enum class SqlTransactionMode : std::uint8_t
 {
     NONE,
     COMMIT,
@@ -30,22 +30,28 @@ enum class SqlTransactionMode
 //
 // This class is designed with RAII in mind, so that the transaction is automatically committed or rolled back
 // when the object goes out of scope.
-class SqlTransaction
+class LIGHTWEIGHT_API SqlTransaction
 {
   public:
+    SqlTransaction() = default;
+    SqlTransaction(SqlTransaction const&) = default;
+    SqlTransaction(SqlTransaction&&) = default;
+    SqlTransaction& operator=(SqlTransaction const&) = default;
+    SqlTransaction& operator=(SqlTransaction&&) = default;
+
     // Construct a new SqlTransaction object, and disable the auto-commit mode, so that the transaction can be
     // controlled manually.
     explicit SqlTransaction(SqlConnection& connection,
                             SqlTransactionMode defaultMode = SqlTransactionMode::COMMIT) noexcept;
 
     // Automatically commit the transaction if not done so
-    ~SqlTransaction();
+    ~SqlTransaction() noexcept;
 
     // Rollback the transaction
-    void Rollback();
+    bool Rollback() noexcept;
 
     // Commit the transaction
-    void Commit();
+    bool Commit() noexcept;
 
   private:
     SQLHDBC m_hDbc;

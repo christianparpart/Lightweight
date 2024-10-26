@@ -6,6 +6,7 @@
     #include <Windows.h>
 #endif
 
+#include "Api.hpp"
 #include "SqlConnectInfo.hpp"
 #include "SqlError.hpp"
 #include "SqlLogger.hpp"
@@ -16,6 +17,7 @@
 #include <expected>
 #include <format>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -30,7 +32,7 @@ class SqlQueryBuilder;
 class SqlQueryFormatter;
 
 // @brief Represents a connection to a SQL database.
-class SqlConnection final
+class LIGHTWEIGHT_API SqlConnection final
 {
   public:
     // Constructs a new SQL connection to the default connection.
@@ -38,41 +40,27 @@ class SqlConnection final
     // The default connection is set via SetDefaultConnectInfo.
     // In case the default connection is not set, the connection will fail.
     // And in case the connection fails, the last error will be set.
-    SqlConnection() noexcept;
+    SqlConnection();
 
     // Constructs a new SQL connection to the given connect informaton.
-    explicit SqlConnection(std::optional<SqlConnectInfo> connectInfo) noexcept;
+    explicit SqlConnection(std::optional<SqlConnectInfo> connectInfo);
 
-    SqlConnection(SqlConnection&&) noexcept;
-    SqlConnection& operator=(SqlConnection&&) noexcept;
-    SqlConnection(SqlConnection const&) = delete;
-    SqlConnection& operator=(SqlConnection const&) = delete;
+    SqlConnection(SqlConnection&& /*other*/) noexcept;
+    SqlConnection& operator=(SqlConnection&& /*other*/) noexcept;
+    SqlConnection(SqlConnection const& /*other*/) = delete;
+    SqlConnection& operator=(SqlConnection const& /*other*/) = delete;
 
     // Destructs this SQL connection object,
     ~SqlConnection() noexcept;
 
     // Retrieves the default connection information.
-    static SqlConnectInfo const& DefaultConnectInfo() noexcept
-    {
-        return m_gDefaultConnectInfo.value();
-    }
+    static SqlConnectInfo const& DefaultConnectInfo() noexcept;
 
     // Sets the default connection information.
-    static void SetDefaultConnectInfo(SqlConnectInfo connectInfo) noexcept
-    {
-        m_gDefaultConnectInfo = std::move(connectInfo);
-    }
-
-    // Sets the maximum number of idle connections in the connection pool.
-    static void SetMaxIdleConnections(size_t maxIdleConnections) noexcept;
-
-    // Kills all idle connections in the connection pool.
-    static void KillAllIdle();
+    static void SetDefaultConnectInfo(SqlConnectInfo connectInfo) noexcept;
 
     static void SetPostConnectedHook(std::function<void(SqlConnection&)> hook);
     static void ResetPostConnectedHook();
-
-    static SqlConnectionStats Stats() noexcept;
 
     // Retrieves the connection ID.
     //
@@ -85,9 +73,6 @@ class SqlConnection final
 
     // Closes the connection (attempting to put it back into the connection pool).
     void Close() noexcept;
-
-    // Kills the connection.
-    void Kill() noexcept;
 
     // Connects to the given database with the given username and password.
     bool Connect(std::string_view datasource, std::string_view username, std::string_view password) noexcept;
@@ -138,10 +123,7 @@ class SqlConnection final
     [[nodiscard]] bool IsAlive() const noexcept;
 
     // Retrieves the connection information.
-    [[nodiscard]] SqlConnectInfo const& ConnectionInfo() const noexcept
-    {
-        return m_connectInfo;
-    }
+    [[nodiscard]] SqlConnectInfo const& ConnectionInfo() const noexcept;
 
     // Retrieves the native handle.
     [[nodiscard]] SQLHDBC NativeHandle() const noexcept
@@ -150,16 +132,10 @@ class SqlConnection final
     }
 
     // Retrieves the last time the connection was used.
-    [[nodiscard]] std::chrono::steady_clock::time_point LastUsed() const noexcept
-    {
-        return m_lastUsed;
-    }
+    [[nodiscard]] std::chrono::steady_clock::time_point LastUsed() const noexcept;
 
     // Sets the last time the connection was used.
-    void SetLastUsed(std::chrono::steady_clock::time_point lastUsed) noexcept
-    {
-        m_lastUsed = lastUsed;
-    }
+    void SetLastUsed(std::chrono::steady_clock::time_point lastUsed) noexcept;
 
   private:
     void PostConnect();
@@ -167,19 +143,14 @@ class SqlConnection final
     void RequireSuccess(SQLRETURN error, std::source_location sourceLocation = std::source_location::current()) const;
 
     // Private data members
-
-    static inline std::optional<SqlConnectInfo> m_gDefaultConnectInfo;
-    static inline std::atomic<uint64_t> m_gNextConnectionId { 1 };
-    static inline std::function<void(SqlConnection&)> m_gPostConnectedHook {};
-
     SQLHENV m_hEnv {};
     SQLHDBC m_hDbc {};
-    uint64_t m_connectionId { m_gNextConnectionId++ };
-    SqlConnectInfo m_connectInfo;
-    std::chrono::steady_clock::time_point m_lastUsed; // Last time the connection was used (mostly interesting for
-                                                      // idle connections in the connection pool).
+    uint64_t m_connectionId;
     SqlServerType m_serverType = SqlServerType::UNKNOWN;
     SqlQueryFormatter const* m_queryFormatter {};
+
+    struct Data;
+    Data* m_data {};
 };
 
 inline SqlServerType SqlConnection::ServerType() const noexcept

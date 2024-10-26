@@ -21,6 +21,8 @@
 #include <set>
 #include <type_traits>
 
+// NOLINTBEGIN(readability-container-size-empty)
+
 #if defined(_MSC_VER)
     // Disable the warning C4834: discarding return value of function with 'nodiscard' attribute.
     // Because we are simply testing and demonstrating the library and not using it in production code.
@@ -36,14 +38,6 @@ int main(int argc, char** argv)
         return *exitCode;
 
     std::tie(argc, argv) = std::get<SqlTestFixture::MainProgramArgs>(result);
-
-    struct finally
-    {
-        ~finally()
-        {
-            SqlLogger::GetLogger().OnStats(SqlConnection::Stats());
-        }
-    } _;
 
     return Catch::Session().run(argc, argv);
 }
@@ -401,31 +395,6 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatchNative")
     REQUIRE(!stmt.FetchRow());
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "connection pool reusage", "[sql]")
-{
-    // auto-instanciating an SqlConnection
-    auto const id1 = [] {
-        auto connection = SqlConnection {};
-        return connection.ConnectionId();
-    }();
-
-    // Explicitly passing a borrowed SqlConnection
-    auto const id2 = [] {
-        auto conn = SqlConnection {};
-        auto stmt = SqlStatement { conn };
-        return stmt.Connection().ConnectionId();
-    }();
-    CHECK(id1 == id2);
-
-    // &&-created SqlConnections are reused
-    auto const id3 = SqlConnection().ConnectionId();
-    CHECK(id1 == id3);
-
-    // Explicit constructor passing SqlConnectInfo always creates a new SqlConnection
-    auto const id4 = SqlConnection(SqlConnection::DefaultConnectInfo()).ConnectionId();
-    CHECK(id1 != id4);
-}
-
 TEST_CASE_METHOD(SqlTestFixture, "SqlConnection: manual connect")
 {
     auto conn = SqlConnection { std::nullopt };
@@ -465,7 +434,7 @@ struct SqlDataBinder<CustomType>
 
     static constexpr int PostProcess(int value) noexcept
     {
-        return value |= 0x01;
+        return value | 0x01;
     }
 };
 
@@ -916,7 +885,7 @@ template <typename TheSqlQuery>
 // requires(std::is_invocable_v<TheSqlQuery, SqlQueryBuilder&>)
 void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
                           QueryExpectations const& expectations,
-                          std::function<void()>&& postCheck = {},
+                          std::function<void()> const& postCheck = {},
                           std::source_location const& location = std::source_location::current())
 {
     auto const eraseLinefeeds = [](std::string str) noexcept -> std::string {
@@ -939,7 +908,7 @@ void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
     CHECK(actualSqlServer == expectations.sqlServer);
     if (postCheck)
         postCheck();
-};
+}
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Count", "[SqlQueryBuilder]")
 {
@@ -1276,8 +1245,8 @@ TEST_CASE_METHOD(SqlTestFixture,
     CreateEmployeesTable(stmt, quoted);
 
     auto businessObject = TestBusinessObject {
-        .sqlInsertEmployee = { sharedConnection },
-        .sqlSelectEmployee = { sharedConnection },
+        .sqlInsertEmployee = SqlStatement { sharedConnection },
+        .sqlSelectEmployee = SqlStatement { sharedConnection },
     };
 
     auto const insertQuery = stmt.Query("Employees")
@@ -1316,3 +1285,5 @@ TEST_CASE_METHOD(SqlTestFixture,
     //     // CHECK(lastName.value == "Smith");
     // }
 }
+
+// NOLINTEND(readability-container-size-empty)

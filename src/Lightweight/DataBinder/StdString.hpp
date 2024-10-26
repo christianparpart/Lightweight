@@ -56,6 +56,6 @@ struct SqlCommonStringBinder<std::basic_string<CharT>>
 template <>
 struct SqlDataTraits<std::string>
 {
-    static constexpr inline unsigned Size = 0;
-    static constexpr inline SqlColumnType Type = SqlColumnType::STRING;
+    static constexpr unsigned Size = 0;
+    static constexpr SqlColumnType Type = SqlColumnType::STRING;
 };

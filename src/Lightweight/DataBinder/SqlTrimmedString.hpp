@@ -30,8 +30,8 @@ struct std::formatter<SqlTrimmedString>: std::formatter<std::string>
 template <>
 struct SqlDataTraits<SqlTrimmedString>
 {
-    static constexpr inline unsigned Size = 0;
-    static constexpr inline SqlColumnType Type = SqlColumnType::STRING;
+    static constexpr unsigned Size = 0;
+    static constexpr SqlColumnType Type = SqlColumnType::STRING;
 };
 
 template <>

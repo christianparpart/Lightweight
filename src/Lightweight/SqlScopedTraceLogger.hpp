@@ -2,13 +2,14 @@
 
 #pragma once
 
+#include "Api.hpp"
 #include "SqlConnection.hpp"
 #include "SqlStatement.hpp"
 
 #include <filesystem>
 
 // TODO: move to public API
-class SqlScopedTraceLogger
+class LIGHTWEIGHT_API SqlScopedTraceLogger
 {
     SQLHDBC m_nativeConnection;
 
@@ -30,6 +31,11 @@ class SqlScopedTraceLogger
         SQLSetConnectAttrA(m_nativeConnection, SQL_ATTR_TRACEFILE, (SQLPOINTER) logFile.string().c_str(), SQL_NTS);
         SQLSetConnectAttrA(m_nativeConnection, SQL_ATTR_TRACE, (SQLPOINTER) SQL_OPT_TRACE_ON, SQL_IS_UINTEGER);
     }
+
+    SqlScopedTraceLogger(SqlScopedTraceLogger&&) = delete;
+    SqlScopedTraceLogger& operator=(SqlScopedTraceLogger&&) = delete;
+    SqlScopedTraceLogger(SqlScopedTraceLogger const&) = delete;
+    SqlScopedTraceLogger& operator=(SqlScopedTraceLogger const&) = delete;
 
     ~SqlScopedTraceLogger()
     {

@@ -4,108 +4,38 @@
 #include "SqlQuery.hpp"
 #include "SqlQueryFormatter.hpp"
 
-#include <list>
-#include <mutex>
-#include <print>
-
 #include <sql.h>
 
 using namespace std::chrono_literals;
 using namespace std::string_view_literals;
 
-static std::list<SqlConnection> g_unusedConnections;
-
-class SqlConnectionPool
-{
-  public:
-    ~SqlConnectionPool()
-    {
-        KillAllIdleConnections();
-    }
-
-    void KillAllIdleConnections()
-    {
-        auto const _ = std::lock_guard { m_unusedConnectionsMutex };
-        for (auto& connection: m_unusedConnections)
-            connection.Kill();
-        m_unusedConnections.clear();
-    }
-
-    SqlConnection AcquireDirect()
-    {
-        auto const _ = std::lock_guard { m_unusedConnectionsMutex };
-
-        // Close idle connections
-        auto const now = std::chrono::steady_clock::now();
-        while (!m_unusedConnections.empty() && now - m_unusedConnections.front().LastUsed() > m_connectionTimeout)
-        {
-            ++m_stats.timedout;
-            SqlLogger::GetLogger().OnConnectionIdle(m_unusedConnections.front());
-            m_unusedConnections.front().Kill();
-            m_unusedConnections.pop_front();
-        }
-
-        // Reuse an existing connection
-        if (!m_unusedConnections.empty())
-        {
-            ++m_stats.reused;
-            auto connection = std::move(m_unusedConnections.front());
-            m_unusedConnections.pop_front();
-            SqlLogger::GetLogger().OnConnectionReuse(connection);
-            return connection;
-        }
-
-        // Create a new connection
-        ++m_stats.created;
-        auto connection = SqlConnection { SqlConnection::DefaultConnectInfo() };
-        return connection;
-    }
-
-    void Release(SqlConnection&& connection)
-    {
-        auto const _ = std::lock_guard { m_unusedConnectionsMutex };
-        ++m_stats.released;
-        if (m_unusedConnections.size() < m_maxIdleConnections)
-        {
-            connection.SetLastUsed(std::chrono::steady_clock::now());
-            SqlLogger::GetLogger().OnConnectionReuse(connection);
-            m_unusedConnections.emplace_back(std::move(connection));
-        }
-        else
-        {
-            SqlLogger::GetLogger().OnConnectionIdle(connection);
-            connection.Kill();
-        }
-    }
-
-    void SetMaxIdleConnections(size_t maxIdleConnections) noexcept
-    {
-        m_maxIdleConnections = maxIdleConnections;
-    }
-
-    [[nodiscard]] SqlConnectionStats Stats() const noexcept
-    {
-        return m_stats;
-    }
-
-  private:
-    std::list<SqlConnection> m_unusedConnections;
-    std::mutex m_unusedConnectionsMutex;
-    size_t m_maxIdleConnections = 10;
-    std::chrono::seconds m_connectionTimeout = std::chrono::seconds { 120 };
-    SqlConnectionStats m_stats;
-};
-
-static SqlConnectionPool g_connectionPool;
+static SqlConnectInfo gDefaultConnectInfo {};
+static std::atomic<uint64_t> gNextConnectionId { 1 };
+static std::function<void(SqlConnection&)> gPostConnectedHook {};
 
 // =====================================================================================================================
 
-SqlConnection::SqlConnection() noexcept:
-    SqlConnection(g_connectionPool.AcquireDirect())
+struct SqlConnection::Data
 {
+    std::chrono::steady_clock::time_point lastUsed; // Last time the connection was used (mostly interesting for
+                                                    // idle connections in the connection pool).
+    SqlConnectInfo connectInfo;
+};
+
+SqlConnection::SqlConnection():
+    m_connectionId { gNextConnectionId++ },
+    m_data { new Data() }
+{
+    SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &m_hEnv);
+    SQLSetEnvAttr(m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, 0);
+    SQLAllocHandle(SQL_HANDLE_DBC, m_hEnv, &m_hDbc);
+
+    Connect(DefaultConnectInfo());
 }
 
-SqlConnection::SqlConnection(std::optional<SqlConnectInfo> connectInfo) noexcept
+SqlConnection::SqlConnection(std::optional<SqlConnectInfo> connectInfo):
+    m_connectionId { gNextConnectionId++ },
+    m_data { new Data() }
 {
     SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &m_hEnv);
     SQLSetEnvAttr(m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, 0);
@@ -119,13 +49,13 @@ SqlConnection::SqlConnection(SqlConnection&& other) noexcept:
     m_hEnv { other.m_hEnv },
     m_hDbc { other.m_hDbc },
     m_connectionId { other.m_connectionId },
-    m_connectInfo { std::move(other.m_connectInfo) },
-    m_lastUsed { other.m_lastUsed },
     m_serverType { other.m_serverType },
-    m_queryFormatter { other.m_queryFormatter }
+    m_queryFormatter { other.m_queryFormatter },
+    m_data { other.m_data }
 {
     other.m_hEnv = {};
     other.m_hDbc = {};
+    other.m_data = nullptr;
 }
 
 SqlConnection& SqlConnection::operator=(SqlConnection&& other) noexcept
@@ -138,11 +68,11 @@ SqlConnection& SqlConnection::operator=(SqlConnection&& other) noexcept
     m_hEnv = other.m_hEnv;
     m_hDbc = other.m_hDbc;
     m_connectionId = other.m_connectionId;
-    m_connectInfo = std::move(other.m_connectInfo);
-    m_lastUsed = other.m_lastUsed;
+    m_data = other.m_data;
 
     other.m_hEnv = {};
     other.m_hDbc = {};
+    other.m_data = nullptr;
 
     return *this;
 }
@@ -150,31 +80,42 @@ SqlConnection& SqlConnection::operator=(SqlConnection&& other) noexcept
 SqlConnection::~SqlConnection() noexcept
 {
     Close();
+    delete m_data;
 }
 
-void SqlConnection::SetMaxIdleConnections(size_t maxIdleConnections) noexcept
+SqlConnectInfo const& SqlConnection::DefaultConnectInfo() noexcept
 {
-    g_connectionPool.SetMaxIdleConnections(maxIdleConnections);
+    return gDefaultConnectInfo;
 }
 
-void SqlConnection::KillAllIdle()
+void SqlConnection::SetDefaultConnectInfo(SqlConnectInfo connectInfo) noexcept
 {
-    g_connectionPool.KillAllIdleConnections();
+    gDefaultConnectInfo = std::move(connectInfo);
+}
+
+SqlConnectInfo const& SqlConnection::ConnectionInfo() const noexcept
+{
+    return m_data->connectInfo;
+}
+
+void SqlConnection::SetLastUsed(std::chrono::steady_clock::time_point lastUsed) noexcept
+{
+    m_data->lastUsed = lastUsed;
+}
+
+std::chrono::steady_clock::time_point SqlConnection::LastUsed() const noexcept
+{
+    return m_data->lastUsed;
 }
 
 void SqlConnection::SetPostConnectedHook(std::function<void(SqlConnection&)> hook)
 {
-    m_gPostConnectedHook = std::move(hook);
+    gPostConnectedHook = std::move(hook);
 }
 
 void SqlConnection::ResetPostConnectedHook()
 {
-    m_gPostConnectedHook = {};
-}
-
-SqlConnectionStats SqlConnection::Stats() noexcept
-{
-    return g_connectionPool.Stats();
+    gPostConnectedHook = {};
 }
 
 bool SqlConnection::Connect(std::string_view datasource, std::string_view username, std::string_view password) noexcept
@@ -218,10 +159,11 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
     if (m_hDbc)
         SQLDisconnect(m_hDbc);
 
-    m_connectInfo = std::move(connectInfo);
+    m_data->connectInfo = std::move(connectInfo);
 
-    if (auto const* info = std::get_if<SqlConnectionDataSource>(&m_connectInfo))
+    if (auto const* info = std::get_if<SqlConnectionDataSource>(&m_data->connectInfo))
     {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         SQLRETURN sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER) info->timeout.count(), 0);
         if (!SQL_SUCCEEDED(sqlReturn))
         {
@@ -253,13 +195,13 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
 
         SqlLogger::GetLogger().OnConnectionOpened(*this);
 
-        if (m_gPostConnectedHook)
-            m_gPostConnectedHook(*this);
+        if (gPostConnectedHook)
+            gPostConnectedHook(*this);
 
         return true;
     }
 
-    auto const& connectionString = std::get<SqlConnectionString>(m_connectInfo).value;
+    auto const& connectionString = std::get<SqlConnectionString>(m_data->connectInfo).value;
 
     SQLRETURN sqlResult = SQLDriverConnectA(m_hDbc,
                                             (SQLHWND) nullptr,
@@ -279,24 +221,13 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
     PostConnect();
     SqlLogger::GetLogger().OnConnectionOpened(*this);
 
-    if (m_gPostConnectedHook)
-        m_gPostConnectedHook(*this);
+    if (gPostConnectedHook)
+        gPostConnectedHook(*this);
 
     return true;
 }
 
 void SqlConnection::Close() noexcept
-{
-    if (!m_hDbc)
-        return;
-
-    if (m_connectInfo == DefaultConnectInfo())
-        g_connectionPool.Release(std::move(*this));
-    else
-        Kill();
-}
-
-void SqlConnection::Kill() noexcept
 {
     if (!m_hDbc)
         return;
@@ -350,7 +281,7 @@ std::string SqlConnection::ServerVersion() const
 bool SqlConnection::TransactionActive() const noexcept
 {
     SQLUINTEGER state {};
-    SQLRETURN sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, &state, 0, nullptr);
+    SQLRETURN const sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, &state, 0, nullptr);
     return sqlResult == SQL_SUCCESS && state == SQL_AUTOCOMMIT_OFF;
 }
 
@@ -365,7 +296,7 @@ bool SqlConnection::TransactionsAllowed() const noexcept
 bool SqlConnection::IsAlive() const noexcept
 {
     SQLUINTEGER state {};
-    SQLRETURN sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_CONNECTION_DEAD, &state, 0, nullptr);
+    SQLRETURN const sqlResult = SQLGetConnectAttrA(m_hDbc, SQL_ATTR_CONNECTION_DEAD, &state, 0, nullptr);
     return SQL_SUCCEEDED(sqlResult) && state == SQL_CD_FALSE;
 }
 

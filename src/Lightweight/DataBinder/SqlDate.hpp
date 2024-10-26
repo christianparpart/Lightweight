@@ -7,7 +7,7 @@
 #include <chrono>
 
 // Helper struct to store a date (without time of the day) to write to or read from a database.
-struct SqlDate
+struct LIGHTWEIGHT_API SqlDate
 {
     SQL_DATE_STRUCT sqlValue {};
 
@@ -69,7 +69,7 @@ struct SqlDate
 };
 
 template <>
-struct SqlDataBinder<SqlDate>
+struct LIGHTWEIGHT_API SqlDataBinder<SqlDate>
 {
     static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlDate const& value) noexcept
     {

@@ -8,7 +8,8 @@
 #include <string_view>
 #include <vector>
 
-class [[nodiscard]] SqlUpdateQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlUpdateQueryBuilder>
+class [[nodiscard]] SqlUpdateQueryBuilder final:
+    public detail::SqlWhereClauseBuilder<SqlUpdateQueryBuilder>
 {
   public:
     SqlUpdateQueryBuilder(SqlQueryFormatter const& formatter,
@@ -101,7 +102,7 @@ inline SqlUpdateQueryBuilder& SqlUpdateQueryBuilder::Set(std::string_view column
     return Set(columnName, std::string_view { value->GetString(), value->GetLength() });
 }
 
-inline std::string SqlUpdateQueryBuilder::ToSql() const
+inline LIGHTWEIGHT_FORCE_INLINE std::string SqlUpdateQueryBuilder::ToSql() const
 {
     return m_formatter.Update(
         m_searchCondition.tableName, m_searchCondition.tableAlias, m_values, m_searchCondition.condition);

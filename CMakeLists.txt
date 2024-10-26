@@ -25,6 +25,24 @@ if(DEFINED MSVC)
     add_compile_options(/nologo)
 endif()
 
+if(WIN32)
+    # For Windows platform, we make sure that DLLs and EXEs are placed into the same directory.
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/target CACHE STRING "")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/target CACHE STRING "")
+endif()
+
+if(NOT(CPACK_GENERATOR))
+    set(CPACK_GENERATOR TGZ)
+endif()
+set(CPACK_PACKAGE_NAME "Lightweight")
+set(CPACK_PACKAGE_VENDOR "https://github.com/christianparpart/Lightwweight/")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Lightweight SQL C++ library on top of ODBC")
+set(CPACK_PACKAGE_CONTACT "Christian Parpart <christian@parpart.family>")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
+#set(CPACK_PACKAGE_EXECUTABLES LightweightTest "Lightweight Test Suite")
+#set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
+#set(CPACK_PACKAGE_INSTALL_DIRECTORY "Lightweight SQL ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+
 add_subdirectory(src/Lightweight)
 add_subdirectory(src/tools)
 

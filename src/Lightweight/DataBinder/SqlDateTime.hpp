@@ -6,7 +6,7 @@
 
 #include <chrono>
 
-struct SqlDateTime
+struct LIGHTWEIGHT_API SqlDateTime
 {
     using native_type = std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>;
 
@@ -110,7 +110,7 @@ struct SqlDateTime
 };
 
 template <>
-struct SqlDataBinder<SqlDateTime::native_type>
+struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime::native_type>
 {
     static SQLRETURN GetColumn(SQLHSTMT stmt,
                                SQLUSMALLINT column,
@@ -126,7 +126,7 @@ struct SqlDataBinder<SqlDateTime::native_type>
 };
 
 template <>
-struct SqlDataBinder<SqlDateTime>
+struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime>
 {
     static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime const& value) noexcept
     {

@@ -27,8 +27,8 @@ namespace
 class SqlStandardLogger: public SqlLogger
 {
   private:
-    std::chrono::time_point<std::chrono::system_clock> m_currentTime {};
-    std::string m_currentTimeStr {};
+    std::chrono::time_point<std::chrono::system_clock> m_currentTime;
+    std::string m_currentTimeStr;
 
   public:
     void Tick()
@@ -66,16 +66,15 @@ class SqlStandardLogger: public SqlLogger
         WriteMessage("  Message: {}", errorInfo.message);
     }
 
-    void OnConnectionOpened(SqlConnection const&) override {}
-    void OnConnectionClosed(SqlConnection const&) override {}
-    void OnConnectionIdle(SqlConnection const&) override {}
-    void OnConnectionReuse(SqlConnection const&) override {}
-    void OnExecuteDirect(std::string_view const&) override {}
-    void OnPrepare(std::string_view const&) override {}
-    void OnExecute(std::string_view const&) override {}
+    void OnConnectionOpened(SqlConnection const& /*connection*/) override {}
+    void OnConnectionClosed(SqlConnection const& /*connection*/) override {}
+    void OnConnectionIdle(SqlConnection const& /*connection*/) override {}
+    void OnConnectionReuse(SqlConnection const& /*connection*/) override {}
+    void OnExecuteDirect(std::string_view const& /*query*/) override {}
+    void OnPrepare(std::string_view const& /*query*/) override {}
+    void OnExecute(std::string_view const& /*query*/) override {}
     void OnExecuteBatch() override {}
     void OnFetchedRow() override {}
-    void OnStats(SqlConnectionStats const&) override {}
 };
 
 class SqlTraceLogger: public SqlStandardLogger
@@ -146,18 +145,6 @@ class SqlTraceLogger: public SqlStandardLogger
     {
         Tick();
         WriteMessage("Fetched row");
-    }
-
-    void OnStats(SqlConnectionStats const& stats) override
-    {
-        Tick();
-        WriteMessage("[SqlConnectionPool stats] "
-                     "created: {}, reused: {}, closed: {}, timedout: {}, released: {}",
-                     stats.created,
-                     stats.reused,
-                     stats.closed,
-                     stats.timedout,
-                     stats.released);
     }
 
   private:

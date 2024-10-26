@@ -6,7 +6,10 @@
     #include <Windows.h>
 #endif
 
-#include "../Lightweight/Model/All.hpp"
+#if defined(LIGHTWEIGHT_ORM)
+    #include "../Lightweight/Model/All.hpp"
+#endif
+
 #include "../Lightweight/SqlConnectInfo.hpp"
 #include "../Lightweight/SqlConnection.hpp"
 #include "../Lightweight/SqlDataBinder.hpp"
@@ -48,6 +51,7 @@ auto const inline DefaultTestConnectionString = SqlConnectionString {
                          "file::memory:"),
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 class ScopedSqlNullLogger: public SqlLogger
 {
   private:
@@ -64,21 +68,21 @@ class ScopedSqlNullLogger: public SqlLogger
         SqlLogger::SetLogger(m_previousLogger);
     }
 
-    void OnWarning(std::string_view const&) override {}
-    void OnError(SqlError, std::source_location) override {}
-    void OnError(SqlErrorInfo const&, std::source_location) override {}
-    void OnConnectionOpened(SqlConnection const&) override {}
-    void OnConnectionClosed(SqlConnection const&) override {}
-    void OnConnectionIdle(SqlConnection const&) override {}
-    void OnConnectionReuse(SqlConnection const&) override {}
-    void OnExecuteDirect(std::string_view const&) override {}
-    void OnPrepare(std::string_view const&) override {}
-    void OnExecute(std::string_view const&) override {}
+    void OnWarning(std::string_view const& /*message*/) override {}
+    void OnError(SqlError /*errorCode*/, std::source_location /*sourceLocation*/) override {}
+    void OnError(SqlErrorInfo const& /*errorInfo*/, std::source_location /*sourceLocation*/) override {}
+    void OnConnectionOpened(SqlConnection const& /*connection*/) override {}
+    void OnConnectionClosed(SqlConnection const& /*connection*/) override {}
+    void OnConnectionIdle(SqlConnection const& /*connection*/) override {}
+    void OnConnectionReuse(SqlConnection const& /*connection*/) override {}
+    void OnExecuteDirect(std::string_view const& /*query*/) override {}
+    void OnPrepare(std::string_view const& /*query*/) override {}
+    void OnExecute(std::string_view const& /*query*/) override {}
     void OnExecuteBatch() override {}
     void OnFetchedRow() override {}
-    void OnStats(SqlConnectionStats const&) override {}
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 class SqlTestFixture
 {
   public:
@@ -94,8 +98,10 @@ class SqlTestFixture
         {
             if (argv[i] == "--trace-sql"sv)
                 SqlLogger::SetLogger(SqlLogger::TraceLogger());
+#if defined(LIGHTWEIGHT_ORM)
             else if (argv[i] == "--trace-model"sv)
                 Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
+#endif
             else if (argv[i] == "--help"sv || argv[i] == "-h"sv)
             {
                 std::println("{} [--trace-sql] [--trace-model] [[--] [Catch2 flags ...]]", argv[0]);
@@ -151,7 +157,7 @@ class SqlTestFixture
             case SqlServerType::SQLITE: {
                 auto stmt = SqlStatement { connection };
                 // Enable foreign key constraints for SQLite
-                (void) stmt.ExecuteDirect("PRAGMA foreign_keys = ON");
+                stmt.ExecuteDirect("PRAGMA foreign_keys = ON");
                 break;
             }
             case SqlServerType::MICROSOFT_SQL:
@@ -167,14 +173,11 @@ class SqlTestFixture
     {
         REQUIRE(SqlConnection().IsAlive());
         DropAllTablesInDatabase();
-        SqlConnection::KillAllIdle();
     }
 
-    virtual ~SqlTestFixture()
-    {
-        SqlConnection::KillAllIdle();
-    }
+    virtual ~SqlTestFixture() = default;
 
+#if defined(LIGHTWEIGHT_ORM)
     template <typename T>
     void CreateModelTable()
     {
@@ -182,6 +185,7 @@ class SqlTestFixture
         m_createdTables.emplace_back(tableName);
         T::CreateTable();
     }
+#endif
 
   private:
     static std::string SanitizePwd(std::string_view input)
@@ -226,21 +230,20 @@ class SqlTestFixture
         switch (stmt.Connection().ServerType())
         {
             case SqlServerType::MICROSOFT_SQL:
-                SqlConnection::KillAllIdle();
-                (void) stmt.ExecuteDirect(std::format("USE {}", "master"));
-                (void) stmt.ExecuteDirect(std::format("DROP DATABASE IF EXISTS \"{}\"", testDatabaseName));
-                (void) stmt.ExecuteDirect(std::format("CREATE DATABASE \"{}\"", testDatabaseName));
-                (void) stmt.ExecuteDirect(std::format("USE {}", testDatabaseName));
+                stmt.ExecuteDirect(std::format("USE {}", "master"));
+                stmt.ExecuteDirect(std::format("DROP DATABASE IF EXISTS \"{}\"", testDatabaseName));
+                stmt.ExecuteDirect(std::format("CREATE DATABASE \"{}\"", testDatabaseName));
+                stmt.ExecuteDirect(std::format("USE {}", testDatabaseName));
                 break;
             case SqlServerType::POSTGRESQL:
                 if (m_createdTables.empty())
                     m_createdTables = GetAllTableNames();
                 for (auto& createdTable: std::views::reverse(m_createdTables))
-                    (void) stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\" CASCADE", createdTable));
+                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\" CASCADE", createdTable));
                 break;
             default:
                 for (auto& createdTable: std::views::reverse(m_createdTables))
-                    (void) stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", createdTable));
+                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", createdTable));
                 break;
         }
         m_createdTables.clear();
@@ -250,6 +253,7 @@ class SqlTestFixture
 };
 
 // {{{ ostream support for Lightweight, for debugging purposes
+#if defined(LIGHTWEIGHT_ORM)
 inline std::ostream& operator<<(std::ostream& os, Model::RecordId value)
 {
     return os << "ModelId { " << value.value << " }";
@@ -259,6 +263,7 @@ inline std::ostream& operator<<(std::ostream& os, Model::AbstractRecord const& v
 {
     return os << std::format("{}", value);
 }
+#endif
 
 inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
 {
@@ -307,6 +312,7 @@ inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, PostOp> c
         return os << std::format("SqlTrimmedFixedString<{}> {{ '{}' }}", N, value.data());
 }
 
+#if defined(LIGHTWEIGHT_ORM)
 template <typename T,
           SQLSMALLINT TheTableColumnIndex,
           Model::StringLiteral TheColumnName,
@@ -316,5 +322,6 @@ inline std::ostream& operator<<(std::ostream& os,
 {
     return os << std::format("Field<{}:{}: {}>", TheTableColumnIndex, TheColumnName.value, field.Value());
 }
+#endif
 
 // }}}

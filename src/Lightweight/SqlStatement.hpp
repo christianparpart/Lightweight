@@ -7,8 +7,10 @@
     #include <Windows.h>
 #endif
 
+#include "Api.hpp"
 #include "SqlConnection.hpp"
 #include "SqlDataBinder.hpp"
+#include "SqlQuery.hpp"
 
 #include <cstring>
 #include <optional>
@@ -42,33 +44,37 @@ class SqlStatement final: public SqlDataBinderCallback
 {
   public:
     // Construct a new SqlStatement object, using a new connection, and connect to the default database.
-    SqlStatement() noexcept;
+    LIGHTWEIGHT_API SqlStatement();
 
-    SqlStatement(SqlStatement&&) noexcept = default;
-    SqlStatement& operator=(SqlStatement&&) noexcept = default;
+    LIGHTWEIGHT_API SqlStatement(SqlStatement&&) noexcept = default;
+    LIGHTWEIGHT_API SqlStatement& operator=(SqlStatement&&) noexcept = default;
+
+    SqlStatement(SqlStatement const&) noexcept = delete;
+    SqlStatement& operator=(SqlStatement const&) noexcept = delete;
 
     // Construct a new SqlStatement object, using the given connection.
-    SqlStatement(SqlConnection& relatedConnection);
+    LIGHTWEIGHT_API explicit SqlStatement(SqlConnection& relatedConnection);
 
-    ~SqlStatement() noexcept final;
-
-    // Retrieves the connection associated with this statement.
-    [[nodiscard]] SqlConnection& Connection() noexcept;
+    LIGHTWEIGHT_API ~SqlStatement() noexcept final;
 
     // Retrieves the connection associated with this statement.
-    [[nodiscard]] SqlConnection const& Connection() const noexcept;
+    [[nodiscard]] LIGHTWEIGHT_API SqlConnection& Connection() noexcept;
+
+    // Retrieves the connection associated with this statement.
+    [[nodiscard]] LIGHTWEIGHT_API SqlConnection const& Connection() const noexcept;
 
     // Creates a new query builder for the given table, compatible with the SQL server being connected.
-    [[nodiscard]] SqlQueryBuilder Query(std::string_view const& table = {}) const;
+    LIGHTWEIGHT_API SqlQueryBuilder Query(std::string_view const& table = {}) const;
 
     // Creates a new query builder for the given table with an alias, compatible with the SQL server being connected.
-    [[nodiscard]] SqlQueryBuilder QueryAs(std::string_view const& table, std::string_view const& tableAlias) const;
+    [[nodiscard]] LIGHTWEIGHT_API SqlQueryBuilder QueryAs(std::string_view const& table,
+                                                          std::string_view const& tableAlias) const;
 
     // Retrieves the native handle of the statement.
-    [[nodiscard]] SQLHSTMT NativeHandle() const noexcept;
+    [[nodiscard]] LIGHTWEIGHT_API SQLHSTMT NativeHandle() const noexcept;
 
     // Prepares the statement for execution.
-    void Prepare(std::string_view query);
+    LIGHTWEIGHT_API void Prepare(std::string_view query);
 
     // Prepares the statement for execution.
     void Prepare(SqlQueryObject auto const& queryObject);
@@ -90,7 +96,7 @@ class SqlStatement final: public SqlDataBinderCallback
     void Execute(Args const&... args);
 
     // Binds the given arguments to the prepared statement and executes it.
-    void ExecuteWithVariants(std::vector<SqlVariant> const& args);
+    LIGHTWEIGHT_API void ExecuteWithVariants(std::vector<SqlVariant> const& args);
 
     // Executes the prepared statement on a batch of data.
     //
@@ -112,11 +118,11 @@ class SqlStatement final: public SqlDataBinderCallback
     void ExecuteBatch(FirstColumnBatch const& firstColumnBatch, MoreColumnBatches const&... moreColumnBatches);
 
     // Executes the given query directly.
-    void ExecuteDirect(std::string_view const& query, std::source_location location = std::source_location::current());
+    LIGHTWEIGHT_API void ExecuteDirect(std::string_view const& query,
+                                       std::source_location location = std::source_location::current());
 
     // Executes the given query directly.
-    void ExecuteDirect(SqlQueryObject auto const& query,
-                       std::source_location location = std::source_location::current());
+    void ExecuteDirect(SqlQueryObject auto const& query, std::source_location location = std::source_location::current());
 
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
@@ -131,16 +137,16 @@ class SqlStatement final: public SqlDataBinderCallback
                                                        std::source_location location = std::source_location::current());
 
     // Retrieves the number of rows affected by the last query.
-    [[nodiscard]] size_t NumRowsAffected() const;
+    [[nodiscard]] LIGHTWEIGHT_API size_t NumRowsAffected() const;
 
     // Retrieves the number of columns affected by the last query.
-    [[nodiscard]] size_t NumColumnsAffected() const;
+    [[nodiscard]] LIGHTWEIGHT_API size_t NumColumnsAffected() const;
 
     // Retrieves the last insert ID of the last query's primary key.
-    [[nodiscard]] size_t LastInsertId();
+    [[nodiscard]] LIGHTWEIGHT_API size_t LastInsertId();
 
     // Fetches the next row of the result set.
-    [[nodiscard]] bool FetchRow();
+    [[nodiscard]] LIGHTWEIGHT_API bool FetchRow();
 
     // Retrieves the value of the column at the given index for the currently selected row.
     //
@@ -156,21 +162,22 @@ class SqlStatement final: public SqlDataBinderCallback
     [[nodiscard]] std::optional<T> TryGetColumn(SQLUSMALLINT column) const;
 
   private:
-    void RequireSuccess(SQLRETURN error, std::source_location sourceLocation = std::source_location::current()) const;
-    void PlanPostExecuteCallback(std::function<void()>&& cb) override;
-    void PlanPostProcessOutputColumn(std::function<void()>&& cb) override;
-    void ProcessPostExecuteCallbacks();
+    LIGHTWEIGHT_API void RequireSuccess(SQLRETURN error,
+                                        std::source_location sourceLocation = std::source_location::current()) const;
+    LIGHTWEIGHT_API void PlanPostExecuteCallback(std::function<void()>&& cb) override;
+    LIGHTWEIGHT_API void PlanPostProcessOutputColumn(std::function<void()>&& cb) override;
+    LIGHTWEIGHT_API void ProcessPostExecuteCallbacks();
+
+    LIGHTWEIGHT_API void RequireIndicators();
+    LIGHTWEIGHT_API SQLLEN* GetIndicatorForColumn(SQLUSMALLINT column) noexcept;
 
     // private data members
-
-    std::optional<SqlConnection> m_ownedConnection; // The connection object (if owned)
-    SqlConnection* m_connection {};                 // Pointer to the connection object
-    SQLHSTMT m_hStmt {};                            // The native oDBC statement handle
-    std::string m_preparedQuery;                    // The last prepared query
-    SQLSMALLINT m_expectedParameterCount {};        // The number of parameters expected by the query
-    std::vector<SQLLEN> m_indicators;               // Holds the indicators for the bound output columns
-    std::vector<std::function<void()>> m_postExecuteCallbacks;
-    std::vector<std::function<void()>> m_postProcessOutputColumnCallbacks;
+    struct Data;
+    Data* m_data;
+    SqlConnection* m_connection {};          // Pointer to the connection object
+    SQLHSTMT m_hStmt {};                     // The native oDBC statement handle
+    std::string m_preparedQuery;             // The last prepared query
+    SQLSMALLINT m_expectedParameterCount {}; // The number of parameters expected by the query
 };
 
 // {{{ inline implementation
@@ -197,20 +204,18 @@ inline void SqlStatement::Prepare(SqlQueryObject auto const& queryObject)
 template <SqlOutputColumnBinder... Args>
 void SqlStatement::BindOutputColumns(Args*... args)
 {
-    auto const numColumns = NumColumnsAffected();
-    m_indicators.resize(numColumns + 1);
+    RequireIndicators();
 
     SQLUSMALLINT i = 0;
-    ((++i, SqlDataBinder<Args>::OutputColumn(m_hStmt, i, args, &m_indicators[i], *this)), ...);
+    ((++i, SqlDataBinder<Args>::OutputColumn(m_hStmt, i, args, GetIndicatorForColumn(i), *this)), ...);
 }
 
 template <SqlOutputColumnBinder T>
 void SqlStatement::BindOutputColumn(SQLUSMALLINT columnIndex, T* arg)
 {
-    if (m_indicators.size() <= columnIndex)
-        m_indicators.resize(NumColumnsAffected() + 1);
+    RequireIndicators();
 
-    SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, &m_indicators[columnIndex], *this);
+    SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, GetIndicatorForColumn(columnIndex), *this);
 }
 
 template <SqlInputParameterBinder Arg>
@@ -288,6 +293,7 @@ void SqlStatement::ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch,
     size_t rowStart = 0;
 
     // clang-format off
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     RequireSuccess(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAMSET_SIZE, (SQLPOINTER) rowCount, 0));
     RequireSuccess(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAM_BIND_OFFSET_PTR, &rowStart, 0));
     RequireSuccess(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAM_BIND_TYPE, SQL_PARAM_BIND_BY_COLUMN, 0));
@@ -362,30 +368,15 @@ template <SqlGetColumnNativeType T>
     return { std::move(result) };
 }
 
-inline void SqlStatement::PlanPostExecuteCallback(std::function<void()>&& cb)
-{
-    m_postExecuteCallbacks.emplace_back(std::move(cb));
-}
-
-inline void SqlStatement::ProcessPostExecuteCallbacks()
-{
-    for (auto& cb: m_postExecuteCallbacks)
-        cb();
-    m_postExecuteCallbacks.clear();
-}
-
-inline void SqlStatement::PlanPostProcessOutputColumn(std::function<void()>&& cb)
-{
-    m_postProcessOutputColumnCallbacks.emplace_back(std::move(cb));
-}
-
-inline void SqlStatement::ExecuteDirect(SqlQueryObject auto const& query, std::source_location location)
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::ExecuteDirect(SqlQueryObject auto const& query,
+                                                                 std::source_location location)
 {
     return ExecuteDirect(query.ToSql(), location);
 }
 
 template <typename T>
-std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query, std::source_location location)
+inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query,
+                                                                                   std::source_location location)
 {
     ExecuteDirect(query, location);
     if (FetchRow())
@@ -394,8 +385,8 @@ std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query
 }
 
 template <typename T>
-inline std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
-                                                          std::source_location location)
+inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
+                                                                                   std::source_location location)
 {
     return ExecuteDirectSingle<T>(query.ToSql(), location);
 }

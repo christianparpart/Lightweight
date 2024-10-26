@@ -3,12 +3,10 @@ Checks: >-
   -*,
   bugprone-*,
   -bugprone-branch-clone,
-  -bugprone-easily-swappable-parameters,
   -bugprone-exception-escape,
   -bugprone-implicit-widening-of-multiplication-result,
   -bugprone-reserved-identifier,
   -bugprone-suspicious-include,
-  -bugprone-unchecked-optional-access,
   clang-analyzer-core.*,
   clang-analyzer-cplusplus.*,
   clang-analyzer-deadcode.*,
@@ -28,49 +26,40 @@ Checks: >-
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-avoid-non-const-global-variables,
   -cppcoreguidelines-macro-usage,
-  -cppcoreguidelines-no-malloc,
-  -cppcoreguidelines-non-private-member-variables-in-classes,
-  -cppcoreguidelines-owning-memory,
-  -cppcoreguidelines-prefer-member-initializer,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-const-cast,
   -cppcoreguidelines-pro-type-cstyle-cast,
   -cppcoreguidelines-pro-type-reinterpret-cast,
-  -cppcoreguidelines-pro-type-static-cast-downcast,
-  -cppcoreguidelines-pro-type-union-access,
-  -cppcoreguidelines-pro-type-vararg,
-  -cppcoreguidelines-special-member-functions,
   modernize-*,
   -modernize-avoid-bind,
   -modernize-avoid-c-arrays,
-  -modernize-return-braced-init-list,
-  -modernize-use-bool-literals,
   -modernize-use-trailing-return-type,
   performance-*,
-  -performance-no-int-to-ptr,
   readability-*,
   -readability-avoid-unconditional-preprocessor-if,
   -readability-braces-around-statements,
-  -readability-container-contains,
   -readability-else-after-return,
-  -readability-function-cognitive-complexity,
   -readability-identifier-length,
   -readability-implicit-bool-conversion,
   -readability-magic-numbers,
-  -readability-named-parameter,
   -readability-redundant-access-specifiers,
+  -readability-redundant-member-init,
   -readability-simplify-boolean-expr,
-  -readability-uppercase-literal-suffix,
-  -readability-use-anyofallof,
-  misc-const-correctness,
 WarningsAsErrors: >-
   modernize-use-nullptr,
+  performance-move-const-arg,
+  readability-function-cognitive-complexity,
+  cppcoreguidelines-rvalue-reference-param-not-moved,
 UseColor: true
 HeaderFilterRegex: 'src/'
 FormatStyle:     none
 CheckOptions:
+  - key:             readability-function-cognitive-complexity.Threshold
+    value:           '16'
+  - key:             readability-function-cognitive-complexity.IgnoreMacros
+    value:           true
   - key:             bugprone-easily-swappable-parameters.MinimumLength
     value:           '3'
   - key:             cert-dcl16-c.NewSuffixes
