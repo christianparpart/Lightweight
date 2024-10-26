@@ -9,7 +9,7 @@
 #include <string_view>
 #include <vector>
 
-class [[nodiscard]] LIGHTWEIGHT_API SqlInsertQueryBuilder final
+class [[nodiscard]] SqlInsertQueryBuilder final
 {
   public:
     explicit SqlInsertQueryBuilder(SqlQueryFormatter const& formatter,
@@ -22,13 +22,13 @@ class [[nodiscard]] LIGHTWEIGHT_API SqlInsertQueryBuilder final
 
     // Adds a single column to the INSERT query with the value being a string literal.
     template <std::size_t N>
-    SqlInsertQueryBuilder& Set(std::string_view columnName, char const (&value)[N]);
+    inline SqlInsertQueryBuilder& Set(std::string_view columnName, char const (&value)[N]);
 
     // Adds a single column to the INSERT query with the value being a MFC like CString.
-    SqlInsertQueryBuilder& Set(std::string_view columnName, MFCStringLike auto const* value);
+    inline SqlInsertQueryBuilder& Set(std::string_view columnName, MFCStringLike auto const* value);
 
     // Finalizes building the query as INSERT INTO ... query.
-    [[nodiscard]] std::string ToSql() const;
+    [[nodiscard]] LIGHTWEIGHT_API std::string ToSql() const;
 
   private:
     SqlQueryFormatter const& m_formatter;

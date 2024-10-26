@@ -25,6 +25,12 @@ if(DEFINED MSVC)
     add_compile_options(/nologo)
 endif()
 
+if(WIN32)
+    # For Windows platform, we make sure that DLLs and EXEs are placed into the same directory.
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/target CACHE STRING "")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/target CACHE STRING "")
+endif()
+
 if(NOT(CPACK_GENERATOR))
     set(CPACK_GENERATOR TGZ)
 endif()

@@ -14,13 +14,13 @@ struct SqlConnectionString
 {
     std::string value;
 
-    auto operator<=>(SqlConnectionString const&) const noexcept = default;
+    LIGHTWEIGHT_API auto operator<=>(SqlConnectionString const&) const noexcept = default;
 };
 
 using SqlConnectionStringMap = std::map<std::string, std::string>;
 
-SqlConnectionStringMap ParseConnectionString(SqlConnectionString const& connectionString);
-SqlConnectionString BuildConnectionString(SqlConnectionStringMap const& map);
+LIGHTWEIGHT_API SqlConnectionStringMap ParseConnectionString(SqlConnectionString const& connectionString);
+LIGHTWEIGHT_API SqlConnectionString BuildConnectionString(SqlConnectionStringMap const& map);
 
 struct SqlConnectionDataSource
 {
@@ -29,7 +29,7 @@ struct SqlConnectionDataSource
     std::string password;
     std::chrono::seconds timeout { 5 };
 
-    auto operator<=>(SqlConnectionDataSource const&) const noexcept = default;
+    LIGHTWEIGHT_API auto operator<=>(SqlConnectionDataSource const&) const noexcept = default;
 };
 
 using SqlConnectInfo = std::variant<SqlConnectionDataSource, SqlConnectionString>;

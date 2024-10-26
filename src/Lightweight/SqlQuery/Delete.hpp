@@ -6,7 +6,7 @@
 
 #include <string>
 
-class [[nodiscard]] LIGHTWEIGHT_API SqlDeleteQueryBuilder final:
+class LIGHTWEIGHT_API SqlDeleteQueryBuilder final:
     public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
 {
   public:

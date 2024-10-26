@@ -91,7 +91,7 @@ LIGHTWEIGHT_API std::u8string ToUtf8(std::u16string_view u16InputString);
 // Converts from UTF-32 to UTF-16.
 template <typename T>
     requires std::is_same_v<T, char32_t> || (std::is_same_v<T, wchar_t> && sizeof(wchar_t) == 4)
-LIGHTWEIGHT_API std::u16string ToUtf16(const std::basic_string_view<T> u32InputString)
+std::u16string ToUtf16(const std::basic_string_view<T> u32InputString)
 {
     std::u16string u16OutputString;
     u16OutputString.reserve(u32InputString.size());

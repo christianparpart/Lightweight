@@ -37,7 +37,7 @@ namespace detail
 {
 
 template <typename ColumnName>
-LIGHTWEIGHT_API std::string MakeSqlColumnName(ColumnName const& columnName)
+std::string MakeSqlColumnName(ColumnName const& columnName)
 {
     using namespace std::string_view_literals;
     std::string output;
@@ -78,7 +78,7 @@ namespace detail
 //
 // This class is inherited by the SqlSelectQueryBuilder, SqlUpdateQueryBuilder, and SqlDeleteQueryBuilder
 template <typename Derived>
-class [[nodiscard]] LIGHTWEIGHT_API SqlWhereClauseBuilder
+class [[nodiscard]] SqlWhereClauseBuilder
 {
   public:
     // Indicates, that the next WHERE clause should be AND-ed (default).
