@@ -187,10 +187,12 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
 
         // Resize the string to the size of the data
         // Get the data (take care of SQL_NULL_DATA and SQL_NO_TOTAL)
-        auto* bufferStart = StringTraits::Data(result);
-        SQLLEN bufferCharsAvailable = StringTraits::Size(result);
-        auto sqlResult = SQLGetData(
-            stmt, column, CType, (SQLPOINTER) bufferStart, bufferCharsAvailable * sizeof(CharType), indicator);
+        auto sqlResult = SQLGetData(stmt,
+                                    column,
+                                    CType,
+                                    (SQLPOINTER) StringTraits::Data(result),
+                                    StringTraits::Size(result) * sizeof(CharType),
+                                    indicator);
 
         if (sqlResult == SQL_SUCCESS || sqlResult == SQL_NO_DATA)
         {
@@ -206,10 +208,10 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
         {
             // We have a truncation and the server knows how much data is left.
             auto const totalCharCount = *indicator / sizeof(CharType);
-            auto const charsWritten = bufferCharsAvailable - 1;
+            auto const charsWritten = StringTraits::Size(result) - 1;
             StringTraits::Resize(result, totalCharCount + 1);
             auto* bufferCont = StringTraits::Data(result) + charsWritten;
-            bufferCharsAvailable = (totalCharCount + 1) - charsWritten;
+            auto const bufferCharsAvailable = (totalCharCount + 1) - charsWritten;
             sqlResult = SQLGetData(stmt, column, CType, bufferCont, bufferCharsAvailable * sizeof(CharType), indicator);
             if (SQL_SUCCEEDED(sqlResult))
                 StringTraits::Resize(result, charsWritten + *indicator / sizeof(CharType));
