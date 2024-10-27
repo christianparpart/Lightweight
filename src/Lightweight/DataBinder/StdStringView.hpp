@@ -6,20 +6,17 @@
 
 #include <string_view>
 
-template <>
-struct SqlDataBinder<std::string_view>
+template <typename CharT>
+    requires(std::is_same_v<CharT, char> || std::is_same_v<CharT, char16_t>
+             || (std::is_same_v<CharT, wchar_t> && sizeof(wchar_t) == 2))
+struct SqlDataBinder<std::basic_string_view<CharT>>
 {
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, std::string_view value) noexcept
+    static constexpr SQLSMALLINT cType = sizeof(CharT) == 1 ? SQL_C_CHAR : SQL_C_WCHAR;
+    static constexpr SQLSMALLINT sqlType = sizeof(CharT) == 1 ? SQL_VARCHAR : SQL_WVARCHAR;
+
+    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, std::basic_string_view<CharT> value) noexcept
     {
-        return SQLBindParameter(stmt,
-                                column,
-                                SQL_PARAM_INPUT,
-                                SQL_C_CHAR,
-                                SQL_VARCHAR,
-                                value.size(),
-                                0,
-                                (SQLPOINTER) value.data(),
-                                0,
-                                nullptr);
+        return SQLBindParameter(
+            stmt, column, SQL_PARAM_INPUT, cType, sqlType, value.size(), 0, (SQLPOINTER) value.data(), 0, nullptr);
     }
 };
