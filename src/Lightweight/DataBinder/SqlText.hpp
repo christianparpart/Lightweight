@@ -29,9 +29,9 @@ struct std::formatter<SqlText>: std::formatter<std::string>
 };
 
 template <>
-struct SqlCommonStringBinder<SqlText>
+struct SqlBasicStringOperations<SqlText>
 {
-    using Traits = SqlCommonStringBinder<typename SqlText::value_type>;
+    using Traits = SqlBasicStringOperations<typename SqlText::value_type>;
 
     // clang-format off
     static char const* Data(SqlText const* str) noexcept { return Traits::Data(&str->value); }

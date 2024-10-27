@@ -6,11 +6,11 @@
 
 #include <utility>
 
-template <SqlCommonStringBinderConcept StringType>
+template <SqlBasicStringOperationsConcept StringType>
 struct LIGHTWEIGHT_API SqlDataBinder<StringType>
 {
     using ValueType = StringType;
-    using StringTraits = SqlCommonStringBinder<ValueType>;
+    using StringTraits = SqlBasicStringOperations<ValueType>;
 
     static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, ValueType const& value) noexcept
     {
@@ -122,7 +122,7 @@ template <SqlCommonWideStringBinderConcept StringType>
 struct LIGHTWEIGHT_API SqlDataBinder<StringType>
 {
     using ValueType = StringType;
-    using StringTraits = SqlCommonStringBinder<ValueType>;
+    using StringTraits = SqlBasicStringOperations<ValueType>;
 
     static constexpr auto CType = SQL_C_WCHAR;
     static constexpr auto SqlType = SQL_WVARCHAR;
@@ -165,7 +165,7 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
                 auto const len = std::cmp_greater_equal(*indicator, bufferSize) || *indicator == SQL_NO_TOTAL
                                      ? bufferSize - 1
                                      : *indicator;
-                StringTraits::Resize(result, len);
+                StringTraits::Resize(result, len / sizeof(decltype(StringTraits::Data(result)[0])));
             }
             else
                 StringTraits::Resize(result, 0);

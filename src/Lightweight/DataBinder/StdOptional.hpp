@@ -5,11 +5,9 @@
 #include "Core.hpp"
 #include "SqlNullValue.hpp"
 
-#include <concepts>
 #include <optional>
 
 template <typename T>
-    requires(std::is_same_v<SqlDataBinder<T>, SqlDataBinder<T>>)
 struct SqlDataBinder<std::optional<T>>
 {
     using OptionalValue = std::optional<T>;

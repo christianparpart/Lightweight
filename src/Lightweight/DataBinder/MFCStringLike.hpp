@@ -35,7 +35,7 @@ struct LIGHTWEIGHT_API SqlDataBinder<T>
 
 // template <typename T>
 //     requires(MFCStringLike<T>)
-// struct SqlCommonStringBinder<T>
+// struct SqlBasicStringOperations<T>
 // {
 //     static char const* Data(MFCStringLike auto const* str) noexcept
 //     {

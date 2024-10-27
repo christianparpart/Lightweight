@@ -38,7 +38,7 @@ template <>
 struct SqlDataBinder<SqlTrimmedString>
 {
     using InnerStringType = decltype(std::declval<SqlTrimmedString>().value);
-    using StringTraits = SqlCommonStringBinder<InnerStringType>;
+    using StringTraits = SqlBasicStringOperations<InnerStringType>;
 
     static void TrimRight(InnerStringType* boundOutputString, SQLLEN indicator) noexcept
     {

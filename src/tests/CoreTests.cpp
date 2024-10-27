@@ -2,6 +2,7 @@
 
 #include "Utils.hpp"
 
+#include <Lightweight/DataBinder/UnicodeConverter.hpp>
 #include <Lightweight/SqlConnection.hpp>
 #include <Lightweight/SqlQuery.hpp>
 #include <Lightweight/SqlQueryFormatter.hpp>
@@ -28,6 +29,29 @@
     // Because we are simply testing and demonstrating the library and not using it in production code.
     #pragma warning(disable : 4834)
 #endif
+
+// NOTE: I've done this preprocessor stuff only to have a single test for UTF-16 (UCS-2) regardless of platform.
+using WideChar = std::conditional_t<sizeof(wchar_t) == 2, wchar_t, char16_t>;
+using WideString = std::basic_string<WideChar>;
+using WideStringView = std::basic_string_view<WideChar>;
+
+#if !defined(_WIN32)
+    #define WTEXT(x) (u##x)
+#else
+    #define WTEXT(x) (L##x)
+#endif
+
+namespace std
+{
+template <typename WideStringT>
+    requires(std::same_as<WideStringT, WideString> || std::same_as<WideStringT, WideStringView>)
+std::ostream& operator<<(std::ostream& os, WideStringT const& str)
+{
+    auto const u8String = ToUtf8(str);
+    return os << "length: " << str.size() << ", characters: " << '"'
+              << std::string_view((char const*) u8String.data(), u8String.size()) << '"';
+}
+} // namespace std
 
 using namespace std::string_view_literals;
 
@@ -1168,15 +1192,6 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare: 
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Unicode]")
 {
-    // NOTE: I've done this preprocessor stuff only to have a single test for UTF-16 (UCS-2) regardless of platform.
-#if !defined(_WIN32)
-    using WideString = std::u16string;
-    #define U16TEXT(x) (u##x)
-#else
-    using WideString = std::wstring;
-    #define U16TEXT(x) (L##x)
-#endif
-
     auto stmt = SqlStatement {};
 
     if (stmt.Connection().ServerType() == SqlServerType::POSTGRESQL)
@@ -1196,18 +1211,28 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
 
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
 
-    // Insert some wide string literal
-    stmt.Execute(U16TEXT("Wide string literal \U0001F600"));
+    // Insert via wide string literal
+    stmt.Execute(WTEXT("Wide string literal \U0001F600"));
 
-    // Insert some std::wstring
-    WideString const inputValue = U16TEXT("Wide string literal \U0001F600");
+    // Insert via wide string view
+    stmt.Execute(WideStringView(WTEXT("Wide string literal \U0001F600")));
+
+    // Insert via wide string object
+    WideString const inputValue = WTEXT("Wide string literal \U0001F600");
     stmt.Execute(inputValue);
 
     stmt.ExecuteDirect("SELECT Value FROM Test");
 
+    // Fetch and check GetColumn for wide string
     REQUIRE(stmt.FetchRow());
     auto const actualValue = stmt.GetColumn<WideString>(1);
     CHECK(actualValue == inputValue);
+
+    // Bind output column, fetch, and check result in output column for wide string
+    WideString actualValue2;
+    stmt.BindOutputColumns(&actualValue2);
+    REQUIRE(stmt.FetchRow());
+    CHECK(actualValue2 == inputValue);
 }
 
 struct MFCLikeCString
@@ -1284,6 +1309,95 @@ TEST_CASE_METHOD(SqlTestFixture,
     //     // auto const lastName = businessjsonObject.sqlSelectEmployee.GetColumn<MFCLikeCString>(2);
     //     // CHECK(lastName.value == "Smith");
     // }
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with Where", "[SqlQueryBuilder]")
+{
+    auto sharedConnection = SqlConnection {};
+    auto stmt = SqlStatement { sharedConnection };
+
+    stmt.ExecuteDirect(R"SQL(DROP TABLE IF EXISTS "Test")SQL");
+    stmt.ExecuteDirect(R"SQL(
+        CREATE TABLE "Test" (
+            "name" VARCHAR(20) NULL,
+            "secret" INT NULL
+        )
+    )SQL");
+
+    stmt.Prepare(R"SQL(INSERT INTO "Test" ("name", "secret") VALUES (?, ?))SQL");
+    auto const names = std::vector<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
+    auto const secrets = std::vector<int> { 42, 43, 44, 45 };
+    stmt.ExecuteBatchSoft(names, secrets);
+
+    auto const totalRecords = stmt.ExecuteDirectSingle<int>(R"SQL(SELECT COUNT(*) FROM "Test")SQL");
+    REQUIRE(totalRecords.value_or(0) == 4);
+
+    // clang-format off
+    auto const subSelect = stmt.Query("Test")
+                              .Select()
+                              .Field("secret")
+                              .Where("name", "Alice")
+                              .All();
+    auto const selectQuery = stmt.Query("Test")
+                                 .Select()
+                                 .Fields({ "name", "secret" })
+                                 .Where("secret", subSelect)
+                                 .All();
+    // clang-format on
+    stmt.Prepare(selectQuery);
+    stmt.Execute();
+
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Alice");
+    CHECK(stmt.GetColumn<int>(2) == 42);
+
+    REQUIRE(!stmt.FetchRow());
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with WhereIn", "[SqlQueryBuilder]")
+{
+    auto stmt = SqlStatement {};
+
+    stmt.ExecuteDirect(R"SQL(DROP TABLE IF EXISTS "Test")SQL");
+    stmt.ExecuteDirect(R"SQL(
+        CREATE TABLE "Test" (
+            "name" VARCHAR(20) NULL,
+            "secret" INT NULL
+        )
+    )SQL");
+
+    stmt.Prepare(R"SQL(INSERT INTO "Test" (name, secret) VALUES (?, ?))SQL");
+    auto const names = std::vector<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
+    auto const secrets = std::vector<int> { 42, 43, 44, 45 };
+    stmt.ExecuteBatchSoft(names, secrets);
+
+    auto const totalRecords = stmt.ExecuteDirectSingle<int>("SELECT COUNT(*) FROM \"Test\"");
+    REQUIRE(totalRecords.value_or(0) == 4);
+
+    // clang-format off
+    auto const subSelect = stmt.Query("Test")
+                              .Select()
+                              .Field("secret")
+                              .Where("name", "Alice")
+                              .OrWhere("name", "Bob").All();
+    auto const selectQuery = stmt.Query("Test")
+                                 .Select()
+                                 .Fields({ "name", "secret" })
+                                 .WhereIn("secret", subSelect)
+                                 .All();
+    // clang-format on
+    stmt.Prepare(selectQuery);
+    stmt.Execute();
+
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Alice");
+    CHECK(stmt.GetColumn<int>(2) == 42);
+
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Bob");
+    CHECK(stmt.GetColumn<int>(2) == 43);
+
+    REQUIRE(!stmt.FetchRow());
 }
 
 // NOLINTEND(readability-container-size-empty)
