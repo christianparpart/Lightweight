@@ -114,6 +114,17 @@ class SqlStatement final: public SqlDataBinderCallback
     // Each parameter represents a column, to be bound as input parameter,
     // and the number of elements in these bound column containers will
     // mandate how many executions will happen.
+    //
+    // This function will bind and execute each row separately,
+    // which is less efficient than ExecuteBatchNative(), but works non-contiguous input ranges.
+    template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... MoreColumnBatches>
+    void ExecuteBatchSoft(FirstColumnBatch const& firstColumnBatch, MoreColumnBatches const&... moreColumnBatches);
+
+    // Executes the prepared statement on a batch of data.
+    //
+    // Each parameter represents a column, to be bound as input parameter,
+    // and the number of elements in these bound column containers will
+    // mandate how many executions will happen.
     template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... MoreColumnBatches>
     void ExecuteBatch(FirstColumnBatch const& firstColumnBatch, MoreColumnBatches const&... moreColumnBatches);
 
@@ -122,7 +133,8 @@ class SqlStatement final: public SqlDataBinderCallback
                                        std::source_location location = std::source_location::current());
 
     // Executes the given query directly.
-    void ExecuteDirect(SqlQueryObject auto const& query, std::source_location location = std::source_location::current());
+    void ExecuteDirect(SqlQueryObject auto const& query,
+                       std::source_location location = std::source_location::current());
 
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
@@ -309,16 +321,21 @@ void SqlStatement::ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch,
 }
 
 template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... MoreColumnBatches>
-void SqlStatement::ExecuteBatch(FirstColumnBatch const& firstColumnBatch, MoreColumnBatches const&... moreColumnBatches)
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::ExecuteBatch(FirstColumnBatch const& firstColumnBatch,
+                                                                MoreColumnBatches const&... moreColumnBatches)
 {
     // If the input ranges are contiguous and their element types are contiguous and supported as well,
     // we can use the native batch execution.
     if constexpr (SqlNativeBatchable<FirstColumnBatch, MoreColumnBatches...>)
-    {
         ExecuteBatchNative(firstColumnBatch, moreColumnBatches...);
-        return;
-    }
+    else
+        ExecuteBatchSoft(firstColumnBatch, moreColumnBatches...);
+}
 
+template <SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range... MoreColumnBatches>
+void SqlStatement::ExecuteBatchSoft(FirstColumnBatch const& firstColumnBatch,
+                                    MoreColumnBatches const&... moreColumnBatches)
+{
     if (m_expectedParameterCount != 1 + sizeof...(moreColumnBatches))
         throw std::invalid_argument { "Invalid number of columns" };
 

@@ -1325,9 +1325,9 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with Where", "[Sql
     )SQL");
 
     stmt.Prepare(R"SQL(INSERT INTO Test (name, secret) VALUES (?, ?))SQL");
-    auto const names = std::list<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
+    auto const names = std::vector<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
     auto const secrets = std::vector<int> { 42, 43, 44, 45 };
-    stmt.ExecuteBatch(names, secrets);
+    stmt.ExecuteBatchSoft(names, secrets);
 
     auto const totalRecords = stmt.ExecuteDirectSingle<int>("SELECT COUNT(*) FROM Test");
     REQUIRE(totalRecords.value_or(0) == 4);
@@ -1367,9 +1367,9 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with WhereIn", "[S
     )SQL");
 
     stmt.Prepare("INSERT INTO Test (name, secret) VALUES (?, ?)");
-    auto const names = std::list<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
+    auto const names = std::vector<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
     auto const secrets = std::vector<int> { 42, 43, 44, 45 };
-    stmt.ExecuteBatch(names, secrets);
+    stmt.ExecuteBatchSoft(names, secrets);
 
     auto const totalRecords = stmt.ExecuteDirectSingle<int>("SELECT COUNT(*) FROM Test");
     REQUIRE(totalRecords.value_or(0) == 4);
