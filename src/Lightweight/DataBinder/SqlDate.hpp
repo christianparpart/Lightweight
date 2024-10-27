@@ -71,7 +71,10 @@ struct LIGHTWEIGHT_API SqlDate
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlDate>
 {
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlDate const& value) noexcept
+    static SQLRETURN InputParameter(SQLHSTMT stmt,
+                                    SQLUSMALLINT column,
+                                    SqlDate const& value,
+                                    SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,
@@ -91,7 +94,11 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDate>
         return SQLBindCol(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlDate* result, SQLLEN* indicator) noexcept
+    static SQLRETURN GetColumn(SQLHSTMT stmt,
+                               SQLUSMALLINT column,
+                               SqlDate* result,
+                               SQLLEN* indicator,
+                               SqlDataBinderCallback const& /*cb*/) noexcept
     {
         return SQLGetData(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }

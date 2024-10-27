@@ -63,7 +63,7 @@ jobs:
         sudo ./llvm.sh 19
         sudo apt -qy install clang-tidy
     - name: "install dependencies"
-      run: sudo apt install -y cmake ninja-build catch2 unixodbc-dev sqlite3 libsqlite3-dev libsqliteodbc
+      run: sudo apt install -y cmake ninja-build catch2 unixodbc-dev sqlite3 libsqlite3-dev libsqliteodbc uuid-dev
     - name: Install GCC
       run: sudo apt install -y g++-14
     - name: "cmake"
@@ -132,7 +132,7 @@ jobs:
           CC_VERSION=$( echo "${{ matrix.compiler }}" | awk '{ print $2; }')
           echo "CC_VERSION=${CC_VERSION}" >> "$GITHUB_OUTPUT"
       - name: "install dependencies"
-        run: sudo apt install -y cmake ninja-build catch2 unixodbc-dev sqlite3 libsqlite3-dev libsqliteodbc valgrind
+        run: sudo apt install -y cmake ninja-build catch2 unixodbc-dev sqlite3 libsqlite3-dev libsqliteodbc valgrind uuid-dev
       - name: "inspect"
         run: |
           dpkg -L unixodbc-common

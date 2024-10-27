@@ -255,15 +255,22 @@ struct SqlVariant
 template <>
 struct SqlDataBinder<SqlVariant>
 {
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlVariant const& variantValue) noexcept
+    static SQLRETURN InputParameter(SQLHSTMT stmt,
+                                    SQLUSMALLINT column,
+                                    SqlVariant const& variantValue,
+                                    SqlDataBinderCallback& cb) noexcept
     {
         return std::visit(detail::overloaded { [&]<typename T>(T const& value) {
-                              return SqlDataBinder<T>::InputParameter(stmt, column, value);
+                              return SqlDataBinder<T>::InputParameter(stmt, column, value, cb);
                           } },
                           variantValue.value);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlVariant* result, SQLLEN* indicator) noexcept
+    static SQLRETURN GetColumn(SQLHSTMT stmt,
+                               SQLUSMALLINT column,
+                               SqlVariant* result,
+                               SQLLEN* indicator,
+                               SqlDataBinderCallback const& cb) noexcept
     {
         SQLLEN columnType {};
         SQLRETURN returnCode =
@@ -276,28 +283,28 @@ struct SqlDataBinder<SqlVariant>
         switch (columnType)
         {
             case SQL_BIT:
-                returnCode = SqlDataBinder<bool>::GetColumn(stmt, column, &variant.emplace<bool>(), indicator);
+                returnCode = SqlDataBinder<bool>::GetColumn(stmt, column, &variant.emplace<bool>(), indicator, cb);
                 break;
             case SQL_TINYINT:
-                returnCode = SqlDataBinder<short>::GetColumn(stmt, column, &variant.emplace<short>(), indicator);
+                returnCode = SqlDataBinder<short>::GetColumn(stmt, column, &variant.emplace<short>(), indicator, cb);
                 break;
             case SQL_SMALLINT:
                 returnCode = SqlDataBinder<unsigned short>::GetColumn(
-                    stmt, column, &variant.emplace<unsigned short>(), indicator);
+                    stmt, column, &variant.emplace<unsigned short>(), indicator, cb);
                 break;
             case SQL_INTEGER:
-                returnCode = SqlDataBinder<int>::GetColumn(stmt, column, &variant.emplace<int>(), indicator);
+                returnCode = SqlDataBinder<int>::GetColumn(stmt, column, &variant.emplace<int>(), indicator, cb);
                 break;
             case SQL_BIGINT:
                 returnCode =
-                    SqlDataBinder<long long>::GetColumn(stmt, column, &variant.emplace<long long>(), indicator);
+                    SqlDataBinder<long long>::GetColumn(stmt, column, &variant.emplace<long long>(), indicator, cb);
                 break;
             case SQL_REAL:
-                returnCode = SqlDataBinder<float>::GetColumn(stmt, column, &variant.emplace<float>(), indicator);
+                returnCode = SqlDataBinder<float>::GetColumn(stmt, column, &variant.emplace<float>(), indicator, cb);
                 break;
             case SQL_FLOAT:
             case SQL_DOUBLE:
-                returnCode = SqlDataBinder<double>::GetColumn(stmt, column, &variant.emplace<double>(), indicator);
+                returnCode = SqlDataBinder<double>::GetColumn(stmt, column, &variant.emplace<double>(), indicator, cb);
                 break;
             case SQL_CHAR:          // fixed-length string
             case SQL_VARCHAR:       // variable-length string
@@ -309,14 +316,15 @@ struct SqlDataBinder<SqlVariant>
             case SQL_VARBINARY:     // variable-length binary
             case SQL_LONGVARBINARY: // long binary
                 returnCode =
-                    SqlDataBinder<std::string>::GetColumn(stmt, column, &variant.emplace<std::string>(), indicator);
+                    SqlDataBinder<std::string>::GetColumn(stmt, column, &variant.emplace<std::string>(), indicator, cb);
                 break;
             case SQL_DATE:
                 SqlLogger::GetLogger().OnWarning(
                     std::format("SQL_DATE is from ODBC 2. SQL_TYPE_DATE should have been received instead."));
                 [[fallthrough]];
             case SQL_TYPE_DATE:
-                returnCode = SqlDataBinder<SqlDate>::GetColumn(stmt, column, &variant.emplace<SqlDate>(), indicator);
+                returnCode =
+                    SqlDataBinder<SqlDate>::GetColumn(stmt, column, &variant.emplace<SqlDate>(), indicator, cb);
                 break;
             case SQL_TIME:
                 SqlLogger::GetLogger().OnWarning(
@@ -324,11 +332,12 @@ struct SqlDataBinder<SqlVariant>
                 [[fallthrough]];
             case SQL_TYPE_TIME:
             case SQL_SS_TIME2:
-                returnCode = SqlDataBinder<SqlTime>::GetColumn(stmt, column, &variant.emplace<SqlTime>(), indicator);
+                returnCode =
+                    SqlDataBinder<SqlTime>::GetColumn(stmt, column, &variant.emplace<SqlTime>(), indicator, cb);
                 break;
             case SQL_TYPE_TIMESTAMP:
                 returnCode =
-                    SqlDataBinder<SqlDateTime>::GetColumn(stmt, column, &variant.emplace<SqlDateTime>(), indicator);
+                    SqlDataBinder<SqlDateTime>::GetColumn(stmt, column, &variant.emplace<SqlDateTime>(), indicator, cb);
                 break;
             case SQL_TYPE_NULL:
             case SQL_DECIMAL:

@@ -48,9 +48,12 @@ struct SqlDataBinder<SqlTrimmedString>
         StringTraits::Resize(boundOutputString, static_cast<SQLLEN>(n));
     }
 
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlTrimmedString const& value) noexcept
+    static SQLRETURN InputParameter(SQLHSTMT stmt,
+                                    SQLUSMALLINT column,
+                                    SqlTrimmedString const& value,
+                                    SqlDataBinderCallback& cb) noexcept
     {
-        return SqlDataBinder<InnerStringType>::InputParameter(stmt, column, value.value);
+        return SqlDataBinder<InnerStringType>::InputParameter(stmt, column, value.value, cb);
     }
 
     static SQLRETURN OutputColumn(SQLHSTMT stmt,
@@ -76,9 +79,13 @@ struct SqlDataBinder<SqlTrimmedString>
                           indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlTrimmedString* result, SQLLEN* indicator) noexcept
+    static SQLRETURN GetColumn(SQLHSTMT stmt,
+                               SQLUSMALLINT column,
+                               SqlTrimmedString* result,
+                               SQLLEN* indicator,
+                               SqlDataBinderCallback const& cb) noexcept
     {
-        auto const returnCode = SqlDataBinder<InnerStringType>::GetColumn(stmt, column, &result->value, indicator);
+        auto const returnCode = SqlDataBinder<InnerStringType>::GetColumn(stmt, column, &result->value, indicator, cb);
         TrimRight(&result->value, *indicator);
         return returnCode;
     }

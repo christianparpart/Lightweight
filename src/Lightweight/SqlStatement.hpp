@@ -178,6 +178,7 @@ class SqlStatement final: public SqlDataBinderCallback
                                         std::source_location sourceLocation = std::source_location::current()) const;
     LIGHTWEIGHT_API void PlanPostExecuteCallback(std::function<void()>&& cb) override;
     LIGHTWEIGHT_API void PlanPostProcessOutputColumn(std::function<void()>&& cb) override;
+    LIGHTWEIGHT_API [[nodiscard]] SqlServerType ServerType() const noexcept override;
     LIGHTWEIGHT_API void ProcessPostExecuteCallbacks();
 
     LIGHTWEIGHT_API void RequireIndicators();
@@ -235,7 +236,7 @@ void SqlStatement::BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg)
 {
     // tell Execute() that we don't know the expected count
     m_expectedParameterCount = (std::numeric_limits<decltype(m_expectedParameterCount)>::max)();
-    RequireSuccess(SqlDataBinder<Arg>::InputParameter(m_hStmt, columnIndex, arg));
+    RequireSuccess(SqlDataBinder<Arg>::InputParameter(m_hStmt, columnIndex, arg, *this));
 }
 
 template <SqlInputParameterBinder... Args>
@@ -253,7 +254,7 @@ void SqlStatement::Execute(Args const&... args)
         throw std::invalid_argument { "Invalid argument count" };
 
     SQLUSMALLINT i = 0;
-    ((++i, RequireSuccess(SqlDataBinder<Args>::InputParameter(m_hStmt, i, args))), ...);
+    ((++i, RequireSuccess(SqlDataBinder<Args>::InputParameter(m_hStmt, i, args, *this))), ...);
 
     RequireSuccess(SQLExecute(m_hStmt));
     ProcessPostExecuteCallbacks();
@@ -311,10 +312,10 @@ void SqlStatement::ExecuteBatchNative(FirstColumnBatch const& firstColumnBatch,
     RequireSuccess(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAM_BIND_TYPE, SQL_PARAM_BIND_BY_COLUMN, 0));
     RequireSuccess(SQLSetStmtAttr(m_hStmt, SQL_ATTR_PARAM_OPERATION_PTR, SQL_PARAM_PROCEED, 0));
     RequireSuccess(SqlDataBinder<std::remove_cvref_t<decltype(*std::ranges::data(firstColumnBatch))>>::
-                                   InputParameter(m_hStmt, 1, *std::ranges::data(firstColumnBatch)));
+                                   InputParameter(m_hStmt, 1, *std::ranges::data(firstColumnBatch), *this));
     SQLUSMALLINT column = 1;
     (RequireSuccess(SqlDataBinder<std::remove_cvref_t<decltype(*std::ranges::data(moreColumnBatches))>>::
-                        InputParameter(m_hStmt, ++column, *std::ranges::data(moreColumnBatches))), ...);
+                        InputParameter(m_hStmt, ++column, *std::ranges::data(moreColumnBatches), *this)), ...);
     RequireSuccess(SQLExecute(m_hStmt));
     ProcessPostExecuteCallbacks();
     // clang-format on
@@ -348,7 +349,7 @@ void SqlStatement::ExecuteBatchSoft(FirstColumnBatch const& firstColumnBatch,
         std::apply(
             [&]<SqlInputParameterBinder... ColumnValues>(ColumnValues const&... columnsInRow) {
                 SQLUSMALLINT column = 0;
-                ((++column, SqlDataBinder<ColumnValues>::InputParameter(m_hStmt, column, columnsInRow)), ...);
+                ((++column, SqlDataBinder<ColumnValues>::InputParameter(m_hStmt, column, columnsInRow, *this)), ...);
                 RequireSuccess(SQLExecute(m_hStmt));
                 ProcessPostExecuteCallbacks();
             },
@@ -361,7 +362,7 @@ template <SqlGetColumnNativeType T>
 inline bool SqlStatement::GetColumn(SQLUSMALLINT column, T* result) const
 {
     SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.
-    RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, result, &indicator));
+    RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, result, &indicator, *this));
     return indicator != SQL_NULL_DATA;
 }
 
@@ -370,7 +371,7 @@ template <SqlGetColumnNativeType T>
 {
     T result {};
     SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.
-    RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, &result, &indicator));
+    RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, &result, &indicator, *this));
     return result;
 }
 
@@ -379,7 +380,7 @@ template <SqlGetColumnNativeType T>
 {
     T result {};
     SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.
-    RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, &result, &indicator));
+    RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, &result, &indicator, *this));
     if (indicator == SQL_NULL_DATA)
         return std::nullopt;
     return { std::move(result) };

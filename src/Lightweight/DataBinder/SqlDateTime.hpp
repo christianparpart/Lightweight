@@ -115,7 +115,8 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime::native_type>
     static SQLRETURN GetColumn(SQLHSTMT stmt,
                                SQLUSMALLINT column,
                                SqlDateTime::native_type* result,
-                               SQLLEN* indicator) noexcept
+                               SQLLEN* indicator,
+                               SqlDataBinderCallback const& /*cb*/) noexcept
     {
         SQL_TIMESTAMP_STRUCT sqlValue {};
         auto const rc = SQLGetData(stmt, column, SQL_C_TYPE_TIMESTAMP, &sqlValue, sizeof(sqlValue), indicator);
@@ -128,7 +129,10 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime::native_type>
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime>
 {
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime const& value) noexcept
+    static SQLRETURN InputParameter(SQLHSTMT stmt,
+                                    SQLUSMALLINT column,
+                                    SqlDateTime const& value,
+                                    SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,
@@ -153,7 +157,11 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime>
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, 0, indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlDateTime* result, SQLLEN* indicator) noexcept
+    static SQLRETURN GetColumn(SQLHSTMT stmt,
+                               SQLUSMALLINT column,
+                               SqlDateTime* result,
+                               SQLLEN* indicator,
+                               SqlDataBinderCallback const& /*cb*/) noexcept
     {
         return SQLGetData(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }

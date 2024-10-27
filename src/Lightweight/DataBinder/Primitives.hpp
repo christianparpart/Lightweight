@@ -10,7 +10,7 @@ struct SqlSimpleDataBinder
 {
     static constexpr SqlColumnType ColumnType = TheColumnType;
 
-    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, T const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, T const& value, SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt, column, SQL_PARAM_INPUT, TheCType, TheSqlType, 0, 0, (SQLPOINTER) &value, 0, nullptr);
     }
@@ -20,7 +20,7 @@ struct SqlSimpleDataBinder
         return SQLBindCol(stmt, column, TheCType, result, 0, indicator);
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, T* result, SQLLEN* indicator) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, T* result, SQLLEN* indicator, SqlDataBinderCallback const& /*cb*/) noexcept
     {
         return SQLGetData(stmt, column, TheCType, result, 0, indicator);
     }

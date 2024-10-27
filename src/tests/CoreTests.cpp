@@ -4,6 +4,7 @@
 
 #include <Lightweight/DataBinder/UnicodeConverter.hpp>
 #include <Lightweight/SqlConnection.hpp>
+#include <Lightweight/SqlDataBinder.hpp>
 #include <Lightweight/SqlQuery.hpp>
 #include <Lightweight/SqlQueryFormatter.hpp>
 #include <Lightweight/SqlScopedTraceLogger.hpp>
@@ -41,8 +42,6 @@ using WideStringView = std::basic_string_view<WideChar>;
     #define WTEXT(x) (L##x)
 #endif
 
-namespace std
-{
 template <typename WideStringT>
     requires(std::same_as<WideStringT, WideString> || std::same_as<WideStringT, WideStringView>)
 std::ostream& operator<<(std::ostream& os, WideStringT const& str)
@@ -51,7 +50,11 @@ std::ostream& operator<<(std::ostream& os, WideStringT const& str)
     return os << "length: " << str.size() << ", characters: " << '"'
               << std::string_view((char const*) u8String.data(), u8String.size()) << '"';
 }
-} // namespace std
+
+std::ostream& operator<<(std::ostream& os, SqlGuid const& guid)
+{
+    return os << std::format("SqlGuid({})", guid);
+}
 
 using namespace std::string_view_literals;
 
@@ -436,9 +439,12 @@ struct CustomType
 template <>
 struct SqlDataBinder<CustomType>
 {
-    static SQLRETURN InputParameter(SQLHSTMT hStmt, SQLUSMALLINT column, CustomType const& value) noexcept
+    static SQLRETURN InputParameter(SQLHSTMT hStmt,
+                                    SQLUSMALLINT column,
+                                    CustomType const& value,
+                                    SqlDataBinderCallback& cb) noexcept
     {
-        return SqlDataBinder<int>::InputParameter(hStmt, column, value.value);
+        return SqlDataBinder<int>::InputParameter(hStmt, column, value.value, cb);
     }
 
     static SQLRETURN OutputColumn(SQLHSTMT hStmt,
@@ -451,9 +457,13 @@ struct SqlDataBinder<CustomType>
         return SqlDataBinder<int>::OutputColumn(hStmt, column, &result->value, indicator, callback);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT hStmt, SQLUSMALLINT column, CustomType* result, SQLLEN* indicator) noexcept
+    static SQLRETURN GetColumn(SQLHSTMT hStmt,
+                               SQLUSMALLINT column,
+                               CustomType* result,
+                               SQLLEN* indicator,
+                               SqlDataBinderCallback const& cb) noexcept
     {
-        return SqlDataBinder<int>::GetColumn(hStmt, column, &result->value, indicator);
+        return SqlDataBinder<int>::GetColumn(hStmt, column, &result->value, indicator, cb);
     }
 
     static constexpr int PostProcess(int value) noexcept
@@ -1397,6 +1407,62 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with WhereIn", "[S
     CHECK(stmt.GetColumn<std::string>(1) == "Bob");
     CHECK(stmt.GetColumn<int>(2) == 43);
 
+    REQUIRE(!stmt.FetchRow());
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder]")
+{
+    auto stmt = SqlStatement {};
+
+    // TODO(pr) move UUID PK determination to SqlTraits
+    auto const sqlServerType = stmt.Connection().ServerType();
+    auto const sqlGuidPrimaryKeyColumnType = [&]() -> std::string_view {
+        switch (sqlServerType)
+        {
+            case SqlServerType::MICROSOFT_SQL:
+                return "UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID()"sv;
+            case SqlServerType::POSTGRESQL:
+                return "UUID PRIMARY KEY DEFAULT (gen_random_uuid())"sv;
+            case SqlServerType::SQLITE:
+                return "GUID PRIMARY KEY"sv;
+            case SqlServerType::ORACLE:
+                return "RAW(16) PRIMARY KEY DEFAULT SYS_GUID()"sv;
+            case SqlServerType::MYSQL:
+                // NB: MySQL supports UUID(), BIN_TO_UUID(), and UUID_TO_BIN() functions since MySQL 8.0, which is ok.
+                return "BINARY(16) PRIMARY KEY DEFAULT UUID_TO_BIN(UUID())"sv;
+            case SqlServerType::UNKNOWN:
+                return "BINARY(16) PRIMARY KEY"sv;
+        }
+        std::unreachable();
+    }();
+
+    stmt.ExecuteDirect("DROP TABLE IF EXISTS Test");
+    stmt.ExecuteDirect(std::format("CREATE TABLE Test (id {}, name VARCHAR(50))", sqlGuidPrimaryKeyColumnType));
+
+    auto const expectedGuid = SqlGuid::Create();
+
+    stmt.Prepare("INSERT INTO Test (id, name) VALUES (?, ?)");
+    stmt.Execute(expectedGuid, "Alice");
+
+    // Fetch and check GetColumn for GUID
+    stmt.ExecuteDirect("SELECT id, name FROM Test");
+    REQUIRE(stmt.FetchRow());
+    auto const actualGuid = stmt.GetColumn<SqlGuid>(1);
+    CHECK(actualGuid == expectedGuid);
+
+    // Bind output column, fetch, and check result in output column for GUID
+    stmt.ExecuteDirect("SELECT id FROM Test");
+    SqlGuid actualGuid2;
+    stmt.BindOutputColumns(&actualGuid2);
+    REQUIRE(stmt.FetchRow());
+    CHECK(actualGuid2 == expectedGuid);
+    REQUIRE(!stmt.FetchRow());
+
+    // Test SELECT by GUID
+    stmt.Prepare("SELECT name FROM Test WHERE id = ?");
+    stmt.Execute(expectedGuid);
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Alice");
     REQUIRE(!stmt.FetchRow());
 }
 

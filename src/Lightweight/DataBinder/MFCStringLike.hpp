@@ -16,7 +16,10 @@ template <typename T>
     requires(MFCStringLike<T>)
 struct LIGHTWEIGHT_API SqlDataBinder<T>
 {
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, T const& value) noexcept
+    static SQLRETURN InputParameter(SQLHSTMT stmt,
+                                    SQLUSMALLINT column,
+                                    T const& value,
+                                    SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,

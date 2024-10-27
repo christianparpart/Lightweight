@@ -6,8 +6,7 @@
 
 #include <string>
 
-class LIGHTWEIGHT_API SqlDeleteQueryBuilder final:
-    public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
+class LIGHTWEIGHT_API SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
 {
   public:
     explicit SqlDeleteQueryBuilder(SqlQueryFormatter const& formatter,
