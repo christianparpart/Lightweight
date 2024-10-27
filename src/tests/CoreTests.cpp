@@ -2,6 +2,7 @@
 
 #include "Utils.hpp"
 
+#include <Lightweight/DataBinder/UnicodeConverter.hpp>
 #include <Lightweight/SqlConnection.hpp>
 #include <Lightweight/SqlQuery.hpp>
 #include <Lightweight/SqlQueryFormatter.hpp>
@@ -28,6 +29,29 @@
     // Because we are simply testing and demonstrating the library and not using it in production code.
     #pragma warning(disable : 4834)
 #endif
+
+// NOTE: I've done this preprocessor stuff only to have a single test for UTF-16 (UCS-2) regardless of platform.
+using WideChar = std::conditional_t<sizeof(wchar_t) == 2, wchar_t, char16_t>;
+using WideString = std::basic_string<WideChar>;
+using WideStringView = std::basic_string_view<WideChar>;
+
+#if !defined(_WIN32)
+    #define WTEXT(x) (u##x)
+#else
+    #define WTEXT(x) (L##x)
+#endif
+
+namespace std
+{
+template <typename WideStringT>
+    requires(std::same_as<WideStringT, WideString> || std::same_as<WideStringT, WideStringView>)
+std::ostream& operator<<(std::ostream& os, WideStringT const& str)
+{
+    auto const u8String = ToUtf8(str);
+    return os << "length: " << str.size() << ", characters: " << '"'
+              << std::string_view((char const*) u8String.data(), u8String.size()) << '"';
+}
+} // namespace std
 
 using namespace std::string_view_literals;
 
@@ -1168,17 +1192,6 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare: 
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Unicode]")
 {
-    // NOTE: I've done this preprocessor stuff only to have a single test for UTF-16 (UCS-2) regardless of platform.
-#if !defined(_WIN32)
-    using WideString = std::u16string;
-    using WideStringView = std::u16string_view;
-    #define U16TEXT(x) (u##x)
-#else
-    using WideString = std::wstring;
-    using WideStringView = std::wstring_view;
-    #define U16TEXT(x) (L##x)
-#endif
-
     auto stmt = SqlStatement {};
 
     if (stmt.Connection().ServerType() == SqlServerType::POSTGRESQL)
@@ -1199,13 +1212,13 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
 
     // Insert via wide string literal
-    stmt.Execute(U16TEXT("Wide string literal \U0001F600"));
+    stmt.Execute(WTEXT("Wide string literal \U0001F600"));
 
     // Insert via wide string view
-    stmt.Execute(WideStringView(U16TEXT("Wide string literal \U0001F600")));
+    stmt.Execute(WideStringView(WTEXT("Wide string literal \U0001F600")));
 
     // Insert via wide string object
-    WideString const inputValue = U16TEXT("Wide string literal \U0001F600");
+    WideString const inputValue = WTEXT("Wide string literal \U0001F600");
     stmt.Execute(inputValue);
 
     stmt.ExecuteDirect("SELECT Value FROM Test");
