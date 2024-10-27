@@ -1,4 +1,4 @@
-# Lightweight, SQL and ORM data mapper API for C++23
+# Lightweight, an ODBC SQL API for C++23
 
 **Lightweight** is a thin and modern C++ ODBC wrapper for **easy** and **fast** raw database access.
 
@@ -63,7 +63,7 @@ dbConnection.Query("employees")
 
 This library a little bit of more modern C++ language and library features in order to be more expressive and efficient.
 
-- C++23 (`std::expected`, `std::stacktrace`, lambda templates expressions)
+- C++23 (`std::stacktrace`, lambda templates expressions)
 - C++20 (`std::source_location`, `std::error_code`, `operator<=>`, `std::format()`, designated initializers, concepts, ranges)
 - C++17 (fold expressions, `std::string_view`, `std::optional`, `std::variant`, `std::apply`)
 
