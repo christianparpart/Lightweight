@@ -12,7 +12,7 @@
 
 // Specialized traits for std::basic_string<> as output string parameter
 template <typename CharT>
-struct SqlCommonStringBinder<std::basic_string<CharT>>
+struct SqlBasicStringOperations<std::basic_string<CharT>>
 {
     using CharType = CharT;
     using StringType = std::basic_string<CharT>;
