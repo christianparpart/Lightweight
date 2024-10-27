@@ -1311,4 +1311,93 @@ TEST_CASE_METHOD(SqlTestFixture,
     // }
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with Where", "[SqlQueryBuilder]")
+{
+    auto sharedConnection = SqlConnection {};
+    auto stmt = SqlStatement { sharedConnection };
+
+    stmt.ExecuteDirect(R"SQL(DROP TABLE IF EXISTS "Test")SQL");
+    stmt.ExecuteDirect(R"SQL(
+        CREATE TABLE Test (
+            name VARCHAR(20) NULL,
+            secret INT NULL
+        )
+    )SQL");
+
+    stmt.Prepare(R"SQL(INSERT INTO Test (name, secret) VALUES (?, ?))SQL");
+    auto const names = std::list<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
+    auto const secrets = std::vector<int> { 42, 43, 44, 45 };
+    stmt.ExecuteBatch(names, secrets);
+
+    auto const totalRecords = stmt.ExecuteDirectSingle<int>("SELECT COUNT(*) FROM Test");
+    REQUIRE(totalRecords.value_or(0) == 4);
+
+    // clang-format off
+    auto const subSelect = stmt.Query("Test")
+                              .Select()
+                              .Field("secret")
+                              .Where("name", "Alice")
+                              .All();
+    auto const selectQuery = stmt.Query("Test")
+                                 .Select()
+                                 .Fields({ "name", "secret" })
+                                 .Where("secret", subSelect)
+                                 .All();
+    // clang-format on
+    stmt.Prepare(selectQuery);
+    stmt.Execute();
+
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Alice");
+    CHECK(stmt.GetColumn<int>(2) == 42);
+
+    REQUIRE(!stmt.FetchRow());
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with WhereIn", "[SqlQueryBuilder]")
+{
+    auto stmt = SqlStatement {};
+
+    stmt.ExecuteDirect(R"SQL(DROP TABLE IF EXISTS Test)SQL");
+    stmt.ExecuteDirect(R"SQL(
+        CREATE TABLE Test (
+            name VARCHAR(20) NULL,
+            secret INT NULL
+        )
+    )SQL");
+
+    stmt.Prepare("INSERT INTO Test (name, secret) VALUES (?, ?)");
+    auto const names = std::list<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
+    auto const secrets = std::vector<int> { 42, 43, 44, 45 };
+    stmt.ExecuteBatch(names, secrets);
+
+    auto const totalRecords = stmt.ExecuteDirectSingle<int>("SELECT COUNT(*) FROM Test");
+    REQUIRE(totalRecords.value_or(0) == 4);
+
+    // clang-format off
+    auto const subSelect = stmt.Query("Test")
+                              .Select()
+                              .Field("secret")
+                              .Where("name", "Alice")
+                              .OrWhere("name", "Bob").All();
+    auto const selectQuery = stmt.Query("Test")
+                                 .Select()
+                                 .Fields({ "name", "secret" })
+                                 .WhereIn("secret", subSelect)
+                                 .All();
+    // clang-format on
+    stmt.Prepare(selectQuery);
+    stmt.Execute();
+
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Alice");
+    CHECK(stmt.GetColumn<int>(2) == 42);
+
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<std::string>(1) == "Bob");
+    CHECK(stmt.GetColumn<int>(2) == 43);
+
+    REQUIRE(!stmt.FetchRow());
+}
+
 // NOLINTEND(readability-container-size-empty)

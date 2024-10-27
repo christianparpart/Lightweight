@@ -97,6 +97,15 @@ class [[nodiscard]] SqlWhereClauseBuilder
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& Where(ColumnName const& columnName, std::string_view binaryOp, T const& value);
 
+    // Constructs or extends a WHERE clause to test for a binary operation for RHS as sub-select query.
+    template <typename ColumnName, typename SubSelectQuery>
+        requires(std::is_invocable_r_v<std::string, decltype(&SubSelectQuery::ToSql), SubSelectQuery const&>)
+    [[nodiscard]] Derived& Where(ColumnName const& columnName, std::string_view binaryOp, SubSelectQuery const& value);
+
+    // Constructs or extends a WHERE/OR clause to test for a binary operation.
+    template <typename ColumnName, typename T>
+    [[nodiscard]] Derived& OrWhere(ColumnName const& columnName, std::string_view binaryOp, T const& value);
+
     // Constructs or extends a WHERE clause to test for a binary operation for RHS as string literal.
     template <typename ColumnName, std::size_t N>
     Derived& Where(ColumnName const& columnName, std::string_view binaryOp, char const (&value)[N]);
@@ -104,6 +113,10 @@ class [[nodiscard]] SqlWhereClauseBuilder
     // Constructs or extends a WHERE clause to test for equality.
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& Where(ColumnName const& columnName, T const& value);
+
+    // Constructs or extends an WHERE/OR clause to test for equality.
+    template <typename ColumnName, typename T>
+    [[nodiscard]] Derived& OrWhere(ColumnName const& columnName, T const& value);
 
     // Constructs or extends a WHERE/AND clause to test for a group of values.
     template <typename Callable>
@@ -115,11 +128,18 @@ class [[nodiscard]] SqlWhereClauseBuilder
         requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
     [[nodiscard]] Derived& OrWhere(Callable const& callable);
 
+    // Constructs or extends an WHERE/OR clause to test for a value, satisfying std::ranges::input_range.
     template <typename ColumnName, std::ranges::input_range InputRange>
     [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, InputRange const& values);
 
+    // Constructs or extends an WHERE/OR clause to test for a value, satisfying std::initializer_list.
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, std::initializer_list<T> const& values);
+
+    // Constructs or extends an WHERE/OR clause to test for a value, satisfying a sub-select query.
+    template <typename ColumnName, typename SubSelectQuery>
+        requires(std::is_invocable_r_v<std::string, decltype(&SubSelectQuery::ToSql), SubSelectQuery const&>)
+    [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, SubSelectQuery const& subSelectQuery);
 
     template <typename ColumnName>
     [[nodiscard]] Derived& WhereNull(ColumnName const& columnName);
@@ -251,6 +271,14 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Where(C
 }
 
 template <typename Derived>
+template <typename ColumnName, typename T>
+inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::OrWhere(ColumnName const& columnName,
+                                                                                 T const& value)
+{
+    return Or().Where(columnName, "=", value);
+}
+
+template <typename Derived>
 template <typename Callable>
     requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::OrWhere(Callable const& callable)
@@ -312,6 +340,15 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::WhereIn
                                                                                  std::initializer_list<T> const& values)
 {
     return Where(columnName, "IN", detail::PopulateSqlSetExpression(values));
+}
+
+template <typename Derived>
+template <typename ColumnName, typename SubSelectQuery>
+    requires(std::is_invocable_r_v<std::string, decltype(&SubSelectQuery::ToSql), SubSelectQuery const&>)
+inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::WhereIn(ColumnName const& columnName,
+                                                                                 SubSelectQuery const& subSelectQuery)
+{
+    return Where(columnName, "IN", RawSqlCondition { "(" + subSelectQuery.ToSql() + ")" });
 }
 
 template <typename Derived>
@@ -418,6 +455,25 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Where(C
     }
 
     return static_cast<Derived&>(*this);
+}
+
+template <typename Derived>
+template <typename ColumnName, typename SubSelectQuery>
+    requires(std::is_invocable_r_v<std::string, decltype(&SubSelectQuery::ToSql), SubSelectQuery const&>)
+inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName,
+                                                                               std::string_view binaryOp,
+                                                                               SubSelectQuery const& value)
+{
+    return Where(columnName, binaryOp, RawSqlCondition { "(" + value.ToSql() + ")" });
+}
+
+template <typename Derived>
+template <typename ColumnName, typename T>
+inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::OrWhere(ColumnName const& columnName,
+                                                                                 std::string_view binaryOp,
+                                                                                 T const& value)
+{
+    return Or().Where(columnName, binaryOp, value);
 }
 
 template <typename Derived>
