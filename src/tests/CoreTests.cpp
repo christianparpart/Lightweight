@@ -1171,9 +1171,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
     // NOTE: I've done this preprocessor stuff only to have a single test for UTF-16 (UCS-2) regardless of platform.
 #if !defined(_WIN32)
     using WideString = std::u16string;
+    using WideStringView = std::u16string_view;
     #define U16TEXT(x) (u##x)
 #else
     using WideString = std::wstring;
+    using WideStringView = std::wstring_view;
     #define U16TEXT(x) (L##x)
 #endif
 
@@ -1196,18 +1198,28 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
 
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
 
-    // Insert some wide string literal
+    // Insert via wide string literal
     stmt.Execute(U16TEXT("Wide string literal \U0001F600"));
 
-    // Insert some std::wstring
+    // Insert via wide string view
+    stmt.Execute(WideStringView(U16TEXT("Wide string literal \U0001F600")));
+
+    // Insert via wide string object
     WideString const inputValue = U16TEXT("Wide string literal \U0001F600");
     stmt.Execute(inputValue);
 
     stmt.ExecuteDirect("SELECT Value FROM Test");
 
+    // Fetch and check GetColumn for wide string
     REQUIRE(stmt.FetchRow());
     auto const actualValue = stmt.GetColumn<WideString>(1);
     CHECK(actualValue == inputValue);
+
+    // Bind output column, fetch, and check result in output column for wide string
+    WideString actualValue2;
+    stmt.BindOutputColumns(&actualValue2);
+    REQUIRE(stmt.FetchRow());
+    CHECK(actualValue2 == inputValue);
 }
 
 struct MFCLikeCString
