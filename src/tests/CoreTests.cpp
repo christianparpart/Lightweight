@@ -1318,18 +1318,18 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with Where", "[Sql
 
     stmt.ExecuteDirect(R"SQL(DROP TABLE IF EXISTS "Test")SQL");
     stmt.ExecuteDirect(R"SQL(
-        CREATE TABLE Test (
-            name VARCHAR(20) NULL,
-            secret INT NULL
+        CREATE TABLE "Test" (
+            "name" VARCHAR(20) NULL,
+            "secret" INT NULL
         )
     )SQL");
 
-    stmt.Prepare(R"SQL(INSERT INTO Test (name, secret) VALUES (?, ?))SQL");
+    stmt.Prepare(R"SQL(INSERT INTO "Test" ("name", "secret") VALUES (?, ?))SQL");
     auto const names = std::vector<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
     auto const secrets = std::vector<int> { 42, 43, 44, 45 };
     stmt.ExecuteBatchSoft(names, secrets);
 
-    auto const totalRecords = stmt.ExecuteDirectSingle<int>("SELECT COUNT(*) FROM Test");
+    auto const totalRecords = stmt.ExecuteDirectSingle<int>(R"SQL(SELECT COUNT(*) FROM "Test")SQL");
     REQUIRE(totalRecords.value_or(0) == 4);
 
     // clang-format off
@@ -1358,20 +1358,20 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with WhereIn", "[S
 {
     auto stmt = SqlStatement {};
 
-    stmt.ExecuteDirect(R"SQL(DROP TABLE IF EXISTS Test)SQL");
+    stmt.ExecuteDirect(R"SQL(DROP TABLE IF EXISTS "Test")SQL");
     stmt.ExecuteDirect(R"SQL(
-        CREATE TABLE Test (
-            name VARCHAR(20) NULL,
-            secret INT NULL
+        CREATE TABLE "Test" (
+            "name" VARCHAR(20) NULL,
+            "secret" INT NULL
         )
     )SQL");
 
-    stmt.Prepare("INSERT INTO Test (name, secret) VALUES (?, ?)");
+    stmt.Prepare(R"SQL(INSERT INTO "Test" (name, secret) VALUES (?, ?))SQL");
     auto const names = std::vector<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
     auto const secrets = std::vector<int> { 42, 43, 44, 45 };
     stmt.ExecuteBatchSoft(names, secrets);
 
-    auto const totalRecords = stmt.ExecuteDirectSingle<int>("SELECT COUNT(*) FROM Test");
+    auto const totalRecords = stmt.ExecuteDirectSingle<int>("SELECT COUNT(*) FROM \"Test\"");
     REQUIRE(totalRecords.value_or(0) == 4);
 
     // clang-format off
