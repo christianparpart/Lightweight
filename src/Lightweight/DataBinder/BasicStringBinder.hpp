@@ -165,7 +165,7 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
                 auto const len = std::cmp_greater_equal(*indicator, bufferSize) || *indicator == SQL_NO_TOTAL
                                      ? bufferSize - 1
                                      : *indicator;
-                StringTraits::Resize(result, len);
+                StringTraits::Resize(result, len / sizeof(decltype(StringTraits::Data(result)[0])));
             }
             else
                 StringTraits::Resize(result, 0);
