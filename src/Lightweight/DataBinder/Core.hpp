@@ -63,6 +63,63 @@ struct SqlBasicStringOperations;
 
 // -----------------------------------------------------------------------------------------------
 
+namespace detail
+{
+
+// clang-format off
+template <typename T>
+concept HasGetStringAndGetLength = requires(T const& t) {
+    { t.GetLength() } -> std::same_as<int>;
+    { t.GetString() } -> std::same_as<char const*>;
+};
+
+template <typename T>
+concept HasGetStringAndLength = requires(T const& t)
+{
+    { t.Length() } -> std::same_as<int>;
+    { t.GetString() } -> std::same_as<char const*>;
+};
+// clang-format on
+
+template <typename>
+struct SqlViewHelper;
+
+template <typename T>
+concept HasSqlViewHelper = requires(T const& t) {
+    { SqlViewHelper<T>::View(t) } -> std::convertible_to<std::string_view>;
+};
+
+template <typename CharT>
+struct SqlViewHelper<std::basic_string<CharT>>
+{
+    static LIGHTWEIGHT_FORCE_INLINE std::basic_string_view<CharT> View(std::basic_string<CharT> const& str) noexcept
+    {
+        return { str.data(), str.size() };
+    }
+};
+
+template <detail::HasGetStringAndGetLength CStringLike>
+struct SqlViewHelper<CStringLike>
+{
+    static LIGHTWEIGHT_FORCE_INLINE std::string_view View(CStringLike const& str) noexcept
+    {
+        return { str.GetString(), static_cast<size_t>(str.GetLength()) };
+    }
+};
+
+template <detail::HasGetStringAndLength StringLike>
+struct SqlViewHelper<StringLike>
+{
+    static LIGHTWEIGHT_FORCE_INLINE std::string_view View(StringLike const& str) noexcept
+    {
+        return { str.GetString(), static_cast<size_t>(str.Length()) };
+    }
+};
+
+} // namespace detail
+
+// -----------------------------------------------------------------------------------------------
+
 template <typename T>
 concept SqlInputParameterBinder =
     requires(SQLHSTMT hStmt, SQLUSMALLINT column, T const& value, SqlDataBinderCallback& cb) {

@@ -42,19 +42,28 @@ using WideStringView = std::basic_string_view<WideChar>;
     #define WTEXT(x) (L##x)
 #endif
 
-template <typename WideStringT>
-    requires(std::same_as<WideStringT, WideString> || std::same_as<WideStringT, WideStringView>)
-std::ostream& operator<<(std::ostream& os, WideStringT const& str)
+namespace std
 {
+
+// Add support for std::basic_string<WideChar> and std::basic_string_view<WideChar> to std::ostream,
+// so that we can get them pretty-printed in REQUIRE() and CHECK() macros.
+
+template <typename WideStringT>
+    requires(same_as<WideStringT, WideString> || same_as<WideStringT, WideStringView>)
+ostream& operator<<(ostream& os, WideStringT const& str)
+{
+    auto constexpr BitsPerChar = sizeof(typename WideStringT::value_type) * 8;
     auto const u8String = ToUtf8(str);
-    return os << "length: " << str.size() << ", characters: " << '"'
-              << std::string_view((char const*) u8String.data(), u8String.size()) << '"';
+    return os << "UTF-" << BitsPerChar << '{' << "length: " << str.size() << ", characters: " << '"'
+              << string_view((char const*) u8String.data(), u8String.size()) << '"' << '}';
 }
 
-std::ostream& operator<<(std::ostream& os, SqlGuid const& guid)
+ostream& operator<<(ostream& os, SqlGuid const& guid)
 {
-    return os << std::format("SqlGuid({})", guid);
+    return os << format("SqlGuid({})", guid);
 }
+
+} // namespace std
 
 using namespace std::string_view_literals;
 
@@ -1204,20 +1213,16 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
 {
     auto stmt = SqlStatement {};
 
-    if (stmt.Connection().ServerType() == SqlServerType::POSTGRESQL)
-    {
-        WARN("PostgreSQL does not support UCS-2 (UTF-16) encoding. Skipping test.");
-        // TODO: figure out how to provide auto-re-encoding UTF-16 to UTF-8 for PostgreSQL.
-        return;
-    }
-
     if (stmt.Connection().ServerType() == SqlServerType::SQLITE)
         // SQLite does UTF-8 by default, so we need to switch to UTF-16
         stmt.ExecuteDirect("PRAGMA encoding = 'UTF-16'");
 
-    stmt.ExecuteDirect("DROP TABLE IF EXISTS Test");
-
-    stmt.ExecuteDirect("CREATE TABLE Test (Value NVARCHAR(50) NOT NULL)");
+    // Create table with Unicode column.
+    // Mind, for PostgreSQL, we need to use VARCHAR instead of NVARCHAR,
+    // because supports Unicode only via UTF-8.
+    stmt.ExecuteDirect(
+        std::format("CREATE TABLE Test (Value {}(50) NOT NULL)",
+                    stmt.Connection().ServerType() == SqlServerType::POSTGRESQL ? "VARCHAR" : "NVARCHAR"));
 
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
 

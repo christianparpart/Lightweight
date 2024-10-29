@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core.hpp"
 #include "../SqlLogger.hpp"
 #include "MFCStringLike.hpp"
 #include "Primitives.hpp"
@@ -17,9 +18,6 @@
 #include <print>
 #include <variant>
 
-template <typename>
-struct SqlViewHelper;
-
 namespace detail
 {
 template <class... Ts>
@@ -31,55 +29,7 @@ struct overloaded: Ts... // NOLINT(readability-identifier-naming)
 template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-// clang-format off
-template <typename T>
-concept HasGetStringAndGetLength = requires(T const& t) {
-    { t.GetLength() } -> std::same_as<int>;
-    { t.GetString() } -> std::same_as<char const*>;
-};
-
-template <typename T>
-concept HasGetStringAndLength = requires(T const& t)
-{
-    { t.Length() } -> std::same_as<int>;
-    { t.GetString() } -> std::same_as<char const*>;
-};
-
-template <typename T>
-concept HasSqlViewHelper = requires(T const& t)
-{
-    { SqlViewHelper<T>::GetView(t) } -> std::convertible_to<std::string_view>;
-};
-// clang-format on
-
 } // namespace detail
-
-template <>
-struct SqlViewHelper<std::string>
-{
-    static std::string_view GetView(std::string const& str) noexcept
-    {
-        return { str.data(), str.size() };
-    }
-};
-
-template <detail::HasGetStringAndGetLength CStringLike>
-struct SqlViewHelper<CStringLike>
-{
-    static std::string_view GetView(CStringLike const& str) noexcept
-    {
-        return { str.GetString(), static_cast<size_t>(str.GetLength()) };
-    }
-};
-
-template <detail::HasGetStringAndLength StringLike>
-struct SqlViewHelper<StringLike>
-{
-    static std::string_view GetView(StringLike const& str) noexcept
-    {
-        return { str.GetString(), static_cast<size_t>(str.Length()) };
-    }
-};
 
 struct SqlVariant
 {
@@ -134,7 +84,7 @@ struct SqlVariant
     // Construct from an string-like object that implements an SqlViewHelper<>.
     template <detail::HasSqlViewHelper StringViewLike>
     LIGHTWEIGHT_FORCE_INLINE explicit SqlVariant(StringViewLike const* newValue):
-        value { SqlViewHelper<std::remove_cv_t<decltype(*newValue)>>::GetView(*newValue) }
+        value { detail::SqlViewHelper<std::remove_cv_t<decltype(*newValue)>>::View(*newValue) }
     {
     }
 
