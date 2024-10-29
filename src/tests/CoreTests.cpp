@@ -1414,30 +1414,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder]")
 {
     auto stmt = SqlStatement {};
 
-    // TODO(pr) move UUID PK determination to SqlTraits
-    auto const sqlServerType = stmt.Connection().ServerType();
-    auto const sqlGuidPrimaryKeyColumnType = [&]() -> std::string_view {
-        switch (sqlServerType)
-        {
-            case SqlServerType::MICROSOFT_SQL:
-                return "UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID()"sv;
-            case SqlServerType::POSTGRESQL:
-                return "UUID PRIMARY KEY DEFAULT (gen_random_uuid())"sv;
-            case SqlServerType::SQLITE:
-                return "GUID PRIMARY KEY"sv;
-            case SqlServerType::ORACLE:
-                return "RAW(16) PRIMARY KEY DEFAULT SYS_GUID()"sv;
-            case SqlServerType::MYSQL:
-                // NB: MySQL supports UUID(), BIN_TO_UUID(), and UUID_TO_BIN() functions since MySQL 8.0, which is ok.
-                return "BINARY(16) PRIMARY KEY DEFAULT UUID_TO_BIN(UUID())"sv;
-            case SqlServerType::UNKNOWN:
-                return "BINARY(16) PRIMARY KEY"sv;
-        }
-        std::unreachable();
-    }();
-
-    stmt.ExecuteDirect("DROP TABLE IF EXISTS Test");
-    stmt.ExecuteDirect(std::format("CREATE TABLE Test (id {}, name VARCHAR(50))", sqlGuidPrimaryKeyColumnType));
+    stmt.ExecuteDirect(std::format("CREATE TABLE Test (id {}, name VARCHAR(50))",
+                                   stmt.Connection().Traits().PrimaryKeyGuidColumnType));
 
     auto const expectedGuid = SqlGuid::Create();
 
