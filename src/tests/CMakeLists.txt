@@ -12,12 +12,11 @@ endif()
 
 target_link_libraries(LightweightTest PRIVATE ${TEST_LIBRARIES})
 
-set(SOURCE_FILES CoreTests.cpp UnicodeConverterTests.cpp)
-
-if(LIGHTWEIGHT_ORM)
-    target_compile_definitions(LightweightTest PRIVATE LIGHTWEIGHT_ORM)
-    list(APPEND SOURCE_FILES ModelTests.cpp ModelAssociationsTests.cpp)
-endif()
+set(SOURCE_FILES
+    CoreTests.cpp
+    QueryBuilderTests.cpp
+    UnicodeConverterTests.cpp
+)
 
 target_sources(LightweightTest PRIVATE ${SOURCE_FILES})
 

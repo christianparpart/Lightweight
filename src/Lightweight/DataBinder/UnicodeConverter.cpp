@@ -4,9 +4,8 @@ std::u8string ToUtf8(std::u32string_view u32InputString)
 {
     std::u8string u8String;
     u8String.reserve(u32InputString.size() * 4);
-    detail::UnicodeConverter<char8_t> converter;
     for (auto const c32: u32InputString)
-        converter.Convert(c32, std::back_inserter(u8String));
+        detail::UnicodeConverter<char8_t>::Convert(c32, std::back_inserter(u8String));
     return u8String;
 }
 
@@ -27,21 +26,18 @@ std::u8string ToUtf8(std::u16string_view u16InputString)
         else if (c16 >= 0xDC00 && c16 < 0xE000)
         {
             codePoint |= c16 & 0x3FF;
-            detail::UnicodeConverter<char8_t> converter;
-            converter.Convert(codePoint + 0x10000, std::back_inserter(u8String));
+            detail::UnicodeConverter<char8_t>::Convert(codePoint + 0x10000, std::back_inserter(u8String));
             codePoint = 0;
             codeUnits = 0;
         }
         else if (codeUnits == 0)
         {
-            detail::UnicodeConverter<char8_t> converter;
-            converter.Convert(c16, std::back_inserter(u8String));
+            detail::UnicodeConverter<char8_t>::Convert(c16, std::back_inserter(u8String));
         }
         else
         {
             codePoint |= c16 & 0x3FF;
-            detail::UnicodeConverter<char8_t> converter;
-            converter.Convert(codePoint + 0x10000, std::back_inserter(u8String));
+            detail::UnicodeConverter<char8_t>::Convert(codePoint + 0x10000, std::back_inserter(u8String));
             codePoint = 0;
             codeUnits = 0;
         }
@@ -66,8 +62,7 @@ std::u16string ToUtf16(std::u8string_view u8InputString)
             --codeUnits;
             if (codeUnits == 0)
             {
-                detail::UnicodeConverter<char16_t> converter;
-                converter.Convert(codePoint, std::back_inserter(u16String));
+                detail::UnicodeConverter<char16_t>::Convert(codePoint, std::back_inserter(u16String));
                 codePoint = 0;
             }
         }

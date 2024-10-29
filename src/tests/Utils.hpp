@@ -6,10 +6,6 @@
     #include <Windows.h>
 #endif
 
-#if defined(LIGHTWEIGHT_ORM)
-    #include "../Lightweight/Model/All.hpp"
-#endif
-
 #include "../Lightweight/SqlConnectInfo.hpp"
 #include "../Lightweight/SqlConnection.hpp"
 #include "../Lightweight/SqlDataBinder.hpp"
@@ -34,6 +30,40 @@
 #include <sqlext.h>
 #include <sqlspi.h>
 #include <sqltypes.h>
+
+// NOTE: I've done this preprocessor stuff only to have a single test for UTF-16 (UCS-2) regardless of platform.
+using WideChar = std::conditional_t<sizeof(wchar_t) == 2, wchar_t, char16_t>;
+using WideString = std::basic_string<WideChar>;
+using WideStringView = std::basic_string_view<WideChar>;
+
+#if !defined(_WIN32)
+    #define WTEXT(x) (u##x)
+#else
+    #define WTEXT(x) (L##x)
+#endif
+
+namespace std
+{
+
+// Add support for std::basic_string<WideChar> and std::basic_string_view<WideChar> to std::ostream,
+// so that we can get them pretty-printed in REQUIRE() and CHECK() macros.
+
+template <typename WideStringT>
+    requires(same_as<WideStringT, WideString> || same_as<WideStringT, WideStringView>)
+ostream& operator<<(ostream& os, WideStringT const& str)
+{
+    auto constexpr BitsPerChar = sizeof(typename WideStringT::value_type) * 8;
+    auto const u8String = ToUtf8(str);
+    return os << "UTF-" << BitsPerChar << '{' << "length: " << str.size() << ", characters: " << '"'
+              << string_view((char const*) u8String.data(), u8String.size()) << '"' << '}';
+}
+
+inline ostream& operator<<(ostream& os, SqlGuid const& guid)
+{
+    return os << format("SqlGuid({})", guid);
+}
+
+} // namespace std
 
 // Refer to an in-memory SQLite database (and assuming the sqliteodbc driver is installed)
 // See:
@@ -98,10 +128,6 @@ class SqlTestFixture
         {
             if (argv[i] == "--trace-sql"sv)
                 SqlLogger::SetLogger(SqlLogger::TraceLogger());
-#if defined(LIGHTWEIGHT_ORM)
-            else if (argv[i] == "--trace-model"sv)
-                Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
-#endif
             else if (argv[i] == "--help"sv || argv[i] == "-h"sv)
             {
                 std::println("{} [--trace-sql] [--trace-model] [[--] [Catch2 flags ...]]", argv[0]);
@@ -184,16 +210,6 @@ class SqlTestFixture
 
     virtual ~SqlTestFixture() = default;
 
-#if defined(LIGHTWEIGHT_ORM)
-    template <typename T>
-    void CreateModelTable()
-    {
-        auto const tableName = T().TableName();
-        m_createdTables.emplace_back(tableName);
-        T::CreateTable();
-    }
-#endif
-
   private:
     static std::string SanitizePwd(std::string_view input)
     {
@@ -260,18 +276,6 @@ class SqlTestFixture
 };
 
 // {{{ ostream support for Lightweight, for debugging purposes
-#if defined(LIGHTWEIGHT_ORM)
-inline std::ostream& operator<<(std::ostream& os, Model::RecordId value)
-{
-    return os << "ModelId { " << value.value << " }";
-}
-
-inline std::ostream& operator<<(std::ostream& os, Model::AbstractRecord const& value)
-{
-    return os << std::format("{}", value);
-}
-#endif
-
 inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
 {
     return os << std::format("SqlTrimmedString {{ '{}' }}", value);
@@ -319,16 +323,60 @@ inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, PostOp> c
         return os << std::format("SqlTrimmedFixedString<{}> {{ '{}' }}", N, value.data());
 }
 
-#if defined(LIGHTWEIGHT_ORM)
-template <typename T,
-          SQLSMALLINT TheTableColumnIndex,
-          Model::StringLiteral TheColumnName,
-          Model::FieldValueRequirement TheRequirement>
-inline std::ostream& operator<<(std::ostream& os,
-                                Model::Field<T, TheTableColumnIndex, TheColumnName, TheRequirement> const& field)
-{
-    return os << std::format("Field<{}:{}: {}>", TheTableColumnIndex, TheColumnName.value, field.Value());
-}
-#endif
-
 // }}}
+
+inline void CreateEmployeesTable(SqlStatement& stmt,
+                                 bool quoted = false,
+                                 std::source_location sourceLocation = std::source_location::current())
+{
+    if (quoted)
+        stmt.ExecuteDirect(std::format(R"SQL(CREATE TABLE "Employees" (
+                                                         "EmployeeID" {},
+                                                         "FirstName" VARCHAR(50) NOT NULL,
+                                                         "LastName" VARCHAR(50),
+                                                         "Salary" INT NOT NULL
+                                                     );
+                                                    )SQL",
+                                       stmt.Connection().Traits().PrimaryKeyAutoIncrement),
+                           sourceLocation);
+    else
+        stmt.ExecuteDirect(std::format(R"SQL(CREATE TABLE Employees (
+                                                         EmployeeID {},
+                                                         FirstName VARCHAR(50) NOT NULL,
+                                                         LastName VARCHAR(50),
+                                                         Salary INT NOT NULL
+                                                     );
+                                                    )SQL",
+                                       stmt.Connection().Traits().PrimaryKeyAutoIncrement),
+                           sourceLocation);
+}
+
+inline void CreateLargeTable(SqlStatement& stmt, bool quote = false)
+{
+    std::stringstream sqlQueryStr;
+    auto const quoted = [quote](auto&& str) {
+        return quote ? std::format("\"{}\"", str) : str;
+    };
+    sqlQueryStr << "CREATE TABLE " << quoted("LargeTable") << " (\n";
+    for (char c = 'A'; c <= 'Z'; ++c)
+    {
+        sqlQueryStr << "    " << quoted(std::string(1, c)) << " VARCHAR(50) NULL";
+        if (c != 'Z')
+            sqlQueryStr << ",";
+        sqlQueryStr << "\n";
+    }
+    sqlQueryStr << ")\n";
+
+    stmt.ExecuteDirect(sqlQueryStr.str());
+}
+
+inline void FillEmployeesTable(SqlStatement& stmt, bool quoted = false)
+{
+    if (quoted)
+        stmt.Prepare(R"(INSERT INTO "Employees" ("FirstName", "LastName", "Salary") VALUES (?, ?, ?))");
+    else
+        stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    stmt.Execute("Alice", "Smith", 50'000);
+    stmt.Execute("Bob", "Johnson", 60'000);
+    stmt.Execute("Charlie", "Brown", 70'000);
+}

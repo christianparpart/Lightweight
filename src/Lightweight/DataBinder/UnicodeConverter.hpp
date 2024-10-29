@@ -20,7 +20,7 @@ struct LIGHTWEIGHT_API UnicodeConverter<char8_t>
 {
     // Converts a UTF-32 code point to one to four UTF-8 code units.
     template <typename OutputIterator>
-    constexpr OutputIterator Convert(char32_t input, OutputIterator output) noexcept
+    static constexpr OutputIterator Convert(char32_t input, OutputIterator output) noexcept
     {
         if (input <= 0x7F)
         {
@@ -53,7 +53,7 @@ struct LIGHTWEIGHT_API UnicodeConverter<char16_t>
 {
     // Converts a UTF-32 code point to one or two UTF-16 code units.
     template <typename OutputIterator>
-    constexpr OutputIterator Convert(char32_t input, OutputIterator output) noexcept
+    static constexpr OutputIterator Convert(char32_t input, OutputIterator output) noexcept
     {
         if (input < 0xD800) // [0x0000 .. 0xD7FF]
         {
@@ -88,9 +88,17 @@ LIGHTWEIGHT_API std::u8string ToUtf8(std::u32string_view u32InputString);
 // Converts from UTF-16 to UTF-8.
 LIGHTWEIGHT_API std::u8string ToUtf8(std::u16string_view u16InputString);
 
+// Converts from UTF-16 (as wchar_t) to UTF-8.
+template <typename T>
+    requires(std::same_as<T, wchar_t> && sizeof(wchar_t) == 2)
+inline LIGHTWEIGHT_FORCE_INLINE std::u8string ToUtf8(std::basic_string_view<T> u16InputString)
+{
+    return ToUtf8(std::u16string_view(reinterpret_cast<const char16_t*>(u16InputString.data()), u16InputString.size()));
+}
+
 // Converts from UTF-32 to UTF-16.
 template <typename T>
-    requires std::is_same_v<T, char32_t> || (std::is_same_v<T, wchar_t> && sizeof(wchar_t) == 4)
+    requires std::same_as<T, char32_t> || (std::same_as<T, wchar_t> && sizeof(wchar_t) == 4)
 std::u16string ToUtf16(const std::basic_string_view<T> u32InputString)
 {
     std::u16string u16OutputString;

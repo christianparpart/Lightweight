@@ -132,7 +132,7 @@ setup_postgres() {
 
     if [ -n "$GITHUB_OUTPUT" ]; then
         echo "Exporting ODBC_CONNECTION_INFO..."
-        echo "ODBC_CONNECTION_STRING=Driver={PostgreSQL ANSI};Server=localhost;Port=5432;Uid=$DB_USER;Pwd=$DB_PASSWORD;Database=$DB_NAME" >> "${GITHUB_OUTPUT}"
+        echo "ODBC_CONNECTION_STRING=Driver={PostgreSQL Unicode};Server=localhost;Port=5432;Uid=$DB_USER;Pwd=$DB_PASSWORD;Database=$DB_NAME" >> "${GITHUB_OUTPUT}"
     fi
 }
 

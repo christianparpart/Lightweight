@@ -6,6 +6,7 @@
 #include "../SqlDataBinder.hpp"
 #include "../SqlQueryFormatter.hpp"
 
+#include <concepts>
 #include <ranges>
 
 // SqlWildcardType is a placeholder for an explicit wildcard input parameter in a SQL query.
@@ -215,9 +216,8 @@ class [[nodiscard]] SqlWhereClauseBuilder
     void AppendWhereJunctor();
 
     template <typename ColumnName>
-        requires(std::is_same_v<ColumnName, SqlQualifiedTableColumnName>
-                 || std::is_convertible_v<ColumnName, std::string_view>
-                 || std::is_convertible_v<ColumnName, std::string>)
+        requires(std::same_as<ColumnName, SqlQualifiedTableColumnName>
+                 || std::convertible_to<ColumnName, std::string_view> || std::convertible_to<ColumnName, std::string>)
     void AppendColumnName(ColumnName const& columnName);
 
     enum class JoinType : uint8_t
@@ -590,8 +590,8 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlWhereClauseBuilder<Derived>::AppendWhere
 
 template <typename Derived>
 template <typename ColumnName>
-    requires(std::is_same_v<ColumnName, SqlQualifiedTableColumnName>
-             || std::is_convertible_v<ColumnName, std::string_view> || std::is_convertible_v<ColumnName, std::string>)
+    requires(std::same_as<ColumnName, SqlQualifiedTableColumnName> || std::convertible_to<ColumnName, std::string_view>
+             || std::convertible_to<ColumnName, std::string>)
 inline LIGHTWEIGHT_FORCE_INLINE void SqlWhereClauseBuilder<Derived>::AppendColumnName(ColumnName const& columnName)
 {
     SearchCondition().condition += detail::MakeSqlColumnName(columnName);

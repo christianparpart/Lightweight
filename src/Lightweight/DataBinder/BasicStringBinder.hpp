@@ -3,7 +3,9 @@
 #pragma once
 
 #include "Core.hpp"
+#include "UnicodeConverter.hpp"
 
+#include <memory>
 #include <utility>
 
 template <SqlBasicStringOperationsConcept StringType>
@@ -137,13 +139,38 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,
                                     ValueType const& value,
-                                    SqlDataBinderCallback& /*cb*/) noexcept
+                                    SqlDataBinderCallback& cb) noexcept
     {
-        using CharType = decltype(StringTraits::Data(&value)[0]);
-        auto const* data = StringTraits::Data(&value);
-        auto const sizeInBytes = StringTraits::Size(&value) * sizeof(CharType);
-        return SQLBindParameter(
-            stmt, column, SQL_PARAM_INPUT, CType, SqlType, sizeInBytes, 0, (SQLPOINTER) data, 0, nullptr);
+        switch (cb.ServerType())
+        {
+            case SqlServerType::POSTGRESQL: {
+                // PostgreSQL only supports UTF-8 as Unicode encoding
+                auto u8String = std::make_shared<std::u8string>(ToUtf8(detail::SqlViewHelper<ValueType>::View(value)));
+                cb.PlanPostExecuteCallback([u8String = u8String]() {}); // Keep the string alive
+                return SQLBindParameter(stmt,
+                                        column,
+                                        SQL_PARAM_INPUT,
+                                        SQL_C_CHAR,
+                                        SQL_VARCHAR,
+                                        u8String->size(),
+                                        0,
+                                        (SQLPOINTER) u8String->data(),
+                                        0,
+                                        nullptr);
+            }
+            case SqlServerType::ORACLE:
+            case SqlServerType::MYSQL:
+            case SqlServerType::SQLITE: // We assume UTF-16 for SQLite
+            case SqlServerType::MICROSOFT_SQL:
+            case SqlServerType::UNKNOWN: {
+                using CharType = StringTraits::CharType;
+                auto const* data = StringTraits::Data(&value);
+                auto const sizeInBytes = StringTraits::Size(&value) * sizeof(CharType);
+                return SQLBindParameter(
+                    stmt, column, SQL_PARAM_INPUT, CType, SqlType, sizeInBytes, 0, (SQLPOINTER) data, 0, nullptr);
+            }
+        }
+        std::unreachable();
     }
 
     static SQLRETURN OutputColumn(

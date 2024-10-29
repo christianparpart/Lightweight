@@ -196,7 +196,6 @@ SQLRETURN SqlDataBinder<SqlGuid>::GetColumn(
         case SqlServerType::POSTGRESQL:
         case SqlServerType::UNKNOWN:
             return SQLGetData(stmt, column, SQL_C_GUID, result->data, sizeof(result->data), indicator);
-            return SQL_ERROR;
     }
     std::unreachable();
 }

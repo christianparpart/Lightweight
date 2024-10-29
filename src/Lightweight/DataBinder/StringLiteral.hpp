@@ -4,6 +4,8 @@
 
 #include "Core.hpp"
 
+#include <concepts>
+
 template <std::size_t N>
 struct SqlDataBinder<char[N]>
 {
@@ -18,7 +20,7 @@ struct SqlDataBinder<char[N]>
 };
 
 template <typename T, std::size_t N>
-    requires(std::is_same_v<T, char16_t> || (std::is_same_v<T, wchar_t> && sizeof(wchar_t) == 2))
+    requires(std::same_as<T, char16_t> || (std::same_as<T, wchar_t> && sizeof(wchar_t) == 2))
 struct SqlDataBinder<T[N]>
 {
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
