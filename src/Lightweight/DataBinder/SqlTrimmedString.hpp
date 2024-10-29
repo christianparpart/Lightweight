@@ -21,7 +21,7 @@ struct SqlTrimmedString
 template <>
 struct std::formatter<SqlTrimmedString>: std::formatter<std::string>
 {
-    auto format(SqlTrimmedString const& text, format_context& ctx) const -> format_context::iterator
+    LIGHTWEIGHT_API auto format(SqlTrimmedString const& text, format_context& ctx) const -> format_context::iterator
     {
         return std::formatter<std::string>::format(text.value, ctx);
     }
@@ -48,19 +48,19 @@ struct SqlDataBinder<SqlTrimmedString>
         StringTraits::Resize(boundOutputString, static_cast<SQLLEN>(n));
     }
 
-    static SQLRETURN InputParameter(SQLHSTMT stmt,
-                                    SQLUSMALLINT column,
-                                    SqlTrimmedString const& value,
-                                    SqlDataBinderCallback& cb) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
+                                                             SQLUSMALLINT column,
+                                                             SqlTrimmedString const& value,
+                                                             SqlDataBinderCallback& cb) noexcept
     {
         return SqlDataBinder<InnerStringType>::InputParameter(stmt, column, value.value, cb);
     }
 
-    static SQLRETURN OutputColumn(SQLHSTMT stmt,
-                                  SQLUSMALLINT column,
-                                  SqlTrimmedString* result,
-                                  SQLLEN* indicator,
-                                  SqlDataBinderCallback& cb) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                                           SQLUSMALLINT column,
+                                                           SqlTrimmedString* result,
+                                                           SQLLEN* indicator,
+                                                           SqlDataBinderCallback& cb) noexcept
     {
         auto* boundOutputString = &result->value;
         cb.PlanPostProcessOutputColumn([indicator, boundOutputString]() {
@@ -79,11 +79,11 @@ struct SqlDataBinder<SqlTrimmedString>
                           indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt,
-                               SQLUSMALLINT column,
-                               SqlTrimmedString* result,
-                               SQLLEN* indicator,
-                               SqlDataBinderCallback const& cb) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt,
+                                                        SQLUSMALLINT column,
+                                                        SqlTrimmedString* result,
+                                                        SQLLEN* indicator,
+                                                        SqlDataBinderCallback const& cb) noexcept
     {
         auto const returnCode = SqlDataBinder<InnerStringType>::GetColumn(stmt, column, &result->value, indicator, cb);
         TrimRight(&result->value, *indicator);

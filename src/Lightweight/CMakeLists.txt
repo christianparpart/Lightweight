@@ -61,6 +61,7 @@ set(HEADER_FILES
 
 set(SOURCE_FILES
     DataBinder/SqlGuid.cpp
+    DataBinder/SqlVariant.cpp
     DataBinder/UnicodeConverter.cpp
     SqlConnectInfo.cpp
     SqlConnection.cpp

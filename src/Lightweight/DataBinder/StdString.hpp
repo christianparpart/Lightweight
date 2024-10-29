@@ -17,27 +17,27 @@ struct SqlBasicStringOperations<std::basic_string<CharT>>
     using CharType = CharT;
     using StringType = std::basic_string<CharT>;
 
-    static CharType const* Data(StringType const* str) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE CharType const* Data(StringType const* str) noexcept
     {
         return str->data();
     }
 
-    static CharType* Data(StringType* str) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE CharType* Data(StringType* str) noexcept
     {
         return str->data();
     }
 
-    static SQLULEN Size(StringType const* str) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLULEN Size(StringType const* str) noexcept
     {
         return str->size();
     }
 
-    static void Clear(StringType* str) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE void Clear(StringType* str) noexcept
     {
         str->clear();
     }
 
-    static void Reserve(StringType* str, size_t capacity) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE void Reserve(StringType* str, size_t capacity) noexcept
     {
         // std::basic_string<> tries to defer the allocation as long as possible.
         // So we first tell StringType how much to reserve and then resize it to the *actually* reserved
@@ -46,7 +46,7 @@ struct SqlBasicStringOperations<std::basic_string<CharT>>
         str->resize(str->capacity());
     }
 
-    static void Resize(StringType* str, SQLLEN indicator) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE void Resize(StringType* str, SQLLEN indicator) noexcept
     {
         if (indicator > 0)
             str->resize(indicator);
