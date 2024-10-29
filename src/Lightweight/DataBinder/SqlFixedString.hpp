@@ -152,7 +152,8 @@ class SqlFixedString
     // clang-format on
 
     template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
-    LIGHTWEIGHT_FORCE_INLINE std::weak_ordering operator<=>(SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE std::weak_ordering operator<=>(
+        SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
     {
         if ((void*) this != (void*) &other)
         {
@@ -166,13 +167,15 @@ class SqlFixedString
     }
 
     template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
-    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator==(SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator==(
+        SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
     {
         return (*this <=> other) == std::weak_ordering::equivalent;
     }
 
     template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
-    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator!=(SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator!=(
+        SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
     {
         return !(*this == other);
     }
@@ -205,7 +208,10 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
         boundOutputString->setsize(n);
     }
 
-    LIGHTWEIGHT_FORCE_INLINE static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, ValueType const& value) noexcept
+    LIGHTWEIGHT_FORCE_INLINE static SQLRETURN InputParameter(SQLHSTMT stmt,
+                                                             SQLUSMALLINT column,
+                                                             ValueType const& value,
+                                                             SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,
@@ -241,7 +247,11 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
             stmt, column, SQL_C_CHAR, (SQLPOINTER) result->data(), (SQLLEN) result->capacity(), indicator);
     }
 
-    LIGHTWEIGHT_FORCE_INLINE static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator) noexcept
+    LIGHTWEIGHT_FORCE_INLINE static SQLRETURN GetColumn(SQLHSTMT stmt,
+                                                        SQLUSMALLINT column,
+                                                        ValueType* result,
+                                                        SQLLEN* indicator,
+                                                        SqlDataBinderCallback const& /*cb*/) noexcept
     {
         *indicator = 0;
         const SQLRETURN rv = SQLGetData(stmt, column, SQL_C_CHAR, result->data(), result->capacity(), indicator);

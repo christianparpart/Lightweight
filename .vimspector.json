@@ -1,7 +1,7 @@
 {
     "$schema": "https://puremourning.github.io/vimspector/schema/vimspector.schema.json#",
     "configurations": {
-        "CoreTest": {
+        "CoreTest - SQLite": {
             "adapter": "vscode-cpptools",
             "configuration": {
                 "request": "launch",
@@ -13,6 +13,32 @@
                     {
                         "name": "ODBC_CONNECTION_STRING",
                         "value": "DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost;PORT=1433;UID=SA;PWD=Super1Secret;TrustServerCertificate=yes;DATABASE=master"
+                    }
+                ],
+                "cwd": "${workspaceRoot}",
+                "externalConsole": true,
+                "stopAtEntry": false,
+                "MIMode": "gdb"
+            },
+            "breakpoints": {
+                "exception": {
+                    "caught": "Y",
+                    "uncaught": "Y"
+                }
+            }
+        },
+        "CoreTest - Postgres": {
+            "adapter": "vscode-cpptools",
+            "configuration": {
+                "request": "launch",
+                "program": "${workspaceRoot}/out/build/linux-gcc-debug/src/tests/LightweightTest",
+                "args": [
+                    "SqlDataBinder: SqlGuid"
+                ],
+                "environment": [
+                    {
+                        "name": "ODBC_CONNECTION_STRING",
+                        "value": "Driver={PostgreSQL};Server=localhost;Port=5432;Uid=postgres;Pwd=Super1Secret.;Database=test"
                     }
                 ],
                 "cwd": "${workspaceRoot}",

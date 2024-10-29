@@ -16,7 +16,10 @@ constexpr auto SqlNullValue = SqlNullType {};
 template <>
 struct SqlDataBinder<SqlNullType>
 {
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlNullType const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
+                                                             SQLUSMALLINT column,
+                                                             SqlNullType const& value,
+                                                             SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,

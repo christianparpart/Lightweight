@@ -25,6 +25,7 @@ set(HEADER_FILES
     DataBinder/SqlDate.hpp
     DataBinder/SqlDateTime.hpp
     DataBinder/SqlFixedString.hpp
+    DataBinder/SqlGuid.hpp
     DataBinder/SqlNullValue.hpp
     DataBinder/SqlText.hpp
     DataBinder/SqlTime.hpp
@@ -59,6 +60,8 @@ set(HEADER_FILES
 )
 
 set(SOURCE_FILES
+    DataBinder/SqlGuid.cpp
+    DataBinder/SqlVariant.cpp
     DataBinder/UnicodeConverter.cpp
     SqlConnectInfo.cpp
     SqlConnection.cpp
@@ -119,6 +122,12 @@ else()
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_link_libraries(Lightweight PUBLIC stdc++exp) # GCC >= 14
+    endif()
+
+    # Find library libuuid via pkg-config, and if available, link against it
+    pkg_check_modules(UUID uuid)
+    if(UUID_FOUND)
+        target_link_libraries(Lightweight PUBLIC ${UUID_LDFLAGS})
     endif()
 endif()
 

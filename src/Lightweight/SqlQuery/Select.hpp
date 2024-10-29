@@ -10,11 +10,10 @@ enum class SqlResultOrdering : uint8_t
     DESCENDING
 };
 
-class [[nodiscard]] SqlSelectQueryBuilder final:
-    public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
+class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
 {
   public:
-    enum class SelectType: std::uint8_t
+    enum class SelectType : std::uint8_t
     {
         Undefined,
         Count,
@@ -71,17 +70,19 @@ class [[nodiscard]] SqlSelectQueryBuilder final:
     LIGHTWEIGHT_API SqlSelectQueryBuilder& Fields(std::vector<std::string_view> const& fieldNames);
 
     // Adds a sequence of columns from the given table to the SELECT clause.
-    LIGHTWEIGHT_API SqlSelectQueryBuilder& Fields(std::vector<std::string_view> const& fieldNames, std::string_view tableName);
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& Fields(std::vector<std::string_view> const& fieldNames,
+                                                  std::string_view tableName);
 
     // Adds a single column with an alias to the SELECT clause.
     LIGHTWEIGHT_API SqlSelectQueryBuilder& FieldAs(std::string_view const& fieldName, std::string_view const& alias);
 
     // Adds a single column with an alias to the SELECT clause.
-    LIGHTWEIGHT_API SqlSelectQueryBuilder& FieldAs(SqlQualifiedTableColumnName const& fieldName, std::string_view const& alias);
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& FieldAs(SqlQualifiedTableColumnName const& fieldName,
+                                                   std::string_view const& alias);
 
     // Constructs or extends a ORDER BY clause.
     LIGHTWEIGHT_API SqlSelectQueryBuilder& OrderBy(std::string_view columnName,
-                                   SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
+                                                   SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
 
     // Constructs or extends a GROUP BY clause.
     LIGHTWEIGHT_API SqlSelectQueryBuilder& GroupBy(std::string_view columnName);

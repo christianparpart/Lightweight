@@ -51,35 +51,35 @@ struct SqlTime
     SqlTime& operator=(SqlTime const&) noexcept = default;
     ~SqlTime() noexcept = default;
 
-    [[nodiscard]] native_type value() const noexcept
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE native_type value() const noexcept
     {
         return ConvertToNative(sqlValue);
     }
 
-    bool operator==(SqlTime const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE bool operator==(SqlTime const& other) const noexcept
     {
         return value().to_duration().count() == other.value().to_duration().count();
     }
 
-    bool operator!=(SqlTime const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE bool operator!=(SqlTime const& other) const noexcept
     {
         return !(*this == other);
     }
 
-    SqlTime(native_type value) noexcept:
+    LIGHTWEIGHT_FORCE_INLINE SqlTime(native_type value) noexcept:
         sqlValue { SqlTime::ConvertToSqlValue(value) }
     {
     }
 
-    SqlTime(std::chrono::hours hour,
-            std::chrono::minutes minute,
-            std::chrono::seconds second,
-            std::chrono::microseconds micros = {}) noexcept:
+    LIGHTWEIGHT_FORCE_INLINE SqlTime(std::chrono::hours hour,
+                                     std::chrono::minutes minute,
+                                     std::chrono::seconds second,
+                                     std::chrono::microseconds micros = {}) noexcept:
         SqlTime(native_type { hour + minute + second + micros })
     {
     }
 
-    static sql_type ConvertToSqlValue(native_type value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE sql_type ConvertToSqlValue(native_type value) noexcept
     {
         return sql_type {
             .hour = (SQLUSMALLINT) value.hours().count(),
@@ -91,7 +91,7 @@ struct SqlTime
         };
     }
 
-    static native_type ConvertToNative(sql_type const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE native_type ConvertToNative(sql_type const& value) noexcept
     {
         // clang-format off
         return native_type { std::chrono::hours { (int) value.hour }
@@ -109,7 +109,10 @@ struct SqlTime
 template <>
 struct SqlDataBinder<SqlTime>
 {
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlTime const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
+                                                             SQLUSMALLINT column,
+                                                             SqlTime const& value,
+                                                             SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,
@@ -123,13 +126,17 @@ struct SqlDataBinder<SqlTime>
                                 nullptr);
     }
 
-    static SQLRETURN OutputColumn(
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN OutputColumn(
         SQLHSTMT stmt, SQLUSMALLINT column, SqlTime* result, SQLLEN* indicator, SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlTime* result, SQLLEN* indicator) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt,
+                                                        SQLUSMALLINT column,
+                                                        SqlTime* result,
+                                                        SQLLEN* indicator,
+                                                        SqlDataBinderCallback const& /*cb*/) noexcept
     {
         return SQLGetData(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }

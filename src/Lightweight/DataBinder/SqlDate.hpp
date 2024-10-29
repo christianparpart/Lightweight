@@ -18,18 +18,18 @@ struct LIGHTWEIGHT_API SqlDate
     SqlDate& operator=(SqlDate const&) noexcept = default;
     ~SqlDate() noexcept = default;
 
-    [[nodiscard]] std::chrono::year_month_day value() const noexcept
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE std::chrono::year_month_day value() const noexcept
     {
         return ConvertToNative(sqlValue);
     }
 
-    bool operator==(SqlDate const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE bool operator==(SqlDate const& other) const noexcept
     {
         return sqlValue.year == other.sqlValue.year && sqlValue.month == other.sqlValue.month
                && sqlValue.day == other.sqlValue.day;
     }
 
-    bool operator!=(SqlDate const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE bool operator!=(SqlDate const& other) const noexcept
     {
         return !(*this == other);
     }
@@ -44,14 +44,14 @@ struct LIGHTWEIGHT_API SqlDate
     {
     }
 
-    static SqlDate Today() noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SqlDate Today() noexcept
     {
         return SqlDate { std::chrono::year_month_day {
             std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now()),
         } };
     }
 
-    static SQL_DATE_STRUCT ConvertToSqlValue(std::chrono::year_month_day value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQL_DATE_STRUCT ConvertToSqlValue(std::chrono::year_month_day value) noexcept
     {
         return SQL_DATE_STRUCT {
             .year = (SQLSMALLINT) (int) value.year(),
@@ -60,7 +60,7 @@ struct LIGHTWEIGHT_API SqlDate
         };
     }
 
-    static std::chrono::year_month_day ConvertToNative(SQL_DATE_STRUCT const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE std::chrono::year_month_day ConvertToNative(SQL_DATE_STRUCT const& value) noexcept
     {
         return std::chrono::year_month_day { std::chrono::year { value.year },
                                              std::chrono::month { static_cast<unsigned>(value.month) },
@@ -71,7 +71,10 @@ struct LIGHTWEIGHT_API SqlDate
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlDate>
 {
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, SqlDate const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
+                                                             SQLUSMALLINT column,
+                                                             SqlDate const& value,
+                                                             SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,
@@ -85,13 +88,17 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDate>
                                 nullptr);
     }
 
-    static SQLRETURN OutputColumn(
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN OutputColumn(
         SQLHSTMT stmt, SQLUSMALLINT column, SqlDate* result, SQLLEN* indicator, SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindCol(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, SqlDate* result, SQLLEN* indicator) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt,
+                                                        SQLUSMALLINT column,
+                                                        SqlDate* result,
+                                                        SQLLEN* indicator,
+                                                        SqlDataBinderCallback const& /*cb*/) noexcept
     {
         return SQLGetData(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), indicator);
     }

@@ -11,19 +11,22 @@ template <typename T>
 struct SqlDataBinder<std::optional<T>>
 {
     using OptionalValue = std::optional<T>;
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, OptionalValue const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
+                                                             SQLUSMALLINT column,
+                                                             OptionalValue const& value,
+                                                             SqlDataBinderCallback& cb) noexcept
     {
         if (value.has_value())
-            return SqlDataBinder<T>::InputParameter(stmt, column, *value);
+            return SqlDataBinder<T>::InputParameter(stmt, column, *value, cb);
         else
-            return SqlDataBinder<SqlNullType>::InputParameter(stmt, column, SqlNullValue);
+            return SqlDataBinder<SqlNullType>::InputParameter(stmt, column, SqlNullValue, cb);
     }
 
-    static SQLRETURN OutputColumn(SQLHSTMT stmt,
-                                  SQLUSMALLINT column,
-                                  OptionalValue* result,
-                                  SQLLEN* indicator,
-                                  SqlDataBinderCallback& cb) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                                           SQLUSMALLINT column,
+                                                           OptionalValue* result,
+                                                           SQLLEN* indicator,
+                                                           SqlDataBinderCallback& cb) noexcept
     {
         if (!result)
             return SQL_ERROR;
@@ -36,9 +39,13 @@ struct SqlDataBinder<std::optional<T>>
         return sqlReturn;
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, OptionalValue* result, SQLLEN* indicator) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt,
+                                                        SQLUSMALLINT column,
+                                                        OptionalValue* result,
+                                                        SQLLEN* indicator,
+                                                        SqlDataBinderCallback const& cb) noexcept
     {
-        auto const sqlReturn = SqlDataBinder<T>::GetColumn(stmt, column, &result->emplace(), indicator);
+        auto const sqlReturn = SqlDataBinder<T>::GetColumn(stmt, column, &result->emplace(), indicator, cb);
         if (indicator && *indicator == SQL_NULL_DATA)
             *result = std::nullopt;
         return sqlReturn;

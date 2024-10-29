@@ -34,6 +34,7 @@ class LIGHTWEIGHT_API SqlDataBinderCallback
 
     virtual void PlanPostExecuteCallback(std::function<void()>&&) = 0;
     virtual void PlanPostProcessOutputColumn(std::function<void()>&&) = 0;
+    [[nodiscard]] virtual SqlServerType ServerType() const noexcept = 0;
 };
 
 template <typename>
@@ -63,9 +64,10 @@ struct SqlBasicStringOperations;
 // -----------------------------------------------------------------------------------------------
 
 template <typename T>
-concept SqlInputParameterBinder = requires(SQLHSTMT hStmt, SQLUSMALLINT column, T const& value) {
-    { SqlDataBinder<T>::InputParameter(hStmt, column, value) } -> std::same_as<SQLRETURN>;
-};
+concept SqlInputParameterBinder =
+    requires(SQLHSTMT hStmt, SQLUSMALLINT column, T const& value, SqlDataBinderCallback& cb) {
+        { SqlDataBinder<T>::InputParameter(hStmt, column, value, cb) } -> std::same_as<SQLRETURN>;
+    };
 
 template <typename T>
 concept SqlOutputColumnBinder =
@@ -75,17 +77,18 @@ concept SqlOutputColumnBinder =
 
 template <typename T>
 concept SqlInputParameterBatchBinder =
-    requires(SQLHSTMT hStmt, SQLUSMALLINT column, std::ranges::range_value_t<T>* result) {
+    requires(SQLHSTMT hStmt, SQLUSMALLINT column, std::ranges::range_value_t<T>* result, SqlDataBinderCallback& cb) {
         {
             SqlDataBinder<std::ranges::range_value_t<T>>::InputParameter(
-                hStmt, column, std::declval<std::ranges::range_value_t<T>>())
+                hStmt, column, std::declval<std::ranges::range_value_t<T>>(), cb)
         } -> std::same_as<SQLRETURN>;
     };
 
 template <typename T>
-concept SqlGetColumnNativeType = requires(SQLHSTMT hStmt, SQLUSMALLINT column, T* result, SQLLEN* indicator) {
-    { SqlDataBinder<T>::GetColumn(hStmt, column, result, indicator) } -> std::same_as<SQLRETURN>;
-};
+concept SqlGetColumnNativeType =
+    requires(SQLHSTMT hStmt, SQLUSMALLINT column, T* result, SQLLEN* indicator, SqlDataBinderCallback const& cb) {
+        { SqlDataBinder<T>::GetColumn(hStmt, column, result, indicator, cb) } -> std::same_as<SQLRETURN>;
+    };
 
 // clang-format off
 template <typename StringType, typename CharType>

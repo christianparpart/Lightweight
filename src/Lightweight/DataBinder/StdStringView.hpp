@@ -14,7 +14,10 @@ struct SqlDataBinder<std::basic_string_view<CharT>>
     static constexpr SQLSMALLINT cType = sizeof(CharT) == 1 ? SQL_C_CHAR : SQL_C_WCHAR;
     static constexpr SQLSMALLINT sqlType = sizeof(CharT) == 1 ? SQL_VARCHAR : SQL_WVARCHAR;
 
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, std::basic_string_view<CharT> value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
+                                                             SQLUSMALLINT column,
+                                                             std::basic_string_view<CharT> value,
+                                                             SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(
             stmt, column, SQL_PARAM_INPUT, cType, sqlType, value.size(), 0, (SQLPOINTER) value.data(), 0, nullptr);

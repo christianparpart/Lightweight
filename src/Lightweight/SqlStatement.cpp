@@ -40,6 +40,11 @@ void SqlStatement::PlanPostProcessOutputColumn(std::function<void()>&& cb)
     m_data->postProcessOutputColumnCallbacks.emplace_back(std::move(cb));
 }
 
+SqlServerType SqlStatement::ServerType() const noexcept
+{
+    return m_connection->ServerType();
+}
+
 SqlStatement::SqlStatement():
     m_data { new Data {
         .ownedConnection = SqlConnection(),
@@ -80,6 +85,9 @@ void SqlStatement::Prepare(std::string_view query)
     // Closes the cursor if it is open
     RequireSuccess(SQLFreeStmt(m_hStmt, SQL_CLOSE));
 
+    // Unbinds the columns, if any
+    RequireSuccess(SQLFreeStmt(m_hStmt, SQL_UNBIND));
+
     // Prepares the statement
     RequireSuccess(SQLPrepareA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()));
     RequireSuccess(SQLNumParams(m_hStmt, &m_expectedParameterCount));
@@ -108,9 +116,10 @@ void SqlStatement::ExecuteWithVariants(std::vector<SqlVariant> const& args)
     SQLUSMALLINT i = 0;
     for (auto const& arg: args)
     {
-        if (arg.IsNull())
-            continue;
-        SqlDataBinder<SqlVariant>::InputParameter(m_hStmt, ++i, arg);
+        if (!arg.IsNull())
+            SqlDataBinder<SqlVariant>::InputParameter(m_hStmt, ++i, arg, *this);
+        else
+            SqlDataBinder<SqlNullType>::InputParameter(m_hStmt, ++i, SqlNullValue, *this);
     }
 
     RequireSuccess(SQLExecute(m_hStmt));

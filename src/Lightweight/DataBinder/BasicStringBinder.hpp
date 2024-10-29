@@ -12,7 +12,10 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
     using ValueType = StringType;
     using StringTraits = SqlBasicStringOperations<ValueType>;
 
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, ValueType const& value) noexcept
+    static SQLRETURN InputParameter(SQLHSTMT stmt,
+                                    SQLUSMALLINT column,
+                                    ValueType const& value,
+                                    SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,
@@ -68,7 +71,11 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
                           indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator) noexcept
+    static SQLRETURN GetColumn(SQLHSTMT stmt,
+                               SQLUSMALLINT column,
+                               ValueType* result,
+                               SQLLEN* indicator,
+                               SqlDataBinderCallback const& /*cb*/) noexcept
     {
         StringTraits::Reserve(result, 15);
         size_t writeIndex = 0;
@@ -127,7 +134,10 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
     static constexpr auto CType = SQL_C_WCHAR;
     static constexpr auto SqlType = SQL_WVARCHAR;
 
-    static SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, ValueType const& value) noexcept
+    static SQLRETURN InputParameter(SQLHSTMT stmt,
+                                    SQLUSMALLINT column,
+                                    ValueType const& value,
+                                    SqlDataBinderCallback& /*cb*/) noexcept
     {
         using CharType = decltype(StringTraits::Data(&value)[0]);
         auto const* data = StringTraits::Data(&value);
@@ -178,7 +188,11 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
                           indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator) noexcept
+    static SQLRETURN GetColumn(SQLHSTMT stmt,
+                               SQLUSMALLINT column,
+                               ValueType* result,
+                               SQLLEN* indicator,
+                               SqlDataBinderCallback const& /*cb*/) noexcept
     {
         using CharType = decltype(StringTraits::Data(result)[0]);
 
