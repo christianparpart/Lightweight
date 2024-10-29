@@ -6,10 +6,6 @@
     #include <Windows.h>
 #endif
 
-#if defined(LIGHTWEIGHT_ORM)
-    #include "../Lightweight/Model/All.hpp"
-#endif
-
 #include "../Lightweight/SqlConnectInfo.hpp"
 #include "../Lightweight/SqlConnection.hpp"
 #include "../Lightweight/SqlDataBinder.hpp"
@@ -98,10 +94,6 @@ class SqlTestFixture
         {
             if (argv[i] == "--trace-sql"sv)
                 SqlLogger::SetLogger(SqlLogger::TraceLogger());
-#if defined(LIGHTWEIGHT_ORM)
-            else if (argv[i] == "--trace-model"sv)
-                Model::QueryLogger::Set(Model::QueryLogger::StandardLogger());
-#endif
             else if (argv[i] == "--help"sv || argv[i] == "-h"sv)
             {
                 std::println("{} [--trace-sql] [--trace-model] [[--] [Catch2 flags ...]]", argv[0]);
@@ -184,16 +176,6 @@ class SqlTestFixture
 
     virtual ~SqlTestFixture() = default;
 
-#if defined(LIGHTWEIGHT_ORM)
-    template <typename T>
-    void CreateModelTable()
-    {
-        auto const tableName = T().TableName();
-        m_createdTables.emplace_back(tableName);
-        T::CreateTable();
-    }
-#endif
-
   private:
     static std::string SanitizePwd(std::string_view input)
     {
@@ -260,18 +242,6 @@ class SqlTestFixture
 };
 
 // {{{ ostream support for Lightweight, for debugging purposes
-#if defined(LIGHTWEIGHT_ORM)
-inline std::ostream& operator<<(std::ostream& os, Model::RecordId value)
-{
-    return os << "ModelId { " << value.value << " }";
-}
-
-inline std::ostream& operator<<(std::ostream& os, Model::AbstractRecord const& value)
-{
-    return os << std::format("{}", value);
-}
-#endif
-
 inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
 {
     return os << std::format("SqlTrimmedString {{ '{}' }}", value);
@@ -318,17 +288,5 @@ inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, PostOp> c
     if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
         return os << std::format("SqlTrimmedFixedString<{}> {{ '{}' }}", N, value.data());
 }
-
-#if defined(LIGHTWEIGHT_ORM)
-template <typename T,
-          SQLSMALLINT TheTableColumnIndex,
-          Model::StringLiteral TheColumnName,
-          Model::FieldValueRequirement TheRequirement>
-inline std::ostream& operator<<(std::ostream& os,
-                                Model::Field<T, TheTableColumnIndex, TheColumnName, TheRequirement> const& field)
-{
-    return os << std::format("Field<{}:{}: {}>", TheTableColumnIndex, TheColumnName.value, field.Value());
-}
-#endif
 
 // }}}
