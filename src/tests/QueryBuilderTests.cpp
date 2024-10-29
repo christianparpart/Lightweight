@@ -1,12 +1,14 @@
-#include "Utils.hpp"
+// SPDX-License-Identifier: Apache-2.0
 
-#include <functional>
-#include <source_location>
-#include <set>
+#include "Utils.hpp"
 
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+
+#include <functional>
+#include <set>
+#include <source_location>
 
 struct QueryExpectations
 {
@@ -468,4 +470,3 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with WhereIn", "[S
 
     REQUIRE(!stmt.FetchRow());
 }
-
