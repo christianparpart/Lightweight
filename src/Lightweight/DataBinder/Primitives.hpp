@@ -4,6 +4,8 @@
 
 #include "Core.hpp"
 
+#include <concepts>
+
 // clang-format off
 template <typename T, SQLSMALLINT TheCType, SQLINTEGER TheSqlType, SqlColumnType TheColumnType>
 struct SqlSimpleDataBinder
@@ -46,7 +48,7 @@ template <> struct SqlDataBinder<std::size_t>: SqlSimpleDataBinder<std::size_t, 
 // clang-format on
 
 template <typename T>
-    requires(std::is_same_v<SqlDataBinder<T>, SqlDataBinder<T>>) // Ensure that an SqlDataBinder<T> exists
+    requires(std::same_as<SqlDataBinder<T>, SqlDataBinder<T>>) // Ensure that an SqlDataBinder<T> exists
 struct SqlDataTraits<T>
 {
     static constexpr unsigned Size = 0;

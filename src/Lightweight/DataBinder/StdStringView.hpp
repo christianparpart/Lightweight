@@ -4,11 +4,12 @@
 
 #include "Core.hpp"
 
+#include <concepts>
 #include <string_view>
 
 template <typename CharT>
-    requires(std::is_same_v<CharT, char> || std::is_same_v<CharT, char16_t>
-             || (std::is_same_v<CharT, wchar_t> && sizeof(wchar_t) == 2))
+    requires(std::same_as<CharT, char> || std::same_as<CharT, char16_t>
+             || (std::same_as<CharT, wchar_t> && sizeof(wchar_t) == 2))
 struct SqlDataBinder<std::basic_string_view<CharT>>
 {
     static constexpr SQLSMALLINT cType = sizeof(CharT) == 1 ? SQL_C_CHAR : SQL_C_WCHAR;
