@@ -203,7 +203,7 @@ jobs:
             "SQLite3",
             "MS SQL Server 2019",
             "MS SQL Server 2022",
-            "PostgreSQL"
+            "PostgreSQL",
             # TODO: "Oracle"
             # TODO: "MySQL" or "MariaDB"
           ]
@@ -221,13 +221,27 @@ jobs:
       - name: "Extract package"
         run: |
           sudo tar -xvf Lightweight-Linux-CI.tar.gz --strip-components=1 -C /usr/local
+      - name: "install dependencies"
+        run: sudo apt install -y unixodbc-dev unixodbc odbcinst uuid-dev
       - name: "Setup ${{ matrix.database }}"
         id: setup
         run: bash ./.github/prepare-test-run.sh "${{ matrix.database }}"
-      - name: "Dump SQL connection string"
-        run: echo "ODBC_CONNECTION_STRING=${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+      - name: "Enable ODBC tracing"
+        run: |
+          echo "[ODBC]" | sudo tee -a /etc/odbcinst.ini
+          echo "Trace=Yes" | sudo tee -a /etc/odbcinst.ini
+          echo "TraceFile=/dev/stdout" | sudo tee -a /etc/odbcinst.ini
+      - name: "~/.odbc.ini: set ServerName"
+        if: ${{ matrix.database == 'Oracle' }}
+        run: |
+          sed -i "s/ServerName =.*/ServerName = localhost/" ~/.odbc.ini
+      - name: "CI Debug prints"
+        if: ${{ matrix.database == 'Oracle' }}
+        run: |
+          echo "ODBC_CONNECTION_STRING=${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+          ldd /home/runner/oracle/instantclient_21_3/libsqora.so.21.1
       - name: "Run SQL Core tests"
-        run: LightweightTest --trace-sql -s # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+        run: LightweightTest --trace-odbc --trace-sql -s # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
         env:
           ODBC_CONNECTION_STRING: "${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
 

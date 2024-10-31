@@ -33,6 +33,13 @@
 
 using namespace std::string_view_literals;
 
+#define UNSUPPORTED_DATABASE(stmt, dbType)                                                           \
+    if ((stmt).Connection().ServerType() == (dbType))                                                \
+    {                                                                                                \
+        WARN(std::format("TODO({}): This database is currently unsupported on this test.", dbType)); \
+        return;                                                                                      \
+    }
+
 int main(int argc, char** argv)
 {
     auto result = SqlTestFixture::Initialize(argc, argv);
@@ -304,6 +311,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatch")
 TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatchNative")
 {
     auto stmt = SqlStatement {};
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
 
     stmt.ExecuteDirect("CREATE TABLE Test (A VARCHAR(8), B REAL, C INTEGER)");
 
@@ -413,6 +421,8 @@ TEST_CASE_METHOD(SqlTestFixture, "custom types", "[sql]")
 TEST_CASE_METHOD(SqlTestFixture, "LastInsertId")
 {
     auto stmt = SqlStatement {};
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
+
     CreateEmployeesTable(stmt);
     FillEmployeesTable(stmt);
 
@@ -458,6 +468,7 @@ TEST_CASE_METHOD(SqlTestFixture, "GetColumn in-place store variant")
     CHECK(stmt.GetColumn(2, &lastName));
     CHECK(std::get<std::string>(lastName.value) == "Smith");
 
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
     SqlVariant salary;
     CHECK(stmt.GetColumn(3, &salary));
     CHECK(salary.TryGetInt().value_or(0) == 50'000);
@@ -498,6 +509,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate")
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime")
 {
     auto stmt = SqlStatement {};
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
     stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NOT NULL)");
 
     using namespace std::chrono_literals;
@@ -590,6 +602,7 @@ static std::string MakeLargeText(size_t size)
 TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large values")
 {
     auto stmt = SqlStatement {};
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
     stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT)");
     auto const expectedText = MakeLargeText(8 * 1000);
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
@@ -683,6 +696,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString")
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlText")
 {
     auto stmt = SqlStatement {};
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
     stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT NOT NULL)");
 
     using namespace std::chrono_literals;
@@ -713,6 +727,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlText")
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDateTime")
 {
     auto stmt = SqlStatement {};
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
     stmt.ExecuteDirect(std::format("CREATE TABLE Test (Value {} NOT NULL)",
                                    stmt.Connection().Traits().ColumnTypeName(SqlColumnType::DATETIME)));
 
@@ -784,6 +799,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: date")
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: time")
 {
     auto stmt = SqlStatement {};
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
     stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NOT NULL)");
     using namespace std::chrono_literals;
     auto const expected = SqlTime(12h, 34min, 56s);
@@ -821,6 +837,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: time")
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Unicode]")
 {
     auto stmt = SqlStatement {};
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
 
     if (stmt.Connection().ServerType() == SqlServerType::SQLITE)
         // SQLite does UTF-8 by default, so we need to switch to UTF-16
@@ -862,6 +879,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder]")
 {
     auto stmt = SqlStatement {};
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
 
     stmt.ExecuteDirect(std::format("CREATE TABLE Test (id {}, name VARCHAR(50))",
                                    stmt.Connection().Traits().PrimaryKeyGuidColumnType));

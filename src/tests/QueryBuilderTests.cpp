@@ -437,7 +437,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with WhereIn", "[S
         )
     )SQL");
 
-    stmt.Prepare(R"SQL(INSERT INTO "Test" (name, secret) VALUES (?, ?))SQL");
+    stmt.Prepare(R"SQL(INSERT INTO "Test" ("name", "secret") VALUES (?, ?))SQL");
     auto const names = std::vector<SqlFixedString<20>> { "Alice", "Bob", "Charlie", "David" };
     auto const secrets = std::vector<int> { 42, 43, 44, 45 };
     stmt.ExecuteBatchSoft(names, secrets);

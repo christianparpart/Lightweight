@@ -138,44 +138,61 @@ setup_postgres() {
 
 setup_oracle() {
     echo "Setting up Oracle..." # TODO
+    local ORACLE_VERSION="$1" # e.g. "23.5", "23.2", ...
+    local client_tool_ver="21.3.0.0.0"
+    local oracle_odbc_ver_major=21
+    local DB_USER=$USER
+    local target_dir="$HOME/oracle"
 
     # References
     # - https://github.com/gvenzl/oci-oracle-free
 
-    # {{{ install Oracle SQL server on ubuntu
-
-    local DB_PASSWORD="BlahThat."
-    local ORACLE_VERSION="$1" # e.g. "23.5", "23.2", ...
+    # install Oracle SQL server on ubuntu
     docker pull gvenzl/oracle-free:$ORACLE_VERSION
-    docker run -d -p 1521:1521 -e ORACLE_PASSWORD="$DB_PASSWORD" gvenzl/oracle-free:$ORACLE_VERSION
-
-    # }}}
+    docker run -d -p 1521:1521 \
+               -e ORACLE_PASSWORD="$DB_PASSWORD" \
+               -e ORACLE_DATABASE="$DB_NAME" \
+               -e APP_USER="$DB_USER" \
+               -e APP_USER_PASSWORD="$DB_PASSWORD" \
+               gvenzl/oracle-free:$ORACLE_VERSION
 
     # {{{ instant client
-    wget https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-basiclite-linux.x64-21.3.0.0.0.zip
-    wget https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-sqlplus-linux.x64-21.3.0.0.0.zip
-    wget https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-odbc-linux.x64-21.3.0.0.0.zip
-    unzip instantclient-basiclite-linux.x64-21.3.0.0.0.zip
-    unzip instantclient-sqlplus-linux.x64-21.3.0.0.0.zip
-    unzip instantclient-odbc-linux.x64-21.3.0.0.0.zip
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/instantclient_21_3
+    wget https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-basiclite-linux.x64-${client_tool_ver}.zip
+    wget https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-sqlplus-linux.x64-${client_tool_ver}.zip
+    wget https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-odbc-linux.x64-${client_tool_ver}.zip
+    unzip instantclient-basiclite-linux.x64-${client_tool_ver}.zip -d "${target_dir}"
+    unzip instantclient-sqlplus-linux.x64-${client_tool_ver}.zip -d "${target_dir}"
+    unzip instantclient-odbc-linux.x64-${client_tool_ver}.zip -d "${target_dir}"
 
-    cd instantclient_21_3
+    echo "${target_dir}/instantclient_21_3" | sudo tee /etc/ld.so.conf.d/oracle-instantclient.conf
+    sudo ldconfig
+
+    # The script `odbc_update_ini.sh` expects the current directory to be the instantclient directory
+    cd "${target_dir}/instantclient_21_3"
     mkdir etc
-    cp /etc/odbcinst.ini etc/.
-    cp ~/.odbc.ini etc/odbc.ini
+    cp /etc/odbcinst.ini etc/
+    cp /etc/odbc.ini etc/odbc.ini
     ./odbc_update_ini.sh .
-    sudo cp etc/odbcinst.ini /etc/
+    sudo cp -v etc/odbcinst.ini /etc/
 
-    odbcinst -q -d
-    odbcinst -q -d -n "Oracle 21 ODBC driver"
+    sudo apt install -y libaio-dev
+    sudo ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 /usr/local/lib/libaio.so.1
+    ldconfig
 
-    # test connection (interactively) with:
-    ./sqlplus scott/tiger@'(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = db)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = orcl)))'
-
-    # show version to console
-
+    sudo odbcinst -q -d
+    sudo odbcinst -q -d -n "Oracle ${oracle_odbc_ver_major} ODBC driver"
     # }}}
+
+    # test connection with:
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${target_dir}/instantclient_21_3
+    ${target_dir}/instantclient_21_3/sqlplus $DB_USER/$DB_PASSWORD@localhost:1521/$DB_NAME <<EOF
+    SELECT table_name FROM user_tables WHERE ROWNUM <= 5;
+EOF
+
+    echo "Exporting ODBC_CONNECTION_INFO..."
+    # expose the ODBC connection string to connect to the database
+    # echo "ODBC_CONNECTION_STRING=DRIVER=Oracle ${oracle_odbc_ver_major} ODBC driver;SERVER=localhost;PORT=1521;UID=$DB_USER;PWD=$DB_PASSWORD;DBQ=$DB_NAME" >> "${GITHUB_OUTPUT}"
+    echo "ODBC_CONNECTION_STRING=DRIVER=Oracle ${oracle_odbc_ver_major} ODBC driver;SERVER=localhost;PORT=1521;UID=system;PWD=$DB_PASSWORD;DBA=W" >> "${GITHUB_OUTPUT}"
 }
 
 setup_mysql() {
@@ -197,7 +214,7 @@ case "$DBMS" in
         setup_postgres
         ;;
     "Oracle")
-        setup_oracle
+        setup_oracle 23.5
         ;;
     "MySQL")
         setup_mysql
