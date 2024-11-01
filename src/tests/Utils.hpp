@@ -42,6 +42,13 @@ using WideStringView = std::basic_string_view<WideChar>;
     #define WTEXT(x) (L##x)
 #endif
 
+#define UNSUPPORTED_DATABASE(stmt, dbType)                                                           \
+    if ((stmt).Connection().ServerType() == (dbType))                                                \
+    {                                                                                                \
+        WARN(std::format("TODO({}): This database is currently unsupported on this test.", dbType)); \
+        return;                                                                                      \
+    }
+
 namespace std
 {
 
