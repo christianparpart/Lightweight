@@ -137,10 +137,11 @@ class LIGHTWEIGHT_API SqlConnection final
     // Sets the last time the connection was used.
     void SetLastUsed(std::chrono::steady_clock::time_point lastUsed) noexcept;
 
+    // Checks the result of an SQL operation, and throws an exception if it is not successful.
+    void RequireSuccess(SQLRETURN sqlResult, std::source_location sourceLocation = std::source_location::current()) const;
+
   private:
     void PostConnect();
-
-    void RequireSuccess(SQLRETURN error, std::source_location sourceLocation = std::source_location::current()) const;
 
     // Private data members
     SQLHENV m_hEnv {};

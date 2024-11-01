@@ -3,11 +3,15 @@
 #include "SqlConnection.hpp"
 #include "SqlTransaction.hpp"
 
-SqlTransaction::SqlTransaction(SqlConnection& connection, SqlTransactionMode defaultMode) noexcept:
+SqlTransaction::SqlTransaction(SqlConnection& connection,
+                               SqlTransactionMode defaultMode,
+                               std::source_location location):
     m_hDbc { connection.NativeHandle() },
-    m_defaultMode { defaultMode }
+    m_defaultMode { defaultMode },
+    m_location { location }
 {
-    SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
+    connection.RequireSuccess(
+        SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER), m_location);
 }
 
 SqlTransaction::~SqlTransaction() noexcept
@@ -17,27 +21,27 @@ SqlTransaction::~SqlTransaction() noexcept
         case SqlTransactionMode::NONE:
             break;
         case SqlTransactionMode::COMMIT:
-            Commit();
+            TryCommit();
             break;
         case SqlTransactionMode::ROLLBACK:
-            Rollback();
+            TryRollback();
             break;
     }
 }
 
-bool SqlTransaction::Rollback() noexcept
+bool SqlTransaction::TryRollback() noexcept
 {
     SQLRETURN sqlReturn = SQLEndTran(SQL_HANDLE_DBC, m_hDbc, SQL_ROLLBACK);
     if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
     {
-        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc), m_location);
         return false;
     }
 
     sqlReturn = SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
     if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
     {
-        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc), m_location);
         return false;
     }
 
@@ -46,22 +50,38 @@ bool SqlTransaction::Rollback() noexcept
 }
 
 // Commit the transaction
-bool SqlTransaction::Commit() noexcept
+bool SqlTransaction::TryCommit() noexcept
 {
     SQLRETURN sqlReturn = SQLEndTran(SQL_HANDLE_DBC, m_hDbc, SQL_COMMIT);
     if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
     {
-        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc), m_location);
         return false;
     }
 
     sqlReturn = SQLSetConnectAttr(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
     if (sqlReturn != SQL_SUCCESS && sqlReturn != SQL_SUCCESS_WITH_INFO)
     {
-        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+        SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc), m_location);
         return false;
     }
 
     m_defaultMode = SqlTransactionMode::NONE;
     return true;
+}
+
+void SqlTransaction::Rollback()
+{
+    if (!TryRollback())
+    {
+        throw SqlTransactionException("Failed to rollback the transaction");
+    }
+}
+
+void SqlTransaction::Commit()
+{
+    if (!TryCommit())
+    {
+        throw SqlTransactionException("Failed to commit the transaction");
+    }
 }
