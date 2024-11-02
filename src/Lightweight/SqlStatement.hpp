@@ -63,6 +63,9 @@ class SqlStatement final: public SqlDataBinderCallback
     // Retrieves the connection associated with this statement.
     [[nodiscard]] LIGHTWEIGHT_API SqlConnection const& Connection() const noexcept;
 
+    // Retrieves the last error information with respect to this SQL statement handle.
+    [[nodiscard]] LIGHTWEIGHT_API SqlErrorInfo LastError() const;
+
     // Creates a new query builder for the given table, compatible with the SQL server being connected.
     LIGHTWEIGHT_API SqlQueryBuilder Query(std::string_view const& table = {}) const;
 
@@ -204,7 +207,12 @@ inline SqlConnection const& SqlStatement::Connection() const noexcept
     return *m_connection;
 }
 
-[[nodiscard]] inline SQLHSTMT SqlStatement::NativeHandle() const noexcept
+inline SqlErrorInfo SqlStatement::LastError() const
+{
+    return SqlErrorInfo::fromStatementHandle(m_hStmt);
+}
+
+inline SQLHSTMT SqlStatement::NativeHandle() const noexcept
 {
     return m_hStmt;
 }

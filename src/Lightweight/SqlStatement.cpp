@@ -171,12 +171,12 @@ void SqlStatement::RequireSuccess(SQLRETURN error, std::source_location sourceLo
     if (SQL_SUCCEEDED(error))
         return;
 
-    auto errorInfo = SqlErrorInfo::fromStatementHandle(m_hStmt);
+    auto errorInfo = LastError();
     SqlLogger::GetLogger().OnError(errorInfo, sourceLocation);
     if (errorInfo.sqlState == "07009")
         throw std::invalid_argument(std::format("SQL error: {}", errorInfo));
     else
-        throw SqlException(errorInfo);
+        throw SqlException(std::move(errorInfo));
 }
 
 SqlQueryBuilder SqlStatement::Query(std::string_view const& table) const

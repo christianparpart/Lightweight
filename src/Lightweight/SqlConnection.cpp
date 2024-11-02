@@ -167,7 +167,7 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
         SQLRETURN sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER) info->timeout.count(), 0);
         if (!SQL_SUCCEEDED(sqlReturn))
         {
-            SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+            SqlLogger::GetLogger().OnError(LastError());
             return false;
         }
 
@@ -180,14 +180,14 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
                                 (SQLSMALLINT) info->password.size());
         if (!SQL_SUCCEEDED(sqlReturn))
         {
-            SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+            SqlLogger::GetLogger().OnError(LastError());
             return false;
         }
 
         sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
         if (!SQL_SUCCEEDED(sqlReturn))
         {
-            SqlLogger::GetLogger().OnError(SqlErrorInfo::fromConnectionHandle(m_hDbc));
+            SqlLogger::GetLogger().OnError(LastError());
             return false;
         }
 
@@ -225,6 +225,11 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
         gPostConnectedHook(*this);
 
     return true;
+}
+
+SqlErrorInfo SqlConnection::LastError() const
+{
+    return SqlErrorInfo::fromConnectionHandle(m_hDbc);
 }
 
 void SqlConnection::Close() noexcept
@@ -305,9 +310,9 @@ void SqlConnection::RequireSuccess(SQLRETURN error, std::source_location sourceL
     if (SQL_SUCCEEDED(error))
         return;
 
-    auto errorInfo = SqlErrorInfo::fromConnectionHandle(m_hDbc);
+    auto errorInfo = LastError();
     SqlLogger::GetLogger().OnError(errorInfo, sourceLocation);
-    throw std::runtime_error(std::format("SQL error: {}", errorInfo));
+    throw SqlException(std::move(errorInfo));
 }
 
 SqlQueryBuilder SqlConnection::Query(std::string_view const& table) const
