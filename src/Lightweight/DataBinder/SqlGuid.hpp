@@ -7,6 +7,7 @@
 #include "StdString.hpp"
 
 #include <format>
+#include <optional>
 #include <string>
 
 struct LIGHTWEIGHT_API SqlGuid
@@ -15,8 +16,7 @@ struct LIGHTWEIGHT_API SqlGuid
 
     static SqlGuid Create() noexcept;
 
-    static bool Validate(std::string_view const& text) noexcept;
-    static SqlGuid Parse(std::string_view const& text) noexcept;
+    static std::optional<SqlGuid> TryParse(std::string_view const& text) noexcept;
 
     constexpr std::weak_ordering operator<=>(SqlGuid const& other) const noexcept = default;
 };

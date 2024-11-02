@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <random>
+#include <ranges>
 
 SqlGuid SqlGuid::Create() noexcept
 {
@@ -49,78 +50,58 @@ SqlGuid SqlGuid::Create() noexcept
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<unsigned short> dis(0, 255);
+
     for (auto& byte: guid.data)
         byte = static_cast<uint8_t>(dis(gen));
-    guid.data[6] = (guid.data[6] & 0x0F) | 0x40; // Set the version to 4
-    guid.data[8] = (guid.data[8] & 0x3F) | 0x80; // Set the variant to 2
+
+    // Set the version to 4
+    guid.data[6] = (guid.data[6] & 0b0000'1111) | 0b0100'0000;
+
+    // Set the variant to 2
+    guid.data[8] = (guid.data[8] & 0b0011'1111) | 0b1000'0000;
 
 #endif
     return guid;
 }
 
-bool SqlGuid::Validate(std::string_view const& text) noexcept
-{
-    // TODO: verify the correctness of this function
-
-    // Validate the length
-    if (text.size() != 36)
-        return false;
-
-    // Validate the dashes
-    if (text[8] != '-' || text[13] != '-' || text[18] != '-' || text[23] != '-')
-        return false;
-
-    // Validate the version and variant
-    if (text[14] != '4' && text[14] != '5')
-        return false;
-
-    // Validate the variant
-    if (text[19] != '8' && text[19] != '9' && text[19] != 'A' && text[19] != 'B')
-        return false;
-
-    // Validate the hex characters
-    for (size_t i = 0; i < 36; ++i)
-    {
-        if (i == 8 || i == 13 || i == 18 || i == 23)
-            continue;
-
-        if (i == 14 || i == 19)
-            continue;
-
-        if (text[i] < '0' || text[i] > '9')
-            return false;
-
-        if (i == 19)
-        {
-            if (text[i] < '8' || text[i] > 'B')
-                return false;
-        }
-        else if (text[i] < 'A' || text[i] > 'F')
-            return false;
-    }
-    return true;
-}
-
-SqlGuid SqlGuid::Parse(std::string_view const& text) noexcept
+std::optional<SqlGuid> SqlGuid::TryParse(std::string_view const& text) noexcept
 {
     SqlGuid guid {};
 
-    guid.data[0] = static_cast<uint8_t>(std::stoul(std::string(text.substr(0, 8)), nullptr, 16) >> 24);
-    guid.data[1] = static_cast<uint8_t>(std::stoul(std::string(text.substr(0, 8)), nullptr, 16) >> 16);
-    guid.data[2] = static_cast<uint8_t>(std::stoul(std::string(text.substr(0, 8)), nullptr, 16) >> 8);
-    guid.data[3] = static_cast<uint8_t>(std::stoul(std::string(text.substr(0, 8)), nullptr, 16));
-    guid.data[4] = static_cast<uint8_t>(std::stoul(std::string(text.substr(9, 4)), nullptr, 16) >> 8);
-    guid.data[5] = static_cast<uint8_t>(std::stoul(std::string(text.substr(9, 4)), nullptr, 16));
-    guid.data[6] = static_cast<uint8_t>(std::stoul(std::string(text.substr(14, 4)), nullptr, 16) >> 8);
-    guid.data[7] = static_cast<uint8_t>(std::stoul(std::string(text.substr(14, 4)), nullptr, 16));
-    guid.data[8] = static_cast<uint8_t>(std::stoul(std::string(text.substr(19, 4)), nullptr, 16));
-    guid.data[9] = static_cast<uint8_t>(std::stoul(std::string(text.substr(19, 4)), nullptr, 16) >> 8);
-    guid.data[10] = static_cast<uint8_t>(std::stoull(std::string(text.substr(24, 12)), nullptr, 16) >> 40);
-    guid.data[11] = static_cast<uint8_t>(std::stoull(std::string(text.substr(24, 12)), nullptr, 16) >> 32);
-    guid.data[12] = static_cast<uint8_t>(std::stoul(std::string(text.substr(24, 12)), nullptr, 16) >> 24);
-    guid.data[13] = static_cast<uint8_t>(std::stoul(std::string(text.substr(24, 12)), nullptr, 16) >> 16);
-    guid.data[14] = static_cast<uint8_t>(std::stoul(std::string(text.substr(24, 12)), nullptr, 16) >> 8);
-    guid.data[15] = static_cast<uint8_t>(std::stoul(std::string(text.substr(24, 12)), nullptr, 16));
+    // UUID format: xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx
+    // M is the version and N is the variant
+
+    // Check for length
+    if (text.size() != 36)
+        return std::nullopt;
+
+    // Check for dashes
+    if (text[8] != '-' || text[13] != '-' || text[18] != '-' || text[23] != '-')
+        return std::nullopt;
+
+    // Version must be 1, 2, 3, 4, or 5
+    auto const version = text[14];
+    if (version != '1' && version != '2' && version != '3' && version != '4' && version != '5')
+        return std::nullopt;
+
+    // Variant must be 8, 9, A, or B
+    auto const variant = text[21];
+    if (variant != '8' && variant != '9' && variant != 'A' && variant != 'B')
+        return std::nullopt;
+
+    // clang-format off
+    size_t i = 0;
+    for (auto const index: { 0, 2, 4, 6,
+                             9, 11,
+                             14, 16,
+                             21, 19,
+                             24, 26, 28, 30, 32, 34 })
+    {
+        if (std::from_chars(text.data() + index, text.data() + index + 2, guid.data[i], 16).ec != std::errc())
+            return std::nullopt;
+        i++;
+    }
+    // clang-format on
 
     return guid;
 }
@@ -162,7 +143,8 @@ SQLRETURN SqlDataBinder<SqlGuid>::OutputColumn(
             auto text = std::make_shared<std::string>();
             auto rv = SqlDataBinder<std::string>::OutputColumn(stmt, column, text.get(), indicator, cb);
             if (SQL_SUCCEEDED(rv))
-                cb.PlanPostProcessOutputColumn([text = std::move(text), result] { *result = SqlGuid::Parse(*text); });
+                cb.PlanPostProcessOutputColumn(
+                    [text = std::move(text), result] { *result = SqlGuid::TryParse(*text).value_or(SqlGuid {}); });
             return rv;
         }
         case SqlServerType::ORACLE: // TODO
@@ -187,7 +169,7 @@ SQLRETURN SqlDataBinder<SqlGuid>::GetColumn(
             std::string text;
             auto rv = SqlDataBinder<std::string>::GetColumn(stmt, column, &text, indicator, cb);
             if (SQL_SUCCEEDED(rv))
-                *result = SqlGuid::Parse(text);
+                *result = SqlGuid::TryParse(text).value_or(SqlGuid {});
             return rv;
         }
         case SqlServerType::ORACLE: // TODO

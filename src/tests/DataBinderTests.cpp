@@ -620,6 +620,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder],[Sql
                                    stmt.Connection().Traits().PrimaryKeyGuidColumnType));
 
     auto const expectedGuid = SqlGuid::Create();
+    auto const expectedGuidStr = std::format("{}", expectedGuid);
 
     stmt.Prepare("INSERT INTO Test (id, name) VALUES (?, ?)");
     stmt.Execute(expectedGuid, "Alice");
@@ -628,6 +629,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder],[Sql
     stmt.ExecuteDirect("SELECT id, name FROM Test");
     REQUIRE(stmt.FetchRow());
     auto const actualGuid = stmt.GetColumn<SqlGuid>(1);
+    auto const actualGuidStr = std::format("{}", actualGuid);
+    CHECK(actualGuidStr == expectedGuidStr);
     CHECK(actualGuid == expectedGuid);
 
     // Bind output column, fetch, and check result in output column for GUID
