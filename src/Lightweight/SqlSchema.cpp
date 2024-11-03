@@ -113,8 +113,7 @@ namespace
                                         (SQLSMALLINT) foreignKey.table.size());
 
         if (!SQL_SUCCEEDED(sqlResult))
-            throw std::runtime_error(
-                std::format("SQLForeignKeys failed: {}", SqlErrorInfo::fromStatementHandle(stmt.NativeHandle())));
+            throw std::runtime_error(std::format("SQLForeignKeys failed: {}", stmt.LastError()));
 
         using ColumnList = std::vector<std::string>;
         auto constraints = std::map<KeyPair, ColumnList>();
@@ -180,8 +179,7 @@ namespace
                                         (SQLCHAR*) table.table.data(),
                                         (SQLSMALLINT) table.table.size());
         if (!SQL_SUCCEEDED(sqlResult))
-            throw std::runtime_error(
-                std::format("SQLPrimaryKeys failed: {}", SqlErrorInfo::fromStatementHandle(stmt.NativeHandle())));
+            throw std::runtime_error(std::format("SQLPrimaryKeys failed: {}", stmt.LastError()));
 
         while (stmt.FetchRow())
         {
@@ -240,8 +238,7 @@ void ReadAllTables(std::string_view database, std::string_view schema, EventHand
                                           nullptr /* column name */,
                                           0 /* column name length */);
         if (!SQL_SUCCEEDED(sqlResult))
-            throw std::runtime_error(
-                std::format("SQLColumns failed: {}", SqlErrorInfo::fromStatementHandle(columnStmt.NativeHandle())));
+            throw std::runtime_error(std::format("SQLColumns failed: {}", columnStmt.LastError()));
 
         Column column;
 

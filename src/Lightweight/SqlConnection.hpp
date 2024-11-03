@@ -71,17 +71,29 @@ class LIGHTWEIGHT_API SqlConnection final
         return m_connectionId;
     }
 
-    // Closes the connection (attempting to put it back into the connection pool).
+    // Closes the connection (attempting to put it back into the connect[[ion pool).
     void Close() noexcept;
 
     // Connects to the given database with the given username and password.
+    //
+    // @retval true if the connection was successful.
+    // @retval false if the connection failed. Use LastError() to retrieve the error information.
     bool Connect(std::string_view datasource, std::string_view username, std::string_view password) noexcept;
 
     // Connects to the given database with the given ODBC connection string.
+    //
+    // @retval true if the connection was successful.
+    // @retval false if the connection failed. Use LastError() to retrieve the error information.
     bool Connect(std::string connectionString) noexcept;
 
     // Connects to the given database with the given username and password.
+    //
+    // @retval true if the connection was successful.
+    // @retval false if the connection failed. Use LastError() to retrieve the error information.
     bool Connect(SqlConnectInfo connectInfo) noexcept;
+
+    // Retrieves the last error information with respect to this SQL connection handle.
+    [[nodiscard]] SqlErrorInfo LastError() const;
 
     // Retrieves the name of the database in use.
     [[nodiscard]] std::string DatabaseName() const;
@@ -138,7 +150,8 @@ class LIGHTWEIGHT_API SqlConnection final
     void SetLastUsed(std::chrono::steady_clock::time_point lastUsed) noexcept;
 
     // Checks the result of an SQL operation, and throws an exception if it is not successful.
-    void RequireSuccess(SQLRETURN sqlResult, std::source_location sourceLocation = std::source_location::current()) const;
+    void RequireSuccess(SQLRETURN sqlResult,
+                        std::source_location sourceLocation = std::source_location::current()) const;
 
   private:
     void PostConnect();

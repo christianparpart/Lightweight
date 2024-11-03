@@ -180,8 +180,7 @@ class SqlTestFixture
         auto sqlConnection = SqlConnection();
         if (!sqlConnection.IsAlive())
         {
-            std::println("Failed to connect to the database: {}",
-                         SqlErrorInfo::fromConnectionHandle(sqlConnection.NativeHandle()));
+            std::println("Failed to connect to the database: {}", sqlConnection.LastError());
             std::abort();
         }
 

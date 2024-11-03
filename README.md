@@ -71,8 +71,8 @@ This library a little bit of more modern C++ language and library features in or
 
 - Microsoft SQL
 - PostgreSQL
-- SQLite
-- Oracle database (untested)
+- SQLite3
+- Oracle database (work in progress)
 
 ## Using SQLite for testing on Windows operating system
 
