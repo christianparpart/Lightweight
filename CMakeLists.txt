@@ -48,3 +48,4 @@ add_subdirectory(src/tools)
 
 enable_testing()
 add_subdirectory(src/tests)
+add_subdirectory(src/benchmark)
