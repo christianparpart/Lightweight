@@ -46,8 +46,8 @@ class SqlStatement final: public SqlDataBinderCallback
     // Construct a new SqlStatement object, using a new connection, and connect to the default database.
     LIGHTWEIGHT_API SqlStatement();
 
-    LIGHTWEIGHT_API SqlStatement(SqlStatement&&) noexcept = default;
-    LIGHTWEIGHT_API SqlStatement& operator=(SqlStatement&&) noexcept = default;
+    LIGHTWEIGHT_API SqlStatement(SqlStatement&&) noexcept;
+    LIGHTWEIGHT_API SqlStatement& operator=(SqlStatement&&) noexcept;
 
     SqlStatement(SqlStatement const&) noexcept = delete;
     SqlStatement& operator=(SqlStatement const&) noexcept = delete;
@@ -56,6 +56,8 @@ class SqlStatement final: public SqlDataBinderCallback
     LIGHTWEIGHT_API explicit SqlStatement(SqlConnection& relatedConnection);
 
     LIGHTWEIGHT_API ~SqlStatement() noexcept final;
+
+    [[nodiscard]] LIGHTWEIGHT_API bool IsAlive() const noexcept;
 
     // Retrieves the connection associated with this statement.
     [[nodiscard]] LIGHTWEIGHT_API SqlConnection& Connection() noexcept;
@@ -189,41 +191,46 @@ class SqlStatement final: public SqlDataBinderCallback
 
     // private data members
     struct Data;
-    Data* m_data;
-    SqlConnection* m_connection {};          // Pointer to the connection object
-    SQLHSTMT m_hStmt {};                     // The native oDBC statement handle
-    std::string m_preparedQuery;             // The last prepared query
-    SQLSMALLINT m_expectedParameterCount {}; // The number of parameters expected by the query
+    std::unique_ptr<Data, void (*)(Data*)> m_data; // The private data of the statement
+    SqlConnection* m_connection {};                // Pointer to the connection object
+    SQLHSTMT m_hStmt {};                           // The native oDBC statement handle
+    std::string m_preparedQuery;                   // The last prepared query
+    SQLSMALLINT m_expectedParameterCount {};       // The number of parameters expected by the query
 };
 
 // {{{ inline implementation
-inline SqlConnection& SqlStatement::Connection() noexcept
+inline LIGHTWEIGHT_FORCE_INLINE bool SqlStatement::IsAlive() const noexcept
+{
+    return m_connection && m_connection->IsAlive() && m_hStmt != nullptr;
+}
+
+inline LIGHTWEIGHT_FORCE_INLINE SqlConnection& SqlStatement::Connection() noexcept
 {
     return *m_connection;
 }
 
-inline SqlConnection const& SqlStatement::Connection() const noexcept
+inline LIGHTWEIGHT_FORCE_INLINE SqlConnection const& SqlStatement::Connection() const noexcept
 {
     return *m_connection;
 }
 
-inline SqlErrorInfo SqlStatement::LastError() const
+inline LIGHTWEIGHT_FORCE_INLINE SqlErrorInfo SqlStatement::LastError() const
 {
     return SqlErrorInfo::fromStatementHandle(m_hStmt);
 }
 
-inline SQLHSTMT SqlStatement::NativeHandle() const noexcept
+inline LIGHTWEIGHT_FORCE_INLINE SQLHSTMT SqlStatement::NativeHandle() const noexcept
 {
     return m_hStmt;
 }
 
-inline void SqlStatement::Prepare(SqlQueryObject auto const& queryObject)
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::Prepare(SqlQueryObject auto const& queryObject)
 {
     Prepare(queryObject.ToSql());
 }
 
 template <SqlOutputColumnBinder... Args>
-void SqlStatement::BindOutputColumns(Args*... args)
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindOutputColumns(Args*... args)
 {
     RequireIndicators();
 
@@ -232,7 +239,7 @@ void SqlStatement::BindOutputColumns(Args*... args)
 }
 
 template <SqlOutputColumnBinder T>
-void SqlStatement::BindOutputColumn(SQLUSMALLINT columnIndex, T* arg)
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindOutputColumn(SQLUSMALLINT columnIndex, T* arg)
 {
     RequireIndicators();
 
@@ -240,7 +247,7 @@ void SqlStatement::BindOutputColumn(SQLUSMALLINT columnIndex, T* arg)
 }
 
 template <SqlInputParameterBinder Arg>
-void SqlStatement::BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg)
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg)
 {
     // tell Execute() that we don't know the expected count
     m_expectedParameterCount = (std::numeric_limits<decltype(m_expectedParameterCount)>::max)();
@@ -375,7 +382,7 @@ inline bool SqlStatement::GetColumn(SQLUSMALLINT column, T* result) const
 }
 
 template <SqlGetColumnNativeType T>
-[[nodiscard]] T SqlStatement::GetColumn(SQLUSMALLINT column) const
+inline T SqlStatement::GetColumn(SQLUSMALLINT column) const
 {
     T result {};
     SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.
@@ -384,7 +391,7 @@ template <SqlGetColumnNativeType T>
 }
 
 template <SqlGetColumnNativeType T>
-[[nodiscard]] std::optional<T> SqlStatement::TryGetColumn(SQLUSMALLINT column) const
+inline std::optional<T> SqlStatement::TryGetColumn(SQLUSMALLINT column) const
 {
     T result {};
     SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.

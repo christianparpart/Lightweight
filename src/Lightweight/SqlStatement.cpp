@@ -47,11 +47,15 @@ SqlServerType SqlStatement::ServerType() const noexcept
 
 SqlStatement::SqlStatement():
     m_data { new Data {
-        .ownedConnection = SqlConnection(),
-        .indicators = {},
-        .postExecuteCallbacks = {},
-        .postProcessOutputColumnCallbacks = {},
-    } },
+                 .ownedConnection = SqlConnection(),
+                 .indicators = {},
+                 .postExecuteCallbacks = {},
+                 .postProcessOutputColumnCallbacks = {},
+             },
+             [](Data* data) {
+                 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+                 delete data;
+             } },
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     m_connection { &*m_data->ownedConnection }
 {
@@ -59,9 +63,43 @@ SqlStatement::SqlStatement():
         RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
 }
 
+SqlStatement::SqlStatement(SqlStatement&& other) noexcept:
+    m_data { std::move(other.m_data) },
+    m_connection { other.m_connection },
+    m_hStmt { other.m_hStmt },
+    m_preparedQuery { std::move(other.m_preparedQuery) },
+    m_expectedParameterCount { other.m_expectedParameterCount }
+{
+    other.m_data.reset();
+    other.m_connection = nullptr;
+    other.m_hStmt = SQL_NULL_HSTMT;
+}
+
+SqlStatement& SqlStatement::operator=(SqlStatement&& other) noexcept
+{
+    if (this == &other)
+        return *this;
+
+    m_data = std::move(other.m_data);
+    m_connection = other.m_connection;
+    m_hStmt = other.m_hStmt;
+    m_preparedQuery = std::move(other.m_preparedQuery);
+    m_expectedParameterCount = other.m_expectedParameterCount;
+
+    other.m_data.reset();
+    other.m_connection = nullptr;
+    other.m_hStmt = SQL_NULL_HSTMT;
+
+    return *this;
+}
+
 // Construct a new SqlStatement object, using the given connection.
 SqlStatement::SqlStatement(SqlConnection& relatedConnection):
-    m_data { new Data() },
+    m_data { new Data(),
+             [](Data* data) {
+                 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+                 delete data;
+             } },
     m_connection { &relatedConnection }
 {
     RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
@@ -70,7 +108,6 @@ SqlStatement::SqlStatement(SqlConnection& relatedConnection):
 SqlStatement::~SqlStatement() noexcept
 {
     SQLFreeHandle(SQL_HANDLE_STMT, m_hStmt);
-    delete m_data;
 }
 
 void SqlStatement::Prepare(std::string_view query)

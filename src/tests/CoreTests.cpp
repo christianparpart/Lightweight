@@ -53,6 +53,45 @@ TEST_CASE_METHOD(SqlTestFixture, "select: get columns")
     REQUIRE(!stmt.FetchRow());
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "move semantics", "[SqlConnection]")
+{
+    auto a = SqlConnection {};
+    CHECK(a.IsAlive());
+
+    auto b = std::move(a);
+    CHECK(!a.IsAlive());
+    CHECK(b.IsAlive());
+
+    auto c = SqlConnection(std::move(b));
+    CHECK(!a.IsAlive());
+    CHECK(!b.IsAlive());
+    CHECK(c.IsAlive());
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "move semantics", "[SqlStatement]")
+{
+    auto conn = SqlConnection {};
+
+    auto const TestRun = [](SqlStatement& stmt) {
+        CHECK(stmt.ExecuteDirectSingle<int>("SELECT 42").value_or(-1) == 42);
+    };
+
+    auto a = SqlStatement { conn };
+    CHECK(a.Connection().IsAlive());
+    TestRun(a);
+
+    auto b = std::move(a);
+    CHECK(!a.IsAlive());
+    CHECK(b.Connection().IsAlive());
+    TestRun(b);
+
+    auto c = SqlStatement(std::move(b));
+    // CHECK(!a.Connection().IsAlive());
+    // CHECK(!b.Connection().IsAlive());
+    CHECK(c.Connection().IsAlive());
+    TestRun(c);
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "select: get column (invalid index)")
 {
     auto stmt = SqlStatement {};
