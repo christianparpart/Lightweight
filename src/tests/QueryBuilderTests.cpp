@@ -22,7 +22,7 @@ struct QueryExpectations
 };
 
 template <typename TheSqlQuery>
-// requires(std::is_invocable_v<TheSqlQuery, SqlQueryBuilder&>)
+    requires(std::is_invocable_v<TheSqlQuery, SqlQueryBuilder&>)
 void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
                           QueryExpectations const& expectations,
                           std::function<void()> const& postCheck = {},
