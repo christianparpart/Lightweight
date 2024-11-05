@@ -81,7 +81,7 @@ std::optional<SqlGuid> SqlGuid::TryParse(std::string_view const& text) noexcept
 
     // Version must be 1, 2, 3, 4, or 5
     auto const version = text[14];
-    if (version != '1' && version != '2' && version != '3' && version != '4' && version != '5')
+    if (!('1' <= version && version <= '5'))
         return std::nullopt;
 
     // Variant must be 8, 9, A, or B

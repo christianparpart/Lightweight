@@ -15,13 +15,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-#include <algorithm>
 #include <array>
 #include <cstdlib>
-#include <format>
 #include <list>
-#include <set>
-#include <type_traits>
 
 // NOLINTBEGIN(readability-container-size-empty)
 
@@ -77,18 +73,21 @@ TEST_CASE_METHOD(SqlTestFixture, "move semantics", "[SqlStatement]")
     };
 
     auto a = SqlStatement { conn };
+    CHECK(&conn == &a.Connection());
     CHECK(a.Connection().IsAlive());
     TestRun(a);
 
     auto b = std::move(a);
+    CHECK(&conn == &b.Connection());
     CHECK(!a.IsAlive());
-    CHECK(b.Connection().IsAlive());
+    CHECK(b.IsAlive());
     TestRun(b);
 
     auto c = SqlStatement(std::move(b));
-    // CHECK(!a.Connection().IsAlive());
-    // CHECK(!b.Connection().IsAlive());
-    CHECK(c.Connection().IsAlive());
+    CHECK(&conn == &c.Connection());
+    CHECK(!a.IsAlive());
+    CHECK(!b.IsAlive());
+    CHECK(c.IsAlive());
     TestRun(c);
 }
 
