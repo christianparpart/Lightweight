@@ -21,12 +21,14 @@ struct SqlDataBinder<SqlNullType>
                                                              SqlNullType const& value,
                                                              SqlDataBinderCallback& /*cb*/) noexcept
     {
+        // This is generally ignored for NULL values, but MS SQL Server requires a non-zero value
+        // when the underlying type is e.g. an INT.
         return SQLBindParameter(stmt,
                                 column,
                                 SQL_PARAM_INPUT,
                                 SQL_C_CHAR,
                                 SQL_VARCHAR,
-                                0,
+                                10,
                                 0,
                                 nullptr,
                                 0,
