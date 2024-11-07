@@ -183,7 +183,7 @@ class SqlStatement final: public SqlDataBinderCallback
                                         std::source_location sourceLocation = std::source_location::current()) const;
     LIGHTWEIGHT_API void PlanPostExecuteCallback(std::function<void()>&& cb) override;
     LIGHTWEIGHT_API void PlanPostProcessOutputColumn(std::function<void()>&& cb) override;
-    LIGHTWEIGHT_API [[nodiscard]] SqlServerType ServerType() const noexcept override;
+    [[nodiscard]] LIGHTWEIGHT_API SqlServerType ServerType() const noexcept override;
     LIGHTWEIGHT_API void ProcessPostExecuteCallbacks();
 
     LIGHTWEIGHT_API void RequireIndicators();
