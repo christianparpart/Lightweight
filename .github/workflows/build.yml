@@ -31,16 +31,18 @@ jobs:
   check_clang_format:
     name: "Check C++ style"
     runs-on: ubuntu-22.04
+    env:
+      LLVM_VERSION: 19
     steps:
     - uses: actions/checkout@v4
     - name: Install clang
       run: |
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
-        sudo ./llvm.sh 18
-        sudo apt-get install clang-format-18
+        sudo ./llvm.sh $LLVM_VERSION
+        sudo apt-get install clang-format-$LLVM_VERSION
     - name: "Clang-format"
-      run: find ./src/ -name "*.cpp" -o -name "*.h" | xargs clang-format-18 --Werror --dry-run
+      run: find ./src/ \( -name "*.cpp" -o -name "*.h" \) -exec clang-format-19 --Werror --dry-run {} \;
 
 
   check_clang_tidy:

@@ -24,9 +24,9 @@ template <typename T, std::size_t N>
 struct SqlDataBinder<T[N]>
 {
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
-                                    SQLUSMALLINT column,
-                                    T const* value,
-                                    SqlDataBinderCallback& /*cb*/) noexcept
+                                                             SQLUSMALLINT column,
+                                                             T const* value,
+                                                             SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,

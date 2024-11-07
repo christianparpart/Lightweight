@@ -154,8 +154,8 @@ struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableName>: std::
 template <>
 struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableColumn>: std::formatter<std::string>
 {
-    auto format(SqlSchema::FullyQualifiedTableColumn const& value,
-                format_context& ctx) const -> format_context::iterator
+    auto format(SqlSchema::FullyQualifiedTableColumn const& value, format_context& ctx) const
+        -> format_context::iterator
     {
         auto const table = std::format("{}", value.table);
         if (table.empty())
@@ -168,8 +168,8 @@ struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableColumn>: std
 template <>
 struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableColumnSequence>: std::formatter<std::string>
 {
-    auto format(SqlSchema::FullyQualifiedTableColumnSequence const& value,
-                format_context& ctx) const -> format_context::iterator
+    auto format(SqlSchema::FullyQualifiedTableColumnSequence const& value, format_context& ctx) const
+        -> format_context::iterator
     {
         auto const resolvedTableName = std::format("{}", value.table);
         string output;
