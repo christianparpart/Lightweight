@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Core.hpp"
 #include "../SqlLogger.hpp"
+#include "Core.hpp"
 #include "MFCStringLike.hpp"
 #include "Primitives.hpp"
 #include "SqlDate.hpp"
