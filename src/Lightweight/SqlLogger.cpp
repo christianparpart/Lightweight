@@ -24,13 +24,35 @@
 namespace
 {
 
-class SqlStandardLogger: public SqlLogger
+class SqlNullLogger: public SqlLogger
+{
+  public:
+    void OnWarning(std::string_view const& /*message*/) override {}
+    void OnError(SqlError /*errorCode*/, std::source_location /*sourceLocation*/) override {}
+    void OnError(SqlErrorInfo const& /*errorInfo*/, std::source_location /*sourceLocation*/) override {}
+    void OnConnectionOpened(SqlConnection const& /*connection*/) override {}
+    void OnConnectionClosed(SqlConnection const& /*connection*/) override {}
+    void OnConnectionIdle(SqlConnection const& /*connection*/) override {}
+    void OnConnectionReuse(SqlConnection const& /*connection*/) override {}
+    void OnExecuteDirect(std::string_view const& /*query*/) override {}
+    void OnPrepare(std::string_view const& /*query*/) override {}
+    void OnExecute(std::string_view const& /*query*/) override {}
+    void OnExecuteBatch() override {}
+    void OnFetchedRow() override {}
+};
+
+class SqlStandardLogger: public SqlNullLogger
 {
   private:
     std::chrono::time_point<std::chrono::system_clock> m_currentTime;
     std::string m_currentTimeStr;
 
   public:
+    SqlStandardLogger()
+    {
+        ConfigureConsole();
+    }
+
     void Tick()
     {
         m_currentTime = std::chrono::system_clock::now();
@@ -66,15 +88,20 @@ class SqlStandardLogger: public SqlLogger
         WriteMessage("  Message: {}", errorInfo.message);
     }
 
-    void OnConnectionOpened(SqlConnection const& /*connection*/) override {}
-    void OnConnectionClosed(SqlConnection const& /*connection*/) override {}
-    void OnConnectionIdle(SqlConnection const& /*connection*/) override {}
-    void OnConnectionReuse(SqlConnection const& /*connection*/) override {}
-    void OnExecuteDirect(std::string_view const& /*query*/) override {}
-    void OnPrepare(std::string_view const& /*query*/) override {}
-    void OnExecute(std::string_view const& /*query*/) override {}
-    void OnExecuteBatch() override {}
-    void OnFetchedRow() override {}
+    void ConfigureConsole()
+    {
+#if defined(_WIN32) || defined(_WIN64)
+        if (AttachConsole(ATTACH_PARENT_PROCESS) || AllocConsole())
+        {
+            freopen("CONIN$", "r", stdin);
+            freopen("CONOUT$", "w", stdout);
+            freopen("CONOUT$", "w", stderr);
+            SqlLogger::SetLogger(SqlLogger::TraceLogger());
+        }
+#else
+        // Assume that we'll always have access to stdout on Unix-like systems.
+#endif
+    }
 };
 
 class SqlTraceLogger: public SqlStandardLogger
@@ -165,7 +192,14 @@ class SqlTraceLogger: public SqlStandardLogger
 
 } // namespace
 
+SqlLogger& SqlLogger::NullLogger()
+{
+    static SqlNullLogger theNullLogger {};
+    return theNullLogger;
+}
+
 static SqlStandardLogger theStdLogger {};
+
 SqlLogger& SqlLogger::StandardLogger()
 {
     return theStdLogger;
@@ -177,7 +211,7 @@ SqlLogger& SqlLogger::TraceLogger()
     return logger;
 }
 
-static SqlLogger* theDefaultLogger = &SqlLogger::StandardLogger();
+static SqlLogger* theDefaultLogger = &SqlLogger::NullLogger();
 
 SqlLogger& SqlLogger::GetLogger()
 {
