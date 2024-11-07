@@ -11,16 +11,14 @@
 #include <Lightweight/SqlStatement.hpp>
 #include <Lightweight/SqlTransaction.hpp>
 
+#include <algorithm>
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <algorithm>
-#include <array>
 #include <cstdlib>
 #include <format>
-#include <list>
-#include <set>
 #include <type_traits>
 
 // NOLINTBEGIN(readability-container-size-empty)
@@ -332,7 +330,7 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
 {
     auto const MakeLargeText = [](size_t size) {
         auto text = std::string(size, '\0');
-        std::generate(text.begin(), text.end(), [i = 0]() mutable { return char('A' + (i++ % 26)); });
+        std::ranges::generate(text, [i = 0]() mutable { return char('A' + (i++ % 26)); });
         return text;
     };
 
