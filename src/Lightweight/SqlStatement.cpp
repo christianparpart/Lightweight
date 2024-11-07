@@ -150,14 +150,8 @@ void SqlStatement::ExecuteWithVariants(std::vector<SqlVariant> const& args)
         && !(static_cast<size_t>(m_expectedParameterCount) == args.size()))
         throw std::invalid_argument { "Invalid argument count" };
 
-    SQLUSMALLINT i = 0;
-    for (auto const& arg: args)
-    {
-        if (!arg.IsNull())
-            SqlDataBinder<SqlVariant>::InputParameter(m_hStmt, ++i, arg, *this);
-        else
-            SqlDataBinder<SqlNullType>::InputParameter(m_hStmt, ++i, SqlNullValue, *this);
-    }
+    for (auto const& [i, arg]: args | std::views::enumerate)
+        SqlDataBinder<SqlVariant>::InputParameter(m_hStmt, static_cast<SQLUSMALLINT>(1 + i), arg, *this);
 
     RequireSuccess(SQLExecute(m_hStmt));
     ProcessPostExecuteCallbacks();
