@@ -39,6 +39,9 @@ class LIGHTWEIGHT_API SqlLogger
     virtual void OnExecuteBatch() = 0;
     virtual void OnFetchedRow() = 0;
 
+    // Logs nothing.
+    static SqlLogger& NullLogger();
+
     // Logs the most important events to standard output in a human-readable format.
     static SqlLogger& StandardLogger();
 

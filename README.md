@@ -1,4 +1,5 @@
 # Lightweight, an ODBC SQL API for C++23
+![Build Status](https://github.com/christianparpart/Lightweight/workflows/build/badge.svg)
 
 **Lightweight** is a thin and modern C++ ODBC wrapper for **easy** and **fast** raw database access.
 

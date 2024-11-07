@@ -7,7 +7,6 @@
                 "request": "launch",
                 "program": "${workspaceRoot}/out/build/linux-gcc-debug/src/tests/LightweightTest",
                 "args": [
-                    "SqlQueryBuilder: sub select with WhereIn"
                 ],
                 "environment": [
                     {
@@ -33,7 +32,6 @@
                 "request": "launch",
                 "program": "${workspaceRoot}/out/build/linux-gcc-debug/src/tests/LightweightTest",
                 "args": [
-                    "SqlDataBinder: SqlGuid"
                 ],
                 "environment": [
                     {
@@ -59,7 +57,6 @@
                 "request": "launch",
                 "program": "${workspaceRoot}/out/build/linux-gcc-debug/src/tests/LightweightTest",
                 "args": [
-                    "SqlDataBinder: SqlGuid"
                 ],
                 "environment": [
                     {

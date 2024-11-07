@@ -144,14 +144,25 @@ class SqlStatement final: public SqlDataBinderCallback
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
     template <typename T>
+        requires(!std::same_as<T, SqlVariant>)
     [[nodiscard]] std::optional<T> ExecuteDirectSingle(const std::string_view& query,
                                                        std::source_location location = std::source_location::current());
 
+    template <typename T>
+        requires(std::same_as<T, SqlVariant>)
+    [[nodiscard]] T ExecuteDirectSingle(const std::string_view& query,
+                                        std::source_location location = std::source_location::current());
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
     template <typename T>
+        requires(!std::same_as<T, SqlVariant>)
     [[nodiscard]] std::optional<T> ExecuteDirectSingle(SqlQueryObject auto const& query,
                                                        std::source_location location = std::source_location::current());
+
+    template <typename T>
+        requires(std::same_as<T, SqlVariant>)
+    [[nodiscard]] T ExecuteDirectSingle(SqlQueryObject auto const& query,
+                                        std::source_location location = std::source_location::current());
 
     // Retrieves the number of rows affected by the last query.
     [[nodiscard]] LIGHTWEIGHT_API size_t NumRowsAffected() const;
@@ -175,8 +186,11 @@ class SqlStatement final: public SqlDataBinderCallback
     template <SqlGetColumnNativeType T>
     [[nodiscard]] T GetColumn(SQLUSMALLINT column) const;
 
+    // Retrieves the value of the column at the given index for the currently selected row.
+    //
+    // If the value is NULL, std::nullopt is returned.
     template <SqlGetColumnNativeType T>
-    [[nodiscard]] std::optional<T> TryGetColumn(SQLUSMALLINT column) const;
+    [[nodiscard]] std::optional<T> GetNullableColumn(SQLUSMALLINT column) const;
 
   private:
     LIGHTWEIGHT_API void RequireSuccess(SQLRETURN error,
@@ -391,7 +405,7 @@ inline T SqlStatement::GetColumn(SQLUSMALLINT column) const
 }
 
 template <SqlGetColumnNativeType T>
-inline std::optional<T> SqlStatement::TryGetColumn(SQLUSMALLINT column) const
+inline std::optional<T> SqlStatement::GetNullableColumn(SQLUSMALLINT column) const
 {
     T result {};
     SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.
@@ -408,18 +422,39 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::ExecuteDirect(SqlQueryObject 
 }
 
 template <typename T>
+    requires(!std::same_as<T, SqlVariant>)
 inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query,
                                                                                    std::source_location location)
 {
     ExecuteDirect(query, location);
-    if (FetchRow())
-        return { GetColumn<T>(1) };
-    return std::nullopt;
+    RequireSuccess(FetchRow());
+    return GetNullableColumn<T>(1);
 }
 
 template <typename T>
+    requires(std::same_as<T, SqlVariant>)
+inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectSingle(const std::string_view& query,
+                                                                    std::source_location location)
+{
+    ExecuteDirect(query, location);
+    RequireSuccess(FetchRow());
+    if (auto result = GetNullableColumn<T>(1); result.has_value())
+        return *result;
+    return SqlVariant { SqlNullValue };
+}
+
+template <typename T>
+    requires(!std::same_as<T, SqlVariant>)
 inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
                                                                                    std::source_location location)
+{
+    return ExecuteDirectSingle<T>(query.ToSql(), location);
+}
+
+template <typename T>
+    requires(std::same_as<T, SqlVariant>)
+inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
+                                                                    std::source_location location)
 {
     return ExecuteDirectSingle<T>(query.ToSql(), location);
 }

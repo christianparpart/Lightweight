@@ -337,7 +337,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SELECT * FROM Table")
     REQUIRE(!stmt.FetchRow());
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "TryGetColumn")
+TEST_CASE_METHOD(SqlTestFixture, "GetNullableColumn")
 {
     auto stmt = SqlStatement {};
     stmt.ExecuteDirect("CREATE TABLE Test (Remarks1 VARCHAR(50) NULL, Remarks2 VARCHAR(50) NULL)");
@@ -346,8 +346,8 @@ TEST_CASE_METHOD(SqlTestFixture, "TryGetColumn")
 
     stmt.ExecuteDirect("SELECT Remarks1, Remarks2 FROM Test");
     REQUIRE(stmt.FetchRow());
-    auto const actual1 = stmt.TryGetColumn<std::string>(1);
-    auto const actual2 = stmt.TryGetColumn<std::string>(2);
+    auto const actual1 = stmt.GetNullableColumn<std::string>(1);
+    auto const actual2 = stmt.GetNullableColumn<std::string>(2);
     CHECK(actual1.value_or("IS_NULL") == "Blurb");
     CHECK(!actual2.has_value());
 }

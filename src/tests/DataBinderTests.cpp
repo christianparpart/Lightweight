@@ -16,11 +16,9 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <algorithm>
-#include <array>
 #include <cstdlib>
 #include <format>
-#include <list>
-#include <set>
+#include <ranges>
 #include <type_traits>
 
 // NOLINTBEGIN(readability-container-size-empty)
@@ -77,7 +75,7 @@ struct SqlDataBinder<CustomType>
 TEST_CASE_METHOD(SqlTestFixture, "custom types", "[SqlDataBinder]")
 {
     auto stmt = SqlStatement {};
-    stmt.ExecuteDirect("CREATE TABLE Test (Value INT)");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value INT NULL)");
 
     // check custom type handling for input parameters
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
@@ -96,9 +94,16 @@ TEST_CASE_METHOD(SqlTestFixture, "custom types", "[SqlDataBinder]")
     stmt.Execute();
     REQUIRE(stmt.FetchRow());
     REQUIRE(result.value == (42 | 0x01));
+
+    // Test inserting a NULL value
+    stmt.ExecuteDirect("DELETE FROM Test");
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(SqlNullValue);
+    auto const y = stmt.ExecuteDirectSingle<CustomType>("SELECT Value FROM Test");
+    CHECK(!y);
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear", "[SqlDataBinder],[SqlFixedString]")
+TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear", "[SqlFixedString]")
 {
     SqlFixedString<8> str;
 
@@ -129,7 +134,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear", "[SqlDataBi
     REQUIRE(str == "");
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: push_back and pop_back", "[SqlDataBinder],[SqlFixedString]")
+TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: push_back and pop_back", "[SqlFixedString]")
 {
     SqlFixedString<2> str;
 
@@ -152,7 +157,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: push_back and pop_back", "[Sql
     REQUIRE(str == "");
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: assign", "[SqlDataBinder],[SqlFixedString]")
+TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: assign", "[SqlFixedString]")
 {
     SqlFixedString<12> str;
     str.assign("Hello, World");
@@ -166,7 +171,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: assign", "[SqlDataBinder],[Sql
     // str = ("Hello, World!"); // <-- would fail due to static_assert
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: c_str", "[SqlDataBinder],[SqlFixedString]")
+TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: c_str", "[SqlFixedString]")
 {
     SqlFixedString<12> str { "Hello, World" };
     str.resize(5);
@@ -189,17 +194,17 @@ TEST_CASE_METHOD(SqlTestFixture,
     auto stmt = SqlStatement {};
     CreateEmployeesTable(stmt);
     stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
-    stmt.Execute("Alice    ", "Smith    ", 50'000);
+    stmt.Execute("Alice    ", SqlNullValue, 50'000);
 
     SqlTrimmedString firstName { .value = std::string(20, '\0') };
-    SqlTrimmedString lastName { .value = std::string(20, '\0') };
+    std::optional<SqlTrimmedString> lastName { SqlTrimmedString { .value = std::string(20, '\0') } };
 
     stmt.ExecuteDirect("SELECT FirstName, LastName FROM Employees");
     stmt.BindOutputColumns(&firstName, &lastName);
 
     REQUIRE(stmt.FetchRow());
     CHECK(firstName.value == "Alice");
-    CHECK(lastName.value == "Smith");
+    CHECK(!lastName.has_value());
 
     REQUIRE(!stmt.FetchRow());
 }
@@ -208,7 +213,9 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: GetColumn in-place store variant",
 {
     auto stmt = SqlStatement {};
     CreateEmployeesTable(stmt);
-    FillEmployeesTable(stmt);
+
+    stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    stmt.Execute("Alice", SqlNullValue, 50'000);
 
     stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees");
     REQUIRE(stmt.FetchRow());
@@ -216,8 +223,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: GetColumn in-place store variant",
     CHECK(stmt.GetColumn<std::string>(1) == "Alice");
 
     SqlVariant lastName;
-    CHECK(stmt.GetColumn(2, &lastName));
-    CHECK(std::get<std::string>(lastName.value) == "Smith");
+    CHECK(!stmt.GetColumn(2, &lastName));
+    CHECK(lastName.IsNull());
 
     UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
     SqlVariant salary;
@@ -238,12 +245,19 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values", "[SqlDataBinder],[Sq
 
     auto const actual = stmt.GetColumn<SqlVariant>(1);
     CHECK(std::holds_alternative<SqlNullType>(actual.value));
+
+    // Test for inserting/getting NULL values
+    stmt.ExecuteDirect("DELETE FROM Test");
+    stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
+    stmt.Execute(SqlNullValue);
+    auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Remarks FROM Test");
+    CHECK(result.IsNull());
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate", "[SqlDataBinder],[SqlVariant]")
 {
     auto stmt = SqlStatement {};
-    stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NOT NULL)");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NULL)");
 
     using namespace std::chrono_literals;
     auto const expected = SqlVariant { SqlDate { 2017y, std::chrono::August, 16d } };
@@ -255,13 +269,20 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate", "[SqlDataBinder],[SqlVar
     REQUIRE(stmt.FetchRow());
     auto const actual = stmt.GetColumn<SqlVariant>(1);
     CHECK(std::get<SqlDate>(actual.value) == std::get<SqlDate>(expected.value));
+
+    // Test for inserting/getting NULL values
+    stmt.ExecuteDirect("DELETE FROM Test");
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(SqlNullValue);
+    auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Value FROM Test");
+    CHECK(result.IsNull());
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime", "[SqlDataBinder],[SqlVariant]")
 {
     auto stmt = SqlStatement {};
     UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
-    stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NOT NULL)");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NULL)");
 
     using namespace std::chrono_literals;
     auto const expected = SqlVariant { SqlTime { 12h, 34min, 56s } };
@@ -281,6 +302,13 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime", "[SqlDataBinder],[SqlVar
     }
 
     CHECK(std::get<SqlTime>(actual.value) == std::get<SqlTime>(expected.value));
+
+    // Test for inserting/getting NULL values
+    stmt.ExecuteDirect("DELETE FROM Test");
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(SqlNullValue);
+    auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Value FROM Test");
+    CHECK(result.IsNull());
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "std::optional: InputParameter", "[SqlDataBinder],[std::optional]")
@@ -332,7 +360,7 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
 {
     auto const MakeLargeText = [](size_t size) {
         auto text = std::string(size, '\0');
-        std::generate(text.begin(), text.end(), [i = 0]() mutable { return char('A' + (i++ % 26)); });
+        std::ranges::generate(text, [i = 0]() mutable { return char('A' + (i++ % 26)); });
         return text;
     };
 
@@ -374,7 +402,7 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString", "[SqlDataBinder],[SqlFixedString]")
 {
     auto stmt = SqlStatement {};
-    stmt.ExecuteDirect("CREATE TABLE Test (Value VARCHAR(8) NOT NULL)");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value VARCHAR(8) NULL)");
 
     auto const expectedValue = SqlFixedString<8> { "Hello " };
 
@@ -426,13 +454,22 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString", "
         REQUIRE(stmt.FetchRow());
         CHECK(actualValue == "Hello");
     }
+
+    SECTION("check for NULL values")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<SqlFixedString<8>>("SELECT Value FROM Test");
+        CHECK(!result.has_value());
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlText", "[SqlDataBinder],[SqlText]")
 {
     auto stmt = SqlStatement {};
     UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
-    stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT NOT NULL)");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT NULL)");
 
     using namespace std::chrono_literals;
     auto const expectedValue = SqlText { "Hello, World!" };
@@ -457,13 +494,22 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlText", "[SqlDat
         REQUIRE(stmt.FetchRow());
         CHECK(actualValue == expectedValue);
     }
+
+    SECTION("check for NULL values")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<SqlText>("SELECT Value FROM Test");
+        CHECK(!result.has_value());
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDateTime", "[SqlDataBinder],[SqlDateTime]")
 {
     auto stmt = SqlStatement {};
     UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
-    stmt.ExecuteDirect(std::format("CREATE TABLE Test (Value {} NOT NULL)",
+    stmt.ExecuteDirect(std::format("CREATE TABLE Test (Value {} NULL)",
                                    stmt.Connection().Traits().ColumnTypeName(SqlColumnType::DATETIME)));
 
     // With SQL Server or Oracle, we could use DATETIME2(7) and have nano-second precision (with 100ns resolution)
@@ -492,12 +538,21 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDateTime", "[Sq
         REQUIRE(stmt.FetchRow());
         CHECK(actualValue == expectedValue);
     }
+
+    SECTION("check for NULL values")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<SqlDateTime>("SELECT Value FROM Test");
+        CHECK(!result.has_value());
+    }
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: date", "[SqlDataBinder],[SqlDAte]")
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDate", "[SqlDataBinder],[SqlDAte]")
 {
     auto stmt = SqlStatement {};
-    stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NOT NULL)");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NULL)");
     using namespace std::chrono_literals;
     auto const expected = SqlDate { std::chrono::year_month_day { 2017y, std::chrono::August, 16d } };
 
@@ -529,13 +584,22 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: date", "[SqlDataBi
         REQUIRE(stmt.FetchRow());
         REQUIRE(actual == expected);
     }
+
+    SECTION("check for NULL values")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<SqlDate>("SELECT Value FROM Test");
+        CHECK(!result.has_value());
+    }
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: time", "[SqlDataBinder],[SqlTime]")
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlTime", "[SqlDataBinder],[SqlTime]")
 {
     auto stmt = SqlStatement {};
     UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
-    stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NOT NULL)");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value TIME NULL)");
     using namespace std::chrono_literals;
     auto const expected = SqlTime(12h, 34min, 56s);
 
@@ -567,6 +631,15 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: time", "[SqlDataBi
         REQUIRE(stmt.FetchRow());
         REQUIRE(actual == expected);
     }
+
+    SECTION("check for NULL values")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<SqlTime>("SELECT Value FROM Test");
+        CHECK(!result.has_value());
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Unicode]")
@@ -582,7 +655,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
     // Mind, for PostgreSQL, we need to use VARCHAR instead of NVARCHAR,
     // because supports Unicode only via UTF-8.
     stmt.ExecuteDirect(
-        std::format("CREATE TABLE Test (Value {}(50) NOT NULL)",
+        std::format("CREATE TABLE Test (Value {}(50) NULL)",
                     stmt.Connection().ServerType() == SqlServerType::POSTGRESQL ? "VARCHAR" : "NVARCHAR"));
 
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
@@ -609,6 +682,13 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
     stmt.BindOutputColumns(&actualValue2);
     REQUIRE(stmt.FetchRow());
     CHECK(actualValue2 == inputValue);
+
+    // Test for inserting/getting NULL VALUES
+    stmt.ExecuteDirect("DELETE FROM Test");
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(SqlNullValue);
+    auto const result = stmt.ExecuteDirectSingle<WideString>("SELECT Value FROM Test");
+    CHECK(!result.has_value());
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder],[SqlGuid]")
@@ -616,29 +696,32 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder],[Sql
     auto stmt = SqlStatement {};
     UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
 
-    stmt.ExecuteDirect(std::format("CREATE TABLE Test (id {}, name VARCHAR(50))",
-                                   stmt.Connection().Traits().PrimaryKeyGuidColumnType));
+    stmt.ExecuteDirect(std::format("CREATE TABLE Test (id {}, nullableGuid {} NULL, name VARCHAR(50) NULL)",
+                                   stmt.Connection().Traits().PrimaryKeyGuidColumnType,
+                                   stmt.Connection().Traits().GuidColumnType));
 
     auto const expectedGuid = SqlGuid::Create();
     auto const expectedGuidStr = std::format("{}", expectedGuid);
 
-    stmt.Prepare("INSERT INTO Test (id, name) VALUES (?, ?)");
-    stmt.Execute(expectedGuid, "Alice");
+    stmt.Prepare("INSERT INTO Test (id, nullableGuid, name) VALUES (?, ?, ?)");
+    stmt.Execute(expectedGuid, expectedGuid, "Alice");
 
     // Fetch and check GetColumn for GUID
-    stmt.ExecuteDirect("SELECT id, name FROM Test");
+    stmt.ExecuteDirect("SELECT id, nullableGuid, name FROM Test");
     REQUIRE(stmt.FetchRow());
     auto const actualGuid = stmt.GetColumn<SqlGuid>(1);
+    auto const actualGuid2 = stmt.GetColumn<SqlGuid>(2);
     auto const actualGuidStr = std::format("{}", actualGuid);
     CHECK(actualGuidStr == expectedGuidStr);
     CHECK(actualGuid == expectedGuid);
+    CHECK(actualGuid2 == expectedGuid);
 
     // Bind output column, fetch, and check result in output column for GUID
     stmt.ExecuteDirect("SELECT id FROM Test");
-    SqlGuid actualGuid2;
-    stmt.BindOutputColumns(&actualGuid2);
+    SqlGuid actualGuid3;
+    stmt.BindOutputColumns(&actualGuid3);
     REQUIRE(stmt.FetchRow());
-    CHECK(actualGuid2 == expectedGuid);
+    CHECK(actualGuid3 == expectedGuid);
     REQUIRE(!stmt.FetchRow());
 
     // Test SELECT by GUID
@@ -647,6 +730,13 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder],[Sql
     REQUIRE(stmt.FetchRow());
     CHECK(stmt.GetColumn<std::string>(1) == "Alice");
     REQUIRE(!stmt.FetchRow());
+
+    // Test for inserting/getting NULL values
+    stmt.ExecuteDirect("DELETE FROM Test");
+    stmt.Prepare("INSERT INTO Test (nullableGuid, name) VALUES (?, ?)");
+    stmt.Execute(SqlNullValue, "Alice");
+    auto const result = stmt.ExecuteDirectSingle<SqlGuid>("SELECT nullableGuid FROM Test");
+    CHECK(!result.has_value());
 }
 
 // NOLINTEND(readability-container-size-empty)
