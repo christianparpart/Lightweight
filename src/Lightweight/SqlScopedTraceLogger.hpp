@@ -14,6 +14,17 @@ class LIGHTWEIGHT_API SqlScopedTraceLogger
     SQLHDBC m_nativeConnection;
 
   public:
+    explicit SqlScopedTraceLogger(SqlConnection& connection):
+        SqlScopedTraceLogger(connection.NativeHandle(),
+#if defined(_WIN32) || defined(_WIN64)
+                             "CONOUT$"
+#else
+                             "/dev/stdout"
+#endif
+        )
+    {
+    }
+
     explicit SqlScopedTraceLogger(SqlStatement& stmt):
         SqlScopedTraceLogger(stmt.Connection().NativeHandle(),
 #if defined(_WIN32) || defined(_WIN64)
