@@ -144,14 +144,25 @@ class SqlStatement final: public SqlDataBinderCallback
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
     template <typename T>
+        requires(!std::same_as<T, SqlVariant>)
     [[nodiscard]] std::optional<T> ExecuteDirectSingle(const std::string_view& query,
                                                        std::source_location location = std::source_location::current());
 
+    template <typename T>
+        requires(std::same_as<T, SqlVariant>)
+    [[nodiscard]] T ExecuteDirectSingle(const std::string_view& query,
+                                        std::source_location location = std::source_location::current());
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
     template <typename T>
+        requires(!std::same_as<T, SqlVariant>)
     [[nodiscard]] std::optional<T> ExecuteDirectSingle(SqlQueryObject auto const& query,
                                                        std::source_location location = std::source_location::current());
+
+    template <typename T>
+        requires(std::same_as<T, SqlVariant>)
+    [[nodiscard]] T ExecuteDirectSingle(SqlQueryObject auto const& query,
+                                        std::source_location location = std::source_location::current());
 
     // Retrieves the number of rows affected by the last query.
     [[nodiscard]] LIGHTWEIGHT_API size_t NumRowsAffected() const;
@@ -411,6 +422,7 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::ExecuteDirect(SqlQueryObject 
 }
 
 template <typename T>
+    requires(!std::same_as<T, SqlVariant>)
 inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query,
                                                                                    std::source_location location)
 {
@@ -420,8 +432,29 @@ inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSing
 }
 
 template <typename T>
+    requires(std::same_as<T, SqlVariant>)
+inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectSingle(const std::string_view& query,
+                                                                    std::source_location location)
+{
+    ExecuteDirect(query, location);
+    RequireSuccess(FetchRow());
+    if (auto result = GetNullableColumn<T>(1); result.has_value())
+        return *result;
+    return SqlVariant { SqlNullValue };
+}
+
+template <typename T>
+    requires(!std::same_as<T, SqlVariant>)
 inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
                                                                                    std::source_location location)
+{
+    return ExecuteDirectSingle<T>(query.ToSql(), location);
+}
+
+template <typename T>
+    requires(std::same_as<T, SqlVariant>)
+inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
+                                                                    std::source_location location)
 {
     return ExecuteDirectSingle<T>(query.ToSql(), location);
 }
