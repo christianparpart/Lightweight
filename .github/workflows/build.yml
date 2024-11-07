@@ -113,7 +113,7 @@ jobs:
         compiler:
           [
             "GCC 14",
-            # "Clang 18", (does not seem to have std::expected<> just yet)
+            "Clang 18",
           ]
     name: "Ubuntu Linux 24.04 (${{ matrix.compiler }}, C++${{ matrix.cxx }})"
     runs-on: ubuntu-24.04
