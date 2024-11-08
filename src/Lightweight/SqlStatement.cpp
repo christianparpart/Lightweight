@@ -119,9 +119,6 @@ void SqlStatement::Prepare(std::string_view query)
     m_data->postExecuteCallbacks.clear();
     m_data->postProcessOutputColumnCallbacks.clear();
 
-    // Closes the cursor if it is open
-    RequireSuccess(SQLFreeStmt(m_hStmt, SQL_CLOSE));
-
     // Unbinds the columns, if any
     RequireSuccess(SQLFreeStmt(m_hStmt, SQL_UNBIND));
 
