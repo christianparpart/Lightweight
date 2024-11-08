@@ -181,6 +181,11 @@ class SqlStatement final: public SqlDataBinderCallback
     // @retval false No result row was fetched, because the end of the result set was reached.
     [[nodiscard]] LIGHTWEIGHT_API bool FetchRow();
 
+    // Closes the result cursor on queries that yield a result set, e.g. SELECT statements.
+    //
+    // Call this function when done with fetching the results before the end of the result set is reached.
+    void CloseCursor() noexcept;
+
     // Retrieves the value of the column at the given index for the currently selected row.
     //
     // Returns true if the value is not NULL, false otherwise.
@@ -462,6 +467,12 @@ inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectSingle(SqlQueryObje
                                                                     std::source_location location)
 {
     return ExecuteDirectSingle<T>(query.ToSql(), location);
+}
+
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::CloseCursor() noexcept
+{
+    // SQLCloseCursor(m_hStmt);
+    SQLFreeStmt(m_hStmt, SQL_CLOSE);
 }
 
 // }}}
