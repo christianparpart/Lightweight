@@ -436,6 +436,7 @@ template <typename T>
 inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query,
                                                                                    std::source_location location)
 {
+    auto const _ = detail::Finally([this] { CloseCursor(); });
     ExecuteDirect(query, location);
     RequireSuccess(FetchRow());
     return GetNullableColumn<T>(1);
@@ -446,6 +447,7 @@ template <typename T>
 inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectSingle(const std::string_view& query,
                                                                     std::source_location location)
 {
+    auto const _ = detail::Finally([this] { CloseCursor(); });
     ExecuteDirect(query, location);
     RequireSuccess(FetchRow());
     if (auto result = GetNullableColumn<T>(1); result.has_value())
