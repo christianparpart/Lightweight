@@ -135,7 +135,6 @@ void SqlStatement::ExecuteDirect(const std::string_view& query, std::source_loca
 
     SqlLogger::GetLogger().OnExecuteDirect(query);
 
-    RequireSuccess(SQLFreeStmt(m_hStmt, SQL_CLOSE), location);
     RequireSuccess(SQLExecDirectA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()), location);
 }
 
