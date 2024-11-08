@@ -174,6 +174,11 @@ class SqlStatement final: public SqlDataBinderCallback
     [[nodiscard]] LIGHTWEIGHT_API size_t LastInsertId();
 
     // Fetches the next row of the result set.
+    //
+    // @note Automatically closes the cursor at the end of the result set.
+    //
+    // @retval true The next result row was successfully fetched
+    // @retval false No result row was fetched, because the end of the result set was reached.
     [[nodiscard]] LIGHTWEIGHT_API bool FetchRow();
 
     // Retrieves the value of the column at the given index for the currently selected row.

@@ -182,6 +182,7 @@ bool SqlStatement::FetchRow()
     switch (sqlResult)
     {
         case SQL_NO_DATA:
+            SQLCloseCursor(m_hStmt);
             return false;
         default:
             RequireSuccess(sqlResult);
