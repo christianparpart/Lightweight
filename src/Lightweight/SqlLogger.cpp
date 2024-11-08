@@ -198,17 +198,23 @@ SqlLogger& SqlLogger::NullLogger()
     return theNullLogger;
 }
 
-static SqlStandardLogger theStdLogger {};
+static std::unique_ptr<SqlStandardLogger> theStdLogger {};
 
 SqlLogger& SqlLogger::StandardLogger()
 {
-    return theStdLogger;
+    if (!theStdLogger)
+        theStdLogger = std::make_unique<SqlStandardLogger>();
+
+    return *theStdLogger;
 }
 
+static std::unique_ptr<SqlTraceLogger> theTraceLogger {};
 SqlLogger& SqlLogger::TraceLogger()
 {
-    static SqlTraceLogger logger {};
-    return logger;
+    if (!theTraceLogger)
+        theTraceLogger = std::make_unique<SqlTraceLogger>();
+
+    return *theTraceLogger;
 }
 
 static SqlLogger* theDefaultLogger = &SqlLogger::NullLogger();
