@@ -10,6 +10,7 @@
 #include "DataBinder/SqlFixedString.hpp"
 #include "DataBinder/SqlGuid.hpp"
 #include "DataBinder/SqlNullValue.hpp"
+#include "DataBinder/SqlNumeric.hpp"
 #include "DataBinder/SqlText.hpp"
 #include "DataBinder/SqlTime.hpp"
 #include "DataBinder/SqlTrimmedString.hpp"

@@ -29,6 +29,7 @@ enum class SqlColumnType : uint8_t
     TEXT,
     BOOLEAN,
     INTEGER,
+    NUMERIC,
     REAL,
     BLOB,
     DATE,
@@ -53,6 +54,8 @@ constexpr std::string_view DefaultColumnTypeName(SqlColumnType value) noexcept
             return "BOOL";
         case SqlColumnType::INTEGER:
             return "INTEGER";
+        case SqlColumnType::NUMERIC:
+            return "NUMERIC";
         case SqlColumnType::REAL:
             return "REAL";
         case SqlColumnType::BLOB:

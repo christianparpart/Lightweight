@@ -549,7 +549,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDateTime", "[Sq
     }
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDate", "[SqlDataBinder],[SqlDAte]")
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlDate", "[SqlDataBinder],[SqlDate]")
 {
     auto stmt = SqlStatement {};
     stmt.ExecuteDirect("CREATE TABLE Test (Value DATE NULL)");
@@ -737,6 +737,57 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder],[Sql
     stmt.Execute(SqlNullValue, "Alice");
     auto const result = stmt.ExecuteDirectSingle<SqlGuid>("SELECT nullableGuid FROM Test");
     CHECK(!result.has_value());
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlNumeric", "[SqlDataBinder],[SqlNumeric]")
+{
+    auto stmt = SqlStatement {};
+
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::SQLITE); // Actually, SQLite3 does not support NUMERIC(p, s) type.
+    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
+
+    stmt.ExecuteDirect("DROP TABLE IF EXISTS Test");
+    stmt.ExecuteDirect("CREATE TABLE Test (Value NUMERIC(10, 2) NULL)");
+
+    auto const expectedValue = SqlNumeric<10, 2> { 123.45 };
+
+    INFO(expectedValue);
+    CHECK_THAT(expectedValue.ToDouble(), Catch::Matchers::WithinAbs(123.45, 0.001));
+    CHECK_THAT(expectedValue.ToFloat(), Catch::Matchers::WithinAbs(123.45F, 0.001));
+    CHECK(expectedValue.ToString() == "123.45");
+
+    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.Execute(expectedValue);
+    auto const actual = stmt.ExecuteDirectSingle<SqlNumeric<10, 2>>("SELECT Value FROM Test");
+    REQUIRE(actual.has_value());
+    CHECK(*actual == expectedValue);
+
+    SECTION("Fetch and check GetColumn for the numeric")
+    {
+        stmt.ExecuteDirect("SELECT Value FROM Test");
+        REQUIRE(stmt.FetchRow());
+        auto const actualValue = stmt.GetColumn<SqlNumeric<10, 2>>(1);
+        CHECK(actualValue == expectedValue);
+    }
+
+    SECTION("Bind output column, fetch, and check result in output column for the numeric")
+    {
+        stmt.Prepare("SELECT Value FROM Test");
+        SqlNumeric<10, 2> actualValue;
+        stmt.BindOutputColumns(&actualValue);
+        stmt.Execute();
+        REQUIRE(stmt.FetchRow());
+        CHECK(actualValue == expectedValue);
+    }
+
+    SECTION("Test for inserting/getting NULL values")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<SqlNumeric<10, 2>>("SELECT Value FROM Test");
+        CHECK(!result.has_value());
+    }
 }
 
 // NOLINTEND(readability-container-size-empty)
