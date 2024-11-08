@@ -11,6 +11,7 @@
 #include "SqlConnection.hpp"
 #include "SqlDataBinder.hpp"
 #include "SqlQuery.hpp"
+#include "Utils.hpp"
 
 #include <cstring>
 #include <optional>
@@ -31,6 +32,8 @@ concept SqlQueryObject = requires(QueryObject const& queryObject)
     { queryObject.ToSql() } -> std::convertible_to<std::string>;
 };
 // clang-format on
+
+class SqlResultCursor;
 
 // High level API for (prepared) raw SQL statements
 //
@@ -79,9 +82,15 @@ class SqlStatement final: public SqlDataBinderCallback
     [[nodiscard]] LIGHTWEIGHT_API SQLHSTMT NativeHandle() const noexcept;
 
     // Prepares the statement for execution.
+    //
+    // @note When preparing a new SQL statement, the previously executed statement, yielding a result set,
+    //       must have been closed.
     LIGHTWEIGHT_API void Prepare(std::string_view query);
 
     // Prepares the statement for execution.
+    //
+    // @note When preparing a new SQL statement, the previously executed statement, yielding a result set,
+    //       must have been closed.
     void Prepare(SqlQueryObject auto const& queryObject);
 
     template <SqlInputParameterBinder Arg>
@@ -186,6 +195,9 @@ class SqlStatement final: public SqlDataBinderCallback
     // Call this function when done with fetching the results before the end of the result set is reached.
     void CloseCursor() noexcept;
 
+    // Retrieves the result cursor for reading an SQL query result.
+    SqlResultCursor GetResultCursor() noexcept;
+
     // Retrieves the value of the column at the given index for the currently selected row.
     //
     // Returns true if the value is not NULL, false otherwise.
@@ -220,6 +232,88 @@ class SqlStatement final: public SqlDataBinderCallback
     SQLHSTMT m_hStmt {};                           // The native oDBC statement handle
     std::string m_preparedQuery;                   // The last prepared query
     SQLSMALLINT m_expectedParameterCount {};       // The number of parameters expected by the query
+};
+
+// API for reading an SQL query result set.
+class [[nodiscard]] SqlResultCursor
+{
+  public:
+    explicit LIGHTWEIGHT_FORCE_INLINE SqlResultCursor(SqlStatement& stmt):
+        m_stmt { &stmt }
+    {
+    }
+
+    SqlResultCursor() = delete;
+    SqlResultCursor(SqlResultCursor const&) = delete;
+    SqlResultCursor& operator=(SqlResultCursor const&) = delete;
+    SqlResultCursor(SqlResultCursor&&) = delete;
+    SqlResultCursor& operator=(SqlResultCursor&&) = delete;
+
+    LIGHTWEIGHT_FORCE_INLINE ~SqlResultCursor()
+    {
+        SQLCloseCursor(m_stmt->NativeHandle());
+    }
+
+    // Retrieves the number of rows affected by the last query.
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE size_t NumRowsAffected() const
+    {
+        return m_stmt->NumRowsAffected();
+    }
+
+    // Retrieves the number of columns affected by the last query.
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE size_t NumColumnsAffected() const
+    {
+        return m_stmt->NumColumnsAffected();
+    }
+
+    // Binds the given arguments to the prepared statement to store the fetched data to.
+    //
+    // The statement must be prepared before calling this function.
+    template <SqlOutputColumnBinder... Args>
+    LIGHTWEIGHT_FORCE_INLINE void BindOutputColumns(Args*... args)
+    {
+        m_stmt->BindOutputColumns(args...);
+    }
+
+    template <SqlOutputColumnBinder T>
+    LIGHTWEIGHT_FORCE_INLINE void BindOutputColumn(SQLUSMALLINT columnIndex, T* arg)
+    {
+        m_stmt->BindOutputColumn(columnIndex, arg);
+    }
+
+    // Fetches the next row of the result set.
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE bool FetchRow()
+    {
+        return m_stmt->FetchRow();
+    }
+
+    // Retrieves the value of the column at the given index for the currently selected row.
+    //
+    // Returns true if the value is not NULL, false otherwise.
+    template <SqlGetColumnNativeType T>
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE bool GetColumn(SQLUSMALLINT column, T* result) const
+    {
+        return m_stmt->GetColumn<T>(column, result);
+    }
+
+    // Retrieves the value of the column at the given index for the currently selected row.
+    template <SqlGetColumnNativeType T>
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE T GetColumn(SQLUSMALLINT column) const
+    {
+        return m_stmt->GetColumn<T>(column);
+    }
+
+    // Retrieves the value of the column at the given index for the currently selected row.
+    //
+    // If the value is NULL, std::nullopt is returned.
+    template <SqlGetColumnNativeType T>
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE std::optional<T> GetNullableColumn(SQLUSMALLINT column) const
+    {
+        return m_stmt->GetNullableColumn<T>(column);
+    }
+
+  private:
+    SqlStatement* m_stmt;
 };
 
 // {{{ inline implementation
@@ -475,6 +569,11 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::CloseCursor() noexcept
 {
     // SQLCloseCursor(m_hStmt);
     SQLFreeStmt(m_hStmt, SQL_CLOSE);
+}
+
+inline LIGHTWEIGHT_FORCE_INLINE SqlResultCursor SqlStatement::GetResultCursor() noexcept
+{
+    return SqlResultCursor { *this };
 }
 
 // }}}
