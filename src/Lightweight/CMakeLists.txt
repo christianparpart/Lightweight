@@ -27,6 +27,7 @@ set(HEADER_FILES
     DataBinder/SqlFixedString.hpp
     DataBinder/SqlGuid.hpp
     DataBinder/SqlNullValue.hpp
+    DataBinder/SqlNumeric.hpp
     DataBinder/SqlText.hpp
     DataBinder/SqlTime.hpp
     DataBinder/SqlTrimmedString.hpp

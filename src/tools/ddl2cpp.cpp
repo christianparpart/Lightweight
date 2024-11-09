@@ -52,6 +52,8 @@ std::string MakeType(SqlSchema::Column const& column)
             return "bool";
         case ColumnType::INTEGER:
             return "int";
+        case ColumnType::NUMERIC:
+            return std::format("SqlNumeric<{}, {}>", column.size, column.decimalDigits);
         case ColumnType::REAL:
             return "double";
         case ColumnType::BLOB:

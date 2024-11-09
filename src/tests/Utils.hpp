@@ -72,6 +72,18 @@ inline ostream& operator<<(ostream& os, SqlGuid const& guid)
 
 } // namespace std
 
+template <std::size_t Precision, std::size_t Scale>
+std::ostream& operator<<(std::ostream& os, SqlNumeric<Precision, Scale> const& value)
+{
+    return os << std::format("SqlNumeric<{}, {}>({}, {}, {}, {})",
+                             Precision,
+                             Scale,
+                             value.sqlValue.sign,
+                             value.sqlValue.precision,
+                             value.sqlValue.scale,
+                             (char const*) value.sqlValue.val);
+}
+
 // Refer to an in-memory SQLite database (and assuming the sqliteodbc driver is installed)
 // See:
 // - https://www.sqlite.org/inmemorydb.html
