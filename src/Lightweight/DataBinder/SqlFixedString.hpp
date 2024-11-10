@@ -39,19 +39,19 @@ class SqlFixedString
     static constexpr SqlStringPostRetrieveOperation PostRetrieveOperation = PostOp;
 
     template <std::size_t SourceSize>
-    LIGHTWEIGHT_FORCE_INLINE SqlFixedString(T const (&text)[SourceSize]):
+    constexpr LIGHTWEIGHT_FORCE_INLINE SqlFixedString(T const (&text)[SourceSize]):
         _size { SourceSize - 1 }
     {
         static_assert(SourceSize <= N + 1, "RHS string size must not exceed target string's capacity.");
         std::copy_n(text, SourceSize, _data);
     }
 
-    LIGHTWEIGHT_FORCE_INLINE SqlFixedString() = default;
-    LIGHTWEIGHT_FORCE_INLINE SqlFixedString(SqlFixedString const&) = default;
-    LIGHTWEIGHT_FORCE_INLINE SqlFixedString& operator=(SqlFixedString const&) = default;
-    LIGHTWEIGHT_FORCE_INLINE SqlFixedString(SqlFixedString&&) = default;
-    LIGHTWEIGHT_FORCE_INLINE SqlFixedString& operator=(SqlFixedString&&) = default;
-    LIGHTWEIGHT_FORCE_INLINE ~SqlFixedString() = default;
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString() noexcept = default;
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString(SqlFixedString const&) noexcept = default;
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString& operator=(SqlFixedString const&) noexcept = default;
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString(SqlFixedString&&) noexcept = default;
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString& operator=(SqlFixedString&&) noexcept = default;
+    LIGHTWEIGHT_FORCE_INLINE constexpr ~SqlFixedString() noexcept = default;
 
     LIGHTWEIGHT_FORCE_INLINE void reserve(std::size_t capacity)
     {
@@ -70,10 +70,11 @@ class SqlFixedString
         return _size;
     }
 
-    LIGHTWEIGHT_FORCE_INLINE constexpr void setsize(std::size_t n) noexcept
+    LIGHTWEIGHT_FORCE_INLINE /*TODO constexpr*/ void setsize(std::size_t n) noexcept
     {
         auto const newSize = (std::min)(n, N);
         _size = newSize;
+        _data[newSize] = '\0';
     }
 
     LIGHTWEIGHT_FORCE_INLINE constexpr void resize(std::size_t n, T c = T {}) noexcept
@@ -82,6 +83,7 @@ class SqlFixedString
         if (newSize > _size)
             std::fill_n(end(), newSize - _size, c);
         _size = newSize;
+        _data[newSize] = '\0';
     }
 
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::size_t capacity() const noexcept
@@ -143,7 +145,7 @@ class SqlFixedString
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr T& at(std::size_t i) noexcept { return _data[i]; }
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr T& operator[](std::size_t i) noexcept { return _data[i]; }
 
-    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr const_pointer_type c_str() const noexcept { const_cast<T*>(_data)[_size] = '\0'; return _data; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr const_pointer_type c_str() const noexcept { return _data; }
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr const_pointer_type data() const noexcept { return _data; }
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr const_iterator begin() const noexcept { return _data; }
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr const_iterator end() const noexcept { return _data + size(); }
@@ -157,7 +159,7 @@ class SqlFixedString
     {
         if ((void*) this != (void*) &other)
         {
-            for (std::size_t i = 0; i < (std::min)(N, OtherSize); ++i)
+            for (std::size_t i = 0; i < (std::min)(size(), other.size()); ++i)
                 if (auto const cmp = _data[i] <=> other._data[i]; cmp != std::weak_ordering::equivalent)
                     return cmp;
             if constexpr (N != OtherSize)
@@ -202,7 +204,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
 
     LIGHTWEIGHT_FORCE_INLINE static void TrimRight(ValueType* boundOutputString, SQLLEN indicator) noexcept
     {
-        size_t n = indicator;
+        size_t n = (std::min)((size_t) indicator, boundOutputString->size());
         while (n > 0 && std::isspace((*boundOutputString)[n - 1]))
             --n;
         boundOutputString->setsize(n);
@@ -220,7 +222,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
                                 SQL_VARCHAR,
                                 value.size(),
                                 0,
-                                (SQLPOINTER) value.c_str(), // Ensure Null-termination.
+                                (SQLPOINTER) value.data(),
                                 sizeof(value),
                                 nullptr);
     }

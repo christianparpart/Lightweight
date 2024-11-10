@@ -44,42 +44,42 @@ struct SqlTime
 
     sql_type sqlValue {};
 
-    SqlTime() noexcept = default;
-    SqlTime(SqlTime&&) noexcept = default;
-    SqlTime& operator=(SqlTime&&) noexcept = default;
-    SqlTime(SqlTime const&) noexcept = default;
-    SqlTime& operator=(SqlTime const&) noexcept = default;
-    ~SqlTime() noexcept = default;
+    constexpr SqlTime() noexcept = default;
+    constexpr SqlTime(SqlTime&&) noexcept = default;
+    constexpr SqlTime& operator=(SqlTime&&) noexcept = default;
+    constexpr SqlTime(SqlTime const&) noexcept = default;
+    constexpr SqlTime& operator=(SqlTime const&) noexcept = default;
+    constexpr ~SqlTime() noexcept = default;
 
-    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE native_type value() const noexcept
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr native_type value() const noexcept
     {
         return ConvertToNative(sqlValue);
     }
 
-    LIGHTWEIGHT_FORCE_INLINE bool operator==(SqlTime const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator==(SqlTime const& other) const noexcept
     {
         return value().to_duration().count() == other.value().to_duration().count();
     }
 
-    LIGHTWEIGHT_FORCE_INLINE bool operator!=(SqlTime const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator!=(SqlTime const& other) const noexcept
     {
         return !(*this == other);
     }
 
-    LIGHTWEIGHT_FORCE_INLINE SqlTime(native_type value) noexcept:
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlTime(native_type value) noexcept:
         sqlValue { SqlTime::ConvertToSqlValue(value) }
     {
     }
 
-    LIGHTWEIGHT_FORCE_INLINE SqlTime(std::chrono::hours hour,
-                                     std::chrono::minutes minute,
-                                     std::chrono::seconds second,
-                                     std::chrono::microseconds micros = {}) noexcept:
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlTime(std::chrono::hours hour,
+                                               std::chrono::minutes minute,
+                                               std::chrono::seconds second,
+                                               std::chrono::microseconds micros = {}) noexcept:
         SqlTime(native_type { hour + minute + second + micros })
     {
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE sql_type ConvertToSqlValue(native_type value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE constexpr sql_type ConvertToSqlValue(native_type value) noexcept
     {
         return sql_type {
             .hour = (SQLUSMALLINT) value.hours().count(),
@@ -91,7 +91,7 @@ struct SqlTime
         };
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE native_type ConvertToNative(sql_type const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE constexpr native_type ConvertToNative(sql_type const& value) noexcept
     {
         // clang-format off
         return native_type { std::chrono::hours { (int) value.hour }

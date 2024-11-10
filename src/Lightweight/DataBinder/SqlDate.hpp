@@ -11,35 +11,35 @@ struct LIGHTWEIGHT_API SqlDate
 {
     SQL_DATE_STRUCT sqlValue {};
 
-    SqlDate() noexcept = default;
-    SqlDate(SqlDate&&) noexcept = default;
-    SqlDate& operator=(SqlDate&&) noexcept = default;
-    SqlDate(SqlDate const&) noexcept = default;
-    SqlDate& operator=(SqlDate const&) noexcept = default;
-    ~SqlDate() noexcept = default;
+    constexpr SqlDate() noexcept = default;
+    constexpr SqlDate(SqlDate&&) noexcept = default;
+    constexpr SqlDate& operator=(SqlDate&&) noexcept = default;
+    constexpr SqlDate(SqlDate const&) noexcept = default;
+    constexpr SqlDate& operator=(SqlDate const&) noexcept = default;
+    constexpr ~SqlDate() noexcept = default;
 
-    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE std::chrono::year_month_day value() const noexcept
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::chrono::year_month_day value() const noexcept
     {
         return ConvertToNative(sqlValue);
     }
 
-    LIGHTWEIGHT_FORCE_INLINE bool operator==(SqlDate const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator==(SqlDate const& other) const noexcept
     {
         return sqlValue.year == other.sqlValue.year && sqlValue.month == other.sqlValue.month
                && sqlValue.day == other.sqlValue.day;
     }
 
-    LIGHTWEIGHT_FORCE_INLINE bool operator!=(SqlDate const& other) const noexcept
+    LIGHTWEIGHT_FORCE_INLINE constexpr bool operator!=(SqlDate const& other) const noexcept
     {
         return !(*this == other);
     }
 
-    SqlDate(std::chrono::year_month_day value) noexcept:
+    constexpr SqlDate(std::chrono::year_month_day value) noexcept:
         sqlValue { SqlDate::ConvertToSqlValue(value) }
     {
     }
 
-    SqlDate(std::chrono::year year, std::chrono::month month, std::chrono::day day) noexcept:
+    constexpr SqlDate(std::chrono::year year, std::chrono::month month, std::chrono::day day) noexcept:
         SqlDate(std::chrono::year_month_day { year, month, day })
     {
     }
@@ -51,7 +51,7 @@ struct LIGHTWEIGHT_API SqlDate
         } };
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE SQL_DATE_STRUCT ConvertToSqlValue(std::chrono::year_month_day value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE constexpr SQL_DATE_STRUCT ConvertToSqlValue(std::chrono::year_month_day value) noexcept
     {
         return SQL_DATE_STRUCT {
             .year = (SQLSMALLINT) (int) value.year(),
@@ -60,7 +60,7 @@ struct LIGHTWEIGHT_API SqlDate
         };
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE std::chrono::year_month_day ConvertToNative(SQL_DATE_STRUCT const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE constexpr std::chrono::year_month_day ConvertToNative(SQL_DATE_STRUCT const& value) noexcept
     {
         return std::chrono::year_month_day { std::chrono::year { value.year },
                                              std::chrono::month { static_cast<unsigned>(value.month) },

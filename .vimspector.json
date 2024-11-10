@@ -50,7 +50,7 @@
                     "uncaught": "Y"
                 }
             }
-        }
+        },
         "CoreTest - Postgres": {
             "adapter": "vscode-cpptools",
             "configuration": {

@@ -42,6 +42,8 @@ struct SqlDataBinder<SqlTrimmedString>
 
     static void TrimRight(InnerStringType* boundOutputString, SQLLEN indicator) noexcept
     {
+        if (indicator < 0) // e.g. SQL_NULL_DATA
+            return;
         size_t n = indicator;
         while (n > 0 && std::isspace((*boundOutputString)[n - 1]))
             --n;

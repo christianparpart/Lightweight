@@ -26,6 +26,10 @@
 #include <variant>
 #include <vector>
 
+#if __has_include(<stacktrace>)
+    #include <stacktrace>
+#endif
+
 #include <sql.h>
 #include <sqlext.h>
 #include <sqlspi.h>
@@ -81,7 +85,7 @@ std::ostream& operator<<(std::ostream& os, SqlNumeric<Precision, Scale> const& v
                              value.sqlValue.sign,
                              value.sqlValue.precision,
                              value.sqlValue.scale,
-                             (char const*) value.sqlValue.val);
+                             value.ToUnscaledValue());
 }
 
 // Refer to an in-memory SQLite database (and assuming the sqliteodbc driver is installed)
@@ -98,6 +102,105 @@ auto const inline DefaultTestConnectionString = SqlConnectionString {
                          "SQLite3",
 #endif
                          "file::memory:"),
+};
+
+class TestSuiteSqlLogger: public SqlLogger
+{
+  private:
+    std::string m_lastPreparedQuery;
+
+    template <typename... Args>
+    void WriteInfo(std::format_string<Args...> const& fmt, Args&&... args)
+    {
+        auto message = std::format(fmt, std::forward<Args>(args)...);
+        message = std::format("[{}] {}", "Lightweight", message);
+        try
+        {
+            UNSCOPED_INFO(message);
+        }
+        catch (...)
+        {
+            std::println("{}", message);
+        }
+    }
+
+    template <typename... Args>
+    void WriteWarning(std::format_string<Args...> const& fmt, Args&&... args)
+    {
+        WARN(std::format(fmt, std::forward<Args>(args)...));
+    }
+
+  public:
+    static TestSuiteSqlLogger& GetLogger() noexcept
+    {
+        static TestSuiteSqlLogger theLogger;
+        return theLogger;
+    }
+
+    void OnError(SqlError error, std::source_location sourceLocation) override
+    {
+        WriteWarning("SQL Error: {}", error);
+        WriteDetails(sourceLocation);
+    }
+
+    void OnError(SqlErrorInfo const& errorInfo, std::source_location sourceLocation) override
+    {
+        WriteWarning("SQL Error: {}", errorInfo);
+        WriteDetails(sourceLocation);
+    }
+
+    void OnWarning(std::string_view const& message) override
+    {
+        WriteWarning("{}", message);
+    }
+
+    void OnConnectionOpened(SqlConnection const& /*connection*/) override {}
+
+    void OnConnectionClosed(SqlConnection const& /*connection*/) override {}
+
+    void OnConnectionIdle(SqlConnection const& /*connection*/) override {}
+
+    void OnConnectionReuse(SqlConnection const& /*connection*/) override {}
+
+    void OnExecuteDirect(std::string_view const& query) override
+    {
+        WriteInfo("ExecuteDirect: {}", query);
+    }
+
+    void OnPrepare(std::string_view const& query) override
+    {
+        m_lastPreparedQuery = query;
+    }
+
+    void OnExecute(std::string_view const& query) override
+    {
+        WriteInfo("Execute: {}", query);
+    }
+
+    void OnExecuteBatch() override
+    {
+        WriteInfo("ExecuteBatch: {}", m_lastPreparedQuery);
+    }
+
+    void OnFetchedRow() override
+    {
+        WriteInfo("Fetched row");
+    }
+
+  private:
+    void WriteDetails(std::source_location sourceLocation)
+    {
+        WriteInfo("  Source: {}:{}", sourceLocation.file_name(), sourceLocation.line());
+        if (!m_lastPreparedQuery.empty())
+            WriteInfo("  Query: {}", m_lastPreparedQuery);
+        WriteInfo("  Stack trace:");
+
+#if __has_include(<stacktrace>)
+        auto stackTrace = std::stacktrace::current(1, 25);
+        for (std::size_t const i: std::views::iota(std::size_t(0), stackTrace.size()))
+            WriteInfo("    [{:>2}] {}", i, stackTrace[i]);
+#endif
+    }
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
@@ -142,6 +245,8 @@ class SqlTestFixture
 
     static std::variant<MainProgramArgs, int> Initialize(int argc, char** argv)
     {
+        SqlLogger::SetLogger(TestSuiteSqlLogger::GetLogger());
+
         using namespace std::string_view_literals;
         int i = 1;
         for (; i < argc; ++i)
@@ -240,43 +345,7 @@ class SqlTestFixture
 
     virtual ~SqlTestFixture() = default;
 
-  private:
-    static std::string SanitizePwd(std::string_view input)
-    {
-        std::regex const pwdRegex {
-            R"(PWD=.*?;)",
-            std::regex_constants::ECMAScript | std::regex_constants::icase,
-        };
-        std::stringstream outputString;
-        std::regex_replace(
-            std::ostreambuf_iterator<char> { outputString }, input.begin(), input.end(), pwdRegex, "Pwd=***;");
-        return outputString.str();
-    }
-
-    static std::vector<std::string> GetAllTableNames()
-    {
-        auto result = std::vector<std::string>();
-        auto stmt = SqlStatement();
-        auto const sqlResult = SQLTables(stmt.NativeHandle(),
-                                         (SQLCHAR*) testDatabaseName.data(),
-                                         (SQLSMALLINT) testDatabaseName.size(),
-                                         nullptr,
-                                         0,
-                                         nullptr,
-                                         0,
-                                         (SQLCHAR*) "TABLE",
-                                         SQL_NTS);
-        if (SQL_SUCCEEDED(sqlResult))
-        {
-            while (stmt.FetchRow())
-            {
-                result.emplace_back(stmt.GetColumn<std::string>(3)); // table name
-            }
-        }
-        return result;
-    }
-
-    void DropAllTablesInDatabase()
+    static void DropAllTablesInDatabase()
     {
         auto stmt = SqlStatement {};
 
@@ -314,6 +383,42 @@ class SqlTestFixture
                 break;
         }
         m_createdTables.clear();
+    }
+
+  private:
+    static std::string SanitizePwd(std::string_view input)
+    {
+        std::regex const pwdRegex {
+            R"(PWD=.*?;)",
+            std::regex_constants::ECMAScript | std::regex_constants::icase,
+        };
+        std::stringstream outputString;
+        std::regex_replace(
+            std::ostreambuf_iterator<char> { outputString }, input.begin(), input.end(), pwdRegex, "Pwd=***;");
+        return outputString.str();
+    }
+
+    static std::vector<std::string> GetAllTableNames()
+    {
+        auto result = std::vector<std::string>();
+        auto stmt = SqlStatement();
+        auto const sqlResult = SQLTables(stmt.NativeHandle(),
+                                         (SQLCHAR*) testDatabaseName.data(),
+                                         (SQLSMALLINT) testDatabaseName.size(),
+                                         nullptr,
+                                         0,
+                                         nullptr,
+                                         0,
+                                         (SQLCHAR*) "TABLE",
+                                         SQL_NTS);
+        if (SQL_SUCCEEDED(sqlResult))
+        {
+            while (stmt.FetchRow())
+            {
+                result.emplace_back(stmt.GetColumn<std::string>(3)); // table name
+            }
+        }
+        return result;
     }
 
     static inline std::vector<std::string> m_createdTables;

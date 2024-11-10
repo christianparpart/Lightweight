@@ -15,24 +15,25 @@ struct LIGHTWEIGHT_API SqlDateTime
         return SqlDateTime { std::chrono::system_clock::now() };
     }
 
-    SqlDateTime() noexcept = default;
-    SqlDateTime(SqlDateTime&&) noexcept = default;
-    SqlDateTime& operator=(SqlDateTime&&) noexcept = default;
-    SqlDateTime(SqlDateTime const&) noexcept = default;
-    SqlDateTime& operator=(SqlDateTime const& other) noexcept = default;
-    ~SqlDateTime() noexcept = default;
+    constexpr SqlDateTime() noexcept = default;
+    constexpr SqlDateTime(SqlDateTime&&) noexcept = default;
+    constexpr SqlDateTime& operator=(SqlDateTime&&) noexcept = default;
+    constexpr SqlDateTime(SqlDateTime const&) noexcept = default;
+    constexpr SqlDateTime& operator=(SqlDateTime const& other) noexcept = default;
+    constexpr ~SqlDateTime() noexcept = default;
 
-    bool operator==(SqlDateTime const& other) const noexcept
+    constexpr bool operator==(SqlDateTime const& other) const noexcept
     {
         return value() == other.value();
     }
 
-    bool operator!=(SqlDateTime const& other) const noexcept
+    constexpr bool operator!=(SqlDateTime const& other) const noexcept
     {
         return !(*this == other);
     }
 
-    SqlDateTime(std::chrono::year_month_day ymd, std::chrono::hh_mm_ss<std::chrono::nanoseconds> time) noexcept
+    constexpr SqlDateTime(std::chrono::year_month_day ymd,
+                          std::chrono::hh_mm_ss<std::chrono::nanoseconds> time) noexcept
     {
         sqlValue.year = (SQLSMALLINT) (int) ymd.year();
         sqlValue.month = (SQLUSMALLINT) (unsigned) ymd.month();
@@ -43,13 +44,13 @@ struct LIGHTWEIGHT_API SqlDateTime
         sqlValue.fraction = (SQLUINTEGER) (time.subseconds().count() / 100) * 100;
     }
 
-    SqlDateTime(std::chrono::year year,
-                std::chrono::month month,
-                std::chrono::day day,
-                std::chrono::hours hour,
-                std::chrono::minutes minute,
-                std::chrono::seconds second,
-                std::chrono::nanoseconds nanosecond = std::chrono::nanoseconds { 0 }) noexcept
+    constexpr SqlDateTime(std::chrono::year year,
+                          std::chrono::month month,
+                          std::chrono::day day,
+                          std::chrono::hours hour,
+                          std::chrono::minutes minute,
+                          std::chrono::seconds second,
+                          std::chrono::nanoseconds nanosecond = std::chrono::nanoseconds { 0 }) noexcept
     {
         sqlValue.year = (SQLSMALLINT) (int) year;
         sqlValue.month = (SQLUSMALLINT) (unsigned) month;
@@ -60,17 +61,17 @@ struct LIGHTWEIGHT_API SqlDateTime
         sqlValue.fraction = (SQLUINTEGER) (nanosecond.count() / 100) * 100;
     }
 
-    SqlDateTime(std::chrono::system_clock::time_point value) noexcept:
+    constexpr SqlDateTime(std::chrono::system_clock::time_point value) noexcept:
         sqlValue { SqlDateTime::ConvertToSqlValue(value) }
     {
     }
 
-    operator native_type() const noexcept
+    constexpr operator native_type() const noexcept
     {
         return value();
     }
 
-    static SQL_TIMESTAMP_STRUCT ConvertToSqlValue(native_type value) noexcept
+    static SQL_TIMESTAMP_STRUCT constexpr ConvertToSqlValue(native_type value) noexcept
     {
         using namespace std::chrono;
         auto const totalDays = floor<days>(value);
@@ -88,7 +89,7 @@ struct LIGHTWEIGHT_API SqlDateTime
         };
     }
 
-    static native_type ConvertToNative(SQL_TIMESTAMP_STRUCT const& time) noexcept
+    static native_type constexpr ConvertToNative(SQL_TIMESTAMP_STRUCT const& time) noexcept
     {
         // clang-format off
         using namespace std::chrono;
@@ -101,7 +102,7 @@ struct LIGHTWEIGHT_API SqlDateTime
         // clang-format on
     }
 
-    [[nodiscard]] native_type value() const noexcept
+    [[nodiscard]] constexpr native_type value() const noexcept
     {
         return ConvertToNative(sqlValue);
     }

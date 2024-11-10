@@ -18,8 +18,52 @@ struct LIGHTWEIGHT_API SqlGuid
 
     static std::optional<SqlGuid> TryParse(std::string_view const& text) noexcept;
 
+    static SqlGuid constexpr UnsafeParse(std::string_view const& text) noexcept;
+
     constexpr std::weak_ordering operator<=>(SqlGuid const& other) const noexcept = default;
 };
+
+constexpr SqlGuid SqlGuid::UnsafeParse(std::string_view const& text) noexcept
+{
+    SqlGuid guid {};
+
+    // UUID format: xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx
+    // M is the version and N is the variant
+
+    // Check for length
+    if (text.size() != 36)
+        return { "\x01" };
+
+    // Check for dashes
+    if (text[8] != '-' || text[13] != '-' || text[18] != '-' || text[23] != '-')
+        return { "\x02" };
+
+    // Version must be 1, 2, 3, 4, or 5
+    auto const version = text[14];
+    if (!('1' <= version && version <= '5'))
+        return { "\x03" };
+
+    // Variant must be 8, 9, A, or B
+    auto const variant = text[21];
+    if (variant != '8' && variant != '9' && variant != 'A' && variant != 'B')
+        return { "\x04" };
+
+    // clang-format off
+    size_t i = 0;
+    for (auto const index: { 0, 2, 4, 6,
+                             9, 11,
+                             14, 16,
+                             21, 19,
+                             24, 26, 28, 30, 32, 34 })
+    {
+        if (std::from_chars(text.data() + index, text.data() + index + 2, guid.data[i], 16).ec != std::errc())
+            return { "\x05" };
+        i++;
+    }
+    // clang-format on
+
+    return guid;
+}
 
 template <>
 struct LIGHTWEIGHT_API std::formatter<SqlGuid>: std::formatter<std::string>

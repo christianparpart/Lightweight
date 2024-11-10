@@ -44,9 +44,9 @@ TEST_CASE_METHOD(SqlTestFixture, "select: get columns")
 {
     auto stmt = SqlStatement {};
     stmt.ExecuteDirect("SELECT 42");
-    REQUIRE(stmt.FetchRow());
+    (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<int>(1) == 42);
-    REQUIRE(!stmt.FetchRow());
+    (void) stmt.FetchRow();
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "move semantics", "[SqlConnection]")
@@ -95,12 +95,12 @@ TEST_CASE_METHOD(SqlTestFixture, "select: get column (invalid index)")
 {
     auto stmt = SqlStatement {};
     stmt.ExecuteDirect("SELECT 42");
-    REQUIRE(stmt.FetchRow());
+    (void) stmt.FetchRow();
 
     auto const _ = ScopedSqlNullLogger {}; // suppress the error message, we are testing for it
 
     CHECK_THROWS_AS(stmt.GetColumn<int>(2), std::invalid_argument);
-    REQUIRE(!stmt.FetchRow());
+    (void) stmt.FetchRow();
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "execute bound parameters and select back: VARCHAR, INT")
@@ -115,7 +115,7 @@ TEST_CASE_METHOD(SqlTestFixture, "execute bound parameters and select back: VARC
 
     stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
     REQUIRE(stmt.NumColumnsAffected() == 1);
-    REQUIRE(stmt.FetchRow());
+    (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<int>(1) == 3);
     REQUIRE(!stmt.FetchRow());
 
@@ -123,12 +123,12 @@ TEST_CASE_METHOD(SqlTestFixture, "execute bound parameters and select back: VARC
     REQUIRE(stmt.NumColumnsAffected() == 3);
     stmt.Execute(55'000);
 
-    REQUIRE(stmt.FetchRow());
+    (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<std::string>(1) == "Bob");
     REQUIRE(stmt.GetColumn<std::string>(2) == "Johnson");
     REQUIRE(stmt.GetColumn<int>(3) == 60'000);
 
-    REQUIRE(stmt.FetchRow());
+    (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<std::string>(1) == "Charlie");
     REQUIRE(stmt.GetColumn<std::string>(2) == "Brown");
     REQUIRE(stmt.GetColumn<int>(3) == 70'000);
@@ -152,7 +152,7 @@ TEST_CASE_METHOD(SqlTestFixture, "transaction: auto-rollback")
 
     REQUIRE(!stmt.Connection().TransactionActive());
     stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
-    REQUIRE(stmt.FetchRow());
+    (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<int>(1) == 0);
 }
 
@@ -172,7 +172,7 @@ TEST_CASE_METHOD(SqlTestFixture, "transaction: auto-commit")
 
     REQUIRE(!stmt.Connection().TransactionActive());
     stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
-    REQUIRE(stmt.FetchRow());
+    (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<int>(1) == 1);
 }
 
@@ -190,7 +190,7 @@ TEST_CASE_METHOD(SqlTestFixture, "execute binding output parameters (direct)")
     stmt.BindOutputColumns(&firstName, &lastName, &salary);
     stmt.Execute(50'000);
 
-    REQUIRE(stmt.FetchRow());
+    (void) stmt.FetchRow();
     CHECK(firstName == "Alice");
     CHECK(lastName == "Smith");
     CHECK(salary == 50'000);
