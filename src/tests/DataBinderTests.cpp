@@ -85,23 +85,25 @@ TEST_CASE_METHOD(SqlTestFixture, "custom types", "[SqlDataBinder]")
     auto result = stmt.ExecuteDirectSingle<CustomType>("SELECT Value FROM Test");
     REQUIRE(result.value().value == 42);
 
-    // check custom type handling for bound output columns
-    result = {};
-    stmt.Prepare("SELECT Value FROM Test");
-    stmt.Execute();
+    SECTION("check custom type handling for bound output columns")
     {
+        result = {};
+        stmt.Prepare("SELECT Value FROM Test");
+        stmt.Execute();
         auto reader = stmt.GetResultCursor();
         reader.BindOutputColumns(&result);
         REQUIRE(reader.FetchRow());
         REQUIRE(result.value().value == (42 | 0x01));
     }
 
-    // Test inserting a NULL value
-    stmt.ExecuteDirect("DELETE FROM Test");
-    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
-    stmt.Execute(SqlNullValue);
-    auto const y = stmt.ExecuteDirectSingle<CustomType>("SELECT Value FROM Test");
-    CHECK(!y);
+    SECTION("Test inserting a NULL value")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const y = stmt.ExecuteDirectSingle<CustomType>("SELECT Value FROM Test");
+        CHECK(!y);
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear", "[SqlFixedString]")
@@ -238,11 +240,12 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values", "[SqlDataBinder],[Sq
     auto stmt = SqlStatement();
     stmt.ExecuteDirect("CREATE TABLE Test (Remarks VARCHAR(50) NULL)");
 
-    stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
-    stmt.Execute(SqlNullValue);
-
-    stmt.ExecuteDirect("SELECT Remarks FROM Test");
+    SECTION("Test for inserting/getting NULL values")
     {
+        stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        stmt.ExecuteDirect("SELECT Remarks FROM Test");
+
         auto reader = stmt.GetResultCursor();
         REQUIRE(reader.FetchRow());
 
@@ -250,12 +253,13 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values", "[SqlDataBinder],[Sq
         CHECK(std::holds_alternative<SqlNullType>(actual.value));
     }
 
-    // Test for inserting/getting NULL values
-    stmt.ExecuteDirect("DELETE FROM Test");
-    stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
-    stmt.Execute(SqlNullValue);
-    auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Remarks FROM Test");
-    CHECK(result.IsNull());
+    SECTION("Using ExecuteDirectSingle")
+    {
+        stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Remarks FROM Test");
+        CHECK(result.IsNull());
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate", "[SqlDataBinder],[SqlVariant]")
@@ -396,14 +400,12 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
     {
         stmt.Prepare("SELECT Value FROM Test");
         stmt.Execute();
-        {
-            auto reader = stmt.GetResultCursor();
-            std::string actualText; // intentionally an empty string, auto-growing behind the scenes
-            reader.BindOutputColumns(&actualText);
-            REQUIRE(reader.FetchRow());
-            REQUIRE(actualText.size() == expectedText.size());
-            CHECK(actualText == expectedText);
-        }
+        auto reader = stmt.GetResultCursor();
+        std::string actualText; // intentionally an empty string, auto-growing behind the scenes
+        reader.BindOutputColumns(&actualText);
+        REQUIRE(reader.FetchRow());
+        REQUIRE(actualText.size() == expectedText.size());
+        CHECK(actualText == expectedText);
     }
 }
 
@@ -689,12 +691,14 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
         CHECK(actualValue2 == inputValue);
     }
 
-    // Test for inserting/getting NULL VALUES
-    stmt.ExecuteDirect("DELETE FROM Test");
-    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
-    stmt.Execute(SqlNullValue);
-    auto const result = stmt.ExecuteDirectSingle<WideString>("SELECT Value FROM Test");
-    CHECK(!result.has_value());
+    SECTION("Test for inserting/getting NULL VALUES")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<WideString>("SELECT Value FROM Test");
+        CHECK(!result.has_value());
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder],[SqlGuid]")

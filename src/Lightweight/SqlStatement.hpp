@@ -83,13 +83,13 @@ class SqlStatement final: public SqlDataBinderCallback
 
     // Prepares the statement for execution.
     //
-    // @note When preparing a new SQL statement, the previously executed statement, yielding a result set,
+    // @note When preparing a new SQL statement the previously executed statement, yielding a result set,
     //       must have been closed.
     LIGHTWEIGHT_API void Prepare(std::string_view query);
 
     // Prepares the statement for execution.
     //
-    // @note When preparing a new SQL statement, the previously executed statement, yielding a result set,
+    // @note When preparing a new SQL statement the previously executed statement, yielding a result set,
     //       must have been closed.
     void Prepare(SqlQueryObject auto const& queryObject);
 
