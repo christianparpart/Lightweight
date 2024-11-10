@@ -119,9 +119,6 @@ void SqlStatement::Prepare(std::string_view query)
     m_data->postExecuteCallbacks.clear();
     m_data->postProcessOutputColumnCallbacks.clear();
 
-    // Closes the cursor if it is open
-    RequireSuccess(SQLFreeStmt(m_hStmt, SQL_CLOSE));
-
     // Unbinds the columns, if any
     RequireSuccess(SQLFreeStmt(m_hStmt, SQL_UNBIND));
 
@@ -138,7 +135,6 @@ void SqlStatement::ExecuteDirect(const std::string_view& query, std::source_loca
 
     SqlLogger::GetLogger().OnExecuteDirect(query);
 
-    RequireSuccess(SQLFreeStmt(m_hStmt, SQL_CLOSE), location);
     RequireSuccess(SQLExecDirectA(m_hStmt, (SQLCHAR*) query.data(), (SQLINTEGER) query.size()), location);
 }
 
@@ -186,6 +182,7 @@ bool SqlStatement::FetchRow()
     switch (sqlResult)
     {
         case SQL_NO_DATA:
+            SQLCloseCursor(m_hStmt);
             return false;
         default:
             RequireSuccess(sqlResult);

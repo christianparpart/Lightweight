@@ -82,25 +82,28 @@ TEST_CASE_METHOD(SqlTestFixture, "custom types", "[SqlDataBinder]")
     stmt.Execute(CustomType { 42 });
 
     // check custom type handling for explicitly fetched output columns
-    stmt.ExecuteDirect("SELECT Value FROM Test");
-    REQUIRE(stmt.FetchRow());
-    auto result = stmt.GetColumn<CustomType>(1);
-    REQUIRE(result.value == 42);
+    auto result = stmt.ExecuteDirectSingle<CustomType>("SELECT Value FROM Test");
+    REQUIRE(result.value().value == 42);
 
-    // check custom type handling for bound output columns
-    result = {};
-    stmt.Prepare("SELECT Value FROM Test");
-    stmt.BindOutputColumns(&result);
-    stmt.Execute();
-    REQUIRE(stmt.FetchRow());
-    REQUIRE(result.value == (42 | 0x01));
+    SECTION("check custom type handling for bound output columns")
+    {
+        result = {};
+        stmt.Prepare("SELECT Value FROM Test");
+        stmt.Execute();
+        auto reader = stmt.GetResultCursor();
+        reader.BindOutputColumns(&result);
+        REQUIRE(reader.FetchRow());
+        REQUIRE(result.value().value == (42 | 0x01));
+    }
 
-    // Test inserting a NULL value
-    stmt.ExecuteDirect("DELETE FROM Test");
-    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
-    stmt.Execute(SqlNullValue);
-    auto const y = stmt.ExecuteDirectSingle<CustomType>("SELECT Value FROM Test");
-    CHECK(!y);
+    SECTION("Test inserting a NULL value")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const y = stmt.ExecuteDirectSingle<CustomType>("SELECT Value FROM Test");
+        CHECK(!y);
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear", "[SqlFixedString]")
@@ -237,21 +240,26 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values", "[SqlDataBinder],[Sq
     auto stmt = SqlStatement();
     stmt.ExecuteDirect("CREATE TABLE Test (Remarks VARCHAR(50) NULL)");
 
-    stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
-    stmt.Execute(SqlNullValue);
+    SECTION("Test for inserting/getting NULL values")
+    {
+        stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        stmt.ExecuteDirect("SELECT Remarks FROM Test");
 
-    stmt.ExecuteDirect("SELECT Remarks FROM Test");
-    REQUIRE(stmt.FetchRow());
+        auto reader = stmt.GetResultCursor();
+        REQUIRE(reader.FetchRow());
 
-    auto const actual = stmt.GetColumn<SqlVariant>(1);
-    CHECK(std::holds_alternative<SqlNullType>(actual.value));
+        auto const actual = reader.GetColumn<SqlVariant>(1);
+        CHECK(std::holds_alternative<SqlNullType>(actual.value));
+    }
 
-    // Test for inserting/getting NULL values
-    stmt.ExecuteDirect("DELETE FROM Test");
-    stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
-    stmt.Execute(SqlNullValue);
-    auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Remarks FROM Test");
-    CHECK(result.IsNull());
+    SECTION("Using ExecuteDirectSingle")
+    {
+        stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Remarks FROM Test");
+        CHECK(result.IsNull());
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate", "[SqlDataBinder],[SqlVariant]")
@@ -266,9 +274,12 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate", "[SqlDataBinder],[SqlVar
     stmt.Execute(expected);
 
     stmt.ExecuteDirect("SELECT Value FROM Test");
-    REQUIRE(stmt.FetchRow());
-    auto const actual = stmt.GetColumn<SqlVariant>(1);
-    CHECK(std::get<SqlDate>(actual.value) == std::get<SqlDate>(expected.value));
+    {
+        auto reader = stmt.GetResultCursor();
+        REQUIRE(reader.FetchRow());
+        auto const actual = reader.GetColumn<SqlVariant>(1);
+        CHECK(std::get<SqlDate>(actual.value) == std::get<SqlDate>(expected.value));
+    }
 
     // Test for inserting/getting NULL values
     stmt.ExecuteDirect("DELETE FROM Test");
@@ -290,9 +301,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime", "[SqlDataBinder],[SqlVar
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
     stmt.Execute(expected);
 
-    stmt.ExecuteDirect("SELECT Value FROM Test");
-    REQUIRE(stmt.FetchRow());
-    auto const actual = stmt.GetColumn<SqlVariant>(1);
+    auto const actual = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Value FROM Test");
 
     if (stmt.Connection().ServerType() == SqlServerType::POSTGRESQL)
     {
@@ -389,11 +398,12 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
 
     SECTION("check handling for bound output columns")
     {
-        std::string actualText; // intentionally an empty string, auto-growing behind the scenes
         stmt.Prepare("SELECT Value FROM Test");
-        stmt.BindOutputColumns(&actualText);
         stmt.Execute();
-        REQUIRE(stmt.FetchRow());
+        auto reader = stmt.GetResultCursor();
+        std::string actualText; // intentionally an empty string, auto-growing behind the scenes
+        reader.BindOutputColumns(&actualText);
+        REQUIRE(reader.FetchRow());
         REQUIRE(actualText.size() == expectedText.size());
         CHECK(actualText == expectedText);
     }
@@ -411,16 +421,13 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString", "
 
     SECTION("check custom type handling for explicitly fetched output columns")
     {
-        stmt.ExecuteDirect("SELECT Value FROM Test");
-        REQUIRE(stmt.FetchRow());
-        auto const actualValue = stmt.GetColumn<SqlFixedString<8>>(1);
-        CHECK(actualValue == expectedValue);
+        auto const actualValue = stmt.ExecuteDirectSingle<SqlFixedString<8>>("SELECT Value FROM Test");
+        CHECK(actualValue.value() == expectedValue);
 
         SECTION("Truncated result")
         {
-            stmt.ExecuteDirect("SELECT Value FROM Test");
-            REQUIRE(stmt.FetchRow());
-            auto const truncatedValue = stmt.GetColumn<SqlFixedString<4>>(1);
+            auto const truncatedValueOpt = stmt.ExecuteDirectSingle<SqlFixedString<4>>("SELECT Value FROM Test");
+            auto const truncatedValue = truncatedValueOpt.value();
             auto const truncatedStrView = truncatedValue.substr(0);
             auto const expectedStrView = expectedValue.substr(0, 3);
             CHECK(truncatedStrView == expectedStrView); // "Hel"
@@ -428,10 +435,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder for SQL type: SqlFixedString", "
 
         SECTION("Trimmed result")
         {
-            stmt.ExecuteDirect("SELECT Value FROM Test");
-            REQUIRE(stmt.FetchRow());
-            auto const trimmedValue = stmt.GetColumn<SqlTrimmedFixedString<8>>(1);
-            CHECK(trimmedValue == "Hello");
+            auto const trimmedValue = stmt.ExecuteDirectSingle<SqlTrimmedFixedString<8>>("SELECT Value FROM Test");
+            CHECK(trimmedValue.value() == "Hello");
         }
     }
 
@@ -671,24 +676,29 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
     stmt.Execute(inputValue);
 
     stmt.ExecuteDirect("SELECT Value FROM Test");
+    {
+        auto reader = stmt.GetResultCursor();
 
-    // Fetch and check GetColumn for wide string
-    REQUIRE(stmt.FetchRow());
-    auto const actualValue = stmt.GetColumn<WideString>(1);
-    CHECK(actualValue == inputValue);
+        // Fetch and check GetColumn for wide string
+        REQUIRE(reader.FetchRow());
+        auto const actualValue = reader.GetColumn<WideString>(1);
+        CHECK(actualValue == inputValue);
 
-    // Bind output column, fetch, and check result in output column for wide string
-    WideString actualValue2;
-    stmt.BindOutputColumns(&actualValue2);
-    REQUIRE(stmt.FetchRow());
-    CHECK(actualValue2 == inputValue);
+        // Bind output column, fetch, and check result in output column for wide string
+        WideString actualValue2;
+        reader.BindOutputColumns(&actualValue2);
+        REQUIRE(reader.FetchRow());
+        CHECK(actualValue2 == inputValue);
+    }
 
-    // Test for inserting/getting NULL VALUES
-    stmt.ExecuteDirect("DELETE FROM Test");
-    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
-    stmt.Execute(SqlNullValue);
-    auto const result = stmt.ExecuteDirectSingle<WideString>("SELECT Value FROM Test");
-    CHECK(!result.has_value());
+    SECTION("Test for inserting/getting NULL VALUES")
+    {
+        stmt.ExecuteDirect("DELETE FROM Test");
+        stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<WideString>("SELECT Value FROM Test");
+        CHECK(!result.has_value());
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder],[SqlGuid]")
@@ -708,28 +718,37 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: SqlGuid", "[SqlDataBinder],[Sql
 
     // Fetch and check GetColumn for GUID
     stmt.ExecuteDirect("SELECT id, nullableGuid, name FROM Test");
-    REQUIRE(stmt.FetchRow());
-    auto const actualGuid = stmt.GetColumn<SqlGuid>(1);
-    auto const actualGuid2 = stmt.GetColumn<SqlGuid>(2);
-    auto const actualGuidStr = std::format("{}", actualGuid);
-    CHECK(actualGuidStr == expectedGuidStr);
-    CHECK(actualGuid == expectedGuid);
-    CHECK(actualGuid2 == expectedGuid);
+    {
+        auto reader = stmt.GetResultCursor();
+        REQUIRE(reader.FetchRow());
+        auto const actualGuid = reader.GetColumn<SqlGuid>(1);
+        auto const actualGuid2 = reader.GetColumn<SqlGuid>(2);
+        auto const actualGuidStr = std::format("{}", actualGuid);
+        CHECK(actualGuidStr == expectedGuidStr);
+        CHECK(actualGuid == expectedGuid);
+        CHECK(actualGuid2 == expectedGuid);
+    }
 
     // Bind output column, fetch, and check result in output column for GUID
     stmt.ExecuteDirect("SELECT id FROM Test");
-    SqlGuid actualGuid3;
-    stmt.BindOutputColumns(&actualGuid3);
-    REQUIRE(stmt.FetchRow());
-    CHECK(actualGuid3 == expectedGuid);
-    REQUIRE(!stmt.FetchRow());
+    {
+        auto reader = stmt.GetResultCursor();
+        SqlGuid actualGuid3;
+        reader.BindOutputColumns(&actualGuid3);
+        REQUIRE(reader.FetchRow());
+        CHECK(actualGuid3 == expectedGuid);
+        REQUIRE(!stmt.FetchRow());
+    }
 
     // Test SELECT by GUID
     stmt.Prepare("SELECT name FROM Test WHERE id = ?");
     stmt.Execute(expectedGuid);
-    REQUIRE(stmt.FetchRow());
-    CHECK(stmt.GetColumn<std::string>(1) == "Alice");
-    REQUIRE(!stmt.FetchRow());
+    {
+        auto reader = stmt.GetResultCursor();
+        REQUIRE(stmt.FetchRow());
+        CHECK(stmt.GetColumn<std::string>(1) == "Alice");
+        REQUIRE(!stmt.FetchRow());
+    }
 
     // Test for inserting/getting NULL values
     stmt.ExecuteDirect("DELETE FROM Test");

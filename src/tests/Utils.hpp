@@ -283,10 +283,10 @@ class SqlTestFixture
         switch (stmt.Connection().ServerType())
         {
             case SqlServerType::MICROSOFT_SQL:
-                stmt.ExecuteDirect(std::format("USE {}", "master"));
+                stmt.ExecuteDirect(std::format("USE \"{}\"", "master"));
                 stmt.ExecuteDirect(std::format("DROP DATABASE IF EXISTS \"{}\"", testDatabaseName));
                 stmt.ExecuteDirect(std::format("CREATE DATABASE \"{}\"", testDatabaseName));
-                stmt.ExecuteDirect(std::format("USE {}", testDatabaseName));
+                stmt.ExecuteDirect(std::format("USE \"{}\"", testDatabaseName));
                 break;
             case SqlServerType::ORACLE: {
                 // Drop user-created tables
