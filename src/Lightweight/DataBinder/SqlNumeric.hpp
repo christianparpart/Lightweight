@@ -2,17 +2,20 @@
 
 #pragma once
 
+#include "../SqlError.hpp"
+#include "../SqlLogger.hpp"
 #include "Primitives.hpp"
 
 #include <cmath>
 #include <compare>
 #include <concepts>
 #include <cstring>
+#include <print>
 
 // clang-format off
 #if defined(__SIZEOF_INT128__)
     #define LIGHTWEIGHT_INT128_T __int128_t
-    static_assert(sizeof(__int128_t) == SQL_MAX_NUMERIC_LEN);
+    static_assert(sizeof(__int128_t) == sizeof(SQL_NUMERIC_STRUCT::val));
 #endif
 // clang-format on
 
@@ -57,11 +60,11 @@ struct SqlNumeric
     {
 #if defined(LIGHTWEIGHT_INT128_T)
         auto const num = static_cast<LIGHTWEIGHT_INT128_T>(value * std::pow(10, Scale));
-        std::memcpy(sqlValue.val, &num, sizeof(num));
+        *((LIGHTWEIGHT_INT128_T*) sqlValue.val) = num;
 #else
         auto const num = static_cast<int64_t>(value * std::pow(10, Scale));
         std::memset(sqlValue.val, 0, sizeof(sqlValue.val));
-        std::memcpy(sqlValue.val, &num, sizeof(num));
+        *((int64_t*) sqlValue.val) = num;
 #endif
 
         sqlValue.sign = num >= 0; // 1 == positive, 0 == negative
@@ -75,27 +78,48 @@ struct SqlNumeric
         return *this;
     }
 
-    [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE float ToFloat() const noexcept
+    [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE auto ToUnscaledValue() const noexcept
     {
 #if defined(LIGHTWEIGHT_INT128_T)
-        return float(*reinterpret_cast<LIGHTWEIGHT_INT128_T const*>(sqlValue.val)) / std::pow(10, sqlValue.scale);
+        return *reinterpret_cast<LIGHTWEIGHT_INT128_T const*>(sqlValue.val);
 #else
-        return float(*reinterpret_cast<int64_t const*>(sqlValue.val)) / std::pow(10, sqlValue.scale);
+        return *reinterpret_cast<int64_t const*>(sqlValue.val);
 #endif
+    }
+
+    [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE float ToFloat() const noexcept
+    {
+        return float(ToUnscaledValue()) / std::pow(10, Scale);
     }
 
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE double ToDouble() const noexcept
     {
-#if defined(LIGHTWEIGHT_INT128_T)
-        return double(*reinterpret_cast<LIGHTWEIGHT_INT128_T const*>(sqlValue.val)) / std::pow(10, sqlValue.scale);
-#else
-        return double(*reinterpret_cast<int64_t const*>(sqlValue.val)) / std::pow(10, sqlValue.scale);
-#endif
+        return double(ToUnscaledValue()) / std::pow(10, Scale);
+    }
+
+    [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE long double ToLongDouble() const noexcept
+    {
+        return static_cast<long double>(ToUnscaledValue()) / std::pow(10, Scale);
+    }
+
+    [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE explicit operator float() const noexcept
+    {
+        return ToFloat();
+    }
+
+    [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE explicit operator double() const noexcept
+    {
+        return ToDouble();
+    }
+
+    [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE explicit operator long double() const noexcept
+    {
+        return ToLongDouble();
     }
 
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE std::string ToString() const
     {
-        return std::format("{:.{}f}", ToFloat(), 2);
+        return std::format("{:.{}f}", ToFloat(), Scale);
     }
 
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE std::weak_ordering operator<=>(
@@ -104,13 +128,11 @@ struct SqlNumeric
         return ToDouble() <=> other.ToDouble();
     }
 
-    [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE bool operator==(SqlNumeric const& other) const noexcept
+    template <std::size_t OtherPrecision, std::size_t OtherScale>
+    [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE bool operator==(
+        SqlNumeric<OtherPrecision, OtherScale> const& other) const noexcept
     {
-        // clang-format off
-        return sqlValue.sign == other.sqlValue.sign
-               && sqlValue.scale == other.sqlValue.scale
-               && std::strncmp((char*) sqlValue.val, (char*) other.sqlValue.val, sizeof(sqlValue.val)) == 0;
-        // clang-format on
+        return ToFloat() == other.ToFloat();
     }
 };
 
@@ -122,18 +144,45 @@ struct SqlDataBinder<SqlNumeric<Precision, Scale>>
 
     static constexpr SqlColumnType ColumnType = SqlColumnType::NUMERIC;
 
+    static void RequireSuccess(SQLHSTMT stmt, SQLRETURN error, std::source_location sourceLocation = std::source_location::current())
+    {
+        if (SQL_SUCCEEDED(error))
+            return;
+
+        auto errorInfo = SqlErrorInfo::fromStatementHandle(stmt);
+        SqlLogger::GetLogger().OnError(errorInfo, sourceLocation);
+        throw SqlException(std::move(errorInfo));
+    }
+
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, ValueType const& value, SqlDataBinderCallback& /*cb*/) noexcept
     {
-        return SQLBindParameter(stmt, column, SQL_PARAM_INPUT, SQL_C_NUMERIC, SQL_NUMERIC, Precision, Scale, (SQLPOINTER) &value.sqlValue, 0, nullptr);
+        auto* mut = const_cast<ValueType*>(&value);
+        mut->sqlValue.precision = Precision;
+        mut->sqlValue.scale = Scale;
+        RequireSuccess(stmt, SQLBindParameter(stmt, column, SQL_PARAM_INPUT, SQL_C_NUMERIC, SQL_NUMERIC, Precision, Scale, (SQLPOINTER) &value.sqlValue, 0, nullptr));
+        return SQL_SUCCESS;
     }
 
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN OutputColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& /*unused*/) noexcept
     {
+        SQLHDESC hDesc {};
+        RequireSuccess(stmt, SQLGetStmtAttr(stmt, SQL_ATTR_APP_ROW_DESC, (SQLPOINTER) &hDesc, 0, nullptr));
+        RequireSuccess(stmt, SQLSetDescField(hDesc, (SQLSMALLINT) column, SQL_DESC_TYPE, (SQLPOINTER) SQL_NUMERIC, 0));
+        RequireSuccess(stmt, SQLSetDescField(hDesc, (SQLSMALLINT) column, SQL_DESC_PRECISION, (SQLPOINTER) Precision, 0));
+        RequireSuccess(stmt, SQLSetDescField(hDesc, (SQLSMALLINT) column, SQL_DESC_SCALE, (SQLPOINTER) Scale, 0));
+
         return SQLBindCol(stmt, column, SQL_C_NUMERIC, &result->sqlValue, sizeof(ValueType), indicator);
     }
 
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback const& /*cb*/) noexcept
     {
+        SQLHDESC hDesc {};
+        RequireSuccess(stmt, SQLGetStmtAttr(stmt, SQL_ATTR_APP_ROW_DESC, (SQLPOINTER) &hDesc, 0, nullptr));
+        RequireSuccess(stmt, SQLSetDescField(hDesc, (SQLSMALLINT) column, SQL_DESC_TYPE, (SQLPOINTER) SQL_NUMERIC, 0));
+        RequireSuccess(stmt, SQLSetDescField(hDesc, (SQLSMALLINT) column, SQL_DESC_PRECISION, (SQLPOINTER) Precision, 0));
+        RequireSuccess(stmt, SQLSetDescField(hDesc, (SQLSMALLINT) column, SQL_DESC_SCALE, (SQLPOINTER) Scale, 0));
+        //RequireSuccess(stmt, SQLSetDescField(hDesc, (SQLSMALLINT) column, SQL_DESC_DATA_PTR, (SQLPOINTER) &result->sqlValue, sizeof(ValueType)));
+
         return SQLGetData(stmt, column, SQL_C_NUMERIC, &result->sqlValue, sizeof(ValueType), indicator);
     }
 };

@@ -353,7 +353,7 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindOutputColumns(Args*... ar
     RequireIndicators();
 
     SQLUSMALLINT i = 0;
-    ((++i, SqlDataBinder<Args>::OutputColumn(m_hStmt, i, args, GetIndicatorForColumn(i), *this)), ...);
+    ((++i, RequireSuccess(SqlDataBinder<Args>::OutputColumn(m_hStmt, i, args, GetIndicatorForColumn(i), *this))), ...);
 }
 
 template <SqlOutputColumnBinder T>
@@ -361,7 +361,7 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindOutputColumn(SQLUSMALLINT
 {
     RequireIndicators();
 
-    SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, GetIndicatorForColumn(columnIndex), *this);
+    RequireSucces(SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, GetIndicatorForColumn(columnIndex), *this));
 }
 
 template <SqlInputParameterBinder Arg>
@@ -499,12 +499,32 @@ inline bool SqlStatement::GetColumn(SQLUSMALLINT column, T* result) const
     return indicator != SQL_NULL_DATA;
 }
 
+namespace detail
+{
+
+// is_specialization_of<> is inspired by:
+// https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p2098r1.pdf
+
+template <template <typename...> class T, typename U>
+struct is_specialization_of: std::false_type {};
+
+template <template <typename...> class T, typename... Us>
+struct is_specialization_of<T, T<Us...>>: std::true_type {};
+
+template <typename T>
+concept SqlNullableType = (std::same_as<T, SqlVariant> || is_specialization_of<std::optional, T>::value);
+
+} // end namespace detail
+
 template <SqlGetColumnNativeType T>
 inline T SqlStatement::GetColumn(SQLUSMALLINT column) const
 {
     T result {};
-    SQLLEN indicator {}; // TODO: Handle NULL values if we find out that we need them for our use-cases.
+    SQLLEN indicator {};
     RequireSuccess(SqlDataBinder<T>::GetColumn(m_hStmt, column, &result, &indicator, *this));
+    if constexpr (!detail::SqlNullableType<T>)
+        if (indicator == SQL_NULL_DATA)
+            throw std::runtime_error { "Column value is NULL" };
     return result;
 }
 

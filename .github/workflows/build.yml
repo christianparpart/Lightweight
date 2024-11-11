@@ -113,7 +113,7 @@ jobs:
         compiler:
           [
             "GCC 14",
-            "Clang 18",
+            "Clang 19",
           ]
     name: "Ubuntu Linux 24.04 (${{ matrix.compiler }}, C++${{ matrix.cxx }})"
     runs-on: ubuntu-24.04
@@ -144,7 +144,14 @@ jobs:
         run: sudo apt install -y g++-${{ steps.extract_matrix.outputs.CC_VERSION }}
       - name: Install Clang
         if: ${{ startsWith(matrix.compiler, 'Clang') }}
-        run: sudo apt install -y clang-${{ steps.extract_matrix.outputs.CC_VERSION }} #libc++-dev libc++abi-dev
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh ${{ steps.extract_matrix.outputs.CC_VERSION }}
+          # What about: libc++-dev libc++abi-dev
+          sudo apt-get install -y \
+                        clang-format-${{ steps.extract_matrix.outputs.CC_VERSION }} \
+                        clang-${{ steps.extract_matrix.outputs.CC_VERSION }}
       - name: "cmake"
         run: |
           CC_NAME=$(echo "${{ matrix.compiler }}" | awk '{ print tolower($1); }')
@@ -243,7 +250,7 @@ jobs:
           echo "ODBC_CONNECTION_STRING=${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
           ldd /home/runner/oracle/instantclient_21_3/libsqora.so.21.1
       - name: "Run SQL Core tests"
-        run: LightweightTest --trace-odbc --trace-sql -s # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
+        run: LightweightTest # --odbc-connection-string="${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
         env:
           ODBC_CONNECTION_STRING: "${{ steps.setup.outputs.ODBC_CONNECTION_STRING }}"
 
