@@ -38,6 +38,7 @@ set(HEADER_FILES
     DataBinder/StringLiteral.hpp
     DataBinder/UnicodeConverter.hpp
 
+    SqlQuery.hpp
     SqlQuery/Core.hpp
     SqlQuery/Delete.hpp
     SqlQuery/Insert.hpp
@@ -48,12 +49,6 @@ set(HEADER_FILES
     SqlConnection.hpp
     SqlError.hpp
     SqlLogger.hpp
-    SqlQuery.hpp
-    SqlQuery/Core.hpp
-    SqlQuery/Delete.hpp
-    SqlQuery/Insert.hpp
-    SqlQuery/Select.hpp
-    SqlQuery/Update.hpp
     SqlQueryFormatter.hpp
     SqlSchema.hpp
     SqlScopedTraceLogger.hpp

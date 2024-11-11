@@ -14,6 +14,8 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
     using ValueType = StringType;
     using StringTraits = SqlBasicStringOperations<ValueType>;
 
+    static constexpr SqlColumnType ColumnType = StringTraits::ColumnType;
+
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,
                                     ValueType const& value,
@@ -132,6 +134,8 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
 {
     using ValueType = StringType;
     using StringTraits = SqlBasicStringOperations<ValueType>;
+
+    static constexpr SqlColumnType ColumnType = StringTraits::ColumnType;
 
     static constexpr auto CType = SQL_C_WCHAR;
     static constexpr auto SqlType = SQL_WVARCHAR;

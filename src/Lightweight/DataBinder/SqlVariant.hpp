@@ -13,6 +13,7 @@
 #include "SqlTime.hpp"
 #include "StdString.hpp"
 #include "StdStringView.hpp"
+#include "SqlFixedString.hpp"
 
 #include <format>
 #include <print>

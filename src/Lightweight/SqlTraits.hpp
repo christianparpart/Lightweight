@@ -142,7 +142,7 @@ inline SqlTraits const OracleSqlTraits {
 
 inline SqlTraits const SQLiteTraits {
     .LastInsertIdQuery = "SELECT LAST_INSERT_ROWID()",
-    .PrimaryKeyAutoIncrement = "INTEGER PRIMARY KEY AUTOINCREMENT",
+    .PrimaryKeyAutoIncrement = "INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT",
     .PrimaryKeyGuidColumnType = "GUID PRIMARY KEY DEFAULT (lower(hex(randomblob(16))))",
     .GuidColumnType = "GUID",
     .CurrentTimestampExpr = "CURRENT_TIMESTAMP",

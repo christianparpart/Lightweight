@@ -8,12 +8,6 @@
                 "program": "${workspaceRoot}/out/build/linux-gcc-debug/src/tests/LightweightTest",
                 "args": [
                 ],
-                "environment": [
-                    {
-                        "name": "ODBC_CONNECTION_STRING",
-                        "value": "DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost;PORT=1433;UID=SA;PWD=Super1Secret;TrustServerCertificate=yes;DATABASE=master"
-                    }
-                ],
                 "cwd": "${workspaceRoot}",
                 "externalConsole": true,
                 "stopAtEntry": false,

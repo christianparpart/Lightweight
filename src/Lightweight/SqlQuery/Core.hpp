@@ -399,7 +399,8 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::WhereCo
 template <typename T>
 struct WhereConditionLiteralType
 {
-    constexpr static bool needsQuotes = !std::is_integral_v<T> && !std::is_floating_point_v<T>;
+    constexpr static bool needsQuotes = !std::is_integral_v<T> && !std::is_floating_point_v<T> && !std::same_as<T, bool>
+                                        && !std::same_as<T, SqlWildcardType>;
 };
 
 template <typename Derived>

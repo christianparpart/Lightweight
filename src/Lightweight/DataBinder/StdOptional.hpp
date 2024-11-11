@@ -11,6 +11,9 @@ template <typename T>
 struct SqlDataBinder<std::optional<T>>
 {
     using OptionalValue = std::optional<T>;
+
+    static constexpr SqlColumnType ColumnType = SqlDataBinder<T>::ColumnType;
+
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
                                                              SQLUSMALLINT column,
                                                              OptionalValue const& value,
