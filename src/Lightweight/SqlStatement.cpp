@@ -183,6 +183,7 @@ bool SqlStatement::FetchRow()
     {
         case SQL_NO_DATA:
             SQLCloseCursor(m_hStmt);
+            m_data->postProcessOutputColumnCallbacks.clear();
             return false;
         default:
             RequireSuccess(sqlResult);

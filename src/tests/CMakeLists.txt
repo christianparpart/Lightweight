@@ -15,6 +15,7 @@ target_link_libraries(LightweightTest PRIVATE ${TEST_LIBRARIES})
 set(SOURCE_FILES
     CoreTests.cpp
     DataBinderTests.cpp
+    DataMapperTests.cpp
     QueryBuilderTests.cpp
     UnicodeConverterTests.cpp
 )

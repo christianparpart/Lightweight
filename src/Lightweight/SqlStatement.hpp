@@ -361,7 +361,8 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindOutputColumn(SQLUSMALLINT
 {
     RequireIndicators();
 
-    RequireSuccess(SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, GetIndicatorForColumn(columnIndex), *this));
+    RequireSuccess(
+        SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, GetIndicatorForColumn(columnIndex), *this));
 }
 
 template <SqlInputParameterBinder Arg>
@@ -504,12 +505,6 @@ namespace detail
 
 // is_specialization_of<> is inspired by:
 // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p2098r1.pdf
-
-template <template <typename...> class T, typename U>
-struct is_specialization_of: std::false_type {};
-
-template <template <typename...> class T, typename... Us>
-struct is_specialization_of<T, T<Us...>>: std::true_type {};
 
 template <typename T>
 concept SqlNullableType = (std::same_as<T, SqlVariant> || is_specialization_of<std::optional, T>::value);
