@@ -204,15 +204,13 @@ class SqlFixedString
 };
 
 template <typename>
-struct IsSqlFixedStringType
+struct IsSqlFixedStringType: std::false_type
 {
-    static constexpr bool value = false;
 };
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-struct IsSqlFixedStringType<SqlFixedString<N, T, PostOp>>
+struct IsSqlFixedStringType<SqlFixedString<N, T, PostOp>>: std::true_type
 {
-    static constexpr bool value = true;
 };
 
 template <typename T>
