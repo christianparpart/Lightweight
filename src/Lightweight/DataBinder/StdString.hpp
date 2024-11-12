@@ -54,10 +54,3 @@ struct SqlBasicStringOperations<std::basic_string<CharT>>
             str->resize(indicator);
     }
 };
-
-template <>
-struct SqlDataTraits<std::string>
-{
-    static constexpr unsigned Size = 0;
-    static constexpr SqlColumnType Type = SqlColumnType::STRING;
-};

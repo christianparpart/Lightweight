@@ -552,7 +552,7 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
             if constexpr (requires { TestTypeTraits<TestType>::sqlColumnTypeNameOverride; })
                 return TestTypeTraits<TestType>::sqlColumnTypeNameOverride;
             else
-                return conn.Traits().ColumnTypeName(SqlDataTraits<TestType>::Type);
+                return conn.Traits().ColumnTypeName(SqlDataBinder<TestType>::ColumnType);
         }();
 
         stmt.ExecuteDirect(std::format("CREATE TABLE Test (Value {} NULL)", sqlColumnType));

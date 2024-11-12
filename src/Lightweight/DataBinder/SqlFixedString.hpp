@@ -320,13 +320,6 @@ struct SqlBasicStringOperations<SqlFixedString<N, T, PostOp>>
     // clang-format on
 };
 
-template <std::size_t N, SqlStringPostRetrieveOperation PostOp>
-struct SqlDataTraits<SqlFixedString<N, char, PostOp>>
-{
-    static constexpr unsigned Size = N;
-    static constexpr SqlColumnType Type = SqlColumnType::CHAR;
-};
-
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation P>
 struct std::formatter<SqlFixedString<N, T, P>>: std::formatter<std::string>
 {

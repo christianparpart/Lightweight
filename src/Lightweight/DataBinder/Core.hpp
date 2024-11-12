@@ -43,17 +43,6 @@ struct SqlDataBinder
     static_assert(false, "No SQL data binder available for this type.");
 };
 
-// SqlDataTraits is a helper struct to provide information about the SQL data type.
-//
-// A template specialization must provide the following members:
-// - Size: The size of the data type in bytes (unsigned).
-// - Type: The SQL data type (SqlColumnType).
-template <typename T>
-struct SqlDataTraits
-{
-    static_assert(false, "No SQL data traits available for this type.");
-};
-
 // Default traits for output string parameters
 // This needs to be implemented for each string type that should be used as output parameter via
 // SqlDataBinder<>. An std::string specialization is provided below. Feel free to add more specializations for

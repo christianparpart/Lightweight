@@ -37,10 +37,3 @@ struct SqlDataBinder<SqlNullType>
                                 &const_cast<SqlNullType&>(value).sqlValue);
     }
 };
-
-template <>
-struct SqlDataTraits<SqlNullType>
-{
-    static constexpr unsigned Size = 0;
-    static constexpr SqlColumnType Type = SqlColumnType::UNKNOWN;
-};

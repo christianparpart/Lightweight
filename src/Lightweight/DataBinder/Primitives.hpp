@@ -46,11 +46,3 @@ template <> struct SqlDataBinder<unsigned long long>: SqlSimpleDataBinder<unsign
 template <> struct SqlDataBinder<std::size_t>: SqlSimpleDataBinder<std::size_t, SQL_C_SBIGINT, SQL_BIGINT> {};
 #endif
 // clang-format on
-
-template <typename T>
-    requires(std::same_as<SqlDataBinder<T>, SqlDataBinder<T>>) // Ensure that an SqlDataBinder<T> exists
-struct SqlDataTraits<T>
-{
-    static constexpr unsigned Size = 0;
-    static constexpr SqlColumnType Type = SqlDataBinder<T>::ColumnType;
-};

@@ -28,13 +28,6 @@ struct std::formatter<SqlTrimmedString>: std::formatter<std::string>
 };
 
 template <>
-struct SqlDataTraits<SqlTrimmedString>
-{
-    static constexpr unsigned Size = 0;
-    static constexpr SqlColumnType Type = SqlColumnType::STRING;
-};
-
-template <>
 struct SqlDataBinder<SqlTrimmedString>
 {
     static constexpr auto ColumnType = SqlColumnType::STRING;
