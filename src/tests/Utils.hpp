@@ -152,6 +152,7 @@ class TestSuiteSqlLogger: public SqlLogger
     void OnWarning(std::string_view const& message) override
     {
         WriteWarning("{}", message);
+        WriteDetails(std::source_location::current());
     }
 
     void OnConnectionOpened(SqlConnection const& /*connection*/) override {}

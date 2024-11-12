@@ -498,7 +498,7 @@ struct TestTypeTraits<SqlGuid>
     static constexpr auto cTypeName = "SqlGuid";
     static std::string_view sqlColumnTypeName(SqlServerType serverType)
     {
-        return GetSqlTraits(serverType).GuidColumnType;
+        return GetSqlTraits(serverType).ColumnTypeName(SqlColumnType::GUID);
     }
     static constexpr auto inputValue = SqlGuid::UnsafeParse("1e772aed-3e73-4c72-8684-5dffaa17330e");
     static constexpr auto expectedOutputValue = SqlGuid::UnsafeParse("1e772aed-3e73-4c72-8684-5dffaa17330e");
@@ -543,11 +543,11 @@ using TypesToTest = std::tuple<
 >;
 // clang-format on
 
-TEMPLATE_LIST_TEST_CASE("Testing column types", "[SqlDataBinder]", TypesToTest)
+TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", TypesToTest)
 {
     SqlLogger::SetLogger(TestSuiteSqlLogger::GetLogger());
 
-    GIVEN("type: " << TestTypeTraits<TestType>::cTypeName)
+    GIVEN(TestTypeTraits<TestType>::cTypeName)
     {
         SqlTestFixture::DropAllTablesInDatabase();
 
