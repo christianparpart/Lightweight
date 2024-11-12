@@ -28,7 +28,9 @@ enum class SqlColumnType : uint8_t
     STRING,
     TEXT,
     BOOLEAN,
+    SMALLINT,
     INTEGER,
+    BIGINT,
     NUMERIC,
     REAL,
     BLOB,
@@ -53,8 +55,12 @@ constexpr std::string_view DefaultColumnTypeName(SqlColumnType value) noexcept
             return "TEXT";
         case SqlColumnType::BOOLEAN:
             return "BOOL";
+        case SqlColumnType::SMALLINT:
+            return "SMALLINT";
         case SqlColumnType::INTEGER:
             return "INTEGER";
+        case SqlColumnType::BIGINT:
+            return "BIGINT";
         case SqlColumnType::NUMERIC:
             return "NUMERIC";
         case SqlColumnType::REAL:
@@ -66,6 +72,8 @@ constexpr std::string_view DefaultColumnTypeName(SqlColumnType value) noexcept
         case SqlColumnType::TIME:
             return "TIME";
         case SqlColumnType::DATETIME:
+            // With SQL Server or Oracle, we could use DATETIME2(7) and have nano-second precision (with 100ns
+            // resolution) The standard DATETIME and ODBC SQL_TIMESTAMP have only millisecond precision.
             return "DATETIME";
         case SqlColumnType::GUID:
             return "BINARY(16)";
@@ -140,8 +148,16 @@ inline SqlTraits const OracleSqlTraits {
     .ColumnTypeName = [](SqlColumnType value) -> std::string_view {
         switch (value)
         {
+            case SqlColumnType::DATETIME:
+                return "TIMESTAMP";
             case SqlColumnType::GUID:
                 return "RAW(16)";
+            case SqlColumnType::SMALLINT:
+                return "NUMBER";
+            case SqlColumnType::INTEGER:
+                return "NUMBER";
+            case SqlColumnType::BIGINT:
+                return "NUMBER";
             default:
                 return detail::DefaultColumnTypeName(value);
         }

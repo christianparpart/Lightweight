@@ -28,6 +28,8 @@
 template <std::size_t ThePrecision, std::size_t TheScale>
 struct SqlNumeric
 {
+    static constexpr auto ColumnType = SqlColumnType::NUMERIC;
+
     // Number of total digits
     static constexpr auto Precision = ThePrecision;
 
