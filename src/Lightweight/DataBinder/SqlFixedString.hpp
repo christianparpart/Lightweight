@@ -222,7 +222,8 @@ using SqlTrimmedFixedString = SqlFixedString<N, T, SqlStringPostRetrieveOperatio
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
 struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
 {
-    static constexpr auto ColumnType = SqlColumnType::STRING;
+    static constexpr auto ColumnType = SqlColumnType::CHAR;
+    static constexpr auto ColumnSize = N;
 
     using ValueType = SqlFixedString<N, T, PostOp>;
     using StringTraits = SqlBasicStringOperations<ValueType>;
