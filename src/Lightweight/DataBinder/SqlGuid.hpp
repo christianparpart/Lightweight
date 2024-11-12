@@ -96,6 +96,8 @@ inline LIGHTWEIGHT_FORCE_INLINE std::string to_string(SqlGuid const& guid)
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlGuid>
 {
+    static constexpr auto ColumnType = SqlColumnType::GUID;
+
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,
                                     SqlGuid const& value,

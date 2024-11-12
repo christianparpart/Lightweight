@@ -37,6 +37,8 @@ struct SqlDataTraits<SqlTrimmedString>
 template <>
 struct SqlDataBinder<SqlTrimmedString>
 {
+    static constexpr auto ColumnType = SqlColumnType::STRING;
+
     using InnerStringType = decltype(std::declval<SqlTrimmedString>().value);
     using StringTraits = SqlBasicStringOperations<InnerStringType>;
 

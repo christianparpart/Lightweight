@@ -50,8 +50,12 @@ std::string MakeType(SqlSchema::Column const& column)
             return std::format("SqlText");
         case ColumnType::BOOLEAN:
             return "bool";
+        case ColumnType::SMALLINT:
+            return "short";
         case ColumnType::INTEGER:
             return "int";
+        case ColumnType::BIGINT:
+            return "int64_t";
         case ColumnType::NUMERIC:
             return std::format("SqlNumeric<{}, {}>", column.size, column.decimalDigits);
         case ColumnType::REAL:
@@ -64,6 +68,8 @@ std::string MakeType(SqlSchema::Column const& column)
             return "SqlTime";
         case ColumnType::DATETIME:
             return "SqlDateTime";
+        case ColumnType::GUID:
+            return "SqlGuid";
         case ColumnType::UNKNOWN:
             break;
     }

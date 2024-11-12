@@ -137,6 +137,11 @@ class SqlFixedString
         return std::basic_string_view<T>(_data + offset, count);
     }
 
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::basic_string_view<T> str() const noexcept
+    {
+        return std::basic_string_view<T> { _data, _size };
+    }
+
     // clang-format off
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr pointer_type c_str() noexcept { _data[_size] = '\0'; return _data; }
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr pointer_type data() noexcept { return _data; }
@@ -152,6 +157,11 @@ class SqlFixedString
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr T const& at(std::size_t i) const noexcept { return _data[i]; }
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr T const& operator[](std::size_t i) const noexcept { return _data[i]; }
     // clang-format on
+
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr explicit operator std::basic_string_view<T>() const noexcept
+    {
+        return { _data, N - 1 };
+    }
 
     template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
     LIGHTWEIGHT_FORCE_INLINE std::weak_ordering operator<=>(
@@ -193,12 +203,27 @@ class SqlFixedString
     }
 };
 
+template <typename>
+struct IsSqlFixedStringType: std::false_type
+{
+};
+
+template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
+struct IsSqlFixedStringType<SqlFixedString<N, T, PostOp>>: std::true_type
+{
+};
+
+template <typename T>
+constexpr bool IsSqlFixedString = IsSqlFixedStringType<T>::value;
+
 template <std::size_t N, typename T = char>
 using SqlTrimmedFixedString = SqlFixedString<N, T, SqlStringPostRetrieveOperation::TRIM_RIGHT>;
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
 struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
 {
+    static constexpr auto ColumnType = SqlColumnType::STRING;
+
     using ValueType = SqlFixedString<N, T, PostOp>;
     using StringTraits = SqlBasicStringOperations<ValueType>;
 

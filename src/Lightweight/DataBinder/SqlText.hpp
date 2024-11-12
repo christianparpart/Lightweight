@@ -33,6 +33,8 @@ struct SqlBasicStringOperations<SqlText>
 {
     using Traits = SqlBasicStringOperations<typename SqlText::value_type>;
 
+    static constexpr auto ColumnType = SqlColumnType::TEXT;
+
     // clang-format off
     static LIGHTWEIGHT_FORCE_INLINE char const* Data(SqlText const* str) noexcept { return Traits::Data(&str->value); }
     static LIGHTWEIGHT_FORCE_INLINE char* Data(SqlText* str) noexcept { return Traits::Data(&str->value); }

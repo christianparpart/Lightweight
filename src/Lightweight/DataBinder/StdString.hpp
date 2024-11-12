@@ -17,6 +17,8 @@ struct SqlBasicStringOperations<std::basic_string<CharT>>
     using CharType = CharT;
     using StringType = std::basic_string<CharT>;
 
+    static constexpr SqlColumnType ColumnType = SqlColumnType::STRING;
+
     static LIGHTWEIGHT_FORCE_INLINE CharType const* Data(StringType const* str) noexcept
     {
         return str->data();

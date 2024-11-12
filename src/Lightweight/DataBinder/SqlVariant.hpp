@@ -13,6 +13,7 @@
 #include "SqlTime.hpp"
 #include "StdString.hpp"
 #include "StdStringView.hpp"
+#include "SqlFixedString.hpp"
 
 #include <format>
 #include <print>
@@ -205,6 +206,8 @@ struct SqlVariant
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlVariant>
 {
+    static constexpr auto ColumnType = SqlColumnType::UNKNOWN;
+
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,
                                     SqlVariant const& variantValue,

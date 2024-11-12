@@ -130,6 +130,8 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime::native_type>
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime>
 {
+    static constexpr auto ColumnType = SqlColumnType::DATETIME;
+
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,
                                     SqlDateTime const& value,

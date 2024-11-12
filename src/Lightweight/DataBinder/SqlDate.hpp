@@ -71,6 +71,8 @@ struct LIGHTWEIGHT_API SqlDate
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlDate>
 {
+    static constexpr auto ColumnType = SqlColumnType::DATE;
+
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
                                                              SQLUSMALLINT column,
                                                              SqlDate const& value,

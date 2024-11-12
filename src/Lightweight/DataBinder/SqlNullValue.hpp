@@ -16,6 +16,8 @@ constexpr auto SqlNullValue = SqlNullType {};
 template <>
 struct SqlDataBinder<SqlNullType>
 {
+    static constexpr auto ColumnType = SqlColumnType::UNKNOWN;
+
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
                                                              SQLUSMALLINT column,
                                                              SqlNullType const& value,

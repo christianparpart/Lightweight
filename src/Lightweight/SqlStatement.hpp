@@ -361,7 +361,7 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindOutputColumn(SQLUSMALLINT
 {
     RequireIndicators();
 
-    RequireSucces(SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, GetIndicatorForColumn(columnIndex), *this));
+    RequireSuccess(SqlDataBinder<T>::OutputColumn(m_hStmt, columnIndex, arg, GetIndicatorForColumn(columnIndex), *this));
 }
 
 template <SqlInputParameterBinder Arg>
