@@ -96,6 +96,23 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields(std::vector<std::string_vie
     return *this;
 }
 
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields(std::initializer_list<std::string_view> const& fieldNames,
+                                                     std::string_view tableName)
+{
+    for (auto const& fieldName: fieldNames)
+    {
+        if (!m_query.fields.empty())
+            m_query.fields += ", ";
+
+        m_query.fields += '"';
+        m_query.fields += tableName;
+        m_query.fields += "\".\"";
+        m_query.fields += fieldName;
+        m_query.fields += '"';
+    }
+    return *this;
+}
+
 SqlSelectQueryBuilder& SqlSelectQueryBuilder::OrderBy(std::string_view columnName, SqlResultOrdering ordering)
 {
     if (m_query.orderBy.empty())

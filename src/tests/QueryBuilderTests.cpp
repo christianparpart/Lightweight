@@ -153,6 +153,23 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
         },
         QueryExpectations::All(
             R"(SELECT "foo", "bar" FROM "That" LEFT OUTER JOIN "Other" ON "Other"."id" = "That"."that_id")"));
+
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            using namespace std::string_view_literals;
+            return q.FromTable("Table_A")
+                .Select()
+                .Fields({ "foo"sv, "bar"sv }, "Table_A")
+                .Fields({ "that_foo"sv, "that_id"sv }, "Table_B")
+                .LeftOuterJoin("Table_B", "id", "that_id")
+                .Where(SqlQualifiedTableColumnName { .tableName = "Table_A", .columnName = "foo" }, 42)
+                .All();
+        },
+        QueryExpectations::All("SELECT \"Table_A\".\"foo\", \"Table_A\".\"bar\","
+                               " \"Table_B\".\"that_foo\", \"Table_B\".\"that_id\""
+                               " FROM \"Table_A\""
+                               " LEFT OUTER JOIN \"Table_B\" ON \"Table_B\".\"id\" = \"Table_A\".\"that_id\""
+                               " WHERE \"Table_A\".\"foo\" = 42"));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.SelectAs", "[SqlQueryBuilder]")
