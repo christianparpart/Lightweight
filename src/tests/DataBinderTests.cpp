@@ -206,13 +206,13 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values", "[SqlDataBinder],[Sq
         CHECK(std::holds_alternative<SqlNullType>(actual.value));
     }
 
-    // SECTION("Using ExecuteDirectSingle")
-    // {
-    //     stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
-    //     stmt.Execute(SqlNullValue);
-    //     auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Remarks FROM Test");
-    //     CHECK(result.IsNull());
-    // }
+    SECTION("Using ExecuteDirectSingle")
+    {
+        stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
+        stmt.Execute(SqlNullValue);
+        auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Remarks FROM Test");
+        CHECK(result.IsNull());
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate", "[SqlDataBinder],[SqlVariant]")

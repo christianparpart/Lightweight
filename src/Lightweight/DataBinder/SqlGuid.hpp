@@ -45,7 +45,7 @@ constexpr SqlGuid SqlGuid::UnsafeParse(std::string_view const& text) noexcept
 
     // Variant must be 8, 9, A, or B
     auto const variant = text[21];
-    if (variant != '8' && variant != '9' && variant != 'A' && variant != 'B')
+    if (variant != '8' && variant != '9' && variant != 'A' && variant != 'B' && variant != 'a' && variant != 'b')
         return { "\x04" };
 
     // clang-format off
