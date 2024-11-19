@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <format>
+#include <numbers>
 #include <ranges>
 #include <type_traits>
 
@@ -388,40 +389,40 @@ template <>
 struct TestTypeTraits<int16_t>
 {
     static constexpr auto cTypeName = "int16_t";
-    static constexpr auto inputValue = std::numeric_limits<int16_t>::max();
-    static constexpr auto expectedOutputValue = std::numeric_limits<int16_t>::max();
+    static constexpr auto inputValue = (std::numeric_limits<int16_t>::max)();
+    static constexpr auto expectedOutputValue = (std::numeric_limits<int16_t>::max)();
 };
 
 template <>
 struct TestTypeTraits<int32_t>
 {
     static constexpr auto cTypeName = "int32_t";
-    static constexpr auto inputValue = std::numeric_limits<int32_t>::max();
-    static constexpr auto expectedOutputValue = std::numeric_limits<int32_t>::max();
+    static constexpr auto inputValue = (std::numeric_limits<int32_t>::max)();
+    static constexpr auto expectedOutputValue = (std::numeric_limits<int32_t>::max)();
 };
 
 template <>
 struct TestTypeTraits<int64_t>
 {
     static constexpr auto cTypeName = "int64_t";
-    static constexpr auto inputValue = std::numeric_limits<int64_t>::max();
-    static constexpr auto expectedOutputValue = std::numeric_limits<int64_t>::max();
+    static constexpr auto inputValue = (std::numeric_limits<int64_t>::max)();
+    static constexpr auto expectedOutputValue = (std::numeric_limits<int64_t>::max)();
 };
 
 template <>
 struct TestTypeTraits<float>
 {
     static constexpr auto cTypeName = "float";
-    static constexpr auto inputValue = std::numeric_limits<float>::max();
-    static constexpr auto expectedOutputValue = std::numeric_limits<float>::max();
+    static constexpr auto inputValue = (std::numeric_limits<float>::max)();
+    static constexpr auto expectedOutputValue = (std::numeric_limits<float>::max)();
 };
 
 template <>
 struct TestTypeTraits<double>
 {
     static constexpr auto cTypeName = "double";
-    static constexpr auto inputValue =  M_PI;
-    static constexpr auto expectedOutputValue = M_PI;
+    static constexpr auto inputValue =  std::numbers::pi_v<double>;
+    static constexpr auto expectedOutputValue = std::numbers::pi_v<double>;
 };
 
 template <>
@@ -566,7 +567,7 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
             {
                 stmt.ExecuteDirect("SELECT Value FROM Test");
                 CAPTURE(stmt.FetchRow());
-                if constexpr (std::convertible_to<TestType, double>)
+                if constexpr (std::is_convertible_v<TestType, double> && !std::integral<TestType>)
                     CHECK_THAT(
                         stmt.GetColumn<TestType>(1),
                         (Catch::Matchers::WithinAbs(double(TestTypeTraits<TestType>::expectedOutputValue), 0.001)));
@@ -580,11 +581,12 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
                 auto actualValue = [&]() -> TestType {
                     if constexpr (requires { TestTypeTraits<TestType>::outputInitializer; })
                         return TestTypeTraits<TestType>::outputInitializer;
-                    return TestType {};
+                    else
+                        return TestType {};
                 }();
                 stmt.BindOutputColumns(&actualValue);
                 (void) stmt.FetchRow();
-                if constexpr (std::is_convertible_v<TestType, double>)
+                if constexpr (std::is_convertible_v<TestType, double> && !std::integral<TestType>)
                     CHECK_THAT(
                         double(actualValue),
                         (Catch::Matchers::WithinAbs(double(TestTypeTraits<TestType>::expectedOutputValue), 0.001)));

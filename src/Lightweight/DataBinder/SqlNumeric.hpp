@@ -91,7 +91,7 @@ struct SqlNumeric
 
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE float ToFloat() const noexcept
     {
-        return float(ToUnscaledValue()) / std::pow(10, Scale);
+        return float(ToUnscaledValue()) / std::powf(10, Scale);
     }
 
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE double ToDouble() const noexcept
