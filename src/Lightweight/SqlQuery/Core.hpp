@@ -72,6 +72,41 @@ struct [[nodiscard]] SqlSearchCondition
     std::vector<SqlVariant>* inputBindings = nullptr;
 };
 
+class SqlJoinConditionBuilder
+{
+  public:
+    explicit SqlJoinConditionBuilder(std::string_view referenceTable, std::string* condition) noexcept:
+        _referenceTable { referenceTable },
+        _condition { *condition }
+    {
+    }
+
+    SqlJoinConditionBuilder& On(std::string_view joinColumnName, SqlQualifiedTableColumnName onOtherColumn)
+    {
+        if (_firstCall)
+            _firstCall = !_firstCall;
+        else
+            _condition += " AND ";
+
+        _condition += '"';
+        _condition += _referenceTable;
+        _condition += "\".\"";
+        _condition += joinColumnName;
+        _condition += "\" = \"";
+        _condition += onOtherColumn.tableName;
+        _condition += "\".\"";
+        _condition += onOtherColumn.columnName;
+        _condition += '"';
+
+        return *this;
+    }
+
+  private:
+    std::string_view _referenceTable;
+    std::string& _condition;
+    bool _firstCall = true;
+};
+
 namespace detail
 {
 
@@ -168,6 +203,10 @@ class [[nodiscard]] SqlWhereClauseBuilder
                                      std::string_view joinColumnName,
                                      std::string_view onMainTableColumn);
 
+    // Constructs an INNER JOIN clause with a custom ON clause.
+    template <typename Callable>
+    [[nodiscard]] Derived& InnerJoin(std::string_view joinTable, Callable const& onClauseBuilder);
+
     // Constructs an LEFT OUTER JOIN clause.
     [[nodiscard]] Derived& LeftOuterJoin(std::string_view joinTable,
                                          std::string_view joinColumnName,
@@ -177,6 +216,11 @@ class [[nodiscard]] SqlWhereClauseBuilder
     [[nodiscard]] Derived& LeftOuterJoin(std::string_view joinTable,
                                          std::string_view joinColumnName,
                                          std::string_view onMainTableColumn);
+
+    // Constructs an LEFT OUTER JOIN clause with a custom ON clause.
+    template <typename Callable>
+        requires std::invocable<SqlJoinConditionBuilder, Callable, SqlJoinConditionBuilder&&>
+    [[nodiscard]] Derived& LeftOuterJoin(std::string_view joinTable, Callable const& onClauseBuilder);
 
     // Constructs an RIGHT OUTER JOIN clause.
     [[nodiscard]] Derived& RightOuterJoin(std::string_view joinTable,
@@ -188,6 +232,11 @@ class [[nodiscard]] SqlWhereClauseBuilder
                                           std::string_view joinColumnName,
                                           std::string_view onMainTableColumn);
 
+    // Constructs an RIGHT OUTER JOIN clause with a custom ON clause.
+    template <typename Callable>
+        requires std::invocable<SqlJoinConditionBuilder, Callable, SqlJoinConditionBuilder&&>
+    [[nodiscard]] Derived& RightOuterJoin(std::string_view joinTable, Callable const& onClauseBuilder);
+
     // Constructs an FULL OUTER JOIN clause.
     [[nodiscard]] Derived& FullOuterJoin(std::string_view joinTable,
                                          std::string_view joinColumnName,
@@ -197,6 +246,11 @@ class [[nodiscard]] SqlWhereClauseBuilder
     [[nodiscard]] Derived& FullOuterJoin(std::string_view joinTable,
                                          std::string_view joinColumnName,
                                          std::string_view onMainTableColumn);
+
+    // Constructs an FULL OUTER JOIN clause with a custom ON clause.
+    template <typename Callable>
+        requires std::invocable<SqlJoinConditionBuilder, Callable, SqlJoinConditionBuilder&&>
+    [[nodiscard]] Derived& FullOuterJoin(std::string_view joinTable, Callable const& onClauseBuilder);
 
   private:
     SqlSearchCondition& SearchCondition() noexcept;
@@ -239,6 +293,10 @@ class [[nodiscard]] SqlWhereClauseBuilder
                                 std::string_view joinTable,
                                 std::string_view joinColumnName,
                                 std::string_view onMainTableColumn);
+
+    // Constructs a JOIN clause.
+    template <typename Callable>
+    [[nodiscard]] Derived& Join(JoinType joinType, std::string_view joinTable, Callable const& onClauseBuilder);
 };
 
 template <typename Derived>
@@ -478,6 +536,13 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::OrWhere
 }
 
 template <typename Derived>
+template <typename Callable>
+Derived& SqlWhereClauseBuilder<Derived>::InnerJoin(std::string_view joinTable, Callable const& onClauseBuilder)
+{
+    return Join(JoinType::INNER, joinTable, onClauseBuilder);
+}
+
+template <typename Derived>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::InnerJoin(
     std::string_view joinTable, std::string_view joinColumnName, SqlQualifiedTableColumnName onOtherColumn)
 {
@@ -632,6 +697,32 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Join(Jo
         joinTable,
         joinColumnName,
         SqlQualifiedTableColumnName { .tableName = SearchCondition().tableName, .columnName = onMainTableColumn });
+}
+
+template <typename Derived>
+template <typename Callable>
+inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Join(JoinType joinType,
+                                                                              std::string_view joinTable,
+                                                                              Callable const& onClauseBuilder)
+{
+    static constexpr std::array<std::string_view, 4> JoinTypeStrings = {
+        "INNER",
+        "LEFT OUTER",
+        "RIGHT OUTER",
+        "FULL OUTER",
+    };
+
+    size_t const originalSize = SearchCondition().tableJoins.size();
+    SearchCondition().tableJoins += std::format("\n {0} JOIN \"{1}\" ON ",
+                                                JoinTypeStrings[static_cast<std::size_t>(joinType)],
+                                                joinTable);
+    size_t const sizeBefore  = SearchCondition().tableJoins.size();
+    onClauseBuilder(SqlJoinConditionBuilder { joinTable, &SearchCondition().tableJoins });
+    size_t const sizeAfter = SearchCondition().tableJoins.size();
+    if (sizeBefore == sizeAfter)
+        SearchCondition().tableJoins.resize(originalSize);
+
+    return static_cast<Derived&>(*this);
 }
 
 } // namespace detail
