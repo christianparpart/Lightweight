@@ -346,21 +346,6 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare: 
     }
 }
 
-struct MFCLikeCString
-{
-    std::string value;
-
-    [[nodiscard]] decltype(auto) GetString() const noexcept
-    {
-        return value.c_str();
-    }
-
-    [[nodiscard]] int GetLength() const noexcept
-    {
-        return static_cast<int>(value.size());
-    }
-};
-
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with Where", "[SqlQueryBuilder]")
 {
     auto sharedConnection = SqlConnection {};
