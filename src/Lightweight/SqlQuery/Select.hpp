@@ -4,6 +4,8 @@
 
 #include "Core.hpp"
 
+#include <reflection-cpp/reflection.hpp>
+
 enum class SqlResultOrdering : uint8_t
 {
     ASCENDING,
@@ -76,6 +78,9 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
     LIGHTWEIGHT_API SqlSelectQueryBuilder& Fields(std::initializer_list<std::string_view> const& fieldNames,
                                                   std::string_view tableName);
 
+    template <typename Record>
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& Fields();
+
     // Adds a single column with an alias to the SELECT clause.
     LIGHTWEIGHT_API SqlSelectQueryBuilder& FieldAs(std::string_view const& fieldName, std::string_view const& alias);
 
@@ -89,6 +94,9 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
 
     // Constructs or extends a GROUP BY clause.
     LIGHTWEIGHT_API SqlSelectQueryBuilder& GroupBy(std::string_view columnName);
+
+    template <typename Callable>
+    SqlSelectQueryBuilder& Build(Callable const& callable);
 
     // Finalizes building the query as SELECT COUNT(*) ... query.
     LIGHTWEIGHT_API ComposedQuery Count();
@@ -135,3 +143,22 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields(std::string_view const& fir
     m_query.fields += fragment.str();
     return *this;
 }
+
+template <typename Callable>
+inline LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& SqlSelectQueryBuilder::Build(Callable const& callable)
+{
+    callable(*this);
+    return *this;
+}
+
+// template <typename Record>
+// inline LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields()
+// {
+//     Reflection::EnumerateMembers<Record>([this]<size_t FieldIndex, typename FieldType>() {
+//         if constexpr (FieldWithStorage<FieldType>)
+//         {
+//             std::ignore = Field(FieldNameOf<FieldIndex, Record>());
+//         }
+//     });
+//     return *this;
+// }

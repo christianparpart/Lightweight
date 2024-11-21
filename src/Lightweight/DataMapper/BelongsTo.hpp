@@ -1,0 +1,219 @@
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+#include "../DataBinder/Core.hpp"
+#include "../DataBinder/SqlNullValue.hpp"
+#include "../SqlStatement.hpp"
+#include "../Utils.hpp"
+#include "Error.hpp"
+#include "Field.hpp"
+
+#include <compare>
+#include <type_traits>
+
+// Represents a one-to-one relationship.
+//
+// The `TheReferencedField` parameter is the field in the other record that references the current record.
+template <auto TheReferencedField>
+class BelongsTo
+{
+  public:
+    static constexpr auto ReferencedField = TheReferencedField;
+
+    // Represents the record type of the other field.
+    using ReferencedRecord = MemberClassType<decltype(TheReferencedField)>;
+
+    // Represents the column type of the foreign key, matching the primary key of the other record.
+    using ValueType =
+        typename std::remove_cvref_t<decltype(std::declval<ReferencedRecord>().*ReferencedField)>::ValueType;
+
+    static constexpr auto IsOptional = true;
+    static constexpr auto IsMandatory = !IsOptional;
+    static constexpr auto IsPrimaryKey = false;
+    static constexpr auto IsAutoIncrementPrimaryKey = false;
+
+    template <typename... S>
+        requires std::constructible_from<ValueType, S...>
+    constexpr BelongsTo(S&&... value) noexcept:
+        _referencedFieldValue(std::forward<S>(value)...)
+    {
+    }
+
+    constexpr BelongsTo(ReferencedRecord const& other) noexcept:
+        _referencedFieldValue { (other.*ReferencedField).Value() },
+        _loaded { true },
+        _record { other }
+    {
+    }
+
+    BelongsTo& operator=(SqlNullType /*nullValue*/) noexcept
+    {
+        if (!_referencedFieldValue)
+            return *this;
+        _loaded = false;
+        _record = std::nullopt;
+        _referencedFieldValue = {};
+        _modified = true;
+        return *this;
+    }
+
+    BelongsTo& operator=(ReferencedRecord& other)
+    {
+        if (_referencedFieldValue == (other.*ReferencedField).Value())
+            return *this;
+        _loaded = true;
+        _record.emplace(other);
+        _referencedFieldValue = (other.*ReferencedField).Value();
+        _modified = true;
+        return *this;
+    }
+
+    // clang-format off
+    LIGHTWEIGHT_FORCE_INLINE constexpr void SetModified(bool value) noexcept { _modified = value; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr bool IsModified() const noexcept { return _modified; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ValueType const& Value() const noexcept { return _referencedFieldValue; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ValueType& MutableValue() noexcept { return _referencedFieldValue; }
+    LIGHTWEIGHT_FORCE_INLINE void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt) { stmt.BindOutputColumn(outputIndex, &_referencedFieldValue); }
+
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord& EmplaceRecord() { _loaded = true; return _record.emplace(); }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord& Record() noexcept { RequireLoaded(); return _record.value(); }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord const& Record() const noexcept { RequireLoaded(); return _record.value(); }
+
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr bool IsLoaded() const noexcept { return _loaded; }
+    LIGHTWEIGHT_FORCE_INLINE void Unload() noexcept { _record = std::nullopt; _loaded = false; }
+
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord& operator*() noexcept { RequireLoaded(); return _record.value(); }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord const& operator*() const noexcept { RequireLoaded(); return _record.value(); }
+
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord* operator->() noexcept { RequireLoaded(); return &_record.value(); }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord const* operator->() const noexcept { RequireLoaded(); return &_record.value(); }
+
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr bool operator!() const noexcept { return !_referencedFieldValue; }
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr explicit operator bool() const noexcept { return static_cast<bool>(_referencedFieldValue); }
+    // clang-format on
+
+    template <auto OtherReferencedField>
+    std::weak_ordering operator<=>(BelongsTo<OtherReferencedField> const& other) const noexcept
+    {
+        return _referencedFieldValue <=> other.Value();
+    }
+
+    template <detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKey::No>
+    std::weak_ordering operator<=>(Field<T, IsPrimaryKeyValue> const& other) const noexcept
+    {
+        return _referencedFieldValue <=> other.Value();
+    }
+
+    template <auto OtherReferencedField>
+    bool operator==(BelongsTo<OtherReferencedField> const& other) const noexcept
+    {
+        return (_referencedFieldValue <=> other.Value()) == std::weak_ordering::equivalent;
+    }
+
+    template <auto OtherReferencedField>
+    bool operator!=(BelongsTo<OtherReferencedField> const& other) const noexcept
+    {
+        return (_referencedFieldValue <=> other.Value()) != std::weak_ordering::equivalent;
+    }
+
+    template <detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKey::No>
+    bool operator==(Field<T, IsPrimaryKeyValue> const& other) const noexcept
+    {
+        return (_referencedFieldValue <=> other.Value()) == std::weak_ordering::equivalent;
+    }
+
+    template <detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKey::No>
+    bool operator!=(Field<T, IsPrimaryKeyValue> const& other) const noexcept
+    {
+        return (_referencedFieldValue <=> other.Value()) != std::weak_ordering::equivalent;
+    }
+
+    struct Loader
+    {
+        std::function<void()> loadReference {};
+    };
+
+    void SetAutoLoader(Loader loader) noexcept
+    {
+        _loader = std::move(loader);
+    }
+
+  private:
+    void RequireLoaded()
+    {
+        if (_loaded)
+            return;
+
+        _loader.loadReference();
+
+        if (!_loaded)
+            throw SqlRequireLoadedError(Reflection::TypeName<std::remove_cvref_t<decltype(*this)>>);
+    }
+
+    ValueType _referencedFieldValue {};
+    Loader _loader {};
+    bool _loaded = false;
+    bool _modified = false;
+    std::optional<ReferencedRecord> _record {};
+};
+
+template <auto ReferencedField>
+std::ostream& operator<<(std::ostream& os, BelongsTo<ReferencedField> const& belongsTo)
+{
+    return os << belongsTo.Value();
+}
+
+namespace detail
+{
+template <typename T>
+struct IsBelongsTo: std::false_type
+{
+};
+
+template <auto ReferencedField>
+struct IsBelongsTo<BelongsTo<ReferencedField>>: std::true_type
+{
+};
+} // namespace detail
+
+template <typename T>
+constexpr bool IsBelongsTo = detail::IsBelongsTo<std::remove_cvref_t<T>>::value;
+
+template <auto ReferencedField>
+struct SqlDataBinder<BelongsTo<ReferencedField>>
+{
+    using SelfType = BelongsTo<ReferencedField>;
+    using InnerType = typename SelfType::ValueType;
+
+    static constexpr auto ColumnType = SqlDataBinder<InnerType>::ColumnType;
+
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
+                                                             SQLUSMALLINT column,
+                                                             SelfType const& value,
+                                                             SqlDataBinderCallback& cb)
+    {
+        return SqlDataBinder<InnerType>::InputParameter(stmt, column, value.Value(), cb);
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN
+    OutputColumn(SQLHSTMT stmt, SQLUSMALLINT column, SelfType* result, SQLLEN* indicator, SqlDataBinderCallback& cb)
+    {
+        auto const sqlReturn =
+            SqlDataBinder<InnerType>::OutputColumn(stmt, column, &result->MutableValue(), indicator, cb);
+        cb.PlanPostProcessOutputColumn([result]() { result->SetModified(true); });
+        return sqlReturn;
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt,
+                                                        SQLUSMALLINT column,
+                                                        SelfType* result,
+                                                        SQLLEN* indicator,
+                                                        SqlDataBinderCallback const& cb) noexcept
+    {
+        auto const sqlReturn = SqlDataBinder<InnerType>::GetColumn(stmt, column, &result->emplace(), indicator, cb);
+        if (SQL_SUCCEEDED(sqlReturn))
+            result->SetModified(true);
+        return sqlReturn;
+    }
+};

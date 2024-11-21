@@ -71,6 +71,8 @@ IncludeCategories:
     Priority:  0
   - Regex:     '^<(Lightweight)/'
     Priority:  10
+  - Regex:     '^<(reflection-cpp)/'
+    Priority:  20
   - Regex:     '^<gsl/'
     Priority:  48
   - Regex:     '^<catch2/'

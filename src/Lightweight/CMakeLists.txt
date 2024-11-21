@@ -45,6 +45,12 @@ set(HEADER_FILES
     SqlQuery/Select.hpp
     SqlQuery/Update.hpp
 
+    DataMapper/DataMapper.hpp
+    DataMapper/Detail.hpp
+    DataMapper/Field.hpp
+    DataMapper/Logger.hpp
+    DataMapper/RecordId.hpp
+
     SqlConnectInfo.hpp
     SqlConnection.hpp
     SqlError.hpp
@@ -59,6 +65,9 @@ set(SOURCE_FILES
     DataBinder/SqlGuid.cpp
     DataBinder/SqlVariant.cpp
     DataBinder/UnicodeConverter.cpp
+
+    DataMapper/Logger.cpp
+
     SqlConnectInfo.cpp
     SqlConnection.cpp
     SqlError.cpp
@@ -106,6 +115,8 @@ target_include_directories(Lightweight PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include>
 )
+
+target_link_libraries(Lightweight PUBLIC reflection-cpp::reflection-cpp)
 
 if(MSVC)
     target_compile_options(Lightweight PRIVATE /W4 /WX)
