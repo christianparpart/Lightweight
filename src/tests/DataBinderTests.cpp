@@ -206,11 +206,11 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: NULL values", "[SqlDataBinder],[Sq
         CHECK(std::holds_alternative<SqlNullType>(actual.value));
     }
 
-    SECTION("Using ExecuteDirectSingle")
+    SECTION("Using ExecuteDirectScalar")
     {
         stmt.Prepare("INSERT INTO Test (Remarks) VALUES (?)");
         stmt.Execute(SqlNullValue);
-        auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Remarks FROM Test");
+        auto const result = stmt.ExecuteDirectScalar<SqlVariant>("SELECT Remarks FROM Test");
         CHECK(result.IsNull());
     }
 }
@@ -238,7 +238,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlDate", "[SqlDataBinder],[SqlVar
     stmt.ExecuteDirect("DELETE FROM Test");
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
     stmt.Execute(SqlNullValue);
-    auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Value FROM Test");
+    auto const result = stmt.ExecuteDirectScalar<SqlVariant>("SELECT Value FROM Test");
     CHECK(result.IsNull());
 }
 
@@ -254,7 +254,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime", "[SqlDataBinder],[SqlVar
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
     stmt.Execute(expected);
 
-    auto const actual = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Value FROM Test");
+    auto const actual = stmt.ExecuteDirectScalar<SqlVariant>("SELECT Value FROM Test");
 
     if (stmt.Connection().ServerType() == SqlServerType::POSTGRESQL)
     {
@@ -269,7 +269,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: SqlTime", "[SqlDataBinder],[SqlVar
     stmt.ExecuteDirect("DELETE FROM Test");
     stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
     stmt.Execute(SqlNullValue);
-    auto const result = stmt.ExecuteDirectSingle<SqlVariant>("SELECT Value FROM Test");
+    auto const result = stmt.ExecuteDirectScalar<SqlVariant>("SELECT Value FROM Test");
     CHECK(result.IsNull());
 }
 
@@ -366,7 +366,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlDataBinder: Unicode", "[SqlDataBinder],[Uni
         stmt.ExecuteDirect("DELETE FROM Test");
         stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
         stmt.Execute(SqlNullValue);
-        auto const result = stmt.ExecuteDirectSingle<WideString>("SELECT Value FROM Test");
+        auto const result = stmt.ExecuteDirectScalar<WideString>("SELECT Value FROM Test");
         CHECK(!result.has_value());
     }
 }
