@@ -4,7 +4,6 @@
 
 #include "Api.hpp"
 #include "SqlConnection.hpp"
-#include "SqlDataBinder.hpp"
 
 #include <string>
 #include <string_view>
