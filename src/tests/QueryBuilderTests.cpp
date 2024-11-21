@@ -379,7 +379,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with Where", "[Sql
     auto const secrets = std::vector<int> { 42, 43, 44, 45 };
     stmt.ExecuteBatchSoft(names, secrets);
 
-    auto const totalRecords = stmt.ExecuteDirectSingle<int>(R"SQL(SELECT COUNT(*) FROM "Test")SQL");
+    auto const totalRecords = stmt.ExecuteDirectScalar<int>(R"SQL(SELECT COUNT(*) FROM "Test")SQL");
     REQUIRE(totalRecords.value_or(0) == 4);
 
     // clang-format off
@@ -421,7 +421,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with WhereIn", "[S
     auto const secrets = std::vector<int> { 42, 43, 44, 45 };
     stmt.ExecuteBatchSoft(names, secrets);
 
-    auto const totalRecords = stmt.ExecuteDirectSingle<int>("SELECT COUNT(*) FROM \"Test\"");
+    auto const totalRecords = stmt.ExecuteDirectScalar<int>("SELECT COUNT(*) FROM \"Test\"");
     REQUIRE(totalRecords.value_or(0) == 4);
 
     // clang-format off

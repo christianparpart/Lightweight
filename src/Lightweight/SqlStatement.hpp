@@ -154,23 +154,23 @@ class SqlStatement final: public SqlDataBinderCallback
     // returned.
     template <typename T>
         requires(!std::same_as<T, SqlVariant>)
-    [[nodiscard]] std::optional<T> ExecuteDirectSingle(const std::string_view& query,
+    [[nodiscard]] std::optional<T> ExecuteDirectScalar(const std::string_view& query,
                                                        std::source_location location = std::source_location::current());
 
     template <typename T>
         requires(std::same_as<T, SqlVariant>)
-    [[nodiscard]] T ExecuteDirectSingle(const std::string_view& query,
+    [[nodiscard]] T ExecuteDirectScalar(const std::string_view& query,
                                         std::source_location location = std::source_location::current());
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
     template <typename T>
         requires(!std::same_as<T, SqlVariant>)
-    [[nodiscard]] std::optional<T> ExecuteDirectSingle(SqlQueryObject auto const& query,
+    [[nodiscard]] std::optional<T> ExecuteDirectScalar(SqlQueryObject auto const& query,
                                                        std::source_location location = std::source_location::current());
 
     template <typename T>
         requires(std::same_as<T, SqlVariant>)
-    [[nodiscard]] T ExecuteDirectSingle(SqlQueryObject auto const& query,
+    [[nodiscard]] T ExecuteDirectScalar(SqlQueryObject auto const& query,
                                         std::source_location location = std::source_location::current());
 
     // Retrieves the number of rows affected by the last query.
@@ -542,7 +542,7 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::ExecuteDirect(SqlQueryObject 
 
 template <typename T>
     requires(!std::same_as<T, SqlVariant>)
-inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(const std::string_view& query,
+inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectScalar(const std::string_view& query,
                                                                                    std::source_location location)
 {
     auto const _ = detail::Finally([this] { CloseCursor(); });
@@ -553,7 +553,7 @@ inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSing
 
 template <typename T>
     requires(std::same_as<T, SqlVariant>)
-inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectSingle(const std::string_view& query,
+inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectScalar(const std::string_view& query,
                                                                     std::source_location location)
 {
     auto const _ = detail::Finally([this] { CloseCursor(); });
@@ -566,18 +566,18 @@ inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectSingle(const std::s
 
 template <typename T>
     requires(!std::same_as<T, SqlVariant>)
-inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
+inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectScalar(SqlQueryObject auto const& query,
                                                                                    std::source_location location)
 {
-    return ExecuteDirectSingle<T>(query.ToSql(), location);
+    return ExecuteDirectScalar<T>(query.ToSql(), location);
 }
 
 template <typename T>
     requires(std::same_as<T, SqlVariant>)
-inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectSingle(SqlQueryObject auto const& query,
+inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectScalar(SqlQueryObject auto const& query,
                                                                     std::source_location location)
 {
-    return ExecuteDirectSingle<T>(query.ToSql(), location);
+    return ExecuteDirectScalar<T>(query.ToSql(), location);
 }
 
 inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::CloseCursor() noexcept

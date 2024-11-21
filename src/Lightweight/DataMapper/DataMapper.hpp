@@ -401,7 +401,7 @@ RecordId DataMapper::Create(Record& record)
             using ValueType = typename PrimaryKeyType::ValueType;
             if (primaryKeyField.Value() == ValueType {})
             {
-                auto maxId = SqlStatement { _connection }.ExecuteDirectSingle<ValueType>(
+                auto maxId = SqlStatement { _connection }.ExecuteDirectScalar<ValueType>(
                     std::format(R"sql(SELECT MAX("{}") FROM "{}")sql",
                                 FieldNameOf<PrimaryKeyIndex, Record>(),
                                 RecordTableName<Record>));

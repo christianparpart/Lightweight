@@ -69,7 +69,7 @@ TEST_CASE_METHOD(SqlTestFixture, "move semantics", "[SqlStatement]")
     auto conn = SqlConnection {};
 
     auto const TestRun = [](SqlStatement& stmt) {
-        CHECK(stmt.ExecuteDirectSingle<int>("SELECT 42").value_or(-1) == 42);
+        CHECK(stmt.ExecuteDirectScalar<int>("SELECT 42").value_or(-1) == 42);
     };
 
     auto a = SqlStatement { conn };
