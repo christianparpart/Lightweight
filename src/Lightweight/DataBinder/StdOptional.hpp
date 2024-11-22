@@ -5,6 +5,7 @@
 #include "Core.hpp"
 #include "SqlNullValue.hpp"
 
+#include <format>
 #include <optional>
 
 template <typename T>
@@ -52,5 +53,13 @@ struct SqlDataBinder<std::optional<T>>
         if (indicator && *indicator == SQL_NULL_DATA)
             *result = std::nullopt;
         return sqlReturn;
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(OptionalValue const& value) noexcept
+    {
+        if (!value)
+            return "NULL";
+        else
+            return std::string(SqlDataBinder<T>::Inspect(*value));
     }
 };

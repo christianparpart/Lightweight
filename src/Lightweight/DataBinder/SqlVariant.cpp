@@ -96,3 +96,35 @@ SQLRETURN SqlDataBinder<SqlVariant>::GetColumn(
         variant = SqlNullValue;
     return returnCode;
 }
+
+std::string SqlVariant::ToString() const
+{
+    using namespace std::string_literals;
+
+    // clang-format off
+    return std::visit(detail::overloaded {
+        [&](SqlNullType) { return "NULL"s; },
+        [&](bool v) { return v ? "true"s : "false"s; },
+        [&](short v) { return std::to_string(v); },
+        [&](unsigned short v) { return std::to_string(v); },
+        [&](int v) { return std::to_string(v); },
+        [&](unsigned int v) { return std::to_string(v); },
+        [&](long long v) { return std::to_string(v); },
+        [&](unsigned long long v) { return std::to_string(v); },
+        [&](float v) { return std::format("{}", v); },
+        [&](double v) { return std::format("{}", v); },
+        [&](std::string_view v) { return std::string(v); },
+        [&](std::u16string_view v) {
+            auto u8String = ToUtf8(v);
+            auto stdString = std::string_view((char const*) u8String.data(), u8String.size());
+            return std::format("{}", stdString);
+        },
+        [&](std::string const& v) { return v; },
+        [&](SqlText const& v) { return v.value; },
+        [&](SqlDate const& v) { return std::format("{}-{}-{}", v.sqlValue.year, v.sqlValue.month, v.sqlValue.day); },
+        [&](SqlTime const& v) { return std::format("{}:{}:{}", v.sqlValue.hour, v.sqlValue.minute, v.sqlValue.second); },
+        [&](SqlDateTime const& v) { return std::format("{}-{}-{} {}:{}:{}", v.sqlValue.year, v.sqlValue.month, v.sqlValue.day, v.sqlValue.hour, v.sqlValue.minute, v.sqlValue.second); }
+        //[&](auto) { return "UNKNOWN"s; }
+    }, value);
+    // clang-format on
+}

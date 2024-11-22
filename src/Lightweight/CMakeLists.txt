@@ -48,7 +48,6 @@ set(HEADER_FILES
     DataMapper/DataMapper.hpp
     DataMapper/Detail.hpp
     DataMapper/Field.hpp
-    DataMapper/Logger.hpp
     DataMapper/RecordId.hpp
 
     SqlConnectInfo.hpp
@@ -65,8 +64,6 @@ set(SOURCE_FILES
     DataBinder/SqlGuid.cpp
     DataBinder/SqlVariant.cpp
     DataBinder/UnicodeConverter.cpp
-
-    DataMapper/Logger.cpp
 
     SqlConnectInfo.cpp
     SqlConnection.cpp

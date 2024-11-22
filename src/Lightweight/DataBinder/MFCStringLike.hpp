@@ -32,6 +32,11 @@ struct LIGHTWEIGHT_API SqlDataBinder<T>
                                 0,
                                 nullptr);
     }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string_view Inspect(T const& value) noexcept
+    {
+        return { value.GetString(), static_cast<size_t>(value.GetLength()) };
+    }
 };
 
 // TODO: Use the below instead in order to get full support for MFC-like strings.

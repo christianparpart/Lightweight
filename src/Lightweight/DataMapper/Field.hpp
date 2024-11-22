@@ -93,7 +93,7 @@ struct Field
     // Returns a string representation of the value, suitable for use in debugging and logging.
     [[nodiscard]] std::string InspectValue() const;
 
-    void BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const;
+    // void BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const;
     void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt);
 
     constexpr void SetModified(bool value) noexcept;
@@ -200,12 +200,12 @@ inline LIGHTWEIGHT_FORCE_INLINE std::string Field<T, IsPrimaryKey>::InspectValue
         return std::format("{}", _value);
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-inline LIGHTWEIGHT_FORCE_INLINE void Field<T, IsPrimaryKey>::BindInputParameter(SQLSMALLINT parameterIndex,
-                                                                                SqlStatement& stmt) const
-{
-    return stmt.BindInputParameter(parameterIndex, _value);
-}
+// template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
+// inline LIGHTWEIGHT_FORCE_INLINE void Field<T, IsPrimaryKey>::BindInputParameter(SQLSMALLINT parameterIndex,
+//                                                                                 SqlStatement& stmt) const
+// {
+//     return stmt.BindInputParameter(parameterIndex, _value);
+// }
 
 template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
 inline LIGHTWEIGHT_FORCE_INLINE void Field<T, IsPrimaryKey>::BindOutputColumn(SQLSMALLINT outputIndex,
@@ -273,6 +273,11 @@ struct SqlDataBinder<Field<T, IsPrimaryKey>>
         if (SQL_SUCCEEDED(sqlReturn))
             result->SetModified(true);
         return sqlReturn;
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(ValueType const& value) noexcept
+    {
+        return value.InspectValue();
     }
 };
 

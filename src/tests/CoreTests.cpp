@@ -314,27 +314,29 @@ TEST_CASE_METHOD(SqlTestFixture, "SELECT * FROM Table")
 
     stmt.ExecuteDirect("SELECT * FROM Employees");
 
+    auto result = stmt.GetResultCursor();
+
     REQUIRE(stmt.NumColumnsAffected() == 4);
 
-    REQUIRE(stmt.FetchRow());
-    CHECK(stmt.GetColumn<int>(1) == 1);
-    CHECK(stmt.GetColumn<std::string>(2) == "Alice");
-    CHECK(stmt.GetColumn<std::string>(3) == "Smith");
-    CHECK(stmt.GetColumn<int>(4) == 50'000);
+    REQUIRE(result.FetchRow());
+    CHECK(result.GetColumn<int>(1) == 1);
+    CHECK(result.GetColumn<std::string>(2) == "Alice");
+    CHECK(result.GetColumn<std::string>(3) == "Smith");
+    CHECK(result.GetColumn<int>(4) == 50'000);
 
-    REQUIRE(stmt.FetchRow());
-    CHECK(stmt.GetColumn<int>(1) == 2);
-    CHECK(stmt.GetColumn<std::string>(2) == "Bob");
-    CHECK(stmt.GetColumn<std::string>(3) == "Johnson");
-    CHECK(stmt.GetColumn<int>(4) == 60'000);
+    REQUIRE(result.FetchRow());
+    CHECK(result.GetColumn<int>(1) == 2);
+    CHECK(result.GetColumn<std::string>(2) == "Bob");
+    CHECK(result.GetColumn<std::string>(3) == "Johnson");
+    CHECK(result.GetColumn<int>(4) == 60'000);
 
-    REQUIRE(stmt.FetchRow());
-    CHECK(stmt.GetColumn<int>(1) == 3);
-    CHECK(stmt.GetColumn<std::string>(2) == "Charlie");
-    CHECK(stmt.GetColumn<std::string>(3) == "Brown");
-    CHECK(stmt.GetColumn<int>(4) == 70'000);
+    REQUIRE(result.FetchRow());
+    CHECK(result.GetColumn<int>(1) == 3);
+    CHECK(result.GetColumn<std::string>(2) == "Charlie");
+    CHECK(result.GetColumn<std::string>(3) == "Brown");
+    CHECK(result.GetColumn<int>(4) == 70'000);
 
-    REQUIRE(!stmt.FetchRow());
+    REQUIRE(!result.FetchRow());
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "GetNullableColumn")
@@ -345,9 +347,10 @@ TEST_CASE_METHOD(SqlTestFixture, "GetNullableColumn")
     stmt.Execute("Blurb", SqlNullValue);
 
     stmt.ExecuteDirect("SELECT Remarks1, Remarks2 FROM Test");
-    REQUIRE(stmt.FetchRow());
-    auto const actual1 = stmt.GetNullableColumn<std::string>(1);
-    auto const actual2 = stmt.GetNullableColumn<std::string>(2);
+    auto result = stmt.GetResultCursor();
+    REQUIRE(result.FetchRow());
+    auto const actual1 = result.GetNullableColumn<std::string>(1);
+    auto const actual2 = result.GetNullableColumn<std::string>(2);
     CHECK(actual1.value_or("IS_NULL") == "Blurb");
     CHECK(!actual2.has_value());
 }

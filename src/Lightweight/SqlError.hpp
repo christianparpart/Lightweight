@@ -9,6 +9,7 @@
 #include "Api.hpp"
 
 #include <format>
+#include <source_location>
 #include <stdexcept>
 #include <system_error>
 
@@ -63,9 +64,10 @@ struct SqlErrorInfo
 class SqlException: public std::runtime_error
 {
   public:
-    LIGHTWEIGHT_API explicit SqlException(SqlErrorInfo info);
+    LIGHTWEIGHT_API explicit SqlException(SqlErrorInfo info,
+                                          std::source_location location = std::source_location::current());
 
-    [[nodiscard]] SqlErrorInfo const& info() const noexcept
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE SqlErrorInfo const& info() const noexcept
     {
         return _info;
     }

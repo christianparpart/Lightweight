@@ -2,18 +2,19 @@
 
 #pragma once
 
+#include "../DataBinder/UnicodeConverter.hpp"
 #include "../SqlLogger.hpp"
 #include "Core.hpp"
 #include "MFCStringLike.hpp"
 #include "Primitives.hpp"
 #include "SqlDate.hpp"
 #include "SqlDateTime.hpp"
+#include "SqlFixedString.hpp"
 #include "SqlNullValue.hpp"
 #include "SqlText.hpp"
 #include "SqlTime.hpp"
 #include "StdString.hpp"
 #include "StdStringView.hpp"
-#include "SqlFixedString.hpp"
 
 #include <format>
 #include <print>
@@ -46,6 +47,7 @@ struct SqlVariant
                                    double,
                                    std::string,
                                    std::string_view,
+                                   std::u16string_view,
                                    SqlText,
                                    SqlDate,
                                    SqlTime,
@@ -67,6 +69,32 @@ struct SqlVariant
 
     LIGHTWEIGHT_FORCE_INLINE SqlVariant(InnerType&& other) noexcept:
         value(std::move(other))
+    {
+    }
+
+    template <std::size_t N,
+              typename T = char,
+              SqlStringPostRetrieveOperation PostOp = SqlStringPostRetrieveOperation::NOTHING>
+    constexpr LIGHTWEIGHT_FORCE_INLINE SqlVariant(SqlFixedString<N, T, PostOp> const& other):
+        value { std::string_view { other.data(), other.size() } }
+    {
+    }
+
+    template <std::size_t TextSize>
+    constexpr LIGHTWEIGHT_FORCE_INLINE SqlVariant(char const (&text)[TextSize]):
+        value { std::string_view { text, TextSize - 1 } }
+    {
+    }
+
+    template <std::size_t TextSize>
+    constexpr LIGHTWEIGHT_FORCE_INLINE SqlVariant(char16_t const (&text)[TextSize]):
+        value { std::u16string_view { text, TextSize - 1 } }
+    {
+    }
+
+    template <typename T>
+    LIGHTWEIGHT_FORCE_INLINE SqlVariant(std::optional<T> const& other):
+        value { other ? InnerType { *other } : InnerType { SqlNullValue } }
     {
     }
 
@@ -201,6 +229,17 @@ struct SqlVariant
 
         throw std::bad_variant_access();
     }
+
+    [[nodiscard]] LIGHTWEIGHT_API std::string ToString() const;
+};
+
+template <>
+struct LIGHTWEIGHT_API std::formatter<SqlVariant>: formatter<string>
+{
+    auto format(SqlVariant const& value, format_context& ctx) const -> format_context::iterator
+    {
+        return std::formatter<string>::format(value.ToString(), ctx);
+    }
 };
 
 template <>
@@ -218,4 +257,9 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlVariant>
                                SqlVariant* result,
                                SQLLEN* indicator,
                                SqlDataBinderCallback const& cb) noexcept;
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(SqlVariant const& value) noexcept
+    {
+        return value.ToString();
+    }
 };

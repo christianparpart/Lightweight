@@ -107,6 +107,7 @@ SqlStatement::SqlStatement(SqlConnection& relatedConnection):
 
 SqlStatement::~SqlStatement() noexcept
 {
+    SqlLogger::GetLogger().OnFetchEnd();
     SQLFreeHandle(SQL_HANDLE_STMT, m_hStmt);
 }
 
@@ -191,6 +192,7 @@ bool SqlStatement::FetchRow()
             for (auto const& postProcess: m_data->postProcessOutputColumnCallbacks)
                 postProcess();
             m_data->postProcessOutputColumnCallbacks.clear();
+            SqlLogger::GetLogger().OnFetchRow();
             return true;
     }
 }

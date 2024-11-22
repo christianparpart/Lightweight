@@ -10,7 +10,6 @@
 #include "HasMany.hpp"
 #include "HasManyThrough.hpp"
 #include "HasOneThrough.hpp"
-#include "Logger.hpp"
 #include "RecordId.hpp"
 
 #include <reflection-cpp/reflection.hpp>
@@ -342,7 +341,6 @@ template <typename Record>
 void DataMapper::CreateTable()
 {
     auto const sqlQueryString = CreateTableString<Record>(_connection.ServerType());
-    auto const scopedModelSqlLogger = detail::SqlScopedModelQueryLogger(sqlQueryString, {});
     _stmt.ExecuteDirect(sqlQueryString);
 }
 
@@ -376,9 +374,9 @@ RecordId DataMapper::CreateExplicit(Record const& record)
 
     Reflection::CallOnMembers(record,
                               [this, i = SQLSMALLINT { 1 }]<typename Name, typename FieldType>(
-                                  Name const& /*name*/, FieldType const& field) mutable {
+                                  Name const& name, FieldType const& field) mutable {
                                   if constexpr (FieldWithStorage<FieldType> && !IsAutoIncrementPrimaryKey<FieldType>)
-                                      _stmt.BindInputParameter(i++, field.Value());
+                                      _stmt.BindInputParameter(i++, field.Value(), name);
                               });
 
     _stmt.Execute();
@@ -455,17 +453,17 @@ void DataMapper::Update(Record& record)
     // Bind the SET clause
     SQLSMALLINT i = 1;
     Reflection::CallOnMembers(
-        record, [this, &i]<typename Name, typename FieldType>(Name const& /*name*/, FieldType const& field) mutable {
+        record, [this, &i]<typename Name, typename FieldType>(Name const& name, FieldType const& field) mutable {
             if (field.IsModified())
-                _stmt.BindInputParameter(i++, field.Value());
+                _stmt.BindInputParameter(i++, field.Value(), name);
         });
 
     // Bind the WHERE clause
     Reflection::CallOnMembers(
-        record, [this, &i]<typename Name, typename FieldType>(Name const& /*name*/, FieldType const& field) mutable {
+        record, [this, &i]<typename Name, typename FieldType>(Name const& name, FieldType const& field) mutable {
             if constexpr (FieldType::IsPrimaryKey)
                 if (!field.IsModified())
-                    _stmt.BindInputParameter(i++, field.Value());
+                    _stmt.BindInputParameter(i++, field.Value(), name);
         });
 
     _stmt.Execute();
@@ -489,9 +487,9 @@ std::size_t DataMapper::Delete(Record const& record)
     // Bind the WHERE clause
     Reflection::CallOnMembers(record,
                               [this, i = SQLSMALLINT { 1 }]<typename Name, typename FieldType>(
-                                  Name const& /*name*/, FieldType const& field) mutable {
+                                  Name const& name, FieldType const& field) mutable {
                                   if constexpr (FieldType::IsPrimaryKey)
-                                      _stmt.BindInputParameter(i++, field.Value());
+                                      _stmt.BindInputParameter(i++, field.Value(), name);
                               });
 
     _stmt.Execute();

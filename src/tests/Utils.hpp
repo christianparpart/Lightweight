@@ -104,7 +104,7 @@ auto const inline DefaultTestConnectionString = SqlConnectionString {
                          "file::memory:"),
 };
 
-class TestSuiteSqlLogger: public SqlLogger
+class TestSuiteSqlLogger: public SqlLogger::Null
 {
   private:
     std::string m_lastPreparedQuery;
@@ -155,14 +155,6 @@ class TestSuiteSqlLogger: public SqlLogger
         WriteDetails(std::source_location::current());
     }
 
-    void OnConnectionOpened(SqlConnection const& /*connection*/) override {}
-
-    void OnConnectionClosed(SqlConnection const& /*connection*/) override {}
-
-    void OnConnectionIdle(SqlConnection const& /*connection*/) override {}
-
-    void OnConnectionReuse(SqlConnection const& /*connection*/) override {}
-
     void OnExecuteDirect(std::string_view const& query) override
     {
         WriteInfo("ExecuteDirect: {}", query);
@@ -183,9 +175,14 @@ class TestSuiteSqlLogger: public SqlLogger
         WriteInfo("ExecuteBatch: {}", m_lastPreparedQuery);
     }
 
-    void OnFetchedRow() override
+    void OnFetchRow() override
     {
         WriteInfo("Fetched row");
+    }
+
+    void OnFetchEnd() override
+    {
+        WriteInfo("Fetch end");
     }
 
   private:
@@ -205,7 +202,7 @@ class TestSuiteSqlLogger: public SqlLogger
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-class ScopedSqlNullLogger: public SqlLogger
+class ScopedSqlNullLogger: public SqlLogger::Null
 {
   private:
     SqlLogger& m_previousLogger = SqlLogger::GetLogger();
@@ -220,19 +217,6 @@ class ScopedSqlNullLogger: public SqlLogger
     {
         SqlLogger::SetLogger(m_previousLogger);
     }
-
-    void OnWarning(std::string_view const& /*message*/) override {}
-    void OnError(SqlError /*errorCode*/, std::source_location /*sourceLocation*/) override {}
-    void OnError(SqlErrorInfo const& /*errorInfo*/, std::source_location /*sourceLocation*/) override {}
-    void OnConnectionOpened(SqlConnection const& /*connection*/) override {}
-    void OnConnectionClosed(SqlConnection const& /*connection*/) override {}
-    void OnConnectionIdle(SqlConnection const& /*connection*/) override {}
-    void OnConnectionReuse(SqlConnection const& /*connection*/) override {}
-    void OnExecuteDirect(std::string_view const& /*query*/) override {}
-    void OnPrepare(std::string_view const& /*query*/) override {}
-    void OnExecute(std::string_view const& /*query*/) override {}
-    void OnExecuteBatch() override {}
-    void OnFetchedRow() override {}
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)

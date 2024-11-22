@@ -26,6 +26,11 @@ struct SqlSimpleDataBinder
     {
         return SQLGetData(stmt, column, TheCType, result, 0, indicator);
     }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(T value)
+    {
+        return std::to_string(value);
+    }
 };
 
 template <> struct SqlDataBinder<bool>: SqlSimpleDataBinder<bool, SQL_BIT, SQL_BIT, SqlColumnType::BOOLEAN> {};

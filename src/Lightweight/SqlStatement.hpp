@@ -96,6 +96,9 @@ class SqlStatement final: public SqlDataBinderCallback
     template <SqlInputParameterBinder Arg>
     void BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg);
 
+    template <SqlInputParameterBinder Arg, typename ColumnName>
+    void BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg, ColumnName&& columnNameHint);
+
     // Binds the given arguments to the prepared statement to store the fetched data to.
     //
     // The statement must be prepared before calling this function.
@@ -373,6 +376,15 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindInputParameter(SQLSMALLIN
     RequireSuccess(SqlDataBinder<Arg>::InputParameter(m_hStmt, columnIndex, arg, *this));
 }
 
+template <SqlInputParameterBinder Arg, typename ColumnName>
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindInputParameter(SQLSMALLINT columnIndex,
+                                                                      Arg const& arg,
+                                                                      ColumnName&& columnNameHint)
+{
+    SqlLogger::GetLogger().OnBindInputParameter(std::forward<ColumnName>(columnNameHint), arg);
+    BindInputParameter(columnIndex, arg);
+}
+
 template <SqlInputParameterBinder... Args>
 void SqlStatement::Execute(Args const&... args)
 {
@@ -388,7 +400,10 @@ void SqlStatement::Execute(Args const&... args)
         throw std::invalid_argument { "Invalid argument count" };
 
     SQLUSMALLINT i = 0;
-    ((++i, RequireSuccess(SqlDataBinder<Args>::InputParameter(m_hStmt, i, args, *this))), ...);
+    ((++i,
+      SqlLogger::GetLogger().OnBindInputParameter({}, args),
+      RequireSuccess(SqlDataBinder<Args>::InputParameter(m_hStmt, i, args, *this))),
+     ...);
 
     RequireSuccess(SQLExecute(m_hStmt));
     ProcessPostExecuteCallbacks();
@@ -584,6 +599,7 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::CloseCursor() noexcept
 {
     // SQLCloseCursor(m_hStmt);
     SQLFreeStmt(m_hStmt, SQL_CLOSE);
+    SqlLogger::GetLogger().OnFetchEnd();
 }
 
 inline LIGHTWEIGHT_FORCE_INLINE SqlResultCursor SqlStatement::GetResultCursor() noexcept
