@@ -93,6 +93,8 @@ class SqlStatement final: public SqlDataBinderCallback
     //       must have been closed.
     void Prepare(SqlQueryObject auto const& queryObject);
 
+    std::string const& PreparedQuery() const noexcept;
+
     template <SqlInputParameterBinder Arg>
     void BindInputParameter(SQLSMALLINT columnIndex, Arg const& arg);
 
@@ -348,6 +350,11 @@ inline LIGHTWEIGHT_FORCE_INLINE SQLHSTMT SqlStatement::NativeHandle() const noex
 inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::Prepare(SqlQueryObject auto const& queryObject)
 {
     Prepare(queryObject.ToSql());
+}
+
+inline LIGHTWEIGHT_FORCE_INLINE std::string const& SqlStatement::PreparedQuery() const noexcept
+{
+    return m_preparedQuery;
 }
 
 template <SqlOutputColumnBinder... Args>
