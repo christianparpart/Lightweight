@@ -83,6 +83,11 @@ struct SqlDataBinder<CustomType>
     {
         return value; // | 0x01;
     }
+
+    static std::string Inspect(CustomType const& value) noexcept
+    {
+        return std::format("CustomType({})", value.value);
+    }
 };
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear", "[SqlFixedString]")

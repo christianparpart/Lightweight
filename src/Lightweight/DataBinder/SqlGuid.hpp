@@ -111,4 +111,9 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlGuid>
                                SqlGuid* result,
                                SQLLEN* indicator,
                                SqlDataBinderCallback const& cb) noexcept;
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(SqlGuid const& value) noexcept
+    {
+        return std::format("{}", value);
+    }
 };

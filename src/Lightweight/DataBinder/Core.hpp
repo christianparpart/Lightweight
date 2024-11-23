@@ -38,10 +38,7 @@ class LIGHTWEIGHT_API SqlDataBinderCallback
 };
 
 template <typename>
-struct SqlDataBinder
-{
-    static_assert(false, "No SQL data binder available for this type.");
-};
+struct SqlDataBinder;
 
 // Default traits for output string parameters
 // This needs to be implemented for each string type that should be used as output parameter via
@@ -135,6 +132,11 @@ concept SqlGetColumnNativeType =
     requires(SQLHSTMT hStmt, SQLUSMALLINT column, T* result, SQLLEN* indicator, SqlDataBinderCallback const& cb) {
         { SqlDataBinder<T>::GetColumn(hStmt, column, result, indicator, cb) } -> std::same_as<SQLRETURN>;
     };
+
+template <typename T>
+concept SqlDataBinderSupportsInspect = requires(T const& value) {
+    { SqlDataBinder<std::remove_cvref_t<T>>::Inspect(value) } -> std::convertible_to<std::string>;
+};
 
 // clang-format off
 template <typename StringType, typename CharType>

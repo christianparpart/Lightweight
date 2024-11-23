@@ -304,6 +304,11 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
                 return rv;
         }
     }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string_view Inspect(ValueType const& value) noexcept
+    {
+        return { value.data(), value.size() };
+    }
 };
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>

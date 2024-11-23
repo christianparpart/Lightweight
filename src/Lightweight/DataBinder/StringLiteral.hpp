@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core.hpp"
+#include "UnicodeConverter.hpp"
 
 #include <concepts>
 
@@ -16,6 +17,11 @@ struct SqlDataBinder<char[N]>
     {
         return SQLBindParameter(
             stmt, column, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, N - 1, 0, (SQLPOINTER) value, 0, nullptr);
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string_view Inspect(char const* value) noexcept
+    {
+        return { value, N * sizeof(char) };
     }
 };
 
@@ -38,5 +44,11 @@ struct SqlDataBinder<T[N]>
                                 (SQLPOINTER) value,
                                 0,
                                 nullptr);
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(T const* value) noexcept
+    {
+        auto u8String = ToUtf8(std::basic_string_view<T> { value, N });
+        return std::string((char const*) u8String.data(), u8String.size());
     }
 };

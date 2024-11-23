@@ -5,6 +5,7 @@
 #include "Core.hpp"
 
 #include <chrono>
+#include <format>
 
 struct LIGHTWEIGHT_API SqlDateTime
 {
@@ -132,10 +133,10 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime>
 {
     static constexpr auto ColumnType = SqlColumnType::DATETIME;
 
-    static SQLRETURN InputParameter(SQLHSTMT stmt,
-                                    SQLUSMALLINT column,
-                                    SqlDateTime const& value,
-                                    SqlDataBinderCallback& /*cb*/) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
+                                                             SQLUSMALLINT column,
+                                                             SqlDateTime const& value,
+                                                             SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
                                 column,
@@ -149,23 +150,50 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime>
                                 nullptr);
     }
 
-    static SQLRETURN OutputColumn(SQLHSTMT stmt,
-                                  SQLUSMALLINT column,
-                                  SqlDateTime* result,
-                                  SQLLEN* indicator,
-                                  SqlDataBinderCallback& /*cb*/) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                                           SQLUSMALLINT column,
+                                                           SqlDateTime* result,
+                                                           SQLLEN* indicator,
+                                                           SqlDataBinderCallback& /*cb*/) noexcept
     {
         // TODO: handle indicator to check for NULL values
         *indicator = sizeof(result->sqlValue);
         return SQLBindCol(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, 0, indicator);
     }
 
-    static SQLRETURN GetColumn(SQLHSTMT stmt,
-                               SQLUSMALLINT column,
-                               SqlDateTime* result,
-                               SQLLEN* indicator,
-                               SqlDataBinderCallback const& /*cb*/) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt,
+                                                        SQLUSMALLINT column,
+                                                        SqlDateTime* result,
+                                                        SQLLEN* indicator,
+                                                        SqlDataBinderCallback const& /*cb*/) noexcept
     {
         return SQLGetData(stmt, column, SQL_C_TYPE_TIMESTAMP, &result->sqlValue, sizeof(result->sqlValue), indicator);
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(SqlDateTime const& value) noexcept
+    {
+        return std::format("{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+                           value.sqlValue.year,
+                           value.sqlValue.month,
+                           value.sqlValue.day,
+                           value.sqlValue.hour,
+                           value.sqlValue.minute,
+                           value.sqlValue.second);
+    }
+};
+
+template <>
+struct std::formatter<SqlDateTime>: std::formatter<std::string>
+{
+    auto format(SqlDateTime const& value, std::format_context& ctx) const -> std::format_context::iterator
+    {
+        return std::formatter<std::string>::format(std::format("{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+                                                               value.sqlValue.year,
+                                                               value.sqlValue.month,
+                                                               value.sqlValue.day,
+                                                               value.sqlValue.hour,
+                                                               value.sqlValue.minute,
+                                                               value.sqlValue.second),
+                                                   ctx);
     }
 };

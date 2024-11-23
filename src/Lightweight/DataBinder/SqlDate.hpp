@@ -5,6 +5,7 @@
 #include "Core.hpp"
 
 #include <chrono>
+#include <format>
 
 // Helper struct to store a date (without time of the day) to write to or read from a database.
 struct LIGHTWEIGHT_API SqlDate
@@ -51,7 +52,8 @@ struct LIGHTWEIGHT_API SqlDate
         } };
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE constexpr SQL_DATE_STRUCT ConvertToSqlValue(std::chrono::year_month_day value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE constexpr SQL_DATE_STRUCT ConvertToSqlValue(
+        std::chrono::year_month_day value) noexcept
     {
         return SQL_DATE_STRUCT {
             .year = (SQLSMALLINT) (int) value.year(),
@@ -60,11 +62,22 @@ struct LIGHTWEIGHT_API SqlDate
         };
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE constexpr std::chrono::year_month_day ConvertToNative(SQL_DATE_STRUCT const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE constexpr std::chrono::year_month_day ConvertToNative(
+        SQL_DATE_STRUCT const& value) noexcept
     {
         return std::chrono::year_month_day { std::chrono::year { value.year },
                                              std::chrono::month { static_cast<unsigned>(value.month) },
                                              std::chrono::day { static_cast<unsigned>(value.day) } };
+    }
+};
+
+template <>
+struct std::formatter<SqlDate>: std::formatter<std::string>
+{
+    auto format(SqlDate const& value, std::format_context& ctx) const -> std::format_context::iterator
+    {
+        return std::formatter<std::string>::format(
+            std::format("{:04}-{:02}-{:02}", value.sqlValue.year, value.sqlValue.month, value.sqlValue.day), ctx);
     }
 };
 
@@ -103,5 +116,10 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDate>
                                                         SqlDataBinderCallback const& /*cb*/) noexcept
     {
         return SQLGetData(stmt, column, SQL_C_TYPE_DATE, &result->sqlValue, sizeof(result->sqlValue), indicator);
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(SqlDate const& value) noexcept
+    {
+        return std::format("{}", value);
     }
 };

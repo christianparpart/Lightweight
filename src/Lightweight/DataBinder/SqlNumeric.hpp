@@ -11,6 +11,7 @@
 #include <concepts>
 #include <cstring>
 #include <print>
+#include <source_location>
 
 // clang-format off
 #if defined(__SIZEOF_INT128__)
@@ -151,9 +152,7 @@ struct SqlDataBinder<SqlNumeric<Precision, Scale>>
         if (SQL_SUCCEEDED(error))
             return;
 
-        auto errorInfo = SqlErrorInfo::fromStatementHandle(stmt);
-        SqlLogger::GetLogger().OnError(errorInfo, sourceLocation);
-        throw SqlException(std::move(errorInfo));
+        throw SqlException(SqlErrorInfo::fromStatementHandle(stmt), sourceLocation);
     }
 
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt, SQLUSMALLINT column, ValueType const& value, SqlDataBinderCallback& /*cb*/) noexcept
@@ -183,6 +182,11 @@ struct SqlDataBinder<SqlNumeric<Precision, Scale>>
         RequireSuccess(stmt, SQLSetDescField(hDesc, (SQLSMALLINT) column, SQL_DESC_SCALE, (SQLPOINTER) Scale, 0));
 
         return SQLGetData(stmt, column, SQL_C_NUMERIC, &result->sqlValue, sizeof(ValueType), indicator);
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(ValueType const& value) noexcept
+    {
+        return value.ToString();
     }
 };
 // clang-format off

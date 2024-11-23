@@ -5,6 +5,7 @@
 #include "Core.hpp"
 
 #include <chrono>
+#include <format>
 
 // clang-format off
 #if !defined(SQL_SS_TIME2)
@@ -141,5 +142,28 @@ struct SqlDataBinder<SqlTime>
                                                         SqlDataBinderCallback const& /*cb*/) noexcept
     {
         return SQLGetData(stmt, column, SQL_C_TYPE_TIME, &result->sqlValue, sizeof(result->sqlValue), indicator);
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(SqlTime const& value) noexcept
+    {
+        return std::format("{:02}:{:02}:{:02}.{:06}",
+                           value.sqlValue.hour,
+                           value.sqlValue.minute,
+                           value.sqlValue.second,
+                           value.sqlValue.fraction);
+    }
+};
+
+template <>
+struct std::formatter<SqlTime>: std::formatter<std::string>
+{
+    auto format(SqlTime const& value, std::format_context& ctx) const -> std::format_context::iterator
+    {
+        return std::formatter<std::string>::format(std::format("{:02}:{:02}:{:02}:{:06}",
+                                                               value.sqlValue.hour,
+                                                               value.sqlValue.minute,
+                                                               value.sqlValue.second,
+                                                               value.sqlValue.fraction),
+                                                   ctx);
     }
 };

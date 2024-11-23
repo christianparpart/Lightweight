@@ -86,4 +86,9 @@ struct SqlDataBinder<SqlTrimmedString>
         TrimRight(&result->value, *indicator);
         return returnCode;
     }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string_view Inspect(SqlTrimmedString const& value) noexcept
+    {
+        return { value.value.data(), static_cast<size_t>(value.value.size()) };
+    }
 };

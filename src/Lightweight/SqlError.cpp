@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "SqlError.hpp"
+#include "SqlLogger.hpp"
 
-SqlException::SqlException(SqlErrorInfo info):
+SqlException::SqlException(SqlErrorInfo info, std::source_location sourceLocation):
     std::runtime_error(std::format("{}", info)),
     _info { std::move(info) }
 {
+    SqlLogger::GetLogger().OnError(info, sourceLocation);
 }
 
 void SqlErrorInfo::RequireStatementSuccess(SQLRETURN result, SQLHSTMT hStmt, std::string_view message)

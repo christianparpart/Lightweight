@@ -36,4 +36,9 @@ struct SqlDataBinder<SqlNullType>
                                 0,
                                 &const_cast<SqlNullType&>(value).sqlValue);
     }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string_view Inspect(SqlNullType const& /*value*/) noexcept
+    {
+        return "NULL";
+    }
 };

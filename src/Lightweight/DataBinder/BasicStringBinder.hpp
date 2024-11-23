@@ -127,6 +127,11 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
             }
         }
     }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string_view Inspect(ValueType const& value) noexcept
+    {
+        return { StringTraits::Data(&value), StringTraits::Size(&value) };
+    }
 };
 
 template <SqlCommonWideStringBinderConcept StringType>
@@ -274,5 +279,11 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
             sqlResult = SQLGetData(stmt, column, CType, bufferStart, bufferCharsAvailable, indicator);
         }
         return sqlResult;
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(ValueType const& value) noexcept
+    {
+        auto u8String = ToUtf8(detail::SqlViewHelper<ValueType>::View(value));
+        return std::string((char const*) u8String.data(), u8String.size());
     }
 };
