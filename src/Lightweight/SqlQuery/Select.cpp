@@ -149,14 +149,20 @@ SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::Count()
 {
     m_query.selectType = SelectType::Count;
 
-    return std::move(m_query);
+    if (m_mode == SqlQueryBuilderMode::Fluent)
+        return std::move(m_query);
+    else
+        return m_query;
 }
 
 SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::All()
 {
     m_query.selectType = SelectType::All;
 
-    return std::move(m_query);
+    if (m_mode == SqlQueryBuilderMode::Fluent)
+        return std::move(m_query);
+    else
+        return m_query;
 }
 
 SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::First(size_t count)
@@ -164,7 +170,10 @@ SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::First(size_t count)
     m_query.selectType = SelectType::First;
     m_query.limit = count;
 
-    return std::move(m_query);
+    if (m_mode == SqlQueryBuilderMode::Fluent)
+        return std::move(m_query);
+    else
+        return m_query;
 }
 
 SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::Range(std::size_t offset, std::size_t limit)
@@ -173,7 +182,10 @@ SqlSelectQueryBuilder::ComposedQuery SqlSelectQueryBuilder::Range(std::size_t of
     m_query.offset = offset;
     m_query.limit = limit;
 
-    return std::move(m_query);
+    if (m_mode == SqlQueryBuilderMode::Fluent)
+        return std::move(m_query);
+    else
+        return m_query;
 }
 
 std::string SqlSelectQueryBuilder::ComposedQuery::ToSql() const

@@ -6,6 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <algorithm>
 #include <functional>
 #include <set>
 #include <source_location>
@@ -21,6 +22,14 @@ struct QueryExpectations
     }
 };
 
+auto EraseLinefeeds(std::string str) noexcept -> std::string
+{
+    // Remove all LFs from str:
+    // str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
+    str.erase(std::ranges::begin(std::ranges::remove(str, '\n')), std::end(str));
+    return str;
+}
+
 template <typename TheSqlQuery>
     requires(std::is_invocable_v<TheSqlQuery, SqlQueryBuilder&>)
 void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
@@ -28,23 +37,18 @@ void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
                           std::function<void()> const& postCheck = {},
                           std::source_location const& location = std::source_location::current())
 {
-    auto const eraseLinefeeds = [](std::string str) noexcept -> std::string {
-        // Remove all LFs from str:
-        str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
-        return str;
-    };
     INFO(std::format("Test source location: {}:{}", location.file_name(), location.line()));
 
     auto const& sqliteFormatter = SqlQueryFormatter::Sqlite();
     auto sqliteQueryBuilder = SqlQueryBuilder(sqliteFormatter);
-    auto const actualSqlite = eraseLinefeeds(sqlQueryBuilder(sqliteQueryBuilder).ToSql());
+    auto const actualSqlite = EraseLinefeeds(sqlQueryBuilder(sqliteQueryBuilder).ToSql());
     CHECK(actualSqlite == expectations.sqlite);
     if (postCheck)
         postCheck();
 
     auto const& sqlServerFormatter = SqlQueryFormatter::SqlServer();
     auto sqlServerQueryBuilder = SqlQueryBuilder(sqlServerFormatter);
-    auto const actualSqlServer = eraseLinefeeds(sqlQueryBuilder(sqlServerQueryBuilder).ToSql());
+    auto const actualSqlServer = EraseLinefeeds(sqlQueryBuilder(sqlServerQueryBuilder).ToSql());
     CHECK(actualSqlServer == expectations.sqlServer);
     if (postCheck)
         postCheck();
@@ -273,6 +277,26 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereColumn", "[SqlQueryBuilde
             return q.FromTable("That").Select().Field("foo").WhereColumn("left", "=", "right").All();
         },
         QueryExpectations::All(R"(SELECT "foo" FROM "That" WHERE "left" = "right")"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "Varying: multiple varying final query types", "[SqlQueryBuilder]")
+{
+    auto const& sqliteFormatter = SqlQueryFormatter::Sqlite();
+
+    auto queryBuilder = SqlQueryBuilder { sqliteFormatter }
+                            .FromTable("Table")
+                            .Select()
+                            .Varying()
+                            .Fields({ "foo", "bar", "baz" })
+                            .Where("condition", 42);
+
+    auto const countQuery = EraseLinefeeds(queryBuilder.Count().ToSql());
+    auto const allQuery = EraseLinefeeds(queryBuilder.All().ToSql());
+    auto const firstQuery = EraseLinefeeds(queryBuilder.First().ToSql());
+
+    CHECK(countQuery == R"(SELECT COUNT(*) FROM "Table" WHERE "condition" = 42)");
+    CHECK(allQuery == R"(SELECT "foo", "bar", "baz" FROM "Table" WHERE "condition" = 42)");
+    CHECK(firstQuery == R"(SELECT "foo", "bar", "baz" FROM "Table" WHERE "condition" = 42 LIMIT 1)");
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.ExecuteDirct", "[SqlQueryBuilder]")
