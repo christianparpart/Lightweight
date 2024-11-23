@@ -397,13 +397,16 @@ RecordId DataMapper::Create(Record& record)
         if constexpr (!PrimaryKeyType::IsAutoIncrementPrimaryKey)
         {
             using ValueType = typename PrimaryKeyType::ValueType;
-            if (primaryKeyField.Value() == ValueType {})
+            if constexpr (requires { ValueType{} + 1; })
             {
-                auto maxId = SqlStatement { _connection }.ExecuteDirectScalar<ValueType>(
-                    std::format(R"sql(SELECT MAX("{}") FROM "{}")sql",
-                                FieldNameOf<PrimaryKeyIndex, Record>(),
-                                RecordTableName<Record>));
-                primaryKeyField = maxId.value_or(ValueType {}) + 1;
+                if (!primaryKeyField.IsModified())
+                {
+                    auto maxId = SqlStatement { _connection }.ExecuteDirectScalar<ValueType>(
+                        std::format(R"sql(SELECT MAX("{}") FROM "{}")sql",
+                                    FieldNameOf<PrimaryKeyIndex, Record>(),
+                                    RecordTableName<Record>));
+                    primaryKeyField = maxId.value_or(ValueType {}) + 1;
+                }
             }
         }
     });
