@@ -6,8 +6,6 @@
 #include "SqlDataBinder.hpp"
 #include "SqlError.hpp"
 
-#include <reflection-cpp/reflection.hpp>
-
 #include <source_location>
 #include <string_view>
 
