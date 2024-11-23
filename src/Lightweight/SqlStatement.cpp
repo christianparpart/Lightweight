@@ -186,6 +186,7 @@ bool SqlStatement::FetchRow()
         case SQL_NO_DATA:
             SQLCloseCursor(m_hStmt);
             m_data->postProcessOutputColumnCallbacks.clear();
+            SqlLogger::GetLogger().OnFetchEnd();
             return false;
         default:
             RequireSuccess(sqlResult);
