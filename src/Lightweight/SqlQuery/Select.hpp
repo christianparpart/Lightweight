@@ -12,6 +12,12 @@ enum class SqlResultOrdering : uint8_t
     DESCENDING
 };
 
+enum class SqlQueryBuilderMode : uint8_t
+{
+    Fluent,
+    Varying
+};
+
 class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlSelectQueryBuilder>
 {
   public:
@@ -53,6 +59,13 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
         m_query.searchCondition.tableName = std::move(table);
         m_query.searchCondition.tableAlias = std::move(tableAlias);
         m_query.fields.reserve(256);
+    }
+
+    // Sets the builder mode to Varying, allowing varying final query types.
+    constexpr LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& Varying() noexcept
+    {
+        m_mode = SqlQueryBuilderMode::Varying;
+        return *this;
     }
 
     // Adds a DISTINCT clause to the SELECT query.
@@ -110,12 +123,12 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
     // Finalizes building the query as SELECT field names FROM ... query with a range.
     LIGHTWEIGHT_API ComposedQuery Range(std::size_t offset, std::size_t limit);
 
-    SqlSearchCondition& SearchCondition() noexcept
+    LIGHTWEIGHT_FORCE_INLINE SqlSearchCondition& SearchCondition() noexcept
     {
         return m_query.searchCondition;
     }
 
-    [[nodiscard]] SqlQueryFormatter const& Formatter() const noexcept
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE SqlQueryFormatter const& Formatter() const noexcept
     {
         return m_formatter;
     }
@@ -123,6 +136,7 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
   private:
     SqlQueryFormatter const& m_formatter;
     ComposedQuery m_query;
+    SqlQueryBuilderMode m_mode = SqlQueryBuilderMode::Fluent;
 };
 
 template <typename... MoreFields>
@@ -151,6 +165,7 @@ inline LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& SqlSelectQueryBuilder::Bu
     return *this;
 }
 
+// TODO: Would be nice to have this working.
 // template <typename Record>
 // inline LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields()
 // {
