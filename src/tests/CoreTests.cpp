@@ -108,12 +108,16 @@ TEST_CASE_METHOD(SqlTestFixture, "execute bound parameters and select back: VARC
     auto stmt = SqlStatement {};
     CreateEmployeesTable(stmt);
 
+    REQUIRE(!stmt.IsPrepared());
     stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    REQUIRE(stmt.IsPrepared());
+
     stmt.Execute("Alice", "Smith", 50'000);
     stmt.Execute("Bob", "Johnson", 60'000);
     stmt.Execute("Charlie", "Brown", 70'000);
 
     stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
+    REQUIRE(!stmt.IsPrepared());
     REQUIRE(stmt.NumColumnsAffected() == 1);
     (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<int>(1) == 3);
