@@ -62,6 +62,8 @@ class SqlStatement final: public SqlDataBinderCallback
 
     [[nodiscard]] LIGHTWEIGHT_API bool IsAlive() const noexcept;
 
+    [[nodiscard]] LIGHTWEIGHT_API bool IsPrepared() const noexcept;
+
     // Retrieves the connection associated with this statement.
     [[nodiscard]] LIGHTWEIGHT_API SqlConnection& Connection() noexcept;
 
@@ -327,6 +329,11 @@ inline LIGHTWEIGHT_FORCE_INLINE bool SqlStatement::IsAlive() const noexcept
     return m_connection && m_connection->IsAlive() && m_hStmt != nullptr;
 }
 
+inline LIGHTWEIGHT_FORCE_INLINE bool SqlStatement::IsPrepared() const noexcept
+{
+    return !m_preparedQuery.empty();
+}
+
 inline LIGHTWEIGHT_FORCE_INLINE SqlConnection& SqlStatement::Connection() noexcept
 {
     return *m_connection;
@@ -412,7 +419,11 @@ void SqlStatement::Execute(Args const&... args)
       RequireSuccess(SqlDataBinder<Args>::InputParameter(m_hStmt, i, args, *this))),
      ...);
 
-    RequireSuccess(SQLExecute(m_hStmt));
+    auto const result = SQLExecute(m_hStmt);
+
+    if (result != SQL_NO_DATA && result != SQL_SUCCESS && result != SQL_SUCCESS_WITH_INFO)
+        throw SqlException(SqlErrorInfo::fromStatementHandle(m_hStmt), std::source_location::current());
+
     ProcessPostExecuteCallbacks();
 }
 
