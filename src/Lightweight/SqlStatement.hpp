@@ -323,6 +323,64 @@ class [[nodiscard]] SqlResultCursor
     SqlStatement* m_stmt;
 };
 
+// input iterator
+template <typename T>
+class SqlRowIterator
+{
+  public:
+    using difference_type = bool;
+    using value_type = T;
+
+    SqlRowIterator(SqlStatement& stmt):
+        _stmt(&stmt)
+    {
+    }
+
+    SqlRowIterator operator++()
+    {
+        _is_end = _stmt->FetchRow();
+        return *this;
+    }
+
+    value_type operator*()
+    {
+        auto res = T {};
+
+        Reflection::EnumerateMembers(res, [this]<size_t I>(auto&& value) {
+            auto tmp = _stmt->GetColumn<typename Reflection::MemberTypeOf<I, value_type>::ValueType>(I + 1);
+            value = tmp;
+        });
+
+        return res;
+    }
+
+    SqlRowIterator begin()
+    {
+        auto query =
+            _stmt->Query(detail::RecordTableName<value_type>::Value).Select().template Fields<value_type>().All();
+        _stmt->Prepare(query);
+        _stmt->Execute();
+        _is_end = _stmt->FetchRow();
+        return *this;
+    }
+
+    SqlRowIterator end()
+    {
+        auto end_iterator = SqlRowIterator<T>(*_stmt);
+        end_iterator._is_end = true;
+        return end_iterator;
+    }
+
+    bool operator!=(SqlRowIterator const& other) const
+    {
+        return _is_end != other._is_end;
+    }
+
+  private:
+    SqlStatement* _stmt;
+    bool _is_end = false;
+};
+
 // {{{ inline implementation
 inline LIGHTWEIGHT_FORCE_INLINE bool SqlStatement::IsAlive() const noexcept
 {

@@ -35,6 +35,18 @@ struct MemberClassTypeHelper<M T::*>
     using type = std::remove_cvref_t<T>;
 };
 
+template <typename Record>
+struct RecordTableName
+{
+    static constexpr std::string_view Value = []() {
+        if constexpr (requires { Record::TableName; })
+            return Record::TableName;
+        else
+            // TODO: Build plural
+            return Reflection::TypeName<Record>;
+    }();
+};
+
 } // namespace detail
 
 template <template <typename...> class S, class T>
