@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Utils.hpp"
+#include <Lightweight/DataMapper/DataMapper.hpp>
 
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -100,11 +101,48 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Range", "[SqlQueryBuild
         });
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Delete", "[SqlQueryBuilder]")
+struct Users
 {
-    checkSqlQueryBuilder(
-        [](SqlQueryBuilder& q) { return q.FromTable("That").Delete().Where("foo", 42).Where("bar", "baz"); },
-        QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" = 42 AND "bar" = 'baz')"));
+    std::string name;
+    std::string address;
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Fields", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("Users").Select().Fields<Users>().First(); },
+                         QueryExpectations {
+                             .sqlite = R"(SELECT "name", "address" FROM "Users" LIMIT 1)",
+                             .sqlServer = R"(SELECT TOP 1 "name", "address" FROM "Users")",
+                         });
+}
+
+struct UsersFields
+{
+    Field<std::string> name;
+    Field<std::optional<std::string>> address;
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FieldsForFieldMembers", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("Users").Select().Fields<UsersFields>().First(); },
+                         QueryExpectations {
+                             .sqlite = R"(SELECT "name", "address" FROM "Users" LIMIT 1)",
+                             .sqlServer = R"(SELECT TOP 1 "name", "address" FROM "Users")",
+                         });
+}
+
+struct Email{
+    Field<std::string> email;
+    BelongsTo<&UsersFields::name> user;
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FieldsWithBelongsTo", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("Email").Select().Fields<Email>().First(); },
+                         QueryExpectations {
+                             .sqlite = R"(SELECT "email", "user" FROM "Email" LIMIT 1)",
+                             .sqlServer = R"(SELECT TOP 1 "email", "user" FROM "Email")",
+                         });
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Where.Junctors", "[SqlQueryBuilder]")

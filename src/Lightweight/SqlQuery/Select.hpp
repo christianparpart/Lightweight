@@ -92,7 +92,7 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
                                                   std::string_view tableName);
 
     template <typename Record>
-    LIGHTWEIGHT_API SqlSelectQueryBuilder& Fields();
+    SqlSelectQueryBuilder& Fields();
 
     // Adds a single column with an alias to the SELECT clause.
     LIGHTWEIGHT_API SqlSelectQueryBuilder& FieldAs(std::string_view const& fieldName, std::string_view const& alias);
@@ -165,15 +165,12 @@ inline LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& SqlSelectQueryBuilder::Bu
     return *this;
 }
 
-// TODO: Would be nice to have this working.
-// template <typename Record>
-// inline LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields()
-// {
-//     Reflection::EnumerateMembers<Record>([this]<size_t FieldIndex, typename FieldType>() {
-//         if constexpr (FieldWithStorage<FieldType>)
-//         {
-//             std::ignore = Field(FieldNameOf<FieldIndex, Record>());
-//         }
-//     });
-//     return *this;
-// }
+template <typename Record>
+inline LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields()
+{
+    std::vector<std::string_view> fieldsNames;
+    Reflection::EnumerateMembers<Record>([&]<size_t FieldIndex, typename FieldType>() {
+            fieldsNames.push_back(std::string_view{Reflection::MemberNameOf<FieldIndex, Record>});
+    });
+    return Fields(fieldsNames);
+}
