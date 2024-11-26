@@ -127,21 +127,21 @@ TEST_CASE_METHOD(SqlTestFixture, "execute bound parameters and select back: VARC
     CreateEmployeesTable(stmt);
 
     REQUIRE(!stmt.IsPrepared());
-    stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    stmt.Prepare(R"(INSERT INTO "Employees" ("FirstName", "LastName", "Salary") VALUES (?, ?, ?))");
     REQUIRE(stmt.IsPrepared());
 
     stmt.Execute("Alice", "Smith", 50'000);
     stmt.Execute("Bob", "Johnson", 60'000);
     stmt.Execute("Charlie", "Brown", 70'000);
 
-    stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
+    stmt.ExecuteDirect(R"(SELECT COUNT(*) FROM "Employees")");
     REQUIRE(!stmt.IsPrepared());
     REQUIRE(stmt.NumColumnsAffected() == 1);
     (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<int>(1) == 3);
     REQUIRE(!stmt.FetchRow());
 
-    stmt.Prepare("SELECT FirstName, LastName, Salary FROM Employees WHERE Salary >= ?");
+    stmt.Prepare(R"(SELECT "FirstName", "LastName", "Salary" FROM "Employees" WHERE "Salary" >= ?)");
     REQUIRE(stmt.NumColumnsAffected() == 3);
     stmt.Execute(55'000);
 
@@ -166,14 +166,14 @@ TEST_CASE_METHOD(SqlTestFixture, "transaction: auto-rollback")
 
     {
         auto transaction = SqlTransaction { stmt.Connection(), SqlTransactionMode::ROLLBACK };
-        stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+        stmt.Prepare(R"(INSERT INTO "Employees" ("FirstName", "LastName", "Salary") VALUES (?, ?, ?))");
         stmt.Execute("Alice", "Smith", 50'000);
         REQUIRE(stmt.Connection().TransactionActive());
     }
     // transaction automatically rolled back
 
     REQUIRE(!stmt.Connection().TransactionActive());
-    stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
+    stmt.ExecuteDirect("SELECT COUNT(*) FROM \"Employees\"");
     (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<int>(1) == 0);
 }
@@ -186,14 +186,14 @@ TEST_CASE_METHOD(SqlTestFixture, "transaction: auto-commit")
 
     {
         auto transaction = SqlTransaction { stmt.Connection(), SqlTransactionMode::COMMIT };
-        stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+        stmt.Prepare(R"(INSERT INTO "Employees" ("FirstName", "LastName", "Salary") VALUES (?, ?, ?))");
         stmt.Execute("Alice", "Smith", 50'000);
         REQUIRE(stmt.Connection().TransactionActive());
     }
     // transaction automatically committed
 
     REQUIRE(!stmt.Connection().TransactionActive());
-    stmt.ExecuteDirect("SELECT COUNT(*) FROM Employees");
+    stmt.ExecuteDirect("SELECT COUNT(*) FROM \"Employees\"");
     (void) stmt.FetchRow();
     REQUIRE(stmt.GetColumn<int>(1) == 1);
 }
@@ -208,7 +208,7 @@ TEST_CASE_METHOD(SqlTestFixture, "execute binding output parameters (direct)")
     std::string lastName(20, '\0');  // ditto
     unsigned int salary {};
 
-    stmt.Prepare("SELECT FirstName, LastName, Salary FROM Employees WHERE Salary = ?");
+    stmt.Prepare(R"(SELECT "FirstName", "LastName", "Salary" FROM "Employees" WHERE "Salary" = ?)");
     stmt.BindOutputColumns(&firstName, &lastName, &salary);
     stmt.Execute(50'000);
 
@@ -226,7 +226,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatch")
 
     CreateEmployeesTable(stmt);
 
-    stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    stmt.Prepare(R"(INSERT INTO "Employees" ("FirstName", "LastName", "Salary") VALUES (?, ?, ?))");
 
     // Ensure that the batch insert works with different types of containers
     // clang-format off
@@ -237,7 +237,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatch")
 
     stmt.ExecuteBatch(firstNames, lastNames, salaries);
 
-    stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees ORDER BY Salary DESC");
+    stmt.ExecuteDirect(R"(SELECT "FirstName", "LastName", "Salary" FROM "Employees" ORDER BY "Salary" DESC)");
 
     REQUIRE(stmt.FetchRow());
     REQUIRE(stmt.GetColumn<std::string>(1) == "Charlie");
@@ -262,9 +262,14 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatchNative")
     auto stmt = SqlStatement {};
     UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
 
-    stmt.ExecuteDirect("CREATE TABLE Test (A VARCHAR(8), B REAL, C INTEGER)");
+    stmt.MigrateDirect([](SqlMigrationQueryBuilder& migration) {
+        migration.CreateTable("Test")
+            .Column("A", SqlColumnTypeDefinitions::Varchar { 8 })
+            .Column("B", SqlColumnTypeDefinitions::Real {})
+            .Column("C", SqlColumnTypeDefinitions::Integer {});
+    });
 
-    stmt.Prepare("INSERT INTO Test (A, B, C) VALUES (?, ?, ?)");
+    stmt.Prepare(R"(INSERT INTO "Test" ("A", "B", "C") VALUES (?, ?, ?))");
 
     // Ensure that the batch insert works with different types of contiguous containers
     auto const first = std::array<SqlFixedString<8>, 3> { "Hello", "World", "!" };
@@ -273,7 +278,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlStatement.ExecuteBatchNative")
 
     stmt.ExecuteBatchNative(first, second, third);
 
-    stmt.ExecuteDirect("SELECT A, B, C FROM Test ORDER BY C DESC");
+    stmt.ExecuteDirect(R"(SELECT "A", "B", "C" FROM "Test" ORDER BY "C" DESC)");
 
     REQUIRE(stmt.FetchRow());
     CHECK(stmt.GetColumn<std::string>(1) == "!");
@@ -334,7 +339,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SELECT * FROM Table")
     CreateEmployeesTable(stmt);
     FillEmployeesTable(stmt);
 
-    stmt.ExecuteDirect("SELECT * FROM Employees");
+    stmt.ExecuteDirect("SELECT * FROM \"Employees\"");
 
     auto result = stmt.GetResultCursor();
 
@@ -364,11 +369,15 @@ TEST_CASE_METHOD(SqlTestFixture, "SELECT * FROM Table")
 TEST_CASE_METHOD(SqlTestFixture, "GetNullableColumn")
 {
     auto stmt = SqlStatement {};
-    stmt.ExecuteDirect("CREATE TABLE Test (Remarks1 VARCHAR(50) NULL, Remarks2 VARCHAR(50) NULL)");
-    stmt.Prepare("INSERT INTO Test (Remarks1, Remarks2) VALUES (?, ?)");
+    stmt.MigrateDirect([](SqlMigrationQueryBuilder& migration) {
+        migration.CreateTable("Test")
+            .Column("Remarks1", SqlColumnTypeDefinitions::Varchar { 50 })
+            .Column("Remarks2", SqlColumnTypeDefinitions::Varchar { 50 });
+    });
+    stmt.Prepare(R"(INSERT INTO "Test" ("Remarks1", "Remarks2") VALUES (?, ?))");
     stmt.Execute("Blurb", SqlNullValue);
 
-    stmt.ExecuteDirect("SELECT Remarks1, Remarks2 FROM Test");
+    stmt.ExecuteDirect(R"(SELECT "Remarks1", "Remarks2" FROM "Test")");
     auto result = stmt.GetResultCursor();
     REQUIRE(result.FetchRow());
     auto const actual1 = result.GetNullableColumn<std::string>(1);

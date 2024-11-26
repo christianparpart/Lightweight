@@ -29,6 +29,7 @@
 #include <sqltypes.h>
 
 class SqlQueryBuilder;
+class SqlMigrationQueryBuilder;
 class SqlQueryFormatter;
 
 // @brief Represents a connection to a SQL database.
@@ -108,11 +109,14 @@ class LIGHTWEIGHT_API SqlConnection final
     // Retrieves a query formatter suitable for the SQL server being connected.
     [[nodiscard]] SqlQueryFormatter const& QueryFormatter() const noexcept;
 
-    // Creates a new query builder for the given table, compatible with the SQL server being connected.
+    // Creates a new query builder for the given table, compatible with the current connection.
     [[nodiscard]] SqlQueryBuilder Query(std::string_view const& table = {}) const;
 
-    // Creates a new query builder for the given table with an alias, compatible with the SQL server being connected.
+    // Creates a new query builder for the given table with an alias, compatible with the current connection.
     [[nodiscard]] SqlQueryBuilder QueryAs(std::string_view const& table, std::string_view const& tableAlias) const;
+
+    // Creates a new migration query builder, compatible the current connection.
+    [[nodiscard]] SqlMigrationQueryBuilder Migration() const;
 
     // Retrieves the SQL traits for the server.
     [[nodiscard]] SqlTraits const& Traits() const noexcept

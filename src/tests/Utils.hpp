@@ -459,57 +459,37 @@ inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, Mode> con
 
 // }}}
 
-inline void CreateEmployeesTable(SqlStatement& stmt,
-                                 bool quoted = false,
-                                 std::source_location sourceLocation = std::source_location::current())
+inline void CreateEmployeesTable(SqlStatement& stmt, std::source_location location = std::source_location::current())
 {
-    if (quoted)
-        stmt.ExecuteDirect(std::format(R"SQL(CREATE TABLE "Employees" (
-                                                         "EmployeeID" {},
-                                                         "FirstName" VARCHAR(50) NOT NULL,
-                                                         "LastName" VARCHAR(50),
-                                                         "Salary" INT NOT NULL
-                                                     );
-                                                    )SQL",
-                                       stmt.Connection().Traits().PrimaryKeyAutoIncrement),
-                           sourceLocation);
-    else
-        stmt.ExecuteDirect(std::format(R"SQL(CREATE TABLE Employees (
-                                                         EmployeeID {},
-                                                         FirstName VARCHAR(50) NOT NULL,
-                                                         LastName VARCHAR(50),
-                                                         Salary INT NOT NULL
-                                                     );
-                                                    )SQL",
-                                       stmt.Connection().Traits().PrimaryKeyAutoIncrement),
-                           sourceLocation);
+    stmt.MigrateDirect(
+        [](SqlMigrationQueryBuilder& migration) {
+            migration.CreateTable("Employees")
+                .PrimaryKeyWithAutoIncrement("EmployeeID")
+                .RequiredColumn("FirstName", SqlColumnTypeDefinitions::Varchar { 50 })
+                .Column("LastName", SqlColumnTypeDefinitions::Varchar { 50 })
+                .RequiredColumn("Salary", SqlColumnTypeDefinitions::Integer {});
+        },
+        location);
 }
 
-inline void CreateLargeTable(SqlStatement& stmt, bool quote = false)
+inline void CreateLargeTable(SqlStatement& stmt)
 {
-    std::stringstream sqlQueryStr;
-    auto const quoted = [quote](auto&& str) {
-        return quote ? std::format("\"{}\"", str) : str;
-    };
-    sqlQueryStr << "CREATE TABLE " << quoted("LargeTable") << " (\n";
-    for (char c = 'A'; c <= 'Z'; ++c)
-    {
-        sqlQueryStr << "    " << quoted(std::string(1, c)) << " VARCHAR(50) NULL";
-        if (c != 'Z')
-            sqlQueryStr << ",";
-        sqlQueryStr << "\n";
-    }
-    sqlQueryStr << ")\n";
-
-    stmt.ExecuteDirect(sqlQueryStr.str());
+    stmt.MigrateDirect([](SqlMigrationQueryBuilder& migration) {
+        auto table = migration.CreateTable("LargeTable");
+        for (char c = 'A'; c <= 'Z'; ++c)
+        {
+            table.Column(std::string(1, c), SqlColumnTypeDefinitions::Varchar { 50 });
+        }
+    });
 }
 
-inline void FillEmployeesTable(SqlStatement& stmt, bool quoted = false)
+inline void FillEmployeesTable(SqlStatement& stmt)
 {
-    if (quoted)
-        stmt.Prepare(R"(INSERT INTO "Employees" ("FirstName", "LastName", "Salary") VALUES (?, ?, ?))");
-    else
-        stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    stmt.Prepare(stmt.Query("Employees")
+                     .Insert()
+                     .Set("FirstName", SqlWildcard)
+                     .Set("LastName", SqlWildcard)
+                     .Set("Salary", SqlWildcard));
     stmt.Execute("Alice", "Smith", 50'000);
     stmt.Execute("Bob", "Johnson", 60'000);
     stmt.Execute("Charlie", "Brown", 70'000);

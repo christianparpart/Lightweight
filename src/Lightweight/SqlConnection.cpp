@@ -321,3 +321,8 @@ SqlQueryBuilder SqlConnection::QueryAs(std::string_view const& table, std::strin
 {
     return SqlQueryBuilder(QueryFormatter(), std::string(table), std::string(tableAlias));
 }
+
+SqlMigrationQueryBuilder SqlConnection::Migration() const
+{
+    return SqlMigrationQueryBuilder(QueryFormatter());
+}

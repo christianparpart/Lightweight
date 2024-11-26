@@ -10,17 +10,21 @@
 
 #include <algorithm>
 #include <functional>
+#include <ranges>
 #include <set>
 #include <source_location>
 
 struct QueryExpectations
 {
     std::string_view sqlite;
+    std::string_view postgres;
     std::string_view sqlServer;
+    std::string_view oracle;
 
     static QueryExpectations All(std::string_view query)
     {
-        return { query, query };
+        // NOLINTNEXTLINE(modernize-use-designated-initializers)
+        return { query, query, query, query };
     }
 };
 
@@ -32,6 +36,25 @@ auto EraseLinefeeds(std::string str) noexcept -> std::string
     return str;
 }
 
+[[nodiscard]] std::string NormalizeText(std::string_view const& text)
+{
+    auto result = std::string(text);
+
+    // Remove any newlines and reduce all whitespace to a single space
+    result.erase(
+        std::unique(result.begin(), result.end(), [](char a, char b) { return std::isspace(a) && std::isspace(b); }),
+        result.end());
+
+    // trim lading and trailing whitespace
+    while (!result.empty() && std::isspace(result.front()))
+        result.erase(result.begin());
+
+    while (!result.empty() && std::isspace(result.back()))
+        result.pop_back();
+
+    return result;
+}
+
 template <typename TheSqlQuery>
     requires(std::is_invocable_v<TheSqlQuery, SqlQueryBuilder&>)
 void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
@@ -41,19 +64,21 @@ void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
 {
     INFO(std::format("Test source location: {}:{}", location.file_name(), location.line()));
 
-    auto const& sqliteFormatter = SqlQueryFormatter::Sqlite();
-    auto sqliteQueryBuilder = SqlQueryBuilder(sqliteFormatter);
-    auto const actualSqlite = EraseLinefeeds(sqlQueryBuilder(sqliteQueryBuilder).ToSql());
-    CHECK(actualSqlite == expectations.sqlite);
-    if (postCheck)
-        postCheck();
+    auto const checkOne = [&](SqlQueryFormatter const& formatter, std::string_view name, std::string_view query) {
+        INFO("Testing " << name);
+        auto sqliteQueryBuilder = SqlQueryBuilder(formatter);
+        auto const sqlQuery = sqlQueryBuilder(sqliteQueryBuilder);
+        auto const actual = NormalizeText(sqlQuery.ToSql());
+        auto const expected = NormalizeText(query);
+        REQUIRE(actual == expected);
+        if (postCheck)
+            postCheck();
+    };
 
-    auto const& sqlServerFormatter = SqlQueryFormatter::SqlServer();
-    auto sqlServerQueryBuilder = SqlQueryBuilder(sqlServerFormatter);
-    auto const actualSqlServer = EraseLinefeeds(sqlQueryBuilder(sqlServerQueryBuilder).ToSql());
-    CHECK(actualSqlServer == expectations.sqlServer);
-    if (postCheck)
-        postCheck();
+    checkOne(SqlQueryFormatter::Sqlite(), "SQLite", expectations.sqlite);
+    checkOne(SqlQueryFormatter::PostgrSQL(), "Postgres", expectations.postgres);
+    checkOne(SqlQueryFormatter::SqlServer(), "SQL Server", expectations.sqlServer);
+    // TODO: checkOne(SqlQueryFormatter::OracleSQL(), "Oracle", expectations.oracle);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Count", "[SqlQueryBuilder]")
@@ -68,7 +93,10 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.All", "[SqlQueryBuilder
         [](SqlQueryBuilder& q) {
             return q.FromTable("That").Select().Fields("a", "b").Field("c").GroupBy("a").OrderBy("b").All();
         },
-        QueryExpectations::All(R"(SELECT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)"));
+        QueryExpectations::All(R"(
+                               SELECT "a", "b", "c" FROM "That"
+                               GROUP BY "a"
+                               ORDER BY "b" ASC)"));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Distinct.All", "[SqlQueryBuilder]")
@@ -77,7 +105,10 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Distinct.All", "[SqlQue
         [](SqlQueryBuilder& q) {
             return q.FromTable("That").Select().Distinct().Fields("a", "b").Field("c").GroupBy("a").OrderBy("b").All();
         },
-        QueryExpectations::All(R"(SELECT DISTINCT "a", "b", "c" FROM "That" GROUP BY "a" ORDER BY "b" ASC)"));
+        QueryExpectations::All(R"(
+                               SELECT DISTINCT "a", "b", "c" FROM "That"
+                               GROUP BY "a"
+                               ORDER BY "b" ASC)"));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.First", "[SqlQueryBuilder]")
@@ -85,8 +116,14 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.First", "[SqlQueryBuild
     checkSqlQueryBuilder(
         [](SqlQueryBuilder& q) { return q.FromTable("That").Select().Field("field1").OrderBy("id").First(); },
         QueryExpectations {
-            .sqlite = R"(SELECT "field1" FROM "That" ORDER BY "id" ASC LIMIT 1)",
-            .sqlServer = R"(SELECT TOP 1 "field1" FROM "That" ORDER BY "id" ASC)",
+            .sqlite = R"(SELECT "field1" FROM "That"
+                         ORDER BY "id" ASC LIMIT 1)",
+            .postgres = R"(SELECT "field1" FROM "That"
+                           ORDER BY "id" ASC LIMIT 1)",
+            .sqlServer = R"(SELECT TOP 1 "field1" FROM "That"
+                            ORDER BY "id" ASC)",
+            .oracle = R"(SELECT "field1" FROM "That"
+                         ORDER BY "id" ASC FETCH FIRST 1 ROWS ONLY)",
         });
 }
 
@@ -97,8 +134,14 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Range", "[SqlQueryBuild
             return q.FromTable("That").Select().Fields("foo", "bar").OrderBy("id").Range(200, 50);
         },
         QueryExpectations {
-            .sqlite = R"(SELECT "foo", "bar" FROM "That" ORDER BY "id" ASC LIMIT 50 OFFSET 200)",
-            .sqlServer = R"(SELECT "foo", "bar" FROM "That" ORDER BY "id" ASC OFFSET 200 ROWS FETCH NEXT 50 ROWS ONLY)",
+            .sqlite = R"(SELECT "foo", "bar" FROM "That"
+                         ORDER BY "id" ASC LIMIT 50 OFFSET 200)",
+            .postgres = R"(SELECT "foo", "bar" FROM "That"
+                           ORDER BY "id" ASC LIMIT 50 OFFSET 200)",
+            .sqlServer = R"(SELECT "foo", "bar" FROM "That"
+                            ORDER BY "id" ASC OFFSET 200 ROWS FETCH NEXT 50 ROWS ONLY)",
+            .oracle = R"(SELECT "foo", "bar" FROM "That"
+                         ORDER BY "id" ASC OFFSET 200 ROWS FETCH NEXT 50 ROWS ONLY)",
         });
 }
 
@@ -113,7 +156,9 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Fields", "[SqlQueryBuilder]")
     checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("Users").Select().Fields<Users>().First(); },
                          QueryExpectations {
                              .sqlite = R"(SELECT "name", "address" FROM "Users" LIMIT 1)",
+                             .postgres = R"(SELECT "name", "address" FROM "Users" LIMIT 1)",
                              .sqlServer = R"(SELECT TOP 1 "name", "address" FROM "Users")",
+                             .oracle = R"(SELECT "name", "address" FROM "Users" FETCH FIRST 1 ROWS ONLY)",
                          });
 }
 
@@ -128,7 +173,9 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FieldsForFieldMembers", "[SqlQ
     checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("Users").Select().Fields<UsersFields>().First(); },
                          QueryExpectations {
                              .sqlite = R"(SELECT "name", "address" FROM "Users" LIMIT 1)",
+                             .postgres = R"(SELECT "name", "address" FROM "Users" LIMIT 1)",
                              .sqlServer = R"(SELECT TOP 1 "name", "address" FROM "Users")",
+                             .oracle = R"(SELECT "name", "address" FROM "Users" FETCH FIRST 1 ROWS ONLY)",
                          });
 }
 
@@ -146,7 +193,9 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FieldsWithBelongsTo", "[SqlQue
         },
         QueryExpectations {
             .sqlite = R"(SELECT "email", "user" FROM "QueryBuilderTestEmail" LIMIT 1)",
+            .postgres = R"(SELECT "email", "user" FROM "QueryBuilderTestEmail" LIMIT 1)",
             .sqlServer = R"(SELECT TOP 1 "email", "user" FROM "QueryBuilderTestEmail")",
+            .oracle = R"(SELECT "email", "user" FROM "QueryBuilderTestEmail" FETCH FIRST 1 ROWS ONLY)",
         });
 }
 
@@ -165,7 +214,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Where.Junctors", "[SqlQueryBui
                 .Count();
             // clang-format on
         },
-        QueryExpectations::All(R"SQL(SELECT COUNT(*) FROM "Table" WHERE a AND b OR c AND d AND NOT e)SQL"));
+        QueryExpectations::All(R"SQL(SELECT COUNT(*) FROM "Table"
+                                     WHERE a AND b OR c AND d AND NOT e)SQL"));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereIn", "[SqlQueryBuilder]")
@@ -173,16 +223,19 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereIn", "[SqlQueryBuilder]")
     // Check functionality of container overloads for IN
     checkSqlQueryBuilder(
         [](SqlQueryBuilder& q) { return q.FromTable("That").Delete().WhereIn("foo", std::vector { 1, 2, 3 }); },
-        QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))"));
+        QueryExpectations::All(R"(DELETE FROM "That"
+                                  WHERE "foo" IN (1, 2, 3))"));
 
     // Check functionality of an lvalue input range
     auto const values = std::set { 1, 2, 3 };
     checkSqlQueryBuilder([&](SqlQueryBuilder& q) { return q.FromTable("That").Delete().WhereIn("foo", values); },
-                         QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))"));
+                         QueryExpectations::All(R"(DELETE FROM "That"
+                                                   WHERE "foo" IN (1, 2, 3))"));
 
     // Check functionality of the initializer_list overload for IN
     checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("That").Delete().WhereIn("foo", { 1, 2, 3 }); },
-                         QueryExpectations::All(R"(DELETE FROM "That" WHERE "foo" IN (1, 2, 3))"));
+                         QueryExpectations::All(R"(DELETE FROM "That"
+                                                   WHERE "foo" IN (1, 2, 3))"));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
@@ -192,14 +245,16 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
             return q.FromTable("That").Select().Fields("foo", "bar").InnerJoin("Other", "id", "that_id").All();
         },
         QueryExpectations::All(
-            R"(SELECT "foo", "bar" FROM "That" INNER JOIN "Other" ON "Other"."id" = "That"."that_id")"));
+            R"(SELECT "foo", "bar" FROM "That"
+               INNER JOIN "Other" ON "Other"."id" = "That"."that_id")"));
 
     checkSqlQueryBuilder(
         [](SqlQueryBuilder& q) {
             return q.FromTable("That").Select().Fields("foo", "bar").LeftOuterJoin("Other", "id", "that_id").All();
         },
         QueryExpectations::All(
-            R"(SELECT "foo", "bar" FROM "That" LEFT OUTER JOIN "Other" ON "Other"."id" = "That"."that_id")"));
+            R"(SELECT "foo", "bar" FROM "That"
+               LEFT OUTER JOIN "Other" ON "Other"."id" = "That"."that_id")"));
 
     checkSqlQueryBuilder(
         [](SqlQueryBuilder& q) {
@@ -214,8 +269,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
         },
         QueryExpectations::All("SELECT \"Table_A\".\"foo\", \"Table_A\".\"bar\","
                                " \"Table_B\".\"that_foo\", \"Table_B\".\"that_id\""
-                               " FROM \"Table_A\""
-                               " LEFT OUTER JOIN \"Table_B\" ON \"Table_B\".\"id\" = \"Table_A\".\"that_id\""
+                               " FROM \"Table_A\"\n"
+                               " LEFT OUTER JOIN \"Table_B\" ON \"Table_B\".\"id\" = \"Table_A\".\"that_id\"\n"
                                " WHERE \"Table_A\".\"foo\" = 42"));
 
     checkSqlQueryBuilder(
@@ -236,10 +291,9 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
                 .All();
         },
         QueryExpectations::All(
-            R"(SELECT "Table_A"."foo", "Table_A"."bar", "Table_B"."that_foo", "Table_B"."that_id")"
-            R"( FROM "Table_A")"
-            R"( INNER JOIN "Table_B" ON "Table_B"."id" = "Table_A"."that_id" AND "Table_B"."that_foo" = "Table_A"."foo")"
-            R"( WHERE "Table_A"."foo" = 42)"));
+            R"(SELECT "Table_A"."foo", "Table_A"."bar", "Table_B"."that_foo", "Table_B"."that_id" FROM "Table_A"
+               INNER JOIN "Table_B" ON "Table_B"."id" = "Table_A"."that_id" AND "Table_B"."that_foo" = "Table_A"."foo"
+               WHERE "Table_A"."foo" = 42)"));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.SelectAs", "[SqlQueryBuilder]")
@@ -289,7 +343,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Update", "[SqlQueryBuilder]")
         [&](SqlQueryBuilder& q) {
             return q.FromTableAs("Other", "O").Update(&boundValues).Set("foo", 42).Set("bar", "baz").Where("id", 123);
         },
-        QueryExpectations::All(R"(UPDATE "Other" AS "O" SET "foo" = ?, "bar" = ? WHERE "id" = ?)"),
+        QueryExpectations::All(R"(UPDATE "Other" AS "O" SET "foo" = ?, "bar" = ?
+                                  WHERE "id" = ?)"),
         [&]() {
             CHECK(boundValues.size() == 3);
             CHECK(std::get<int>(boundValues[0].value) == 42);
@@ -310,7 +365,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Where.Lambda", "[SqlQueryBuild
                 .OrWhere([](auto& q) { return q.Where("b", 2).Where("c", 3); })
                 .All();
         },
-        QueryExpectations::All(R"(SELECT "foo" FROM "That" WHERE "a" = 1 OR ("b" = 2 AND "c" = 3))"));
+        QueryExpectations::All(R"(SELECT "foo" FROM "That"
+                                  WHERE "a" = 1 OR ("b" = 2 AND "c" = 3))"));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereColumn", "[SqlQueryBuilder]")
@@ -319,7 +375,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereColumn", "[SqlQueryBuilde
         [](SqlQueryBuilder& q) {
             return q.FromTable("That").Select().Field("foo").WhereColumn("left", "=", "right").All();
         },
-        QueryExpectations::All(R"(SELECT "foo" FROM "That" WHERE "left" = "right")"));
+        QueryExpectations::All(R"(SELECT "foo" FROM "That"
+                                  WHERE "left" = "right")"));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "Varying: multiple varying final query types", "[SqlQueryBuilder]")
@@ -346,9 +403,8 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.ExecuteDi
 {
     auto stmt = SqlStatement {};
 
-    bool constexpr quoted = true;
-    CreateEmployeesTable(stmt, quoted);
-    FillEmployeesTable(stmt, quoted);
+    CreateEmployeesTable(stmt);
+    FillEmployeesTable(stmt);
 
     stmt.ExecuteDirect(stmt.Connection().Query("Employees").Select().Fields("FirstName", "LastName").All());
 
@@ -360,9 +416,8 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare",
 {
     auto stmt = SqlStatement {};
 
-    bool constexpr quoted = true;
-    CreateEmployeesTable(stmt, quoted);
-    FillEmployeesTable(stmt, quoted);
+    CreateEmployeesTable(stmt);
+    FillEmployeesTable(stmt);
 
     std::vector<SqlVariant> inputBindings;
 
@@ -387,8 +442,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Use SqlQueryBuilder for SqlStatement.Prepare: 
 {
     auto stmt = SqlStatement {};
 
-    bool constexpr quoted = true;
-    CreateLargeTable(stmt, quoted);
+    CreateLargeTable(stmt);
 
     // Prepare INSERT query
     auto insertQuery = stmt.Connection().Query("LargeTable").Insert(nullptr /* no auto-fill */);
@@ -500,4 +554,280 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder: sub select with WhereIn", "[S
     CHECK(stmt.GetColumn<int>(2) == 43);
 
     REQUIRE(!stmt.FetchRow());
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "DropTable", "[SqlQueryBuilder][Migration]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.DropTable("Table");
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(
+                                   DROP TABLE "Table";
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "CreateTable with Column", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.CreateTable("Test").Column("column", Varchar { 255 });
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(CREATE TABLE "Test" (
+                                        "column" VARCHAR(255)
+                                    );
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "CreateTable with RequiredColumn", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.CreateTable("Test").RequiredColumn("column", Varchar { 255 });
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(CREATE TABLE "Test" (
+                                        "column" VARCHAR(255) NOT NULL
+                                     );
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "CreateTable with Column: Guid", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.CreateTable("Test").RequiredColumn("column", Guid {});
+            return migration.GetPlan();
+        },
+        QueryExpectations {
+            .sqlite = R"sql(CREATE TABLE "Test" (
+                                "column" GUID NOT NULL
+                            );
+            )sql",
+            .postgres = R"sql(CREATE TABLE "Test" (
+                                "column" UUID NOT NULL
+                            );
+            )sql",
+            .sqlServer = R"sql(CREATE TABLE "Test" (
+                                "column" UNIQUEIDENTIFIER NOT NULL
+                            );
+            )sql",
+            .oracle = R"sql(CREATE TABLE "Test" (
+                                "column" RAW(16) NOT NULL
+                            );
+            )sql",
+        });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "CreateTable with PrimaryKey", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.CreateTable("Test").PrimaryKey("pk", Integer {});
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(CREATE TABLE "Test" (
+                                        "pk" INTEGER NOT NULL PRIMARY KEY
+                                     );
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "CreateTable with PrimaryKeyWithAutoIncrement", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.CreateTable("Test").PrimaryKeyWithAutoIncrement("pk");
+            return migration.GetPlan();
+        },
+        QueryExpectations {
+            .sqlite = R"sql(CREATE TABLE "Test" (
+                                "pk" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+                            );
+                           )sql",
+            .postgres = R"sql(CREATE TABLE "Test" (
+                                "pk" SERIAL NOT NULL PRIMARY KEY
+                            );
+                           )sql",
+            .sqlServer = R"sql(CREATE TABLE "Test" (
+                                "pk" BIGINT NOT NULL IDENTITY(1,1) PRIMARY KEY
+                            );
+                           )sql",
+            .oracle = R"sql(CREATE TABLE "Test" (
+                                "pk" NUMBER(19,0) NOT NULL PRIMARY KEY
+                            );
+                            )sql",
+        });
+}
+TEST_CASE_METHOD(SqlTestFixture, "CreateTable with Index", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.CreateTable("Table").RequiredColumn("column", Integer {}).Index();
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(CREATE TABLE "Table" (
+                                        "column" INTEGER NOT NULL
+                                     );
+                                     CREATE INDEX "Table_column_index" ON "Table"("column");
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "CreateTable complex demo", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            // clang-format off
+            auto migration = q.Migration();
+            migration.CreateTable("Test")
+                .PrimaryKeyWithAutoIncrement("a", Bigint {})
+                .RequiredColumn("b", Varchar { 32 }).Unique()
+                .Column("c", DateTime {}).Index()
+                .Column("d", Varchar { 255 }).UniqueIndex();;
+            return migration.GetPlan();
+            // clang-format on
+        },
+        QueryExpectations {
+            .sqlite = R"sql(
+                    CREATE TABLE "Test" (
+                        "a" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        "b" VARCHAR(32) NOT NULL UNIQUE,
+                        "c" DATETIME,
+                        "d" VARCHAR(255)
+                    );
+                    CREATE INDEX "Test_c_index" ON "Test"("c");
+                    CREATE UNIQUE INDEX "Test_d_index" ON "Test"("d");
+                )sql",
+            .postgres = R"sql(
+                    CREATE TABLE "Test" (
+                        "a" SERIAL NOT NULL PRIMARY KEY,
+                        "b" VARCHAR(32) NOT NULL UNIQUE,
+                        "c" DATETIME,
+                        "d" VARCHAR(255)
+                    );
+                    CREATE INDEX "Test_c_index" ON "Test"("c");
+                    CREATE UNIQUE INDEX "Test_d_index" ON "Test"("d");
+                )sql",
+            .sqlServer = R"sql(
+                    CREATE TABLE "Test" (
+                        "a" BIGINT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+                        "b" VARCHAR(32) NOT NULL UNIQUE,
+                        "c" DATETIME,
+                        "d" VARCHAR(255)
+                    );
+                    CREATE INDEX "Test_c_index" ON "Test"("c");
+                    CREATE UNIQUE INDEX "Test_d_index" ON "Test"("d");
+                )sql",
+            .oracle = R"sql(
+                    CREATE TABLE "Test" (
+                        "a" NUMBER GENERATED BY DEFAULT ON NULL AS IDENTITY PRIMARY KEY
+                        "b" VARCHAR2(32 CHAR) NOT NULL UNIQUE,
+                        "c" DATETIME,
+                        "d" VARCHAR2(255 CHAR)
+                    );
+                    CREATE INDEX "Test_c_index" ON "Test"("c");
+                    CREATE UNIQUE INDEX "Test_d_index" ON "Test"("d");
+                )sql",
+        });
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "AlterTable AddColumn", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.AlterTable("Table").AddColumn("column", Integer {});
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(ALTER TABLE "Table" ADD COLUMN "column" INTEGER;
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "AlterTable multiple AddColumn calls", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.AlterTable("Table").AddColumn("column", Integer {}).AddColumn("column2", Varchar { 255 });
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(ALTER TABLE "Table" ADD COLUMN "column" INTEGER;
+                                     ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR(255);
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "AlterTable RenameColumn", "[SqlQueryBuilder][Migration]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.AlterTable("Table").RenameColumn("old", "new");
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(ALTER TABLE "Table" RENAME COLUMN "old" TO "new";
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "AlterTable RenameTo", "[SqlQueryBuilder][Migration]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.AlterTable("Table").RenameTo("NewTable");
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(ALTER TABLE "Table" RENAME TO "NewTable";
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "AlterTable AddIndex", "[SqlQueryBuilder][Migration]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.AlterTable("Table").AddIndex("column");
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(CREATE INDEX "Table_column_index" ON "Table"("column");
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "AlterTable AddUniqueIndex", "[SqlQueryBuilder][Migration]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.AlterTable("Table").AddUniqueIndex("column");
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(CREATE UNIQUE INDEX "Table_column_index" ON "Table"("column");
+                               )sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "AlterTable DropIndex", "[SqlQueryBuilder][Migration]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.AlterTable("Table").DropIndex("column");
+            return migration.GetPlan();
+        },
+        QueryExpectations::All(R"sql(DROP INDEX "Table_column_index";)sql"));
 }

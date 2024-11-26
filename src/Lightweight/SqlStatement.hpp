@@ -165,6 +165,11 @@ class SqlStatement final: public SqlDataBinderCallback
     void ExecuteDirect(SqlQueryObject auto const& query,
                        std::source_location location = std::source_location::current());
 
+    // Executes an SQL migration query, as created b the callback.
+    template <typename Callable>
+        requires std::invocable<Callable, SqlMigrationQueryBuilder&>
+    void MigrateDirect(Callable const& callable, std::source_location location = std::source_location::current());
+
     // Executes the given query, assuming that only one result row and column is affected, that one will be
     // returned.
     template <typename T>
@@ -645,6 +650,15 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::ExecuteDirect(SqlQueryObject 
                                                                  std::source_location location)
 {
     return ExecuteDirect(query.ToSql(), location);
+}
+
+template <typename Callable>
+    requires std::invocable<Callable, SqlMigrationQueryBuilder&>
+void SqlStatement::MigrateDirect(Callable const& callable, std::source_location location)
+{
+    auto migration = SqlMigrationQueryBuilder { Connection().QueryFormatter() };
+    callable(migration);
+    ExecuteDirect(migration.GetPlan(), location);
 }
 
 template <typename T>

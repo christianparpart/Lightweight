@@ -4,6 +4,7 @@
 #include "Api.hpp"
 #include "SqlQuery/Delete.hpp"
 #include "SqlQuery/Insert.hpp"
+#include "SqlQuery/Migrate.hpp"
 #include "SqlQuery/Select.hpp"
 #include "SqlQuery/Update.hpp"
 
@@ -41,6 +42,8 @@ class [[nodiscard]] SqlQueryBuilder final
 
     // Initiates DELETE query building
     LIGHTWEIGHT_API SqlDeleteQueryBuilder Delete() noexcept;
+
+    LIGHTWEIGHT_API SqlMigrationQueryBuilder Migration();
 
   private:
     SqlQueryFormatter const& m_formatter;

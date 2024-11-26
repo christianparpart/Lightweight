@@ -177,10 +177,10 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: GetColumn in-place store variant",
     auto stmt = SqlStatement {};
     CreateEmployeesTable(stmt);
 
-    stmt.Prepare("INSERT INTO Employees (FirstName, LastName, Salary) VALUES (?, ?, ?)");
+    stmt.Prepare(R"(INSERT INTO "Employees" ("FirstName", "LastName", "Salary") VALUES (?, ?, ?))");
     stmt.Execute("Alice", SqlNullValue, 50'000);
 
-    stmt.ExecuteDirect("SELECT FirstName, LastName, Salary FROM Employees");
+    stmt.ExecuteDirect(R"(SELECT "FirstName", "LastName", "Salary" FROM "Employees")");
     (void) stmt.FetchRow();
 
     CHECK(stmt.GetColumn<std::string>(1) == "Alice");
