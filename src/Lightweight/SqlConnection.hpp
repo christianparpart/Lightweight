@@ -43,7 +43,7 @@ class LIGHTWEIGHT_API SqlConnection final
     SqlConnection();
 
     // Constructs a new SQL connection to the given connect informaton.
-    explicit SqlConnection(std::optional<SqlConnectInfo> connectInfo);
+    explicit SqlConnection(std::optional<SqlConnectionString> connectInfo);
 
     SqlConnection(SqlConnection&& /*other*/) noexcept;
     SqlConnection& operator=(SqlConnection&& /*other*/) noexcept;
@@ -54,10 +54,11 @@ class LIGHTWEIGHT_API SqlConnection final
     ~SqlConnection() noexcept;
 
     // Retrieves the default connection information.
-    static SqlConnectInfo const& DefaultConnectInfo() noexcept;
+    static SqlConnectionString const& DefaultConnectionString() noexcept;
 
     // Sets the default connection information.
-    static void SetDefaultConnectInfo(SqlConnectInfo connectInfo) noexcept;
+    static void SetDefaultConnectionString(SqlConnectionString const& connectionString) noexcept;
+    static void SetDefaultDataSource(SqlConnectionDataSource const& dataSource) noexcept;
 
     static void SetPostConnectedHook(std::function<void(SqlConnection&)> hook);
     static void ResetPostConnectedHook();
@@ -78,19 +79,13 @@ class LIGHTWEIGHT_API SqlConnection final
     //
     // @retval true if the connection was successful.
     // @retval false if the connection failed. Use LastError() to retrieve the error information.
-    bool Connect(std::string_view datasource, std::string_view username, std::string_view password) noexcept;
-
-    // Connects to the given database with the given ODBC connection string.
-    //
-    // @retval true if the connection was successful.
-    // @retval false if the connection failed. Use LastError() to retrieve the error information.
-    bool Connect(std::string connectionString) noexcept;
+    bool Connect(SqlConnectionDataSource const& info) noexcept;
 
     // Connects to the given database with the given username and password.
     //
     // @retval true if the connection was successful.
     // @retval false if the connection failed. Use LastError() to retrieve the error information.
-    bool Connect(SqlConnectInfo connectInfo) noexcept;
+    bool Connect(SqlConnectionString sqlConnectionString) noexcept;
 
     // Retrieves the last error information with respect to this SQL connection handle.
     [[nodiscard]] SqlErrorInfo LastError() const;
@@ -135,7 +130,7 @@ class LIGHTWEIGHT_API SqlConnection final
     [[nodiscard]] bool IsAlive() const noexcept;
 
     // Retrieves the connection information.
-    [[nodiscard]] SqlConnectInfo const& ConnectionInfo() const noexcept;
+    [[nodiscard]] SqlConnectionString const& ConnectionString() const noexcept;
 
     // Retrieves the native handle.
     [[nodiscard]] SQLHDBC NativeHandle() const noexcept
