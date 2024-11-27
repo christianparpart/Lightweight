@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Utils.hpp"
+
 #include <Lightweight/DataMapper/DataMapper.hpp>
 
 #include <catch2/catch_session.hpp>
@@ -131,7 +132,8 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FieldsForFieldMembers", "[SqlQ
                          });
 }
 
-struct Email{
+struct Email
+{
     Field<std::string> email;
     BelongsTo<&UsersFields::name> user;
 };
