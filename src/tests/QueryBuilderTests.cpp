@@ -132,7 +132,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FieldsForFieldMembers", "[SqlQ
                          });
 }
 
-struct Email
+struct QueryBuilderTestEmail
 {
     Field<std::string> email;
     BelongsTo<&UsersFields::name> user;
@@ -140,11 +140,14 @@ struct Email
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FieldsWithBelongsTo", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("Email").Select().Fields<Email>().First(); },
-                         QueryExpectations {
-                             .sqlite = R"(SELECT "email", "user" FROM "Email" LIMIT 1)",
-                             .sqlServer = R"(SELECT TOP 1 "email", "user" FROM "Email")",
-                         });
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            return q.FromTable("QueryBuilderTestEmail").Select().Fields<QueryBuilderTestEmail>().First();
+        },
+        QueryExpectations {
+            .sqlite = R"(SELECT "email", "user" FROM "QueryBuilderTestEmail" LIMIT 1)",
+            .sqlServer = R"(SELECT TOP 1 "email", "user" FROM "QueryBuilderTestEmail")",
+        });
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Where.Junctors", "[SqlQueryBuilder]")
