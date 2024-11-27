@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& os, Field<T, IsPrimaryKeyValue> const& fi
 
 struct Person
 {
-    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<uint64_t, PrimaryKey::AutoIncrement> id;
     Field<SqlTrimmedFixedString<25>> name;
     Field<bool> is_active { true };
     Field<std::optional<int>> age;
@@ -48,7 +48,7 @@ struct Person
 // This is a test to only partially query a table row (a few columns)
 struct PersonName
 {
-    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<uint64_t, PrimaryKey::AutoIncrement> id;
     Field<SqlTrimmedFixedString<25>> name;
 
     static constexpr std::string_view TableName = RecordTableName<Person>;
@@ -113,7 +113,7 @@ TEST_CASE_METHOD(SqlTestFixture, "partial row retrieval", "[DataMapper]")
 
 struct RecordWithDefaults
 {
-    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<uint64_t, PrimaryKey::AutoIncrement> id;
     Field<std::string> name1 { "John Doe" };
     Field<std::optional<std::string>> name2 { "John Doe" };
     Field<bool> boolean1 { true };
@@ -124,7 +124,7 @@ struct RecordWithDefaults
 
 struct RecordWithNoDefaults
 {
-    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<uint64_t, PrimaryKey::AutoIncrement> id;
     Field<std::string> name1;
     Field<std::optional<std::string>> name2;
     Field<bool> boolean1;
@@ -159,7 +159,7 @@ struct Email;
 
 struct User
 {
-    Field<int, PrimaryKey::AutoIncrement> id {};
+    Field<uint64_t, PrimaryKey::AutoIncrement> id {};
     Field<std::string> name {};
 
     HasMany<Email> emails {};
@@ -167,7 +167,7 @@ struct User
 
 struct Email
 {
-    Field<int, PrimaryKey::AutoIncrement> id {};
+    Field<uint64_t, PrimaryKey::AutoIncrement> id {};
     Field<std::string> address {};
     BelongsTo<&User::id> user {};
 
@@ -270,7 +270,7 @@ struct AccountHistory;
 
 struct Suppliers
 {
-    Field<int, PrimaryKey::AutoIncrement> id {};
+    Field<uint64_t, PrimaryKey::AutoIncrement> id {};
     Field<std::string> name {};
 
     // TODO: HasOne<Account> account;
@@ -284,7 +284,7 @@ std::ostream& operator<<(std::ostream& os, Suppliers const& record)
 
 struct Account
 {
-    Field<int, PrimaryKey::AutoIncrement> id {};
+    Field<uint64_t, PrimaryKey::AutoIncrement> id {};
     Field<std::string> iban {};
     BelongsTo<&Suppliers::id> supplier {};
 
@@ -298,7 +298,7 @@ std::ostream& operator<<(std::ostream& os, Account const& record)
 
 struct AccountHistory
 {
-    Field<int, PrimaryKey::AutoIncrement> id {};
+    Field<uint64_t, PrimaryKey::AutoIncrement> id {};
     Field<int> credit_rating {};
     BelongsTo<&Account::id> account {};
 
@@ -349,7 +349,7 @@ struct Patient;
 
 struct Physician
 {
-    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<uint64_t, PrimaryKey::AutoIncrement> id;
     Field<std::string> name;
     HasMany<Appointment> appointments;
     HasManyThrough<Patient, Appointment> patients;
@@ -357,7 +357,7 @@ struct Physician
 
 struct Patient
 {
-    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<uint64_t, PrimaryKey::AutoIncrement> id;
     Field<std::string> name;
     Field<std::string> comment;
     HasMany<Appointment> appointments;
@@ -366,7 +366,7 @@ struct Patient
 
 struct Appointment
 {
-    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<uint64_t, PrimaryKey::AutoIncrement> id;
     Field<SqlDateTime> date;
     Field<std::string> comment;
     BelongsTo<&Physician::id> physician;
@@ -453,7 +453,7 @@ TEST_CASE_METHOD(SqlTestFixture, "HasManyThrough", "[DataMapper][relations]")
 
 struct TestRecord
 {
-    Field<int, PrimaryKey::Manual> id {};
+    Field<uint64_t, PrimaryKey::Manual> id {};
     Field<std::string> comment;
 
     std::weak_ordering operator<=>(TestRecord const& other) const = default;

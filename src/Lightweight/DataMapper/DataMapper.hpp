@@ -397,7 +397,7 @@ RecordId DataMapper::Create(Record& record)
         if constexpr (!PrimaryKeyType::IsAutoIncrementPrimaryKey)
         {
             using ValueType = typename PrimaryKeyType::ValueType;
-            if constexpr (requires { ValueType{} + 1; })
+            if constexpr (requires { ValueType {} + 1; })
             {
                 if (!primaryKeyField.IsModified())
                 {
@@ -869,12 +869,13 @@ void DataMapper::BindOutputColumns(Record& record, SqlStatement* stmt)
     assert(stmt != nullptr);
     static_assert(!std::is_const_v<Record>);
 
-    Reflection::EnumerateMembers(record, [this, stmt, i = 1]<size_t I, typename Field>(Field& field) mutable {
-        if constexpr (FieldWithStorage<Field>)
-        {
-            field.BindOutputColumn(i++, *stmt);
-        }
-    });
+    Reflection::EnumerateMembers(record,
+                                 [this, stmt, i = SQLSMALLINT { 1 }]<size_t I, typename Field>(Field& field) mutable {
+                                     if constexpr (FieldWithStorage<Field>)
+                                     {
+                                         field.BindOutputColumn(i++, *stmt);
+                                     }
+                                 });
 }
 
 template <typename Record>
