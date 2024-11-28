@@ -126,7 +126,7 @@ TEST_CASE_METHOD(SqlTestFixture, "iterate over database", "[SqlRowIterator]")
 
     auto stmt = SqlStatement { dm.Connection() };
     int age = 40;
-    int id = 1;
+    std::uint64_t id = 1;
     for (auto&& person: SqlRowIterator<Person>(stmt))
     {
         CHECK(person.name.Value() == "John");

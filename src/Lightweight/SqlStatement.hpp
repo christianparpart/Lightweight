@@ -58,6 +58,9 @@ class SqlStatement final: public SqlDataBinderCallback
     // Construct a new SqlStatement object, using the given connection.
     LIGHTWEIGHT_API explicit SqlStatement(SqlConnection& relatedConnection);
 
+    // Construct a new empty SqlStatement object. No SqlConnection is associated with this statement.
+    LIGHTWEIGHT_API explicit SqlStatement(std::nullopt_t /*nullopt*/);
+
     LIGHTWEIGHT_API ~SqlStatement() noexcept final;
 
     [[nodiscard]] LIGHTWEIGHT_API bool IsAlive() const noexcept;

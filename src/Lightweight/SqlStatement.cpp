@@ -9,7 +9,11 @@ struct SqlStatement::Data
     std::vector<SQLLEN> indicators;               // Holds the indicators for the bound output columns
     std::vector<std::function<void()>> postExecuteCallbacks;
     std::vector<std::function<void()>> postProcessOutputColumnCallbacks;
+
+    static Data const NoData;
 };
+
+SqlStatement::Data const SqlStatement::Data::NoData {};
 
 void SqlStatement::RequireIndicators()
 {
@@ -103,6 +107,12 @@ SqlStatement::SqlStatement(SqlConnection& relatedConnection):
     m_connection { &relatedConnection }
 {
     RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
+}
+
+SqlStatement::SqlStatement(std::nullopt_t /*nullopt*/):
+    m_data { const_cast<Data*>(&Data::NoData), [](Data* /*data*/) {
+            } }
+{
 }
 
 SqlStatement::~SqlStatement() noexcept
