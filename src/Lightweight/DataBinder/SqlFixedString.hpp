@@ -228,7 +228,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
 
     LIGHTWEIGHT_FORCE_INLINE static void TrimRight(ValueType* boundOutputString, SQLLEN indicator) noexcept
     {
-        size_t n = (std::min)((size_t) indicator, boundOutputString->size());
+        size_t n = (std::min)((size_t) indicator, N - 1);
         while (n > 0 && std::isspace((*boundOutputString)[n - 1]))
             --n;
         boundOutputString->setsize(n);
