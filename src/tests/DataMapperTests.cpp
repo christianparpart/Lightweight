@@ -111,6 +111,32 @@ TEST_CASE_METHOD(SqlTestFixture, "partial row retrieval", "[DataMapper]")
     CHECK(p.name.Value() == person.name.Value());
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "iterate over database", "[SqlRowIterator]")
+{
+    auto dm = DataMapper();
+    dm.CreateTable<Person>();
+
+    for (int i = 40; i <= 50; ++i)
+    {
+        auto person = Person {};
+        person.name = "John";
+        person.age = i;
+        dm.Create(person);
+    }
+
+    auto stmt = SqlStatement { dm.Connection() };
+    int age = 40;
+    int id = 1;
+    for (auto&& person: SqlRowIterator<Person>(stmt))
+    {
+        CHECK(person.name.Value() == "John");
+        CHECK(person.age.Value() == age);
+        CHECK(person.id.Value() == id);
+        ++age;
+        ++id;
+    }
+}
+
 struct RecordWithDefaults
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
