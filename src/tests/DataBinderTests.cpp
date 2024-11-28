@@ -507,7 +507,6 @@ struct TestTypeTraits<SqlTrimmedString>
     static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(50)";
     static auto const inline inputValue = SqlTrimmedString { "Alice    " };
     static auto const inline expectedOutputValue = SqlTrimmedString { "Alice" };
-    static auto const inline outputInitializer = SqlTrimmedString { std::string(50, '\0') };
 };
 
 using TypesToTest = std::tuple<
