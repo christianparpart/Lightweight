@@ -167,15 +167,13 @@ class SqlFixedString
     LIGHTWEIGHT_FORCE_INLINE std::weak_ordering operator<=>(
         SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
     {
-        if ((void*) this != (void*) &other)
-        {
-            for (std::size_t i = 0; i < (std::min)(size(), other.size()); ++i)
-                if (auto const cmp = _data[i] <=> other._data[i]; cmp != std::weak_ordering::equivalent)
-                    return cmp;
-            if constexpr (N != OtherSize)
-                return N <=> OtherSize;
-        }
-        return std::weak_ordering::equivalent;
+        if ((void*) this == (void*) &other) [[unlikely]]
+            return std::weak_ordering::equivalent;
+
+        for (std::size_t i = 0; i < (std::min)(size(), other.size()); ++i)
+            if (auto const cmp = _data[i] <=> other._data[i]; cmp != std::weak_ordering::equivalent) [[unlikely]]
+                return cmp;
+        return size() <=> other.size();
     }
 
     template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
