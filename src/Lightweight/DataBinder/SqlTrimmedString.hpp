@@ -8,6 +8,7 @@
 #include <compare>
 #include <format>
 #include <string>
+#include <utility>
 
 // Helper struct to store a string that should be automatically trimmed when fetched from the database.
 // This is only needed for compatibility with old columns that hard-code the length, like CHAR(50).
