@@ -439,12 +439,12 @@ struct TestTypeTraits<CustomType>
 };
 
 template <>
-struct TestTypeTraits<SqlFixedString<8, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>>
+struct TestTypeTraits<SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>>
 {
-    using ValueType = SqlFixedString<8, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>;
-    static constexpr auto cTypeName = "SqlFixedString<8, char, TRIM_RIGHT>";
+    using ValueType = SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>;
+    static constexpr auto cTypeName = "SqlFixedString<20, char, TRIM_RIGHT>";
     static constexpr auto sqlColumnTypeNameOverride = "CHAR(8)";
-    static constexpr auto inputValue = ValueType { "Hello" };
+    static constexpr auto inputValue = ValueType { "Hello " };
     static constexpr auto expectedOutputValue = ValueType { "Hello" };
 };
 
@@ -507,14 +507,13 @@ struct TestTypeTraits<SqlTrimmedString>
     static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(50)";
     static auto const inline inputValue = SqlTrimmedString { "Alice    " };
     static auto const inline expectedOutputValue = SqlTrimmedString { "Alice" };
-    static auto const inline outputInitializer = SqlTrimmedString { std::string(50, '\0') };
 };
 
 using TypesToTest = std::tuple<
    CustomType,
    SqlDate,
    SqlDateTime,
-   SqlFixedString<8, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>,
+   SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>,
    SqlGuid,
    SqlNumeric<15, 2>,
    SqlText,

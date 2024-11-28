@@ -14,6 +14,7 @@
 #include "Utils.hpp"
 
 #include <cstring>
+#include <expected>
 #include <optional>
 #include <ranges>
 #include <source_location>
@@ -57,6 +58,9 @@ class SqlStatement final: public SqlDataBinderCallback
 
     // Construct a new SqlStatement object, using the given connection.
     LIGHTWEIGHT_API explicit SqlStatement(SqlConnection& relatedConnection);
+
+    // Construct a new empty SqlStatement object. No SqlConnection is associated with this statement.
+    LIGHTWEIGHT_API explicit SqlStatement(std::nullopt_t /*nullopt*/);
 
     LIGHTWEIGHT_API ~SqlStatement() noexcept final;
 
@@ -196,6 +200,9 @@ class SqlStatement final: public SqlDataBinderCallback
     // @retval true The next result row was successfully fetched
     // @retval false No result row was fetched, because the end of the result set was reached.
     [[nodiscard]] LIGHTWEIGHT_API bool FetchRow();
+
+    [[nodiscard]] LIGHTWEIGHT_API std::expected<bool, SqlErrorInfo> TryFetchRow(
+        std::source_location location = std::source_location::current()) noexcept;
 
     // Closes the result cursor on queries that yield a result set, e.g. SELECT statements.
     //

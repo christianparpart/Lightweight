@@ -9,7 +9,17 @@ struct SqlStatement::Data
     std::vector<SQLLEN> indicators;               // Holds the indicators for the bound output columns
     std::vector<std::function<void()>> postExecuteCallbacks;
     std::vector<std::function<void()>> postProcessOutputColumnCallbacks;
+
+    static Data const NoData;
 };
+
+SqlStatement::Data const SqlStatement::Data::NoData {};
+
+static auto MakeUnexpected(SqlErrorInfo info, std::source_location location)
+{
+    SqlLogger::GetLogger().OnError(info, location);
+    return std::unexpected { std::move(info) };
+}
 
 void SqlStatement::RequireIndicators()
 {
@@ -105,6 +115,12 @@ SqlStatement::SqlStatement(SqlConnection& relatedConnection):
     RequireSuccess(SQLAllocHandle(SQL_HANDLE_STMT, m_connection->NativeHandle(), &m_hStmt));
 }
 
+SqlStatement::SqlStatement(std::nullopt_t /*nullopt*/):
+    m_data { const_cast<Data*>(&Data::NoData), [](Data* /*data*/) {
+            } }
+{
+}
+
 SqlStatement::~SqlStatement() noexcept
 {
     SqlLogger::GetLogger().OnFetchEnd();
@@ -180,6 +196,19 @@ size_t SqlStatement::LastInsertId()
 // Fetches the next row of the result set.
 bool SqlStatement::FetchRow()
 {
+    auto result = TryFetchRow();
+    if (result.has_value())
+        return result.value();
+
+    SqlErrorInfo errorInfo = std::move(result.error());
+    if (errorInfo.sqlState == "07009")
+        throw std::invalid_argument(std::format("SQL error: {}", errorInfo));
+    else
+        throw SqlException(std::move(errorInfo));
+}
+
+std::expected<bool, SqlErrorInfo> SqlStatement::TryFetchRow(std::source_location location) noexcept
+{
     auto const sqlResult = SQLFetch(m_hStmt);
     switch (sqlResult)
     {
@@ -189,7 +218,9 @@ bool SqlStatement::FetchRow()
             SqlLogger::GetLogger().OnFetchEnd();
             return false;
         default:
-            RequireSuccess(sqlResult);
+            if (!SQL_SUCCEEDED(sqlResult))
+                return MakeUnexpected(LastError(), location);
+
             // post-process the output columns, if needed
             for (auto const& postProcess: m_data->postProcessOutputColumnCallbacks)
                 postProcess();
@@ -197,6 +228,7 @@ bool SqlStatement::FetchRow()
             SqlLogger::GetLogger().OnFetchRow();
             return true;
     }
+    return true;
 }
 
 void SqlStatement::RequireSuccess(SQLRETURN error, std::source_location sourceLocation) const
