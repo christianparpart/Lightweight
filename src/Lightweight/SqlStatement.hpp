@@ -575,8 +575,7 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::ExecuteDirect(SqlQueryObject 
 
 template <typename T>
     requires(!std::same_as<T, SqlVariant>)
-inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectScalar(const std::string_view& query,
-                                                                                   std::source_location location)
+inline std::optional<T> SqlStatement::ExecuteDirectScalar(const std::string_view& query, std::source_location location)
 {
     auto const _ = detail::Finally([this] { CloseCursor(); });
     ExecuteDirect(query, location);
@@ -586,8 +585,7 @@ inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectScal
 
 template <typename T>
     requires(std::same_as<T, SqlVariant>)
-inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectScalar(const std::string_view& query,
-                                                                    std::source_location location)
+inline T SqlStatement::ExecuteDirectScalar(const std::string_view& query, std::source_location location)
 {
     auto const _ = detail::Finally([this] { CloseCursor(); });
     ExecuteDirect(query, location);
@@ -599,16 +597,15 @@ inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectScalar(const std::s
 
 template <typename T>
     requires(!std::same_as<T, SqlVariant>)
-inline LIGHTWEIGHT_FORCE_INLINE std::optional<T> SqlStatement::ExecuteDirectScalar(SqlQueryObject auto const& query,
-                                                                                   std::source_location location)
+inline std::optional<T> SqlStatement::ExecuteDirectScalar(SqlQueryObject auto const& query,
+                                                          std::source_location location)
 {
     return ExecuteDirectScalar<T>(query.ToSql(), location);
 }
 
 template <typename T>
     requires(std::same_as<T, SqlVariant>)
-inline LIGHTWEIGHT_FORCE_INLINE T SqlStatement::ExecuteDirectScalar(SqlQueryObject auto const& query,
-                                                                    std::source_location location)
+inline T SqlStatement::ExecuteDirectScalar(SqlQueryObject auto const& query, std::source_location location)
 {
     return ExecuteDirectScalar<T>(query.ToSql(), location);
 }

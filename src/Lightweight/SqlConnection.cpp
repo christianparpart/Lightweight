@@ -9,7 +9,7 @@
 using namespace std::chrono_literals;
 using namespace std::string_view_literals;
 
-static SqlConnectInfo gDefaultConnectInfo {};
+static SqlConnectionString gDefaultConnectionString {};
 static std::atomic<uint64_t> gNextConnectionId { 1 };
 static std::function<void(SqlConnection&)> gPostConnectedHook {};
 
@@ -19,7 +19,7 @@ struct SqlConnection::Data
 {
     std::chrono::steady_clock::time_point lastUsed; // Last time the connection was used (mostly interesting for
                                                     // idle connections in the connection pool).
-    SqlConnectInfo connectInfo;
+    SqlConnectionString connectionString;
 };
 
 SqlConnection::SqlConnection():
@@ -30,10 +30,10 @@ SqlConnection::SqlConnection():
     SQLSetEnvAttr(m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, 0);
     SQLAllocHandle(SQL_HANDLE_DBC, m_hEnv, &m_hDbc);
 
-    Connect(DefaultConnectInfo());
+    Connect(DefaultConnectionString());
 }
 
-SqlConnection::SqlConnection(std::optional<SqlConnectInfo> connectInfo):
+SqlConnection::SqlConnection(std::optional<SqlConnectionString> connectInfo):
     m_connectionId { gNextConnectionId++ },
     m_data { new Data() }
 {
@@ -41,7 +41,7 @@ SqlConnection::SqlConnection(std::optional<SqlConnectInfo> connectInfo):
     SQLSetEnvAttr(m_hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, 0);
     SQLAllocHandle(SQL_HANDLE_DBC, m_hEnv, &m_hDbc);
 
-    if (connectInfo)
+    if (connectInfo.has_value())
         Connect(std::move(*connectInfo));
 }
 
@@ -83,19 +83,28 @@ SqlConnection::~SqlConnection() noexcept
     delete m_data;
 }
 
-SqlConnectInfo const& SqlConnection::DefaultConnectInfo() noexcept
+SqlConnectionString const& SqlConnection::DefaultConnectionString() noexcept
 {
-    return gDefaultConnectInfo;
+    return gDefaultConnectionString;
 }
 
-void SqlConnection::SetDefaultConnectInfo(SqlConnectInfo connectInfo) noexcept
+void SqlConnection::SetDefaultConnectionString(SqlConnectionString const& connectionString) noexcept
 {
-    gDefaultConnectInfo = std::move(connectInfo);
+    gDefaultConnectionString = connectionString;
 }
 
-SqlConnectInfo const& SqlConnection::ConnectionInfo() const noexcept
+void SqlConnection::SetDefaultDataSource(SqlConnectionDataSource const& dataSource) noexcept
 {
-    return m_data->connectInfo;
+    gDefaultConnectionString = SqlConnectionString { .value = std::format("DSN={};UID={};PWD={};TIMEOUT={}",
+                                                                          dataSource.datasource,
+                                                                          dataSource.username,
+                                                                          dataSource.password,
+                                                                          dataSource.timeout.count()) };
+}
+
+SqlConnectionString const& SqlConnection::ConnectionString() const noexcept
+{
+    return m_data->connectionString;
 }
 
 void SqlConnection::SetLastUsed(std::chrono::steady_clock::time_point lastUsed) noexcept
@@ -118,90 +127,55 @@ void SqlConnection::ResetPostConnectedHook()
     gPostConnectedHook = {};
 }
 
-bool SqlConnection::Connect(std::string_view datasource, std::string_view username, std::string_view password) noexcept
+bool SqlConnection::Connect(SqlConnectionDataSource const& info) noexcept
 {
-    return Connect(SqlConnectionDataSource {
-        .datasource = std::string(datasource), .username = std::string(username), .password = std::string(password) });
-}
-
-// Connects to the given database with the given ODBC connection string.
-bool SqlConnection::Connect(std::string connectionString) noexcept
-{
-    return Connect(SqlConnectionString { .value = std::move(connectionString) });
-}
-
-void SqlConnection::PostConnect()
-{
-    auto const mappings = std::array {
-        std::pair { "Microsoft SQL Server"sv, SqlServerType::MICROSOFT_SQL },
-        std::pair { "PostgreSQL"sv, SqlServerType::POSTGRESQL },
-        std::pair { "Oracle"sv, SqlServerType::ORACLE },
-        std::pair { "SQLite"sv, SqlServerType::SQLITE },
-        std::pair { "MySQL"sv, SqlServerType::MYSQL },
-    };
-
-    auto const serverName = ServerName();
-    for (auto const& [name, type]: mappings)
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    SQLRETURN sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER) info.timeout.count(), 0);
+    if (!SQL_SUCCEEDED(sqlReturn))
     {
-        if (serverName.contains(name))
-        {
-            m_serverType = type;
-            break;
-        }
+        SqlLogger::GetLogger().OnError(LastError());
+        return false;
     }
 
-    m_queryFormatter = SqlQueryFormatter::Get(m_serverType);
+    sqlReturn = SQLConnectA(m_hDbc,
+                            (SQLCHAR*) info.datasource.data(),
+                            (SQLSMALLINT) info.datasource.size(),
+                            (SQLCHAR*) info.username.data(),
+                            (SQLSMALLINT) info.username.size(),
+                            (SQLCHAR*) info.password.data(),
+                            (SQLSMALLINT) info.password.size());
+    if (!SQL_SUCCEEDED(sqlReturn))
+    {
+        SqlLogger::GetLogger().OnError(LastError());
+        return false;
+    }
+
+    sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
+    if (!SQL_SUCCEEDED(sqlReturn))
+    {
+        SqlLogger::GetLogger().OnError(LastError());
+        return false;
+    }
+
+    PostConnect();
+
+    SqlLogger::GetLogger().OnConnectionOpened(*this);
+
+    if (gPostConnectedHook)
+        gPostConnectedHook(*this);
+
+    return true;
 }
 
 // Connects to the given database with the given username and password.
-bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
+bool SqlConnection::Connect(SqlConnectionString sqlConnectionString) noexcept
 {
     if (m_hDbc)
         SQLDisconnect(m_hDbc);
 
-    m_data->connectInfo = std::move(connectInfo);
+    m_data->connectionString = std::move(sqlConnectionString);
 
-    if (auto const* info = std::get_if<SqlConnectionDataSource>(&m_data->connectInfo))
-    {
-        // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        SQLRETURN sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER) info->timeout.count(), 0);
-        if (!SQL_SUCCEEDED(sqlReturn))
-        {
-            SqlLogger::GetLogger().OnError(LastError());
-            return false;
-        }
-
-        sqlReturn = SQLConnectA(m_hDbc,
-                                (SQLCHAR*) info->datasource.data(),
-                                (SQLSMALLINT) info->datasource.size(),
-                                (SQLCHAR*) info->username.data(),
-                                (SQLSMALLINT) info->username.size(),
-                                (SQLCHAR*) info->password.data(),
-                                (SQLSMALLINT) info->password.size());
-        if (!SQL_SUCCEEDED(sqlReturn))
-        {
-            SqlLogger::GetLogger().OnError(LastError());
-            return false;
-        }
-
-        sqlReturn = SQLSetConnectAttrA(m_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER) SQL_AUTOCOMMIT_ON, SQL_IS_UINTEGER);
-        if (!SQL_SUCCEEDED(sqlReturn))
-        {
-            SqlLogger::GetLogger().OnError(LastError());
-            return false;
-        }
-
-        PostConnect();
-
-        SqlLogger::GetLogger().OnConnectionOpened(*this);
-
-        if (gPostConnectedHook)
-            gPostConnectedHook(*this);
-
-        return true;
-    }
-
-    auto const& connectionString = std::get<SqlConnectionString>(m_data->connectInfo).value;
+    auto const& connectionString = m_data->connectionString.value;
 
     SQLRETURN sqlResult = SQLDriverConnectA(m_hDbc,
                                             (SQLHWND) nullptr,
@@ -225,6 +199,29 @@ bool SqlConnection::Connect(SqlConnectInfo connectInfo) noexcept
         gPostConnectedHook(*this);
 
     return true;
+}
+
+void SqlConnection::PostConnect()
+{
+    auto const mappings = std::array {
+        std::pair { "Microsoft SQL Server"sv, SqlServerType::MICROSOFT_SQL },
+        std::pair { "PostgreSQL"sv, SqlServerType::POSTGRESQL },
+        std::pair { "Oracle"sv, SqlServerType::ORACLE },
+        std::pair { "SQLite"sv, SqlServerType::SQLITE },
+        std::pair { "MySQL"sv, SqlServerType::MYSQL },
+    };
+
+    auto const serverName = ServerName();
+    for (auto const& [name, type]: mappings)
+    {
+        if (serverName.contains(name))
+        {
+            m_serverType = type;
+            break;
+        }
+    }
+
+    m_queryFormatter = SqlQueryFormatter::Get(m_serverType);
 }
 
 SqlErrorInfo SqlConnection::LastError() const

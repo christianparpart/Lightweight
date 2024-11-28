@@ -145,14 +145,14 @@ class SqlTraceLogger: public SqlStandardLogger
     {
         _state = State::Idle;
         Tick();
-        WriteMessage("Connection {} opened: {}", connection.ConnectionId(), connection.ConnectionInfo());
+        WriteMessage("Connection {} opened: {}", connection.ConnectionId(), connection.ConnectionString().value);
     }
 
     void OnConnectionClosed(SqlConnection const& connection) override
     {
         _state = State::Idle;
         Tick();
-        WriteMessage("Connection {} closed: {}", connection.ConnectionId(), connection.ConnectionInfo());
+        WriteMessage("Connection {} closed: {}", connection.ConnectionId(), connection.ConnectionString().value);
     }
 
     void OnConnectionIdle(SqlConnection const& /*connection*/) override

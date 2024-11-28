@@ -280,7 +280,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlConnection: manual connect")
     auto conn = SqlConnection { std::nullopt };
     REQUIRE(!conn.IsAlive());
 
-    CHECK(conn.Connect(SqlConnection::DefaultConnectInfo()));
+    CHECK(conn.Connect(SqlConnection::DefaultConnectionString()));
     CHECK(conn.IsAlive());
 }
 

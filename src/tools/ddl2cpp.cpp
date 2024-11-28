@@ -382,7 +382,7 @@ int main(int argc, char const* argv[])
         return *exitCode;
     auto const config = std::get<Configuration>(configOpt);
 
-    SqlConnection::SetDefaultConnectInfo(SqlConnectionString { std::string(config.connectionString) });
+    SqlConnection::SetDefaultConnectionString(SqlConnectionString { std::string(config.connectionString) });
     SqlConnection::SetPostConnectedHook(&PostConnectedHook);
 
     if (config.createTestTables)

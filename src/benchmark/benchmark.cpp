@@ -71,13 +71,13 @@ class SqlTestFixture
 
         {
             std::println("Using ODBC connection string: '{}'", SanitizePwd(s));
-            SqlConnection::SetDefaultConnectInfo(SqlConnectionString { s });
+            SqlConnection::SetDefaultConnectionString(SqlConnectionString { s });
         }
         else
         {
             // Use an in-memory SQLite3 database by default (for testing purposes)
             std::println("Using default ODBC connection string: '{}'", DefaultTestConnectionString.value);
-            SqlConnection::SetDefaultConnectInfo(DefaultTestConnectionString);
+            SqlConnection::SetDefaultConnectionString(DefaultTestConnectionString);
         }
 
         auto sqlConnection = SqlConnection();

@@ -29,6 +29,15 @@ struct SqlConnectionDataSource
     std::string password;
     std::chrono::seconds timeout { 5 };
 
+    [[nodiscard]] SqlConnectionString ToConnectionString() const
+    {
+        return SqlConnectionString { .value = std::format("DSN={};UID={};PWD={};TIMEOUT={}",
+                                                          datasource,
+                                                          username,
+                                                          password,
+                                                          timeout.count()) };
+    }
+
     LIGHTWEIGHT_API auto operator<=>(SqlConnectionDataSource const&) const noexcept = default;
 };
 

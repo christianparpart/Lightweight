@@ -537,8 +537,7 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
 
         // Connecting to the database (using the default connection) the verbose way,
         // purely to demonstrate how to do it.
-        auto connectionInfo = SqlConnection::DefaultConnectInfo();
-        auto conn = SqlConnection { connectionInfo };
+        auto conn = SqlConnection { SqlConnection::DefaultConnectionString() };
 
         if constexpr (requires { TestTypeTraits<TestType>::blacklist; })
         {
