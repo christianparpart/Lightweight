@@ -14,6 +14,7 @@
 #include "Utils.hpp"
 
 #include <cstring>
+#include <expected>
 #include <optional>
 #include <ranges>
 #include <source_location>
@@ -199,6 +200,9 @@ class SqlStatement final: public SqlDataBinderCallback
     // @retval true The next result row was successfully fetched
     // @retval false No result row was fetched, because the end of the result set was reached.
     [[nodiscard]] LIGHTWEIGHT_API bool FetchRow();
+
+    [[nodiscard]] LIGHTWEIGHT_API std::expected<bool, SqlErrorInfo> TryFetchRow(
+        std::source_location location = std::source_location::current()) noexcept;
 
     // Closes the result cursor on queries that yield a result set, e.g. SELECT statements.
     //
