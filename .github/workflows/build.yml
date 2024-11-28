@@ -62,7 +62,7 @@ jobs:
       run: |
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
-        sudo ./llvm.sh 19
+        sudo ./llvm.sh 20
         sudo apt -qy install clang-tidy
     - name: "install dependencies"
       run: sudo apt install -y cmake ninja-build catch2 unixodbc-dev sqlite3 libsqlite3-dev libsqliteodbc uuid-dev
