@@ -60,6 +60,20 @@ struct SqlDataBinder<SqlTrimmedString>
                                                            SQLLEN* indicator,
                                                            SqlDataBinderCallback& cb) noexcept
     {
+        SQLULEN columnSize {};
+        auto const describeResult = SQLDescribeCol(stmt,
+                                                   column,
+                                                   nullptr /*colName*/,
+                                                   0 /*sizeof(colName)*/,
+                                                   nullptr /*&colNameLen*/,
+                                                   nullptr /*&dataType*/,
+                                                   &columnSize,
+                                                   nullptr /*&decimalDigits*/,
+                                                   nullptr /*&nullable*/);
+        if (!SQL_SUCCEEDED(describeResult))
+            return describeResult;
+        result->value.resize(columnSize);
+
         auto* boundOutputString = &result->value;
         cb.PlanPostProcessOutputColumn([indicator, boundOutputString]() {
             // NB: If the indicator is greater than the buffer size, we have a truncation.
