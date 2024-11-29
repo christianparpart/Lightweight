@@ -228,7 +228,6 @@ std::expected<bool, SqlErrorInfo> SqlStatement::TryFetchRow(std::source_location
             SqlLogger::GetLogger().OnFetchRow();
             return true;
     }
-    return true;
 }
 
 void SqlStatement::RequireSuccess(SQLRETURN error, std::source_location sourceLocation) const
