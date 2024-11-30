@@ -316,7 +316,18 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
         stmt.Prepare("SELECT Value FROM Test");
         stmt.Execute();
         auto reader = stmt.GetResultCursor();
-        std::string actualText; // intentionally an empty string, auto-growing behind the scenes
+
+        // Intentionally an empty string, auto-growing behind the scenes
+        std::string actualText;
+
+        // For Microsoft SQL Server, we need to allocate a large enough buffer for the output column.
+        // Because MS SQL's ODBC driver does not support SQLGetData after SQLFetch for truncated data, it seems.
+        if (stmt.Connection().ServerType() == SqlServerType::MICROSOFT_SQL)
+        {
+            WARN("Preallocate the buffer for MS SQL Server");
+            actualText = std::string(expectedText.size() + 1, '\0');
+        }
+
         reader.BindOutputColumns(&actualText);
         (void) stmt.FetchRow();
         REQUIRE(actualText.size() == expectedText.size());
@@ -435,19 +446,30 @@ struct TestTypeTraits<CustomType>
 };
 
 template <>
-struct TestTypeTraits<SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>>
+struct TestTypeTraits<SqlTrimmedFixedString<20, char>>
 {
-    using ValueType = SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>;
-    static constexpr auto sqlColumnTypeNameOverride = "CHAR(8)";
+    using ValueType = SqlTrimmedFixedString<20, char>;
+    static constexpr auto sqlColumnTypeNameOverride = "CHAR(20)";
     static constexpr auto inputValue = ValueType { "Hello " };
+    static constexpr auto expectedOutputValue = ValueType { "Hello" };
+};
+
+template <>
+struct TestTypeTraits<SqlString<20>>
+{
+    using ValueType = SqlString<20>;
+    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(20)";
+    static constexpr auto inputValue = ValueType { "Hello" };
     static constexpr auto expectedOutputValue = ValueType { "Hello" };
 };
 
 template <>
 struct TestTypeTraits<SqlText>
 {
+    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(255)"; // Orace does not support TEXT column, so we use VARCHAR(255) here
     static auto const inline inputValue = SqlText { "Hello, World!" };
     static auto const inline expectedOutputValue = SqlText { "Hello, World!" };
+    static auto const inline outputInitializer = SqlText { std::string(255, '\0') };
 };
 
 template <>
@@ -492,25 +514,45 @@ struct TestTypeTraits<SqlNumeric<15, 2>>
 template <>
 struct TestTypeTraits<SqlTrimmedString>
 {
-    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(50)";
+    static constexpr auto sqlColumnTypeNameOverride = "CHAR(50)";
     static auto const inline inputValue = SqlTrimmedString { "Alice    " };
     static auto const inline expectedOutputValue = SqlTrimmedString { "Alice" };
 };
 
+template <>
+struct TestTypeTraits<std::string>
+{
+    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(50)";
+    static auto const inline inputValue = std::string { "Alice" };
+    static auto const inline expectedOutputValue = std::string { "Alice" };
+
+    static auto const inline outputInitializer = [](SqlServerType serverType) {
+        if (serverType == SqlServerType::MICROSOFT_SQL)
+            // For MS SQL Server, we need to allocate a large enough buffer for the output column.
+            // Because MS SQL's ODBC driver does not support SQLGetData after SQLFetch for truncated data, it seems.
+            return std::string(50, '\0');
+        else
+            return std::string {};
+    };
+};
+
+// TODO: std::string, std::wstring, std::u16string, std::u32string
 using TypesToTest = std::tuple<
-   CustomType,
-   SqlDate,
-   SqlDateTime,
-   SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>,
-   SqlGuid,
-   SqlNumeric<15, 2>,
-   SqlText,
-   SqlTrimmedString,
-   float,
-   double,
-   int16_t,
-   int32_t,
-   int64_t
+    CustomType,
+    SqlDate,
+    SqlDateTime,
+    SqlGuid,
+    SqlNumeric<15, 2>,
+    SqlString<20>,
+    SqlText,
+    SqlTrimmedFixedString<20, char>,
+    SqlTrimmedString,
+    double,
+    float,
+    int16_t,
+    int32_t,
+    int64_t,
+    std::string
 >;
 // clang-format on
 
@@ -570,7 +612,9 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
             {
                 stmt.ExecuteDirect("SELECT Value FROM Test");
                 auto actualValue = [&]() -> TestType {
-                    if constexpr (requires { TestTypeTraits<TestType>::outputInitializer; })
+                    if constexpr (requires(SqlServerType st) { TestTypeTraits<TestType>::outputInitializer(st); })
+                        return TestTypeTraits<TestType>::outputInitializer(conn.ServerType());
+                    else if constexpr (requires { TestTypeTraits<TestType>::outputInitializer; })
                         return TestTypeTraits<TestType>::outputInitializer;
                     else
                         return TestType {};

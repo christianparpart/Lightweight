@@ -8,10 +8,11 @@
 #include <stdexcept>
 #include <utility>
 
-enum class SqlStringPostRetrieveOperation : uint8_t
+enum class SqlFixedStringMode : uint8_t
 {
-    NOTHING,
-    TRIM_RIGHT,
+    FIXED_SIZE,
+    FIXED_SIZE_RIGHT_TRIMMED,
+    VARIABLE_SIZE,
 };
 
 // SQL fixed-capacity string that mimmicks standard library string/string_view with a fixed-size underlying
@@ -19,9 +20,7 @@ enum class SqlStringPostRetrieveOperation : uint8_t
 //
 // The underlying storage will not be guaranteed to be `\0`-terminated unless
 // a call to mutable/const c_str() has been performed.
-template <std::size_t N,
-          typename T = char,
-          SqlStringPostRetrieveOperation PostOp = SqlStringPostRetrieveOperation::NOTHING>
+template <std::size_t N, typename T = char, SqlFixedStringMode Mode = SqlFixedStringMode::FIXED_SIZE>
 class SqlFixedString
 {
   private:
@@ -36,7 +35,7 @@ class SqlFixedString
     using const_pointer_type = T const*;
 
     static constexpr std::size_t Capacity = N;
-    static constexpr SqlStringPostRetrieveOperation PostRetrieveOperation = PostOp;
+    static constexpr SqlFixedStringMode PostRetrieveOperation = Mode;
 
     template <std::size_t SourceSize>
     constexpr LIGHTWEIGHT_FORCE_INLINE SqlFixedString(T const (&text)[SourceSize]):
@@ -163,9 +162,9 @@ class SqlFixedString
         return { _data, N - 1 };
     }
 
-    template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
+    template <std::size_t OtherSize, SqlFixedStringMode OtherMode>
     LIGHTWEIGHT_FORCE_INLINE std::weak_ordering operator<=>(
-        SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
+        SqlFixedString<OtherSize, T, OtherMode> const& other) const noexcept
     {
         if ((void*) this == (void*) &other) [[unlikely]]
             return std::weak_ordering::equivalent;
@@ -176,16 +175,16 @@ class SqlFixedString
         return size() <=> other.size();
     }
 
-    template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
+    template <std::size_t OtherSize, SqlFixedStringMode OtherMode>
     LIGHTWEIGHT_FORCE_INLINE constexpr bool operator==(
-        SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
+        SqlFixedString<OtherSize, T, OtherMode> const& other) const noexcept
     {
         return (*this <=> other) == std::weak_ordering::equivalent;
     }
 
-    template <std::size_t OtherSize, SqlStringPostRetrieveOperation OtherPostOp>
+    template <std::size_t OtherSize, SqlFixedStringMode OtherMode>
     LIGHTWEIGHT_FORCE_INLINE constexpr bool operator!=(
-        SqlFixedString<OtherSize, T, OtherPostOp> const& other) const noexcept
+        SqlFixedString<OtherSize, T, OtherMode> const& other) const noexcept
     {
         return !(*this == other);
     }
@@ -206,8 +205,8 @@ struct IsSqlFixedStringType: std::false_type
 {
 };
 
-template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-struct IsSqlFixedStringType<SqlFixedString<N, T, PostOp>>: std::true_type
+template <std::size_t N, typename T, SqlFixedStringMode Mode>
+struct IsSqlFixedStringType<SqlFixedString<N, T, Mode>>: std::true_type
 {
 };
 
@@ -215,27 +214,30 @@ template <typename T>
 constexpr bool IsSqlFixedString = IsSqlFixedStringType<T>::value;
 
 template <std::size_t N, typename T = char>
-using SqlTrimmedFixedString = SqlFixedString<N, T, SqlStringPostRetrieveOperation::TRIM_RIGHT>;
+using SqlTrimmedFixedString = SqlFixedString<N, T, SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED>;
 
-template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-struct detail::SqlColumnSize<SqlFixedString<N, T, PostOp>>
+template <std::size_t N, typename T = char>
+using SqlString = SqlFixedString<N, T, SqlFixedStringMode::VARIABLE_SIZE>;
+
+template <std::size_t N, typename T, SqlFixedStringMode Mode>
+struct detail::SqlColumnSize<SqlFixedString<N, T, Mode>>
 {
     static constexpr size_t Value = N;
 };
 
-template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-struct detail::SqlColumnSize<std::optional<SqlFixedString<N, T, PostOp>>>
+template <std::size_t N, typename T, SqlFixedStringMode Mode>
+struct detail::SqlColumnSize<std::optional<SqlFixedString<N, T, Mode>>>
 {
     static constexpr size_t Value = N;
 };
 
-template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
+template <std::size_t N, typename T, SqlFixedStringMode Mode>
+struct SqlDataBinder<SqlFixedString<N, T, Mode>>
 {
     static constexpr auto ColumnType =
-        PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT ? SqlColumnType::STRING : SqlColumnType::CHAR;
+        Mode == SqlFixedStringMode::VARIABLE_SIZE ? SqlColumnType::STRING : SqlColumnType::CHAR;
 
-    using ValueType = SqlFixedString<N, T, PostOp>;
+    using ValueType = SqlFixedString<N, T, Mode>;
     using StringTraits = SqlBasicStringOperations<ValueType>;
 
     LIGHTWEIGHT_FORCE_INLINE static void TrimRight(ValueType* boundOutputString, SQLLEN indicator) noexcept
@@ -266,7 +268,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
     LIGHTWEIGHT_FORCE_INLINE static SQLRETURN OutputColumn(
         SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
     {
-        if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
+        if constexpr (Mode != SqlFixedStringMode::FIXED_SIZE)
         {
             ValueType* boundOutputString = result;
             cb.PlanPostProcessOutputColumn([indicator, boundOutputString]() {
@@ -275,7 +277,7 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
                 // NB: If the indicator is greater than the buffer size, we have a truncation.
                 auto const len =
                     std::cmp_greater_equal(*indicator, N + 1) || *indicator == SQL_NO_TOTAL ? N : *indicator;
-                if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
+                if constexpr (Mode == SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED)
                     TrimRight(boundOutputString, len);
                 else
                     boundOutputString->setsize(len);
@@ -299,14 +301,14 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
             case SQL_NO_DATA:
                 // last successive call
                 result->setsize(*indicator);
-                if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
+                if constexpr (Mode == SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED)
                     TrimRight(result, *indicator);
                 return SQL_SUCCESS;
             case SQL_SUCCESS_WITH_INFO: {
                 // more data pending
                 // Truncating. This case should never happen.
                 result->setsize(result->capacity() - 1);
-                if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
+                if constexpr (Mode == SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED)
                     TrimRight(result, *indicator);
                 return SQL_SUCCESS;
             }
@@ -321,10 +323,10 @@ struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
     }
 };
 
-template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-struct SqlBasicStringOperations<SqlFixedString<N, T, PostOp>>
+template <std::size_t N, typename T, SqlFixedStringMode Mode>
+struct SqlBasicStringOperations<SqlFixedString<N, T, Mode>>
 {
-    using ValueType = SqlFixedString<N, T, PostOp>;
+    using ValueType = SqlFixedString<N, T, Mode>;
     // clang-format off
     static char const* Data(ValueType const* str) noexcept { return str->data(); }
     static char* Data(ValueType* str) noexcept { return str->data(); }
@@ -335,7 +337,7 @@ struct SqlBasicStringOperations<SqlFixedString<N, T, PostOp>>
     // clang-format on
 };
 
-template <std::size_t N, typename T, SqlStringPostRetrieveOperation P>
+template <std::size_t N, typename T, SqlFixedStringMode P>
 struct std::formatter<SqlFixedString<N, T, P>>: std::formatter<std::string>
 {
     using value_type = SqlFixedString<N, T, P>;

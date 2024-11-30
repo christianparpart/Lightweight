@@ -5,6 +5,7 @@
 #include "Core.hpp"
 #include "UnicodeConverter.hpp"
 
+#include <cassert>
 #include <memory>
 #include <utility>
 
@@ -36,43 +37,48 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
     static SQLRETURN OutputColumn(
         SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
     {
-        // Ensure we're having sufficient space to store the worst-case scenario of bytes in this column
-        SQLULEN columnSize {};
-        auto const describeResult = SQLDescribeCol(stmt,
-                                                   column,
-                                                   nullptr /*colName*/,
-                                                   0 /*sizeof(colName)*/,
-                                                   nullptr /*&colNameLen*/,
-                                                   nullptr /*&dataType*/,
-                                                   &columnSize,
-                                                   nullptr /*&decimalDigits*/,
-                                                   nullptr /*&nullable*/);
-        if (!SQL_SUCCEEDED(describeResult))
-            return describeResult;
-
-        StringTraits::Reserve(result,
-                              columnSize); // Must be called now, because otherwise std::string won't do anything
-
-        cb.PlanPostProcessOutputColumn([indicator, result]() {
-            // Now resize the string to the actual length of the data
-            // NB: If the indicator is greater than the buffer size, we have a truncation.
-            if (*indicator != SQL_NULL_DATA)
-            {
-                auto const bufferSize = StringTraits::Size(result);
-                auto const len = std::cmp_greater_equal(*indicator, bufferSize) || *indicator == SQL_NO_TOTAL
-                                     ? bufferSize - 1
-                                     : *indicator;
-                StringTraits::Resize(result, len);
-            }
-            else
-                StringTraits::Resize(result, 0);
-        });
+        cb.PlanPostProcessOutputColumn(
+            [stmt, column, indicator, result]() { PostProcessOutputColumn(stmt, column, result, indicator); });
         return SQLBindCol(stmt,
                           column,
                           SQL_C_CHAR,
                           (SQLPOINTER) StringTraits::Data(result),
                           (SQLLEN) StringTraits::Size(result),
                           indicator);
+    }
+
+    static void PostProcessOutputColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator)
+    {
+        // Now resize the string to the actual length of the data
+        // NB: If the indicator is greater than the buffer size, we have a truncation.
+        if (*indicator == SQL_NO_TOTAL)
+        {
+            // We have a truncation and the server does not know how much data is left.
+            StringTraits::Resize(result, StringTraits::Size(result) - 1);
+        }
+        else if (*indicator == SQL_NULL_DATA)
+        {
+            // We have a NULL value
+            StringTraits::Resize(result, 0);
+        }
+        else if (*indicator <= static_cast<SQLLEN>(StringTraits::Size(result)))
+        {
+            StringTraits::Resize(result, static_cast<size_t>(*indicator));
+        }
+        else
+        {
+            // We have a truncation and the server knows how much data is left.
+            // Extend the buffer and fetch the rest via SQLGetData.
+
+            auto const totalCharsRequired = *indicator;
+            StringTraits::Resize(result, totalCharsRequired + 1);
+            auto const sqlResult =
+                SQLGetData(stmt, column, SQL_C_CHAR, StringTraits::Data(result), totalCharsRequired + 1, indicator);
+            (void) sqlResult;
+            assert(SQL_SUCCEEDED(sqlResult));
+            assert(*indicator == totalCharsRequired);
+            StringTraits::Resize(result, totalCharsRequired);
+        }
     }
 
     static SQLRETURN GetColumn(SQLHSTMT stmt,

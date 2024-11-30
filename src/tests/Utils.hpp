@@ -456,13 +456,17 @@ inline std::ostream& operator<<(std::ostream& os, SqlDateTime const& datetime)
                              hms.subseconds().count());
 }
 
-template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, PostOp> const& value)
+template <std::size_t N, typename T, SqlFixedStringMode Mode>
+inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, Mode> const& value)
 {
-    if constexpr (PostOp == SqlStringPostRetrieveOperation::NOTHING)
-        return os << std::format("SqlFixedString<{}> {{ '{}' }}", N, value.data());
-    if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
+    if constexpr (Mode == SqlFixedStringMode::FIXED_SIZE)
+        return os << std::format("SqlFixedString<{}> {{ size: {}, data: '{}' }}", N, value.size(), value.data());
+    else if constexpr (Mode == SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED)
         return os << std::format("SqlTrimmedFixedString<{}> {{ '{}' }}", N, value.data());
+    else if constexpr (Mode == SqlFixedStringMode::VARIABLE_SIZE)
+        return os << std::format("SqlVariableString<{}> {{ size: {}, '{}' }}", N, value.size(), value.data());
+    else
+        return os << std::format("SqlFixedString<{}> {{ size: {}, data: '{}' }}", N, value.size(), value.data());
 }
 
 // }}}
