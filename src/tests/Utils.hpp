@@ -267,7 +267,7 @@ class SqlTestFixture
 #endif
 
         {
-            std::println("Using ODBC connection string: '{}'", SanitizePwd(s));
+            std::println("Using ODBC connection string: '{}'", SqlConnectionString::SanitizePwd(s));
             SqlConnection::SetDefaultConnectionString(SqlConnectionString { s });
         }
         else
@@ -372,18 +372,6 @@ class SqlTestFixture
     }
 
   private:
-    static std::string SanitizePwd(std::string_view input)
-    {
-        std::regex const pwdRegex {
-            R"(PWD=.*?;)",
-            std::regex_constants::ECMAScript | std::regex_constants::icase,
-        };
-        std::stringstream outputString;
-        std::regex_replace(
-            std::ostreambuf_iterator<char> { outputString }, input.begin(), input.end(), pwdRegex, "Pwd=***;");
-        return outputString.str();
-    }
-
     static std::vector<std::string> GetAllTableNames()
     {
         using namespace std::string_view_literals;

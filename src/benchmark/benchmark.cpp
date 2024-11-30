@@ -12,20 +12,8 @@
 #include <print>
 #include <regex>
 
-std::string SanitizePwd(std::string_view input)
-{
-    std::regex const pwdRegex {
-        R"(PWD=.*?;)",
-        std::regex_constants::ECMAScript | std::regex_constants::icase,
-    };
-    std::stringstream outputString;
-    std::regex_replace(
-        std::ostreambuf_iterator<char> { outputString }, input.begin(), input.end(), pwdRegex, "Pwd=***;");
-    return outputString.str();
-}
-
 auto const inline DefaultTestConnectionString = SqlConnectionString {
-    .value = std::format("DRIVER=SQLite3;Database={}", SanitizePwd("mubi_db.sqlite")),
+    .value = std::format("DRIVER=SQLite3;Database={}", SqlConnectionString::SanitizePwd("mubi_db.sqlite")),
 };
 
 class SqlTestFixture
@@ -70,7 +58,7 @@ class SqlTestFixture
 #endif
 
         {
-            std::println("Using ODBC connection string: '{}'", SanitizePwd(s));
+            std::println("Using ODBC connection string: '{}'", SqlConnectionString::SanitizePwd(s));
             SqlConnection::SetDefaultConnectionString(SqlConnectionString { s });
         }
         else
@@ -125,18 +113,6 @@ class SqlTestFixture
     virtual ~SqlTestFixture() = default;
 
   private:
-    static std::string SanitizePwd(std::string_view input)
-    {
-        std::regex const pwdRegex {
-            R"(PWD=.*?;)",
-            std::regex_constants::ECMAScript | std::regex_constants::icase,
-        };
-        std::stringstream outputString;
-        std::regex_replace(
-            std::ostreambuf_iterator<char> { outputString }, input.begin(), input.end(), pwdRegex, "Pwd=***;");
-        return outputString.str();
-    }
-
     static std::vector<std::string> GetAllTableNames()
     {
         auto result = std::vector<std::string>();
@@ -249,7 +225,7 @@ void run()
 
 int main(int argc, char** argv)
 {
-    std::println("Hello, World! {}", SanitizePwd("benchmark/mubi_db.sqlite"));
+    std::println("Hello, World! {}", SqlConnectionString::SanitizePwd("benchmark/mubi_db.sqlite"));
     auto result = SqlTestFixture::Initialize(argc, argv);
     if (auto const* exitCode = std::get_if<int>(&result))
         return *exitCode;
