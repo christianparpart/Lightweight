@@ -413,6 +413,11 @@ class SqlTestFixture
 };
 
 // {{{ ostream support for Lightweight, for debugging purposes
+inline std::ostream& operator<<(std::ostream& os, SqlText const& value)
+{
+    return os << std::format("SqlText({})", value.value);
+}
+
 inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
 {
     return os << std::format("SqlTrimmedString {{ '{}' }}", value);
