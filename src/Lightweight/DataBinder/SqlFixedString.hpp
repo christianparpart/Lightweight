@@ -218,10 +218,22 @@ template <std::size_t N, typename T = char>
 using SqlTrimmedFixedString = SqlFixedString<N, T, SqlStringPostRetrieveOperation::TRIM_RIGHT>;
 
 template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
+struct detail::SqlColumnSize<SqlFixedString<N, T, PostOp>>
+{
+    static constexpr size_t Value = N;
+};
+
+template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
+struct detail::SqlColumnSize<std::optional<SqlFixedString<N, T, PostOp>>>
+{
+    static constexpr size_t Value = N;
+};
+
+template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
 struct SqlDataBinder<SqlFixedString<N, T, PostOp>>
 {
-    static constexpr auto ColumnType = SqlColumnType::CHAR;
-    static constexpr auto ColumnSize = N;
+    static constexpr auto ColumnType =
+        PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT ? SqlColumnType::STRING : SqlColumnType::CHAR;
 
     using ValueType = SqlFixedString<N, T, PostOp>;
     using StringTraits = SqlBasicStringOperations<ValueType>;

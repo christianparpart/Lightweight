@@ -157,3 +157,18 @@ concept SqlCommonWideStringBinderConcept = SqlBasicStringBinderConcept<StringTyp
                                         || SqlBasicStringBinderConcept<StringType, char32_t>;
 
 // clang-format on
+
+namespace detail
+{
+
+template <typename>
+struct SqlColumnSize
+{
+    static constexpr size_t Value = 0;
+};
+
+} // namespace detail
+
+template <typename T>
+constexpr size_t SqlColumnSize = detail::SqlColumnSize<T>::Value;
+
