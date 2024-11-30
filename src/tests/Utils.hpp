@@ -337,10 +337,11 @@ class SqlTestFixture
         switch (stmt.Connection().ServerType())
         {
             case SqlServerType::MICROSOFT_SQL:
-                stmt.ExecuteDirect(std::format("USE \"{}\"", "master"));
-                stmt.ExecuteDirect(std::format("DROP DATABASE IF EXISTS \"{}\"", testDatabaseName));
-                stmt.ExecuteDirect(std::format("CREATE DATABASE \"{}\"", testDatabaseName));
                 stmt.ExecuteDirect(std::format("USE \"{}\"", testDatabaseName));
+                if (m_createdTables.empty())
+                    m_createdTables = GetAllTableNames();
+                for (auto& createdTable: std::views::reverse(m_createdTables))
+                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", createdTable));
                 break;
             case SqlServerType::ORACLE: {
                 // Drop user-created tables
@@ -385,13 +386,15 @@ class SqlTestFixture
 
     static std::vector<std::string> GetAllTableNames()
     {
+        using namespace std::string_view_literals;
         auto result = std::vector<std::string>();
         auto stmt = SqlStatement();
+        auto const schemaName = stmt.Connection().ServerType() == SqlServerType::MICROSOFT_SQL ? "dbo"sv : ""sv;
         auto const sqlResult = SQLTables(stmt.NativeHandle(),
                                          (SQLCHAR*) testDatabaseName.data(),
                                          (SQLSMALLINT) testDatabaseName.size(),
-                                         nullptr,
-                                         0,
+                                         (SQLCHAR*) schemaName.data(),
+                                         (SQLSMALLINT) schemaName.size(),
                                          nullptr,
                                          0,
                                          (SQLCHAR*) "TABLE",
