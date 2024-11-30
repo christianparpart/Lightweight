@@ -11,6 +11,8 @@
 #include <Lightweight/SqlStatement.hpp>
 #include <Lightweight/SqlTransaction.hpp>
 
+#include <reflection-cpp/reflection.hpp>
+
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -393,7 +395,6 @@ struct TestTypeTraits;
 template <>
 struct TestTypeTraits<int16_t>
 {
-    static constexpr auto cTypeName = "int16_t";
     static constexpr auto inputValue = (std::numeric_limits<int16_t>::max)();
     static constexpr auto expectedOutputValue = (std::numeric_limits<int16_t>::max)();
 };
@@ -401,7 +402,6 @@ struct TestTypeTraits<int16_t>
 template <>
 struct TestTypeTraits<int32_t>
 {
-    static constexpr auto cTypeName = "int32_t";
     static constexpr auto inputValue = (std::numeric_limits<int32_t>::max)();
     static constexpr auto expectedOutputValue = (std::numeric_limits<int32_t>::max)();
 };
@@ -409,7 +409,6 @@ struct TestTypeTraits<int32_t>
 template <>
 struct TestTypeTraits<int64_t>
 {
-    static constexpr auto cTypeName = "int64_t";
     static constexpr auto inputValue = (std::numeric_limits<int64_t>::max)();
     static constexpr auto expectedOutputValue = (std::numeric_limits<int64_t>::max)();
 };
@@ -417,7 +416,6 @@ struct TestTypeTraits<int64_t>
 template <>
 struct TestTypeTraits<float>
 {
-    static constexpr auto cTypeName = "float";
     static constexpr auto inputValue = (std::numeric_limits<float>::max)();
     static constexpr auto expectedOutputValue = (std::numeric_limits<float>::max)();
 };
@@ -425,7 +423,6 @@ struct TestTypeTraits<float>
 template <>
 struct TestTypeTraits<double>
 {
-    static constexpr auto cTypeName = "double";
     static constexpr auto inputValue =  std::numbers::pi_v<double>;
     static constexpr auto expectedOutputValue = std::numbers::pi_v<double>;
 };
@@ -433,7 +430,6 @@ struct TestTypeTraits<double>
 template <>
 struct TestTypeTraits<CustomType>
 {
-    static constexpr auto cTypeName = "CustomType";
     static constexpr auto inputValue = CustomType { 42 };
     static constexpr auto expectedOutputValue = CustomType { SqlDataBinder<CustomType>::PostProcess(42) };
 };
@@ -442,7 +438,6 @@ template <>
 struct TestTypeTraits<SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>>
 {
     using ValueType = SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>;
-    static constexpr auto cTypeName = "SqlFixedString<20, char, TRIM_RIGHT>";
     static constexpr auto sqlColumnTypeNameOverride = "CHAR(8)";
     static constexpr auto inputValue = ValueType { "Hello " };
     static constexpr auto expectedOutputValue = ValueType { "Hello" };
@@ -451,7 +446,6 @@ struct TestTypeTraits<SqlFixedString<20, char, SqlStringPostRetrieveOperation::T
 template <>
 struct TestTypeTraits<SqlText>
 {
-    static auto constexpr cTypeName = "SqlText";
     static auto const inline inputValue = SqlText { "Hello, World!" };
     static auto const inline expectedOutputValue = SqlText { "Hello, World!" };
 };
@@ -459,7 +453,6 @@ struct TestTypeTraits<SqlText>
 template <>
 struct TestTypeTraits<SqlDate>
 {
-    static constexpr auto cTypeName = "SqlDate";
     static constexpr auto inputValue = SqlDate { 2017y, std::chrono::August, 16d };
     static constexpr auto expectedOutputValue = SqlDate { 2017y, std::chrono::August, 16d };
 };
@@ -467,7 +460,6 @@ struct TestTypeTraits<SqlDate>
 template <>
 struct TestTypeTraits<SqlTime>
 {
-    static constexpr auto cTypeName = "SqlTime";
     static constexpr auto inputValue = SqlTime { 12h, 34min, 56s };
     static constexpr auto expectedOutputValue = SqlTime { 12h, 34min, 56s };
 };
@@ -475,7 +467,6 @@ struct TestTypeTraits<SqlTime>
 template <>
 struct TestTypeTraits<SqlDateTime>
 {
-    static constexpr auto cTypeName = "SqlDateTime";
     static constexpr auto inputValue = SqlDateTime { 2017y, std::chrono::August, 16d, 17h, 30min, 45s, 123'000'000ns };
     static constexpr auto expectedOutputValue = SqlDateTime { 2017y, std::chrono::August, 16d, 17h, 30min, 45s, 123'000'000ns };
 };
@@ -483,7 +474,6 @@ struct TestTypeTraits<SqlDateTime>
 template <>
 struct TestTypeTraits<SqlGuid>
 {
-    static constexpr auto cTypeName = "SqlGuid";
     static constexpr auto inputValue = SqlGuid::UnsafeParse("1e772aed-3e73-4c72-8684-5dffaa17330e");
     static constexpr auto expectedOutputValue = SqlGuid::UnsafeParse("1e772aed-3e73-4c72-8684-5dffaa17330e");
 };
@@ -494,7 +484,6 @@ struct TestTypeTraits<SqlNumeric<15, 2>>
     static constexpr auto blacklist = std::array {
         std::pair { SqlServerType::SQLITE, "SQLite does not support NUMERIC type"sv },
     };
-    static constexpr auto cTypeName = "SqlNumeric<15, 2>";
     static constexpr auto sqlColumnTypeNameOverride = "NUMERIC(15, 2)";
     static const inline auto inputValue = SqlNumeric<15, 2> { 123.45 };
     static const inline auto expectedOutputValue = SqlNumeric<15, 2> { 123.45 };
@@ -503,7 +492,6 @@ struct TestTypeTraits<SqlNumeric<15, 2>>
 template <>
 struct TestTypeTraits<SqlTrimmedString>
 {
-    static constexpr auto cTypeName = "SqlTrimmedString";
     static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(50)";
     static auto const inline inputValue = SqlTrimmedString { "Alice    " };
     static auto const inline expectedOutputValue = SqlTrimmedString { "Alice" };
@@ -530,7 +518,7 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
 {
     SqlLogger::SetLogger(TestSuiteSqlLogger::GetLogger());
 
-    GIVEN(TestTypeTraits<TestType>::cTypeName)
+    GIVEN(Reflection::TypeName<TestType>)
     {
         SqlTestFixture::DropAllTablesInDatabase();
 
@@ -544,7 +532,7 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
             {
                 if (serverType == conn.ServerType())
                 {
-                    WARN("Skipping blacklisted test for " << TestTypeTraits<TestType>::cTypeName << ": " << reason);
+                    WARN("Skipping blacklisted test for " << Reflection::TypeName<TestType> << ": " << reason);
                     return;
                 }
             }
