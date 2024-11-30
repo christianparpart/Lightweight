@@ -42,10 +42,15 @@ int main(int argc, char** argv)
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlStatement: ctor std::nullopt")
 {
-    // Construct an empty SqlStatement, not referencing any SqlConnection. 
+    // Construct an empty SqlStatement, not referencing any SqlConnection.
     auto stmt = SqlStatement { std::nullopt };
     REQUIRE(!stmt.IsAlive());
-    CHECK_THROWS(!stmt.ExecuteDirectScalar<int>("SELECT 42").has_value());
+    {
+        // We expect an error to be logged, as stmt is not attached to any active connection,
+        // so we actively ignore any SQL error being logged (to keep the executing output clean).
+        auto const _ = ScopedSqlNullLogger {};
+        CHECK_THROWS(!stmt.ExecuteDirectScalar<int>("SELECT 42").has_value());
+    }
 
     // Get `stmt` valid by assigning it a valid SqlStatement
     stmt = SqlStatement {};
