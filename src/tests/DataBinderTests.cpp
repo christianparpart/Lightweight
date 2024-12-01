@@ -545,6 +545,7 @@ using TypesToTest = std::tuple<
     SqlNumeric<15, 2>,
     SqlString<20>,
     SqlText,
+    SqlTime,
     SqlTrimmedFixedString<20, char>,
     SqlTrimmedString,
     double,
