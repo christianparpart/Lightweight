@@ -1,5 +1,12 @@
 #include "UnicodeConverter.hpp"
 
+#include <codecvt>
+#include <locale>
+
+#if defined(_WIN32) || defined(_WIN64)
+    #include <Windows.h>
+#endif
+
 std::u8string ToUtf8(std::u32string_view u32InputString)
 {
     std::u8string u8String;
@@ -88,4 +95,65 @@ std::u16string ToUtf16(std::u8string_view u8InputString)
     }
 
     return u16String;
+}
+
+std::u16string ToUtf16(std::string const& localeInputString)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    std::wstring wideString;
+    wideString.resize(MultiByteToWideChar(
+        CP_ACP, 0, localeInputString.data(), static_cast<int>(localeInputString.size()), nullptr, 0));
+    MultiByteToWideChar(CP_ACP,
+                        0,
+                        localeInputString.data(),
+                        static_cast<int>(localeInputString.size()),
+                        wideString.data(),
+                        static_cast<int>(wideString.size()));
+    return { reinterpret_cast<char16_t const*>(wideString.data()),
+             reinterpret_cast<char16_t const*>(wideString.data() + wideString.size()) };
+#else
+    std::locale sys_locale("");
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> utf16conv;
+    auto const result = utf16conv.from_bytes(localeInputString);
+    return { reinterpret_cast<char16_t const*>(result.data()),
+             reinterpret_cast<char16_t const*>(result.data() + result.size()) };
+#endif
+}
+
+std::wstring ToStdWideString(std::u8string_view u8InputString)
+{
+    if constexpr (sizeof(wchar_t) == 2)
+    {
+        // wchar_t is UTF-16 (Windows)
+        auto const u16String = ToUtf16(u8InputString);
+        return { u16String.data(), u16String.data() + u16String.size() };
+    }
+    else
+    {
+        // wchar_t is UTF-32 (any non-Windows platform)
+        auto const u32String = ToUtf32(u8InputString);
+        return { u32String.begin(), u32String.end() };
+    }
+}
+
+std::wstring ToStdWideString(std::string const& localeInputString)
+{
+    // convert from system locale to wchar_t-based wide string
+#if defined(_WIN32) || defined(_WIN64)
+    std::wstring wideString;
+    wideString.resize(MultiByteToWideChar(
+        CP_ACP, 0, localeInputString.data(), static_cast<int>(localeInputString.size()), nullptr, 0));
+    MultiByteToWideChar(CP_ACP,
+                        0,
+                        localeInputString.data(),
+                        static_cast<int>(localeInputString.size()),
+                        wideString.data(),
+                        static_cast<int>(wideString.size()));
+    return wideString;
+#else
+    // Get the system locale.
+    std::locale sys_locale("");
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> utf16conv;
+    return utf16conv.from_bytes(localeInputString);
+#endif
 }

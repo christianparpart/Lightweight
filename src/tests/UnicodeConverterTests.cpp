@@ -54,3 +54,30 @@ TEST_CASE("UTF-8 to UTF-16 conversion", "[Unicode]")
     CHECK(u16String[2] == 0xDE00);
     CHECK(u16String[3] == u']');
 }
+
+TEST_CASE("UTF-8 to UTF-32 conversion", "[Unicode]")
+{
+    auto const u32String = ToUtf32(u8"A\U0001F600]"sv);
+    CHECK(u32String.size() == 3);
+    CHECK((unsigned) u32String.at(0) == 'A');
+    CHECK((unsigned) u32String.at(1) == 0x1F600);
+    CHECK((unsigned) u32String.at(2) == ']');
+}
+
+TEST_CASE("UTF-8 to std::wstring conversion", "[Unicode]")
+{
+    auto const wideString = ToStdWideString(u8"A\U0001F600]"sv);
+
+#if defined(_WIN32) || defined(_WIN64)
+    CHECK(wideString.size() == 4);
+    CHECK(wideString.at(0) == L'A');
+    CHECK(wideString.at(1) == 0xD83D);
+    CHECK(wideString.at(2) == 0xDE00);
+    CHECK(wideString.at(3) == L']');
+#else
+    CHECK(wideString.size() == 3);
+    CHECK((unsigned) wideString.at(0) == L'A');
+    CHECK((unsigned) wideString.at(1) == 0x1F600);
+    CHECK((unsigned) wideString.at(2) == L']');
+#endif
+}
