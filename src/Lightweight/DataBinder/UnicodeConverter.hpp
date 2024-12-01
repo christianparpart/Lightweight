@@ -213,6 +213,13 @@ inline LIGHTWEIGHT_FORCE_INLINE std::u8string ToUtf8(std::basic_string_view<T> u
     return ToUtf8(std::u16string_view(reinterpret_cast<const char16_t*>(u16InputString.data()), u16InputString.size()));
 }
 
+template <typename T>
+    requires(std::same_as<T, wchar_t> && sizeof(wchar_t) == 4)
+inline LIGHTWEIGHT_FORCE_INLINE std::u8string ToUtf8(std::basic_string_view<T> u32InputString)
+{
+    return ToUtf8(std::u32string_view(reinterpret_cast<const char32_t*>(u32InputString.data()), u32InputString.size()));
+}
+
 // Converts from UTF-32 to UTF-16.
 template <typename T>
     requires std::same_as<T, char32_t> || (std::same_as<T, wchar_t> && sizeof(wchar_t) == 4)
