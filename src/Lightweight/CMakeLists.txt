@@ -42,6 +42,8 @@ set(HEADER_FILES
     SqlQuery/Core.hpp
     SqlQuery/Delete.hpp
     SqlQuery/Insert.hpp
+    SqlQuery/Migrate.hpp
+    SqlQuery/MigrationPlan.hpp
     SqlQuery/Select.hpp
     SqlQuery/Update.hpp
 
@@ -70,6 +72,8 @@ set(SOURCE_FILES
     SqlError.cpp
     SqlLogger.cpp
     SqlQuery.cpp
+    SqlQuery/Migrate.cpp
+    SqlQuery/MigrationPlan.cpp
     SqlQuery/Select.cpp
     SqlQueryFormatter.cpp
     SqlSchema.cpp

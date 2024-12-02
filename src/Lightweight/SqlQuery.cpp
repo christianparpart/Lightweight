@@ -34,3 +34,8 @@ SqlDeleteQueryBuilder SqlQueryBuilder::Delete() noexcept
 {
     return SqlDeleteQueryBuilder(m_formatter, std::move(m_table), std::move(m_tableAlias));
 }
+
+LIGHTWEIGHT_API SqlMigrationQueryBuilder SqlQueryBuilder::Migration()
+{
+    return SqlMigrationQueryBuilder(m_formatter);
+}
