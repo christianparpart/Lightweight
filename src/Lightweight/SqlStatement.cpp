@@ -127,7 +127,14 @@ SqlStatement::~SqlStatement() noexcept
     SQLFreeHandle(SQL_HANDLE_STMT, m_hStmt);
 }
 
-void SqlStatement::Prepare(std::string_view query)
+SqlStatement SqlStatement::Prepare(std::string_view query) &&
+{
+    auto resultStatement = SqlStatement { std::move(*this) };
+    resultStatement.Prepare(query);
+    return resultStatement;
+}
+
+void SqlStatement::Prepare(std::string_view query) &
 {
     SqlLogger::GetLogger().OnPrepare(query);
 

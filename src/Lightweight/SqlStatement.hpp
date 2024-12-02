@@ -91,13 +91,17 @@ class SqlStatement final: public SqlDataBinderCallback
     //
     // @note When preparing a new SQL statement the previously executed statement, yielding a result set,
     //       must have been closed.
-    LIGHTWEIGHT_API void Prepare(std::string_view query);
+    LIGHTWEIGHT_API void Prepare(std::string_view query) &;
+
+    LIGHTWEIGHT_API SqlStatement Prepare(std::string_view query) &&;
 
     // Prepares the statement for execution.
     //
     // @note When preparing a new SQL statement the previously executed statement, yielding a result set,
     //       must have been closed.
-    void Prepare(SqlQueryObject auto const& queryObject);
+    void Prepare(SqlQueryObject auto const& queryObject) &;
+
+    SqlStatement Prepare(SqlQueryObject auto const& queryObject) &&;
 
     std::string const& PreparedQuery() const noexcept;
 
@@ -419,9 +423,14 @@ inline LIGHTWEIGHT_FORCE_INLINE SQLHSTMT SqlStatement::NativeHandle() const noex
     return m_hStmt;
 }
 
-inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::Prepare(SqlQueryObject auto const& queryObject)
+inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::Prepare(SqlQueryObject auto const& queryObject) &
 {
     Prepare(queryObject.ToSql());
+}
+
+inline LIGHTWEIGHT_FORCE_INLINE SqlStatement SqlStatement::Prepare(SqlQueryObject auto const& queryObject) &&
+{
+    return Prepare(queryObject.ToSql());
 }
 
 inline LIGHTWEIGHT_FORCE_INLINE std::string const& SqlStatement::PreparedQuery() const noexcept

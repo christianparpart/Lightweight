@@ -377,4 +377,13 @@ TEST_CASE_METHOD(SqlTestFixture, "GetNullableColumn")
     CHECK(!actual2.has_value());
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "Prepare and move", "[SqlStatement]")
+{
+    SqlStatement stmt;
+    stmt = SqlStatement().Prepare("SELECT 42");
+    stmt.Execute();
+    REQUIRE(stmt.FetchRow());
+    CHECK(stmt.GetColumn<int>(1) == 42);
+}
+
 // NOLINTEND(readability-container-size-empty)
