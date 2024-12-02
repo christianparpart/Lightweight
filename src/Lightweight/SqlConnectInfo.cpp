@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <ranges>
+#include <regex>
 #include <string>
 #include <string_view>
 
@@ -39,6 +40,22 @@ std::string ToUpperCaseString(std::string_view input)
 }
 
 } // end namespace
+std::string SqlConnectionString::Sanitized() const
+{
+    return SanitizePwd(value);
+}
+
+std::string SqlConnectionString::SanitizePwd(std::string_view input)
+{
+    std::regex const pwdRegex {
+        R"(PWD=.*?;)",
+        std::regex_constants::ECMAScript | std::regex_constants::icase,
+    };
+    std::stringstream outputString;
+    std::regex_replace(
+        std::ostreambuf_iterator<char> { outputString }, input.begin(), input.end(), pwdRegex, "Pwd=***;");
+    return outputString.str();
+}
 
 SqlConnectionStringMap ParseConnectionString(SqlConnectionString const& connectionString)
 {

@@ -74,8 +74,8 @@ struct SqlVariant
 
     template <std::size_t N,
               typename T = char,
-              SqlStringPostRetrieveOperation PostOp = SqlStringPostRetrieveOperation::NOTHING>
-    constexpr LIGHTWEIGHT_FORCE_INLINE SqlVariant(SqlFixedString<N, T, PostOp> const& other):
+              SqlFixedStringMode Mode>
+    constexpr LIGHTWEIGHT_FORCE_INLINE SqlVariant(SqlFixedString<N, T, Mode> const& other):
         value { std::string_view { other.data(), other.size() } }
     {
     }

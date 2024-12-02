@@ -15,6 +15,10 @@ struct SqlConnectionString
     std::string value;
 
     LIGHTWEIGHT_API auto operator<=>(SqlConnectionString const&) const noexcept = default;
+
+    [[nodiscard]] LIGHTWEIGHT_API std::string Sanitized() const;
+
+    LIGHTWEIGHT_API static std::string SanitizePwd(std::string_view input);
 };
 
 using SqlConnectionStringMap = std::map<std::string, std::string>;

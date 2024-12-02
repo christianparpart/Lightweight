@@ -269,8 +269,8 @@ std::string DataMapper::CreateTableString(SqlServerType serverType)
                 using FieldBinder = SqlDataBinder<typename FieldType::ValueType>;
                 sql << " " << traits.ColumnTypeName(FieldBinder::ColumnType);
 
-                if constexpr (requires { FieldBinder::ColumnSize; })
-                    sql << "(" << FieldBinder::ColumnSize << ")";
+                if constexpr (SqlColumnSize<typename FieldType::ValueType> > 0)
+                    sql << "(" << SqlColumnSize<typename FieldType::ValueType> << ")";
 
                 if constexpr (FieldType::IsMandatory)
                     sql << " NOT NULL";

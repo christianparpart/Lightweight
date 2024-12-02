@@ -50,7 +50,7 @@ constexpr std::string_view DefaultColumnTypeName(SqlColumnType value) noexcept
         case SqlColumnType::CHAR:
             return "CHAR";
         case SqlColumnType::STRING:
-            return "VARCHAR(255)"; // FIXME: This is a guess. Define and use column width somewhere
+            return "VARCHAR";
         case SqlColumnType::TEXT:
             return "TEXT";
         case SqlColumnType::BOOLEAN:

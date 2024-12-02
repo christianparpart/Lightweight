@@ -11,6 +11,8 @@
 #include <Lightweight/SqlStatement.hpp>
 #include <Lightweight/SqlTransaction.hpp>
 
+#include <reflection-cpp/reflection.hpp>
+
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -314,7 +316,18 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
         stmt.Prepare("SELECT Value FROM Test");
         stmt.Execute();
         auto reader = stmt.GetResultCursor();
-        std::string actualText; // intentionally an empty string, auto-growing behind the scenes
+
+        // Intentionally an empty string, auto-growing behind the scenes
+        std::string actualText;
+
+        // For Microsoft SQL Server, we need to allocate a large enough buffer for the output column.
+        // Because MS SQL's ODBC driver does not support SQLGetData after SQLFetch for truncated data, it seems.
+        if (stmt.Connection().ServerType() == SqlServerType::MICROSOFT_SQL)
+        {
+            WARN("Preallocate the buffer for MS SQL Server");
+            actualText = std::string(expectedText.size() + 1, '\0');
+        }
+
         reader.BindOutputColumns(&actualText);
         (void) stmt.FetchRow();
         REQUIRE(actualText.size() == expectedText.size());
@@ -393,7 +406,6 @@ struct TestTypeTraits;
 template <>
 struct TestTypeTraits<int16_t>
 {
-    static constexpr auto cTypeName = "int16_t";
     static constexpr auto inputValue = (std::numeric_limits<int16_t>::max)();
     static constexpr auto expectedOutputValue = (std::numeric_limits<int16_t>::max)();
 };
@@ -401,7 +413,6 @@ struct TestTypeTraits<int16_t>
 template <>
 struct TestTypeTraits<int32_t>
 {
-    static constexpr auto cTypeName = "int32_t";
     static constexpr auto inputValue = (std::numeric_limits<int32_t>::max)();
     static constexpr auto expectedOutputValue = (std::numeric_limits<int32_t>::max)();
 };
@@ -409,7 +420,6 @@ struct TestTypeTraits<int32_t>
 template <>
 struct TestTypeTraits<int64_t>
 {
-    static constexpr auto cTypeName = "int64_t";
     static constexpr auto inputValue = (std::numeric_limits<int64_t>::max)();
     static constexpr auto expectedOutputValue = (std::numeric_limits<int64_t>::max)();
 };
@@ -417,7 +427,6 @@ struct TestTypeTraits<int64_t>
 template <>
 struct TestTypeTraits<float>
 {
-    static constexpr auto cTypeName = "float";
     static constexpr auto inputValue = (std::numeric_limits<float>::max)();
     static constexpr auto expectedOutputValue = (std::numeric_limits<float>::max)();
 };
@@ -425,7 +434,6 @@ struct TestTypeTraits<float>
 template <>
 struct TestTypeTraits<double>
 {
-    static constexpr auto cTypeName = "double";
     static constexpr auto inputValue =  std::numbers::pi_v<double>;
     static constexpr auto expectedOutputValue = std::numbers::pi_v<double>;
 };
@@ -433,33 +441,40 @@ struct TestTypeTraits<double>
 template <>
 struct TestTypeTraits<CustomType>
 {
-    static constexpr auto cTypeName = "CustomType";
     static constexpr auto inputValue = CustomType { 42 };
     static constexpr auto expectedOutputValue = CustomType { SqlDataBinder<CustomType>::PostProcess(42) };
 };
 
 template <>
-struct TestTypeTraits<SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>>
+struct TestTypeTraits<SqlTrimmedFixedString<20, char>>
 {
-    using ValueType = SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>;
-    static constexpr auto cTypeName = "SqlFixedString<20, char, TRIM_RIGHT>";
-    static constexpr auto sqlColumnTypeNameOverride = "CHAR(8)";
+    using ValueType = SqlTrimmedFixedString<20, char>;
+    static constexpr auto sqlColumnTypeNameOverride = "CHAR(20)";
     static constexpr auto inputValue = ValueType { "Hello " };
+    static constexpr auto expectedOutputValue = ValueType { "Hello" };
+};
+
+template <>
+struct TestTypeTraits<SqlString<20>>
+{
+    using ValueType = SqlString<20>;
+    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(20)";
+    static constexpr auto inputValue = ValueType { "Hello" };
     static constexpr auto expectedOutputValue = ValueType { "Hello" };
 };
 
 template <>
 struct TestTypeTraits<SqlText>
 {
-    static auto constexpr cTypeName = "SqlText";
+    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(255)"; // Orace does not support TEXT column, so we use VARCHAR(255) here
     static auto const inline inputValue = SqlText { "Hello, World!" };
     static auto const inline expectedOutputValue = SqlText { "Hello, World!" };
+    static auto const inline outputInitializer = SqlText { std::string(255, '\0') };
 };
 
 template <>
 struct TestTypeTraits<SqlDate>
 {
-    static constexpr auto cTypeName = "SqlDate";
     static constexpr auto inputValue = SqlDate { 2017y, std::chrono::August, 16d };
     static constexpr auto expectedOutputValue = SqlDate { 2017y, std::chrono::August, 16d };
 };
@@ -467,7 +482,6 @@ struct TestTypeTraits<SqlDate>
 template <>
 struct TestTypeTraits<SqlTime>
 {
-    static constexpr auto cTypeName = "SqlTime";
     static constexpr auto inputValue = SqlTime { 12h, 34min, 56s };
     static constexpr auto expectedOutputValue = SqlTime { 12h, 34min, 56s };
 };
@@ -475,7 +489,6 @@ struct TestTypeTraits<SqlTime>
 template <>
 struct TestTypeTraits<SqlDateTime>
 {
-    static constexpr auto cTypeName = "SqlDateTime";
     static constexpr auto inputValue = SqlDateTime { 2017y, std::chrono::August, 16d, 17h, 30min, 45s, 123'000'000ns };
     static constexpr auto expectedOutputValue = SqlDateTime { 2017y, std::chrono::August, 16d, 17h, 30min, 45s, 123'000'000ns };
 };
@@ -483,7 +496,6 @@ struct TestTypeTraits<SqlDateTime>
 template <>
 struct TestTypeTraits<SqlGuid>
 {
-    static constexpr auto cTypeName = "SqlGuid";
     static constexpr auto inputValue = SqlGuid::UnsafeParse("1e772aed-3e73-4c72-8684-5dffaa17330e");
     static constexpr auto expectedOutputValue = SqlGuid::UnsafeParse("1e772aed-3e73-4c72-8684-5dffaa17330e");
 };
@@ -494,7 +506,6 @@ struct TestTypeTraits<SqlNumeric<15, 2>>
     static constexpr auto blacklist = std::array {
         std::pair { SqlServerType::SQLITE, "SQLite does not support NUMERIC type"sv },
     };
-    static constexpr auto cTypeName = "SqlNumeric<15, 2>";
     static constexpr auto sqlColumnTypeNameOverride = "NUMERIC(15, 2)";
     static const inline auto inputValue = SqlNumeric<15, 2> { 123.45 };
     static const inline auto expectedOutputValue = SqlNumeric<15, 2> { 123.45 };
@@ -503,26 +514,46 @@ struct TestTypeTraits<SqlNumeric<15, 2>>
 template <>
 struct TestTypeTraits<SqlTrimmedString>
 {
-    static constexpr auto cTypeName = "SqlTrimmedString";
-    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(50)";
+    static constexpr auto sqlColumnTypeNameOverride = "CHAR(50)";
     static auto const inline inputValue = SqlTrimmedString { "Alice    " };
     static auto const inline expectedOutputValue = SqlTrimmedString { "Alice" };
 };
 
+template <>
+struct TestTypeTraits<std::string>
+{
+    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(50)";
+    static auto const inline inputValue = std::string { "Alice" };
+    static auto const inline expectedOutputValue = std::string { "Alice" };
+
+    static auto const inline outputInitializer = [](SqlServerType serverType) {
+        if (serverType == SqlServerType::MICROSOFT_SQL)
+            // For MS SQL Server, we need to allocate a large enough buffer for the output column.
+            // Because MS SQL's ODBC driver does not support SQLGetData after SQLFetch for truncated data, it seems.
+            return std::string(50, '\0');
+        else
+            return std::string {};
+    };
+};
+
+// TODO: std::string, std::wstring, std::u16string, std::u32string
 using TypesToTest = std::tuple<
-   CustomType,
-   SqlDate,
-   SqlDateTime,
-   SqlFixedString<20, char, SqlStringPostRetrieveOperation::TRIM_RIGHT>,
-   SqlGuid,
-   SqlNumeric<15, 2>,
-   SqlText,
-   SqlTrimmedString,
-   float,
-   double,
-   int16_t,
-   int32_t,
-   int64_t
+    CustomType,
+    SqlDate,
+    SqlDateTime,
+    SqlGuid,
+    SqlNumeric<15, 2>,
+    SqlString<20>,
+    SqlText,
+    SqlTime,
+    SqlTrimmedFixedString<20, char>,
+    SqlTrimmedString,
+    double,
+    float,
+    int16_t,
+    int32_t,
+    int64_t,
+    std::string
 >;
 // clang-format on
 
@@ -530,7 +561,7 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
 {
     SqlLogger::SetLogger(TestSuiteSqlLogger::GetLogger());
 
-    GIVEN(TestTypeTraits<TestType>::cTypeName)
+    GIVEN(Reflection::TypeName<TestType>)
     {
         SqlTestFixture::DropAllTablesInDatabase();
 
@@ -544,7 +575,7 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
             {
                 if (serverType == conn.ServerType())
                 {
-                    WARN("Skipping blacklisted test for " << TestTypeTraits<TestType>::cTypeName << ": " << reason);
+                    WARN("Skipping blacklisted test for " << Reflection::TypeName<TestType> << ": " << reason);
                     return;
                 }
             }
@@ -582,7 +613,9 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
             {
                 stmt.ExecuteDirect("SELECT Value FROM Test");
                 auto actualValue = [&]() -> TestType {
-                    if constexpr (requires { TestTypeTraits<TestType>::outputInitializer; })
+                    if constexpr (requires(SqlServerType st) { TestTypeTraits<TestType>::outputInitializer(st); })
+                        return TestTypeTraits<TestType>::outputInitializer(conn.ServerType());
+                    else if constexpr (requires { TestTypeTraits<TestType>::outputInitializer; })
                         return TestTypeTraits<TestType>::outputInitializer;
                     else
                         return TestType {};

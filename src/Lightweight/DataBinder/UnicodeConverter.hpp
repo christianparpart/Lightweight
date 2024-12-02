@@ -6,6 +6,7 @@
 
 #include <concepts>
 #include <iterator>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -80,6 +81,122 @@ struct LIGHTWEIGHT_API UnicodeConverter<char16_t>
     }
 };
 
+struct Utf32Converter
+{
+    char32_t codePoint = 0;
+    int codeUnits = 0;
+
+    static constexpr auto InvalidCodePoint = char32_t { 0xFFFD };
+
+    constexpr std::optional<char32_t> Process(char8_t c8) noexcept
+    {
+        if ((c8 & 0b1100'0000) == 0b1000'0000)
+        {
+            if (codeUnits == 0)
+                return InvalidCodePoint;
+            codePoint <<= 6;
+            codePoint |= c8 & 0b0011'1111;
+            if (--codeUnits == 0)
+            {
+                auto result = codePoint;
+                codePoint = 0;
+                return result;
+            }
+            return std::nullopt;
+        }
+        if (codeUnits == 0)
+        {
+            if ((c8 & 0b1000'0000) == 0)
+                return c8;
+            if ((c8 & 0b1110'0000) == 0b1100'0000)
+            {
+                codePoint = c8 & 0b0001'1111;
+                codeUnits = 1;
+                return std::nullopt;
+            }
+            if ((c8 & 0b1111'0000) == 0b1110'0000)
+            {
+                codePoint = c8 & 0b0000'1111;
+                codeUnits = 2;
+                return std::nullopt;
+            }
+            if ((c8 & 0b1111'1000) == 0b1111'0000)
+            {
+                codePoint = c8 & 0b0000'0111;
+                codeUnits = 3;
+                return std::nullopt;
+            }
+            return InvalidCodePoint;
+        }
+        return InvalidCodePoint;
+    }
+};
+
+struct [[nodiscard]] Utf32Iterator
+{
+    std::u8string_view u8InputString;
+
+    struct [[nodiscard]] iterator
+    {
+        std::u8string_view::iterator current {};
+        std::u8string_view::iterator end {};
+        char32_t codePoint = Utf32Converter::InvalidCodePoint;
+
+        constexpr explicit iterator(std::u8string_view::iterator current, std::u8string_view::iterator end) noexcept:
+            current { current },
+            end { end }
+        {
+            if (current != end)
+                operator++();
+        }
+
+        constexpr char32_t operator*() const noexcept
+        {
+            return codePoint;
+        }
+
+        constexpr iterator& operator++() noexcept
+        {
+            auto converter = Utf32Converter {};
+            codePoint = Utf32Converter::InvalidCodePoint;
+            while (current != end)
+            {
+                if (auto const result = converter.Process(*current++); result.has_value())
+                {
+                    codePoint = *result;
+                    break;
+                }
+            }
+            return *this;
+        }
+
+        constexpr iterator& operator++(int) noexcept
+        {
+            return ++*this;
+        }
+
+        constexpr bool operator==(iterator const& other) const noexcept
+        {
+            return current == other.current && codePoint == other.codePoint;
+        }
+
+        constexpr bool operator!=(iterator const& other) const noexcept
+        {
+            return !(*this == other);
+        }
+    };
+
+    iterator begin() const noexcept
+    {
+        return iterator { u8InputString.begin(), u8InputString.end() };
+    }
+
+    iterator end() const noexcept
+    {
+        return iterator { u8InputString.end(), u8InputString.end() };
+    }
+};
+
 } // namespace detail
 
 // Converts from UTF-32 to UTF-8.
@@ -111,3 +228,21 @@ std::u16string ToUtf16(const std::basic_string_view<T> u32InputString)
 
 // Converts from UTF-8 to UTF-16.
 LIGHTWEIGHT_API std::u16string ToUtf16(std::u8string_view u8InputString);
+
+// Converts from local 8-bit string to UTF-16.
+LIGHTWEIGHT_API std::u16string ToUtf16(std::string const& localeInputString);
+
+template <typename T = std::u32string>
+T ToUtf32(std::u8string_view u8InputString)
+{
+    auto result = T {};
+    for (char32_t const c32: detail::Utf32Iterator { u8InputString })
+        result.push_back(c32);
+    return result;
+}
+
+// Converts a UTF-8 string to wchar_t-based wide string.
+LIGHTWEIGHT_API std::wstring ToStdWideString(std::u8string_view u8InputString);
+
+// Converts a local 8-bit string to wchar_t-based wide string.
+LIGHTWEIGHT_API std::wstring ToStdWideString(std::string const& localeInputString);

@@ -267,7 +267,7 @@ class SqlTestFixture
 #endif
 
         {
-            std::println("Using ODBC connection string: '{}'", SanitizePwd(s));
+            std::println("Using ODBC connection string: '{}'", SqlConnectionString::SanitizePwd(s));
             SqlConnection::SetDefaultConnectionString(SqlConnectionString { s });
         }
         else
@@ -337,10 +337,11 @@ class SqlTestFixture
         switch (stmt.Connection().ServerType())
         {
             case SqlServerType::MICROSOFT_SQL:
-                stmt.ExecuteDirect(std::format("USE \"{}\"", "master"));
-                stmt.ExecuteDirect(std::format("DROP DATABASE IF EXISTS \"{}\"", testDatabaseName));
-                stmt.ExecuteDirect(std::format("CREATE DATABASE \"{}\"", testDatabaseName));
                 stmt.ExecuteDirect(std::format("USE \"{}\"", testDatabaseName));
+                if (m_createdTables.empty())
+                    m_createdTables = GetAllTableNames();
+                for (auto& createdTable: std::views::reverse(m_createdTables))
+                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", createdTable));
                 break;
             case SqlServerType::ORACLE: {
                 // Drop user-created tables
@@ -371,27 +372,17 @@ class SqlTestFixture
     }
 
   private:
-    static std::string SanitizePwd(std::string_view input)
-    {
-        std::regex const pwdRegex {
-            R"(PWD=.*?;)",
-            std::regex_constants::ECMAScript | std::regex_constants::icase,
-        };
-        std::stringstream outputString;
-        std::regex_replace(
-            std::ostreambuf_iterator<char> { outputString }, input.begin(), input.end(), pwdRegex, "Pwd=***;");
-        return outputString.str();
-    }
-
     static std::vector<std::string> GetAllTableNames()
     {
+        using namespace std::string_view_literals;
         auto result = std::vector<std::string>();
         auto stmt = SqlStatement();
+        auto const schemaName = stmt.Connection().ServerType() == SqlServerType::MICROSOFT_SQL ? "dbo"sv : ""sv;
         auto const sqlResult = SQLTables(stmt.NativeHandle(),
                                          (SQLCHAR*) testDatabaseName.data(),
                                          (SQLSMALLINT) testDatabaseName.size(),
-                                         nullptr,
-                                         0,
+                                         (SQLCHAR*) schemaName.data(),
+                                         (SQLSMALLINT) schemaName.size(),
                                          nullptr,
                                          0,
                                          (SQLCHAR*) "TABLE",
@@ -410,6 +401,11 @@ class SqlTestFixture
 };
 
 // {{{ ostream support for Lightweight, for debugging purposes
+inline std::ostream& operator<<(std::ostream& os, SqlText const& value)
+{
+    return os << std::format("SqlText({})", value.value);
+}
+
 inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
 {
     return os << std::format("SqlTrimmedString {{ '{}' }}", value);
@@ -448,13 +444,17 @@ inline std::ostream& operator<<(std::ostream& os, SqlDateTime const& datetime)
                              hms.subseconds().count());
 }
 
-template <std::size_t N, typename T, SqlStringPostRetrieveOperation PostOp>
-inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, PostOp> const& value)
+template <std::size_t N, typename T, SqlFixedStringMode Mode>
+inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, Mode> const& value)
 {
-    if constexpr (PostOp == SqlStringPostRetrieveOperation::NOTHING)
-        return os << std::format("SqlFixedString<{}> {{ '{}' }}", N, value.data());
-    if constexpr (PostOp == SqlStringPostRetrieveOperation::TRIM_RIGHT)
+    if constexpr (Mode == SqlFixedStringMode::FIXED_SIZE)
+        return os << std::format("SqlFixedString<{}> {{ size: {}, data: '{}' }}", N, value.size(), value.data());
+    else if constexpr (Mode == SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED)
         return os << std::format("SqlTrimmedFixedString<{}> {{ '{}' }}", N, value.data());
+    else if constexpr (Mode == SqlFixedStringMode::VARIABLE_SIZE)
+        return os << std::format("SqlVariableString<{}> {{ size: {}, '{}' }}", N, value.size(), value.data());
+    else
+        return os << std::format("SqlFixedString<{}> {{ size: {}, data: '{}' }}", N, value.size(), value.data());
 }
 
 // }}}

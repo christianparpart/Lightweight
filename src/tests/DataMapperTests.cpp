@@ -31,16 +31,14 @@ std::ostream& operator<<(std::ostream& os, Field<std::optional<T>, IsPrimaryKeyV
 template <typename T, PrimaryKey IsPrimaryKeyValue>
 std::ostream& operator<<(std::ostream& os, Field<T, IsPrimaryKeyValue> const& field)
 {
-    return os << std::format("Field<{}> {{ {}, {} }}",
-                             Reflection::TypeName<T>,
-                             field.Value(),
-                             field.IsModified() ? "modified" : "not modified");
+    return os << std::format("Field<{}> {{ ", Reflection::TypeName<T>) << "value: " << field.Value() << "; "
+              << (field.IsModified() ? "modified" : "not modified") << " }";
 }
 
 struct Person
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<SqlTrimmedFixedString<25>> name;
+    Field<SqlString<25>> name;
     Field<bool> is_active { true };
     Field<std::optional<int>> age;
 };
@@ -49,7 +47,7 @@ struct Person
 struct PersonName
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<SqlTrimmedFixedString<25>> name;
+    Field<SqlString<25>> name;
 
     static constexpr std::string_view TableName = RecordTableName<Person>;
 };
@@ -140,8 +138,8 @@ TEST_CASE_METHOD(SqlTestFixture, "iterate over database", "[SqlRowIterator]")
 struct RecordWithDefaults
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<std::string> name1 { "John Doe" };
-    Field<std::optional<std::string>> name2 { "John Doe" };
+    Field<SqlString<30>> name1 { "John Doe" };
+    Field<std::optional<SqlString<30>>> name2 { "John Doe" };
     Field<bool> boolean1 { true };
     Field<bool> boolean2 { false };
     Field<std::optional<int>> int1 { 42 };
@@ -151,8 +149,8 @@ struct RecordWithDefaults
 struct RecordWithNoDefaults
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<std::string> name1;
-    Field<std::optional<std::string>> name2;
+    Field<SqlString<30>> name1;
+    Field<std::optional<SqlString<30>>> name2;
     Field<bool> boolean1;
     Field<bool> boolean2;
     Field<std::optional<int>> int1;
@@ -186,7 +184,7 @@ struct Email;
 struct User
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id {};
-    Field<std::string> name {};
+    Field<SqlString<30>> name {};
 
     HasMany<Email> emails {};
 };
@@ -194,7 +192,7 @@ struct User
 struct Email
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id {};
-    Field<std::string> address {};
+    Field<SqlString<30>> address {};
     BelongsTo<&User::id> user {};
 
     constexpr std::weak_ordering operator<=>(Email const& other) const = default;
@@ -297,7 +295,7 @@ struct AccountHistory;
 struct Suppliers
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id {};
-    Field<std::string> name {};
+    Field<SqlString<30>> name {};
 
     // TODO: HasOne<Account> account;
     HasOneThrough<AccountHistory, Account> accountHistory {};
@@ -311,7 +309,7 @@ std::ostream& operator<<(std::ostream& os, Suppliers const& record)
 struct Account
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id {};
-    Field<std::string> iban {};
+    Field<SqlString<30>> iban {};
     BelongsTo<&Suppliers::id> supplier {};
 
     constexpr std::weak_ordering operator<=>(Account const& other) const = default;
@@ -376,7 +374,7 @@ struct Patient;
 struct Physician
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<std::string> name;
+    Field<SqlString<30>> name;
     HasMany<Appointment> appointments;
     HasManyThrough<Patient, Appointment> patients;
 };
@@ -384,8 +382,8 @@ struct Physician
 struct Patient
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<std::string> name;
-    Field<std::string> comment;
+    Field<SqlString<30>> name;
+    Field<SqlString<30>> comment;
     HasMany<Appointment> appointments;
     HasManyThrough<Physician, Appointment> physicians;
 };
@@ -394,7 +392,7 @@ struct Appointment
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
     Field<SqlDateTime> date;
-    Field<std::string> comment;
+    Field<SqlString<80>> comment;
     BelongsTo<&Physician::id> physician;
     BelongsTo<&Patient::id> patient;
 };
@@ -462,7 +460,7 @@ TEST_CASE_METHOD(SqlTestFixture, "HasManyThrough", "[DataMapper][relations]")
     physician2.patients.Each([&](Patient const& patient) {
         REQUIRE(numPatientsIterated == 0);
         ++numPatientsIterated;
-        std::println("Patient: {}", DataMapper::Inspect(patient));
+        INFO("Patient: " << DataMapper::Inspect(patient));
         retrievedPatients.emplace_back(patient);
 
         // Load the relations of the patient
@@ -480,7 +478,7 @@ TEST_CASE_METHOD(SqlTestFixture, "HasManyThrough", "[DataMapper][relations]")
 struct TestRecord
 {
     Field<uint64_t, PrimaryKey::Manual> id {};
-    Field<std::string> comment;
+    Field<SqlString<30>> comment;
 
     std::weak_ordering operator<=>(TestRecord const& other) const = default;
 };
