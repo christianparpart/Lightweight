@@ -294,6 +294,28 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Join", "[SqlQueryBuilder]")
             R"(SELECT "Table_A"."foo", "Table_A"."bar", "Table_B"."that_foo", "Table_B"."that_id" FROM "Table_A"
                INNER JOIN "Table_B" ON "Table_B"."id" = "Table_A"."that_id" AND "Table_B"."that_foo" = "Table_A"."foo"
                WHERE "Table_A"."foo" = 42)"));
+
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            using namespace std::string_view_literals;
+            return q.FromTable("Table_A")
+                .Select()
+                .Fields({ "foo"sv, "bar"sv }, "Table_A")
+                .Fields({ "that_foo"sv, "that_id"sv }, "Table_B")
+                .LeftOuterJoin("Table_B",
+                               [](SqlJoinConditionBuilder q) {
+                                   // clang-format off
+                               return q.On("id", { .tableName = "Table_A", .columnName = "that_id" })
+                                       .On("that_foo", { .tableName = "Table_A", .columnName = "foo" });
+                                   // clang-format on
+                               })
+                .Where(SqlQualifiedTableColumnName { .tableName = "Table_A", .columnName = "foo" }, 42)
+                .All();
+        },
+        QueryExpectations::All(
+            R"(SELECT "Table_A"."foo", "Table_A"."bar", "Table_B"."that_foo", "Table_B"."that_id" FROM "Table_A"
+               LEFT OUTER JOIN "Table_B" ON "Table_B"."id" = "Table_A"."that_id" AND "Table_B"."that_foo" = "Table_A"."foo"
+               WHERE "Table_A"."foo" = 42)"));
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.SelectAs", "[SqlQueryBuilder]")
