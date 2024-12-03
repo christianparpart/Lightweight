@@ -168,6 +168,11 @@ class DataMapper
         return _connection.Query(RecordTableName<Record>);
     }
 
+    SqlQueryBuilder FromTable(std::string_view tableName)
+    {
+        return _connection.Query(tableName);
+    }
+
     template <typename Record>
     void ClearModifiedState(Record& record) noexcept;
 
@@ -859,9 +864,13 @@ void DataMapper::BindOutputColumns(Record& record, SqlStatement* stmt)
 
     Reflection::EnumerateMembers(record,
                                  [this, stmt, i = SQLSMALLINT { 1 }]<size_t I, typename Field>(Field& field) mutable {
-                                     if constexpr (FieldWithStorage<Field>)
+                                     if constexpr (requires { field.BindOutputColumn(i, *stmt); })
                                      {
                                          field.BindOutputColumn(i++, *stmt);
+                                     }
+                                     else if constexpr (SqlOutputColumnBinder<Field>)
+                                     {
+                                         stmt->BindOutputColumn(i++, &field);
                                      }
                                  });
 }

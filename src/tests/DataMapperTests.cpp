@@ -11,6 +11,8 @@
 
 #include <ostream>
 
+using namespace std::string_view_literals;
+
 std::ostream& operator<<(std::ostream& os, RecordId const& id)
 {
     return os << id.value;
@@ -506,4 +508,55 @@ TEST_CASE_METHOD(SqlTestFixture, "manual primary key", "[DataMapper]")
     REQUIRE(queriedRecord2 == record2);
 
     REQUIRE(record.id != record2.id);
+}
+
+// Simple struct, used for testing SELECT'ing into it
+struct SimpleStruct
+{
+    uint64_t pkFromA;
+    uint64_t pkFromB;
+    SqlString<30> c1FromA;
+    SqlString<30> c2FromA;
+    SqlString<30> c1FromB;
+    SqlString<30> c2FromB;
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "Query: SELECT into simple struct", "[DataMapper]")
+{
+    auto dm = DataMapper {};
+
+    SqlStatement(dm.Connection()).MigrateDirect([](SqlMigrationQueryBuilder& migration) {
+        using namespace SqlColumnTypeDefinitions;
+        migration.CreateTable("TableA")
+            .PrimaryKeyWithAutoIncrement("pk", Bigint {})
+            .Column("c1", Varchar { 30 })
+            .Column("c2", Varchar { 30 });
+        migration.CreateTable("TableB")
+            .PrimaryKeyWithAutoIncrement("pk", Bigint {})
+            .Column("c1", Varchar { 30 })
+            .Column("c2", Varchar { 30 });
+    });
+
+    SqlStatement(dm.Connection()).ExecuteDirect(dm.FromTable("TableA").Insert().Set("c1", "a").Set("c2", "b"));
+    SqlStatement(dm.Connection()).ExecuteDirect(dm.FromTable("TableB").Insert().Set("c1", "a").Set("c2", "c"));
+
+    auto records = dm.Query<SimpleStruct>(
+        dm.FromTable("TableA")
+            .Select()
+            .Field(SqlQualifiedTableColumnName { .tableName = "TableA", .columnName = "pk" })
+            .Field(SqlQualifiedTableColumnName { .tableName = "TableB", .columnName = "pk" })
+            .Fields({ "c1"sv, "c2"sv }, "TableA"sv)
+            .Fields({ "c1"sv, "c2"sv }, "TableB"sv)
+            .LeftOuterJoin("TableB", "c1", "c1")
+            .All());
+
+    CHECK(records.size() == 1);
+    SimpleStruct& record = records.at(0);
+    INFO("Record: " << DataMapper::Inspect(record));
+    CHECK(record.pkFromA != 0);
+    CHECK(record.pkFromB != 0);
+    CHECK(record.c1FromA == "a");
+    CHECK(record.c2FromA == "b");
+    CHECK(record.c1FromB == "a");
+    CHECK(record.c2FromB == "c");
 }
