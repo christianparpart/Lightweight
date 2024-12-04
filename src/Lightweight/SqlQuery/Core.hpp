@@ -204,8 +204,9 @@ class [[nodiscard]] SqlWhereClauseBuilder
                                      std::string_view onMainTableColumn);
 
     // Constructs an INNER JOIN clause with a custom ON clause.
-    template <typename Callable>
-    [[nodiscard]] Derived& InnerJoin(std::string_view joinTable, Callable const& onClauseBuilder);
+    template <typename OnChainCallable>
+        requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
+    [[nodiscard]] Derived& InnerJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder);
 
     // Constructs an LEFT OUTER JOIN clause.
     [[nodiscard]] Derived& LeftOuterJoin(std::string_view joinTable,
@@ -218,9 +219,9 @@ class [[nodiscard]] SqlWhereClauseBuilder
                                          std::string_view onMainTableColumn);
 
     // Constructs an LEFT OUTER JOIN clause with a custom ON clause.
-    template <typename Callable>
-        requires std::invocable<SqlJoinConditionBuilder, Callable, SqlJoinConditionBuilder&&>
-    [[nodiscard]] Derived& LeftOuterJoin(std::string_view joinTable, Callable const& onClauseBuilder);
+    template <typename OnChainCallable>
+        requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
+    [[nodiscard]] Derived& LeftOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder);
 
     // Constructs an RIGHT OUTER JOIN clause.
     [[nodiscard]] Derived& RightOuterJoin(std::string_view joinTable,
@@ -233,9 +234,9 @@ class [[nodiscard]] SqlWhereClauseBuilder
                                           std::string_view onMainTableColumn);
 
     // Constructs an RIGHT OUTER JOIN clause with a custom ON clause.
-    template <typename Callable>
-        requires std::invocable<SqlJoinConditionBuilder, Callable, SqlJoinConditionBuilder&&>
-    [[nodiscard]] Derived& RightOuterJoin(std::string_view joinTable, Callable const& onClauseBuilder);
+    template <typename OnChainCallable>
+        requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
+    [[nodiscard]] Derived& RightOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder);
 
     // Constructs an FULL OUTER JOIN clause.
     [[nodiscard]] Derived& FullOuterJoin(std::string_view joinTable,
@@ -248,9 +249,9 @@ class [[nodiscard]] SqlWhereClauseBuilder
                                          std::string_view onMainTableColumn);
 
     // Constructs an FULL OUTER JOIN clause with a custom ON clause.
-    template <typename Callable>
-        requires std::invocable<SqlJoinConditionBuilder, Callable, SqlJoinConditionBuilder&&>
-    [[nodiscard]] Derived& FullOuterJoin(std::string_view joinTable, Callable const& onClauseBuilder);
+    template <typename OnChainCallable>
+        requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
+    [[nodiscard]] Derived& FullOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder);
 
   private:
     SqlSearchCondition& SearchCondition() noexcept;
@@ -295,8 +296,8 @@ class [[nodiscard]] SqlWhereClauseBuilder
                                 std::string_view onMainTableColumn);
 
     // Constructs a JOIN clause.
-    template <typename Callable>
-    [[nodiscard]] Derived& Join(JoinType joinType, std::string_view joinTable, Callable const& onClauseBuilder);
+    template <typename OnChainCallable>
+    [[nodiscard]] Derived& Join(JoinType joinType, std::string_view joinTable, OnChainCallable const& onClauseBuilder);
 };
 
 template <typename Derived>
@@ -536,13 +537,6 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::OrWhere
 }
 
 template <typename Derived>
-template <typename Callable>
-Derived& SqlWhereClauseBuilder<Derived>::InnerJoin(std::string_view joinTable, Callable const& onClauseBuilder)
-{
-    return Join(JoinType::INNER, joinTable, onClauseBuilder);
-}
-
-template <typename Derived>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::InnerJoin(
     std::string_view joinTable, std::string_view joinColumnName, SqlQualifiedTableColumnName onOtherColumn)
 {
@@ -555,6 +549,14 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::InnerJo
                                                                                    std::string_view onMainTableColumn)
 {
     return Join(JoinType::INNER, joinTable, joinColumnName, onMainTableColumn);
+}
+
+template <typename Derived>
+template <typename OnChainCallable>
+    requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
+Derived& SqlWhereClauseBuilder<Derived>::InnerJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder)
+{
+    return Join(JoinType::INNER, joinTable, onClauseBuilder);
 }
 
 template <typename Derived>
@@ -572,6 +574,14 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::LeftOut
 }
 
 template <typename Derived>
+template <typename OnChainCallable>
+    requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
+Derived& SqlWhereClauseBuilder<Derived>::LeftOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder)
+{
+    return Join(JoinType::LEFT, joinTable, onClauseBuilder);
+}
+
+template <typename Derived>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::RightOuterJoin(
     std::string_view joinTable, std::string_view joinColumnName, SqlQualifiedTableColumnName onOtherColumn)
 {
@@ -586,6 +596,14 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::RightOu
 }
 
 template <typename Derived>
+template <typename OnChainCallable>
+    requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
+Derived& SqlWhereClauseBuilder<Derived>::RightOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder)
+{
+    return Join(JoinType::RIGHT, joinTable, onClauseBuilder);
+}
+
+template <typename Derived>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::FullOuterJoin(
     std::string_view joinTable, std::string_view joinColumnName, SqlQualifiedTableColumnName onOtherColumn)
 {
@@ -597,6 +615,14 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::FullOut
     std::string_view joinTable, std::string_view joinColumnName, std::string_view onMainTableColumn)
 {
     return Join(JoinType::FULL, joinTable, joinColumnName, onMainTableColumn);
+}
+
+template <typename Derived>
+template <typename OnChainCallable>
+    requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
+Derived& SqlWhereClauseBuilder<Derived>::FullOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder)
+{
+    return Join(JoinType::FULL, joinTable, onClauseBuilder);
 }
 
 template <typename Derived>

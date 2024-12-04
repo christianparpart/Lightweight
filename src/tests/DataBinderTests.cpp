@@ -466,7 +466,7 @@ struct TestTypeTraits<SqlString<20>>
 template <>
 struct TestTypeTraits<SqlText>
 {
-    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(255)"; // Orace does not support TEXT column, so we use VARCHAR(255) here
+    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(255)"; // Oracle does not support TEXT column, so we use VARCHAR(255) here
     static auto const inline inputValue = SqlText { "Hello, World!" };
     static auto const inline expectedOutputValue = SqlText { "Hello, World!" };
     static auto const inline outputInitializer = SqlText { std::string(255, '\0') };
