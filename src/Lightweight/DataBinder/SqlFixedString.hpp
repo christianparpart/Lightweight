@@ -52,6 +52,24 @@ class SqlFixedString
     LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString& operator=(SqlFixedString&&) noexcept = default;
     LIGHTWEIGHT_FORCE_INLINE constexpr ~SqlFixedString() noexcept = default;
 
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString(std::basic_string_view<T> s) noexcept:
+        _size { (std::min)(N, s.size()) }
+    {
+        std::copy_n(s.data(), _size, _data);
+    }
+
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString(T const* s, std::size_t len) noexcept:
+        _size { (std::min)(N, len) }
+    {
+        std::copy_n(s, _size, _data);
+    }
+
+    LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString(T const* s, T const* e) noexcept:
+        _size { (std::min)(N, static_cast<std::size_t>(e - s)) }
+    {
+        std::copy(s, e, _data);
+    }
+
     LIGHTWEIGHT_FORCE_INLINE void reserve(std::size_t capacity)
     {
         if (capacity > N)
@@ -159,7 +177,7 @@ class SqlFixedString
 
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr explicit operator std::basic_string_view<T>() const noexcept
     {
-        return { _data, N - 1 };
+        return { _data, _size };
     }
 
     template <std::size_t OtherSize, SqlFixedStringMode OtherMode>
