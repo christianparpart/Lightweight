@@ -241,6 +241,23 @@ T ToUtf32(std::u8string_view u8InputString)
     return result;
 }
 
+
+template <typename T = std::u32string>
+T ToUtf32(std::u16string_view u16InputString)
+{
+    auto result = T {};
+
+    for (char16_t const c16: u16InputString)
+    {
+        if (c16 < 0xD800 || c16 >= 0xDC00)
+            result.push_back(c16);
+        else
+            result.push_back(0x10000 + ((c16 & 0x3FF) | ((c16 & 0x3FF) << 10)));
+    }
+
+    return result;
+}
+
 // Converts a UTF-8 string to wchar_t-based wide string.
 LIGHTWEIGHT_API std::wstring ToStdWideString(std::u8string_view u8InputString);
 
