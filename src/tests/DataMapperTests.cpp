@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+#include "Lightweight/Utils.hpp"
 #include "Utils.hpp"
 
 #include <Lightweight/DataMapper/DataMapper.hpp>
@@ -540,15 +541,15 @@ TEST_CASE_METHOD(SqlTestFixture, "Query: SELECT into simple struct", "[DataMappe
     SqlStatement(dm.Connection()).ExecuteDirect(dm.FromTable("TableA").Insert().Set("c1", "a").Set("c2", "b"));
     SqlStatement(dm.Connection()).ExecuteDirect(dm.FromTable("TableB").Insert().Set("c1", "a").Set("c2", "c"));
 
-    auto records = dm.Query<SimpleStruct>(
-        dm.FromTable("TableA")
-            .Select()
-            .Field(SqlQualifiedTableColumnName { .tableName = "TableA", .columnName = "pk" })
-            .Field(SqlQualifiedTableColumnName { .tableName = "TableB", .columnName = "pk" })
-            .Fields({ "c1"sv, "c2"sv }, "TableA"sv)
-            .Fields({ "c1"sv, "c2"sv }, "TableB"sv)
-            .LeftOuterJoin("TableB", "c1", "c1")
-            .All());
+    auto records =
+        dm.Query<SimpleStruct>(dm.FromTable("TableA")
+                                   .Select()
+                                   .Field(SqlQualifiedTableColumnName { .tableName = "TableA", .columnName = "pk" })
+                                   .Field(SqlQualifiedTableColumnName { .tableName = "TableB", .columnName = "pk" })
+                                   .Fields({ "c1"sv, "c2"sv }, "TableA"sv)
+                                   .Fields({ "c1"sv, "c2"sv }, "TableB"sv)
+                                   .LeftOuterJoin("TableB", "c1", "c1")
+                                   .All());
 
     CHECK(records.size() == 1);
     SimpleStruct& record = records.at(0);
@@ -559,4 +560,44 @@ TEST_CASE_METHOD(SqlTestFixture, "Query: SELECT into simple struct", "[DataMappe
     CHECK(record.c2FromA == "b");
     CHECK(record.c1FromB == "a");
     CHECK(record.c2FromB == "c");
+}
+
+struct MultiPkRecord
+{
+    Field<SqlFixedString<32>, PrimaryKey::Manual> firstName;
+    Field<SqlFixedString<32>, PrimaryKey::Manual> lastName;
+
+    constexpr std::weak_ordering operator<=>(MultiPkRecord const& other) const = default;
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "Table with multiple primary keys", "[DataMapper]")
+{
+    auto dm = DataMapper {};
+
+    SqlStatement(dm.Connection()).MigrateDirect([](SqlMigrationQueryBuilder& migration) {
+        using namespace SqlColumnTypeDefinitions;
+        migration.CreateTable(RecordTableName<MultiPkRecord>)
+            .PrimaryKey("firstName", Varchar { 32 })
+            .PrimaryKey("lastName", Varchar { 32 });
+    });
+
+    auto record = MultiPkRecord { .firstName = "John", .lastName = "Doe" };
+    dm.Create(record);
+
+    {
+        auto const _ = ScopedSqlNullLogger {}; // Suppress the error message, as we are testing for it
+        CHECK_THROWS_AS(dm.CreateExplicit(MultiPkRecord { .firstName = "John", .lastName = "Doe" }), SqlException);
+    }
+
+    // clang-format off
+    auto queriedRecords = dm.Query<MultiPkRecord>(dm.FromTable(RecordTableName<MultiPkRecord>)
+                                                    .Select()
+                                                    .Fields<MultiPkRecord>()
+                                                    .All());
+    // clang-format on
+
+    CHECK(queriedRecords.size() == 1);
+    auto const& queriedRecord = queriedRecords.at(0);
+    INFO("Queried record: " << DataMapper::Inspect(queriedRecord));
+    CHECK(queriedRecord == record);
 }

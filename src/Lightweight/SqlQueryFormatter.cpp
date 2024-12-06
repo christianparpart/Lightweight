@@ -171,13 +171,10 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         if (column.required)
             sqlQueryString << " NOT NULL";
 
-        if (column.primaryKey != SqlPrimaryKeyType::NONE)
-            sqlQueryString << " PRIMARY KEY";
+        if (column.primaryKey == SqlPrimaryKeyType::AUTO_INCREMENT)
+            sqlQueryString << " PRIMARY KEY AUTOINCREMENT";
         else if (column.unique && !column.index)
             sqlQueryString << " UNIQUE";
-
-        if (column.primaryKey == SqlPrimaryKeyType::AUTO_INCREMENT)
-            sqlQueryString << " AUTOINCREMENT";
 
         return sqlQueryString.str();
     }
@@ -190,6 +187,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         sqlQueryString << "CREATE TABLE \"" << tableName << "\" (";
 
         size_t currentColumn = 0;
+        bool foundManualPrimaryKeys = false;
         for (SqlColumnDeclaration const& column: columns)
         {
             if (currentColumn > 0)
@@ -197,7 +195,27 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
             ++currentColumn;
             sqlQueryString << "\n    ";
             sqlQueryString << BuildColumnDefinition(column);
+            if (column.primaryKey == SqlPrimaryKeyType::MANUAL)
+                foundManualPrimaryKeys = true;
         }
+
+        if (foundManualPrimaryKeys)
+        {
+            std::string primaryKeyColumns;
+            for (SqlColumnDeclaration const& column: columns)
+            {
+                if (column.primaryKey == SqlPrimaryKeyType::MANUAL)
+                {
+                    if (!primaryKeyColumns.empty())
+                        primaryKeyColumns += ", ";
+                    primaryKeyColumns += '"';
+                    primaryKeyColumns += column.name;
+                    primaryKeyColumns += '"';
+                }
+            }
+            sqlQueryString << ",\n    PRIMARY KEY (" << primaryKeyColumns << ")";
+        }
+
         sqlQueryString << "\n);";
 
         for (SqlColumnDeclaration const& column: columns)
@@ -419,10 +437,7 @@ class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
             sqlQueryString << " NOT NULL";
 
         if (column.primaryKey == SqlPrimaryKeyType::AUTO_INCREMENT)
-            sqlQueryString << " IDENTITY(1,1)";
-
-        if (column.primaryKey != SqlPrimaryKeyType::NONE)
-            sqlQueryString << " PRIMARY KEY";
+            sqlQueryString << " IDENTITY(1,1) PRIMARY KEY";
 
         if (column.unique && !column.index)
             sqlQueryString << " UNIQUE";
@@ -448,7 +463,7 @@ class PostgreSqlFormatter final: public BasicSqlQueryFormatter
         if (column.required)
             sqlQueryString << " NOT NULL";
 
-        if (column.primaryKey != SqlPrimaryKeyType::NONE)
+        if (column.primaryKey == SqlPrimaryKeyType::AUTO_INCREMENT)
             sqlQueryString << " PRIMARY KEY";
 
         if (column.unique && !column.index)

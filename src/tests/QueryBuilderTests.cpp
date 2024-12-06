@@ -660,7 +660,8 @@ TEST_CASE_METHOD(SqlTestFixture, "CreateTable with PrimaryKey", "[SqlQueryBuilde
             return migration.GetPlan();
         },
         QueryExpectations::All(R"sql(CREATE TABLE "Test" (
-                                        "pk" INTEGER NOT NULL PRIMARY KEY
+                                        "pk" INTEGER NOT NULL,
+                                        PRIMARY KEY ("pk")
                                      );
                                )sql"));
 }
