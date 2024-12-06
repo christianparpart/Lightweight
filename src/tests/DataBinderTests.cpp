@@ -93,36 +93,32 @@ struct SqlDataBinder<CustomType>
     }
 };
 
-// TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear", "[SqlFixedString]")
-// {
-//     SqlFixedString<8> str;
-//
-//     REQUIRE(str.size() == 0);
-//     REQUIRE(str.empty());
-//
-//     str.resize(1, 'x');
-//     REQUIRE(!str.empty());
-//     REQUIRE(str.size() == 1);
-//     REQUIRE(str == "x");
-//
-//     str.resize(4, 'y');
-//     REQUIRE(str.size() == 4);
-//     REQUIRE(str == "xyyy");
-//
-//     // one-off overflow truncates
-//     str.resize(9, 'z');
-//     REQUIRE(str.size() == 8);
-//     REQUIRE(str == "xyyyzzzz");
-//
-//     // resize down
-//     str.resize(2);
-//     REQUIRE(str.size() == 2);
-//     REQUIRE(str == "xy");
-//
-//     str.clear();
-//     REQUIRE(str.size() == 0);
-//     REQUIRE(str == "");
-// }
+TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: resize and clear", "[SqlFixedString]")
+{
+    SqlFixedString<8> str;
+
+    REQUIRE(str.size() == 0);
+    REQUIRE(str.empty());
+
+    str.resize(1);
+    REQUIRE(!str.empty());
+    REQUIRE(str.size() == 1);
+
+    str.resize(4);
+    REQUIRE(str.size() == 4);
+
+    // one-off overflow truncates
+    str.resize(9);
+    REQUIRE(str.size() == 8);
+
+    // resize down
+    str.resize(2);
+    REQUIRE(str.size() == 2);
+
+    str.clear();
+    REQUIRE(str.size() == 0);
+    REQUIRE(str == "");
+}
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlFixedString: push_back and pop_back", "[SqlFixedString]")
 {
