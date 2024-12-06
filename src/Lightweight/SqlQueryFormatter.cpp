@@ -187,7 +187,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         sqlQueryString << "CREATE TABLE \"" << tableName << "\" (";
 
         size_t currentColumn = 0;
-        bool foundManualPrimaryKeys = false;
+        std::string primaryKeyColumns;
         for (SqlColumnDeclaration const& column: columns)
         {
             if (currentColumn > 0)
@@ -196,25 +196,17 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
             sqlQueryString << "\n    ";
             sqlQueryString << BuildColumnDefinition(column);
             if (column.primaryKey == SqlPrimaryKeyType::MANUAL)
-                foundManualPrimaryKeys = true;
+            {
+                if (!primaryKeyColumns.empty())
+                    primaryKeyColumns += ", ";
+                primaryKeyColumns += '"';
+                primaryKeyColumns += column.name;
+                primaryKeyColumns += '"';
+            }
         }
 
-        if (foundManualPrimaryKeys)
-        {
-            std::string primaryKeyColumns;
-            for (SqlColumnDeclaration const& column: columns)
-            {
-                if (column.primaryKey == SqlPrimaryKeyType::MANUAL)
-                {
-                    if (!primaryKeyColumns.empty())
-                        primaryKeyColumns += ", ";
-                    primaryKeyColumns += '"';
-                    primaryKeyColumns += column.name;
-                    primaryKeyColumns += '"';
-                }
-            }
+        if (!primaryKeyColumns.empty())
             sqlQueryString << ",\n    PRIMARY KEY (" << primaryKeyColumns << ")";
-        }
 
         sqlQueryString << "\n);";
 
