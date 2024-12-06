@@ -564,8 +564,8 @@ TEST_CASE_METHOD(SqlTestFixture, "Query: SELECT into simple struct", "[DataMappe
 
 struct MultiPkRecord
 {
-    Field<SqlFixedString<32>, PrimaryKey::Manual> firstName;
-    Field<SqlFixedString<32>, PrimaryKey::Manual> lastName;
+    Field<SqlString<32>, PrimaryKey::Manual> firstName;
+    Field<SqlString<32>, PrimaryKey::Manual> lastName;
 
     constexpr std::weak_ordering operator<=>(MultiPkRecord const& other) const = default;
 };
@@ -574,12 +574,7 @@ TEST_CASE_METHOD(SqlTestFixture, "Table with multiple primary keys", "[DataMappe
 {
     auto dm = DataMapper {};
 
-    SqlStatement(dm.Connection()).MigrateDirect([](SqlMigrationQueryBuilder& migration) {
-        using namespace SqlColumnTypeDefinitions;
-        migration.CreateTable(RecordTableName<MultiPkRecord>)
-            .PrimaryKey("firstName", Varchar { 32 })
-            .PrimaryKey("lastName", Varchar { 32 });
-    });
+    dm.CreateTable<MultiPkRecord>();
 
     auto record = MultiPkRecord { .firstName = "John", .lastName = "Doe" };
     dm.Create(record);

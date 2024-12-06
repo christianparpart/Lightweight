@@ -5,11 +5,10 @@
 #include <string>
 #include <type_traits>
 
+#include "../Utils.hpp"
+
 namespace detail
 {
-
-template <typename T, typename... Comps>
-concept OneOf = (std::same_as<T, Comps> || ...);
 
 struct StringBuilder
 {
