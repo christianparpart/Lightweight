@@ -6,6 +6,7 @@
     #include <Windows.h>
 #endif
 
+#include "../Lightweight/DataBinder/UnicodeConverter.hpp"
 #include "../Lightweight/SqlConnectInfo.hpp"
 #include "../Lightweight/SqlConnection.hpp"
 #include "../Lightweight/SqlDataBinder.hpp"
@@ -60,7 +61,8 @@ namespace std
 // so that we can get them pretty-printed in REQUIRE() and CHECK() macros.
 
 template <typename WideStringT>
-    requires(same_as<WideStringT, WideString> || same_as<WideStringT, WideStringView>)
+    requires(same_as<WideStringT, WideString> || same_as<WideStringT, WideStringView>
+             || same_as<WideStringT, std::u16string> || same_as<WideStringT, std::u32string>)
 ostream& operator<<(ostream& os, WideStringT const& str)
 {
     auto constexpr BitsPerChar = sizeof(typename WideStringT::value_type) * 8;
@@ -452,7 +454,19 @@ inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, Mode> con
     else if constexpr (Mode == SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED)
         return os << std::format("SqlTrimmedFixedString<{}> {{ '{}' }}", N, value.data());
     else if constexpr (Mode == SqlFixedStringMode::VARIABLE_SIZE)
-        return os << std::format("SqlVariableString<{}> {{ size: {}, '{}' }}", N, value.size(), value.data());
+    {
+        if constexpr (std::same_as<T, char>)
+            return os << std::format("SqlVariableString<{}> {{ size: {}, '{}' }}", N, value.size(), value.data());
+        else
+        {
+            auto u8String = ToUtf8(std::basic_string_view<T>(value.data(), value.size()));
+            return os << std::format("SqlVariableString<{}, {}> {{ size: {}, '{}' }}",
+                                     N,
+                                     Reflection::TypeName<T>,
+                                     value.size(),
+                                     (char const*) u8String.c_str());
+        }
+    }
     else
         return os << std::format("SqlFixedString<{}> {{ size: {}, data: '{}' }}", N, value.size(), value.data());
 }

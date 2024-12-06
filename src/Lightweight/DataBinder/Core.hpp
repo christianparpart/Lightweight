@@ -171,4 +171,3 @@ struct SqlColumnSize
 
 template <typename T>
 constexpr size_t SqlColumnSize = detail::SqlColumnSize<T>::Value;
-

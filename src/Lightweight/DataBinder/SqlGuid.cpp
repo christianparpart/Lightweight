@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "SqlGuid.hpp"
+#include "StdString.hpp"
+#include "BasicStringBinder.hpp"
 
 #if __has_include(<Windows.h>)
     #include <Windows.h>

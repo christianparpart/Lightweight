@@ -213,6 +213,13 @@ inline LIGHTWEIGHT_FORCE_INLINE std::u8string ToUtf8(std::basic_string_view<T> u
     return ToUtf8(std::u16string_view(reinterpret_cast<const char16_t*>(u16InputString.data()), u16InputString.size()));
 }
 
+template <typename T>
+    requires(std::same_as<T, wchar_t> && sizeof(wchar_t) == 4)
+inline LIGHTWEIGHT_FORCE_INLINE std::u8string ToUtf8(std::basic_string_view<T> u32InputString)
+{
+    return ToUtf8(std::u32string_view(reinterpret_cast<const char32_t*>(u32InputString.data()), u32InputString.size()));
+}
+
 // Converts from UTF-32 to UTF-16.
 template <typename T>
     requires std::same_as<T, char32_t> || (std::same_as<T, wchar_t> && sizeof(wchar_t) == 4)
@@ -238,6 +245,23 @@ T ToUtf32(std::u8string_view u8InputString)
     auto result = T {};
     for (char32_t const c32: detail::Utf32Iterator { u8InputString })
         result.push_back(c32);
+    return result;
+}
+
+
+template <typename T = std::u32string>
+T ToUtf32(std::u16string_view u16InputString)
+{
+    auto result = T {};
+
+    for (char16_t const c16: u16InputString)
+    {
+        if (c16 < 0xD800 || c16 >= 0xDC00)
+            result.push_back(c16);
+        else
+            result.push_back(0x10000 + ((c16 & 0x3FF) | ((c16 & 0x3FF) << 10)));
+    }
+
     return result;
 }
 
