@@ -131,6 +131,26 @@ SqlSelectQueryBuilder& SqlSelectQueryBuilder::OrderBy(std::string_view columnNam
     return *this;
 }
 
+SqlSelectQueryBuilder& SqlSelectQueryBuilder::OrderBy(SqlQualifiedTableColumnName const& columnName, SqlResultOrdering ordering)
+{
+    if (m_query.orderBy.empty())
+        m_query.orderBy += "\n ORDER BY ";
+    else
+        m_query.orderBy += ", ";
+
+    m_query.orderBy += '"';
+    m_query.orderBy += columnName.tableName;
+    m_query.orderBy += "\".\"";
+    m_query.orderBy += columnName.columnName;
+    m_query.orderBy += '"';
+
+    if (ordering == SqlResultOrdering::DESCENDING)
+        m_query.orderBy += " DESC";
+    else if (ordering == SqlResultOrdering::ASCENDING)
+        m_query.orderBy += " ASC";
+    return *this;
+}
+
 SqlSelectQueryBuilder& SqlSelectQueryBuilder::GroupBy(std::string_view columnName)
 {
     if (m_query.groupBy.empty())
