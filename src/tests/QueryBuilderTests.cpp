@@ -111,6 +111,23 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Distinct.All", "[SqlQue
                                ORDER BY "b" ASC)"));
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.OrderBy fully qualified", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            return q.FromTable("That")
+                .Select()
+                .Fields("a", "b")
+                .Field("c")
+                .OrderBy(SqlQualifiedTableColumnName { .tableName = "That", .columnName = "b" },
+                         SqlResultOrdering::DESCENDING)
+                .All();
+        },
+        QueryExpectations::All(R"(
+                               SELECT "a", "b", "c" FROM "That"
+                               ORDER BY "That"."b" DESC)"));
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.First", "[SqlQueryBuilder]")
 {
     checkSqlQueryBuilder(

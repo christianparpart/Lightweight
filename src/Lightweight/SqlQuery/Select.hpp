@@ -102,6 +102,10 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
                                                    std::string_view const& alias);
 
     // Constructs or extends a ORDER BY clause.
+    LIGHTWEIGHT_API SqlSelectQueryBuilder& OrderBy(SqlQualifiedTableColumnName const& columnName,
+                                                   SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
+
+    // Constructs or extends a ORDER BY clause.
     LIGHTWEIGHT_API SqlSelectQueryBuilder& OrderBy(std::string_view columnName,
                                                    SqlResultOrdering ordering = SqlResultOrdering::ASCENDING);
 
