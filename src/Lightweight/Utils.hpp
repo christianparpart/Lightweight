@@ -1,7 +1,10 @@
 #pragma once
 
+#include <string_view>
 #include <type_traits>
 #include <utility>
+
+#include <reflection-cpp/reflection.hpp>
 
 namespace detail
 {
@@ -21,10 +24,14 @@ constexpr auto Finally(auto&& cleanupRoutine) noexcept
 }
 
 template <template <typename...> class T, typename U>
-struct is_specialization_of: std::false_type {};
+struct is_specialization_of: std::false_type
+{
+};
 
 template <template <typename...> class T, typename... Us>
-struct is_specialization_of<T, T<Us...>>: std::true_type {};
+struct is_specialization_of<T, T<Us...>>: std::true_type
+{
+};
 
 template <typename T>
 struct MemberClassTypeHelper;
@@ -54,4 +61,3 @@ concept IsSpecializationOf = detail::is_specialization_of<S, T>::value;
 
 template <typename T>
 using MemberClassType = typename detail::MemberClassTypeHelper<T>::type;
-
