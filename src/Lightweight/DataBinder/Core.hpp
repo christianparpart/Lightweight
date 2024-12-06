@@ -148,14 +148,6 @@ concept SqlBasicStringBinderConcept = requires(StringType* str) {
     { SqlBasicStringOperations<StringType>::Clear(str) } -> std::same_as<void>;
 };
 
-template <typename StringType>
-concept SqlBasicStringOperationsConcept = SqlBasicStringBinderConcept<StringType, char>;
-
-template <typename StringType>
-concept SqlCommonWideStringBinderConcept = SqlBasicStringBinderConcept<StringType, wchar_t>
-                                        || SqlBasicStringBinderConcept<StringType, char16_t>
-                                        || SqlBasicStringBinderConcept<StringType, char32_t>;
-
 // clang-format on
 
 namespace detail

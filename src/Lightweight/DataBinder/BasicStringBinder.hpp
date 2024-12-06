@@ -73,18 +73,20 @@ SQLRETURN GetColumnUtf16(SQLHSTMT stmt,
 
 } // namespace detail
 
-template <SqlBasicStringOperationsConcept StringType>
-struct LIGHTWEIGHT_API SqlDataBinder<StringType>
+// SqlDataBinder<> specialization for ANSI character strings
+template <typename AnsiStringType>
+    requires SqlBasicStringBinderConcept<AnsiStringType, char>
+struct LIGHTWEIGHT_API SqlDataBinder<AnsiStringType>
 {
-    using ValueType = StringType;
-    using CharType = typename ValueType::value_type;
-    using StringTraits = SqlBasicStringOperations<ValueType>;
+    using ValueType = AnsiStringType;
+    using CharType = typename AnsiStringType::value_type;
+    using StringTraits = SqlBasicStringOperations<AnsiStringType>;
 
     static constexpr SqlColumnType ColumnType = StringTraits::ColumnType;
 
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,
-                                    ValueType const& value,
+                                    AnsiStringType const& value,
                                     SqlDataBinderCallback& /*cb*/) noexcept
     {
         return SQLBindParameter(stmt,
@@ -95,15 +97,18 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
                                 StringTraits::Size(&value),
                                 0,
                                 (SQLPOINTER) StringTraits::Data(&value),
-                                sizeof(StringType),
+                                sizeof(AnsiStringType),
                                 nullptr);
     }
 
-    static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
+    static SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                  SQLUSMALLINT column,
+                                  AnsiStringType* result,
+                                  SQLLEN* indicator,
+                                  SqlDataBinderCallback& cb) noexcept
     {
-        if constexpr (requires { ValueType::Capacity; })
-            StringTraits::Resize(result, ValueType::Capacity);
+        if constexpr (requires { AnsiStringType::Capacity; })
+            StringTraits::Resize(result, AnsiStringType::Capacity);
 
         if constexpr (requires { StringTraits::PostProcessOutputColumn(result, *indicator); })
             cb.PlanPostProcessOutputColumn(
@@ -119,7 +124,7 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
                           indicator);
     }
 
-    static void PostProcessOutputColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator)
+    static void PostProcessOutputColumn(SQLHSTMT stmt, SQLUSMALLINT column, AnsiStringType* result, SQLLEN* indicator)
     {
         // Now resize the string to the actual length of the data
         // NB: If the indicator is greater than the buffer size, we have a truncation.
@@ -156,21 +161,21 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
     // NOLINTNEXTLINE(readability-function-cognitive-complexity)
     static SQLRETURN GetColumn(SQLHSTMT stmt,
                                SQLUSMALLINT column,
-                               ValueType* result,
+                               AnsiStringType* result,
                                SQLLEN* indicator,
                                SqlDataBinderCallback const& /*cb*/) noexcept
     {
-        if constexpr (requires { ValueType::Capacity; })
+        if constexpr (requires { AnsiStringType::Capacity; })
         {
-            StringTraits::Resize(result, ValueType::Capacity);
+            StringTraits::Resize(result, AnsiStringType::Capacity);
             SQLRETURN const rv =
-                SQLGetData(stmt, column, SQL_C_CHAR, StringTraits::Data(result), ValueType::Capacity, indicator);
+                SQLGetData(stmt, column, SQL_C_CHAR, StringTraits::Data(result), AnsiStringType::Capacity, indicator);
             if (rv == SQL_SUCCESS || rv == SQL_NO_DATA)
             {
                 if (*indicator == SQL_NULL_DATA)
                     StringTraits::Resize(result, 0);
                 else if (*indicator != SQL_NO_TOTAL)
-                    StringTraits::Resize(result, (std::min)(ValueType::Capacity, static_cast<size_t>(*indicator)));
+                    StringTraits::Resize(result, (std::min)(AnsiStringType::Capacity, static_cast<size_t>(*indicator)));
             }
             if constexpr (requires { StringTraits::PostProcessOutputColumn(result, *indicator); })
                 StringTraits::PostProcessOutputColumn(result, *indicator);
@@ -228,20 +233,22 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
         }
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE std::string_view Inspect(ValueType const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE std::string_view Inspect(AnsiStringType const& value) noexcept
     {
         return { StringTraits::Data(&value), StringTraits::Size(&value) };
     }
 };
 
-template <SqlCommonWideStringBinderConcept StringType>
-struct LIGHTWEIGHT_API SqlDataBinder<StringType>
+// SqlDataBinder<> specialization for UTF-16 strings
+template <typename Utf16StringType>
+    requires(SqlBasicStringBinderConcept<Utf16StringType, char16_t>
+             || (SqlBasicStringBinderConcept<Utf16StringType, unsigned short>)
+             || (SqlBasicStringBinderConcept<Utf16StringType, wchar_t> && sizeof(wchar_t) == 2))
+struct LIGHTWEIGHT_API SqlDataBinder<Utf16StringType>
 {
-    using ValueType = StringType;
-    using CharType = typename ValueType::value_type;
-    using StringTraits = SqlBasicStringOperations<ValueType>;
-
-    static_assert(sizeof(CharType) == 2 || sizeof(CharType) == 4);
+    using ValueType = Utf16StringType;
+    using CharType = typename Utf16StringType::value_type;
+    using StringTraits = SqlBasicStringOperations<Utf16StringType>;
 
     static constexpr SqlColumnType ColumnType = StringTraits::ColumnType;
 
@@ -250,14 +257,15 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
 
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,
-                                    ValueType const& value,
+                                    Utf16StringType const& value,
                                     SqlDataBinderCallback& cb) noexcept
     {
         switch (cb.ServerType())
         {
             case SqlServerType::POSTGRESQL: {
                 // PostgreSQL only supports UTF-8 as Unicode encoding
-                auto u8String = std::make_shared<std::u8string>(ToUtf8(detail::SqlViewHelper<ValueType>::View(value)));
+                auto u8String =
+                    std::make_shared<std::u8string>(ToUtf8(detail::SqlViewHelper<Utf16StringType>::View(value)));
                 cb.PlanPostExecuteCallback([u8String = u8String]() {}); // Keep the string alive
                 return SQLBindParameter(stmt,
                                         column,
@@ -276,34 +284,23 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
             case SqlServerType::MICROSOFT_SQL:
             case SqlServerType::UNKNOWN: {
                 using CharType = StringTraits::CharType;
-                if constexpr (sizeof(CharType) == 4)
-                {
-                    auto u16String =
-                        std::make_shared<std::u16string>(ToUtf16(detail::SqlViewHelper<ValueType>::View(value)));
-                    cb.PlanPostExecuteCallback([u8String = u16String]() {}); // Keep the string alive
-                    auto const* data = u16String->data();
-                    auto const sizeInBytes = u16String->size() * sizeof(CharType);
-                    return SQLBindParameter(
-                        stmt, column, SQL_PARAM_INPUT, CType, SqlType, sizeInBytes, 0, (SQLPOINTER) data, 0, nullptr);
-                }
-                else
-                {
-                    auto const* data = StringTraits::Data(&value);
-                    auto const sizeInBytes = StringTraits::Size(&value) * sizeof(CharType);
-                    return SQLBindParameter(
-                        stmt, column, SQL_PARAM_INPUT, CType, SqlType, sizeInBytes, 0, (SQLPOINTER) data, 0, nullptr);
-                }
+                auto const* data = StringTraits::Data(&value);
+                auto const sizeInBytes = StringTraits::Size(&value) * sizeof(CharType);
+                return SQLBindParameter(
+                    stmt, column, SQL_PARAM_INPUT, CType, SqlType, sizeInBytes, 0, (SQLPOINTER) data, 0, nullptr);
             }
         }
         std::unreachable();
     }
 
-    static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
-        requires(sizeof(CharType) == 2)
+    static SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                  SQLUSMALLINT column,
+                                  Utf16StringType* result,
+                                  SQLLEN* indicator,
+                                  SqlDataBinderCallback& cb) noexcept
     {
-        if constexpr (requires { ValueType::Capacity; })
-            StringTraits::Resize(result, ValueType::Capacity);
+        if constexpr (requires { Utf16StringType::Capacity; })
+            StringTraits::Resize(result, Utf16StringType::Capacity);
         else
             StringTraits::Reserve(result, 255);
 
@@ -337,13 +334,88 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
                           indicator);
     }
 
-    static SQLRETURN OutputColumn(
-        SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& cb) noexcept
-        requires(sizeof(CharType) == 4)
+    static SQLRETURN GetColumn(SQLHSTMT stmt,
+                               SQLUSMALLINT column,
+                               Utf16StringType* result,
+                               SQLLEN* indicator,
+                               SqlDataBinderCallback const& cb) noexcept
+    {
+        return detail::GetColumnUtf16(stmt, column, result, indicator, cb);
+    }
+
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(Utf16StringType const& value) noexcept
+    {
+        auto u8String = ToUtf8(detail::SqlViewHelper<Utf16StringType>::View(value));
+        return std::string(reinterpret_cast<char const*>(u8String.data()), u8String.size());
+    }
+};
+
+// SqlDataBinder<> specialization for UTF-32 strings
+template <typename Utf32StringType>
+    requires(SqlBasicStringBinderConcept<Utf32StringType, char32_t>
+             || (SqlBasicStringBinderConcept<Utf32StringType, uint32_t>)
+             || (SqlBasicStringBinderConcept<Utf32StringType, wchar_t> && sizeof(wchar_t) == 4))
+struct LIGHTWEIGHT_API SqlDataBinder<Utf32StringType>
+{
+    using ValueType = Utf32StringType;
+    using CharType = typename Utf32StringType::value_type;
+    using StringTraits = SqlBasicStringOperations<Utf32StringType>;
+
+    static constexpr SqlColumnType ColumnType = StringTraits::ColumnType;
+
+    static constexpr auto CType = SQL_C_WCHAR;
+    static constexpr auto SqlType = SQL_WVARCHAR;
+
+    static SQLRETURN InputParameter(SQLHSTMT stmt,
+                                    SQLUSMALLINT column,
+                                    Utf32StringType const& value,
+                                    SqlDataBinderCallback& cb) noexcept
+    {
+        switch (cb.ServerType())
+        {
+            case SqlServerType::POSTGRESQL: {
+                // PostgreSQL only supports UTF-8 as Unicode encoding
+                auto u8String =
+                    std::make_shared<std::u8string>(ToUtf8(detail::SqlViewHelper<Utf32StringType>::View(value)));
+                cb.PlanPostExecuteCallback([u8String = u8String]() {}); // Keep the string alive
+                return SQLBindParameter(stmt,
+                                        column,
+                                        SQL_PARAM_INPUT,
+                                        SQL_C_CHAR,
+                                        SQL_VARCHAR,
+                                        u8String->size(),
+                                        0,
+                                        (SQLPOINTER) u8String->data(),
+                                        0,
+                                        nullptr);
+            }
+            case SqlServerType::ORACLE:
+            case SqlServerType::MYSQL:
+            case SqlServerType::SQLITE: // We assume UTF-16 for SQLite
+            case SqlServerType::MICROSOFT_SQL:
+            case SqlServerType::UNKNOWN: {
+                using CharType = StringTraits::CharType;
+                auto u16String =
+                    std::make_shared<std::u16string>(ToUtf16(detail::SqlViewHelper<Utf32StringType>::View(value)));
+                cb.PlanPostExecuteCallback([u8String = u16String]() {}); // Keep the string alive
+                auto const* data = u16String->data();
+                auto const sizeInBytes = u16String->size() * sizeof(CharType);
+                return SQLBindParameter(
+                    stmt, column, SQL_PARAM_INPUT, CType, SqlType, sizeInBytes, 0, (SQLPOINTER) data, 0, nullptr);
+            }
+        }
+        std::unreachable();
+    }
+
+    static SQLRETURN OutputColumn(SQLHSTMT stmt,
+                                  SQLUSMALLINT column,
+                                  Utf32StringType* result,
+                                  SQLLEN* indicator,
+                                  SqlDataBinderCallback& cb) noexcept
     {
         auto u16String = std::make_shared<std::u16string>();
-        if constexpr (requires { ValueType::Capacity; })
-            u16String->resize(ValueType::Capacity);
+        if constexpr (requires { Utf32StringType::Capacity; })
+            u16String->resize(Utf32StringType::Capacity);
         else
             u16String->resize(255);
 
@@ -380,32 +452,25 @@ struct LIGHTWEIGHT_API SqlDataBinder<StringType>
 
     static SQLRETURN GetColumn(SQLHSTMT stmt,
                                SQLUSMALLINT column,
-                               ValueType* result,
+                               Utf32StringType* result,
                                SQLLEN* indicator,
                                SqlDataBinderCallback const& cb) noexcept
     {
-        if constexpr (sizeof(CharType) == 2)
-        {
-            return detail::GetColumnUtf16(stmt, column, result, indicator, cb);
-        }
-        else if constexpr (sizeof(CharType) == 4)
-        {
-            auto u16String = std::u16string {};
-            auto const sqlResult = detail::GetColumnUtf16(stmt, column, &u16String, indicator, cb);
-            if (!SQL_SUCCEEDED(sqlResult))
-                return sqlResult;
-
-            auto const u32String = ToUtf32(u16String);
-            StringTraits::Resize(result, u32String.size());
-            std::copy_n((CharType const*) u32String.data(), u32String.size(), StringTraits::Data(result));
-
+        auto u16String = std::u16string {};
+        auto const sqlResult = detail::GetColumnUtf16(stmt, column, &u16String, indicator, cb);
+        if (!SQL_SUCCEEDED(sqlResult))
             return sqlResult;
-        }
+
+        auto const u32String = ToUtf32(u16String);
+        StringTraits::Resize(result, u32String.size());
+        std::copy_n((CharType const*) u32String.data(), u32String.size(), StringTraits::Data(result));
+
+        return sqlResult;
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(ValueType const& value) noexcept
+    static LIGHTWEIGHT_FORCE_INLINE std::string Inspect(Utf32StringType const& value) noexcept
     {
-        auto u8String = ToUtf8(detail::SqlViewHelper<ValueType>::View(value));
+        auto u8String = ToUtf8(detail::SqlViewHelper<Utf32StringType>::View(value));
         return std::string(reinterpret_cast<char const*>(u8String.data()), u8String.size());
     }
 };
