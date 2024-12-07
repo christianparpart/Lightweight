@@ -472,6 +472,8 @@ class PostgreSqlFormatter final: public BasicSqlQueryFormatter
                 using Type = std::decay_t<decltype(actualType)>;
                 if constexpr (std::same_as<Type, Guid>)
                     return "UUID";
+                else if constexpr (std::same_as<Type, DateTime>)
+                    return "TIMESTAMP";
                 else
                     return BasicSqlQueryFormatter::ColumnType(type);
             },

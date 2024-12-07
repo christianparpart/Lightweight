@@ -254,72 +254,28 @@ constexpr std::string_view FieldNameOf()
 template <typename Record>
 std::string DataMapper::CreateTableString(SqlServerType serverType)
 {
-    SqlTraits const& traits = GetSqlTraits(serverType);
-
-    std::vector<std::string> columnsSql;
-    columnsSql.reserve(Reflection::CountMembers<Record>);
+    auto migration = SqlQueryBuilder(*SqlQueryFormatter::Get(serverType)).Migration();
+    auto createTable = migration.CreateTable(RecordTableName<Record>);
 
     Reflection::EnumerateMembers<Record>([&]<size_t I, typename FieldType>() {
         if constexpr (FieldWithStorage<FieldType>)
         {
-            std::stringstream sql;
-            sql << '"' << FieldNameOf<I, Record>() << '"';
-
             if constexpr (IsAutoIncrementPrimaryKey<FieldType>)
-            {
-                sql << " " << traits.PrimaryKeyAutoIncrement;
-            }
+                createTable.PrimaryKeyWithAutoIncrement(std::string(FieldNameOf<I, Record>()),
+                                                  SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+            else if constexpr (FieldType::IsPrimaryKey)
+                createTable.PrimaryKey(std::string(FieldNameOf<I, Record>()),
+                                 SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+            else if constexpr (FieldType::IsMandatory)
+                createTable.RequiredColumn(std::string(FieldNameOf<I, Record>()),
+                                     SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
             else
-            {
-                using FieldBinder = SqlDataBinder<typename FieldType::ValueType>;
-                sql << " " << traits.ColumnTypeName(FieldBinder::ColumnType);
-
-                if constexpr (SqlColumnSize<typename FieldType::ValueType> > 0)
-                    sql << "(" << SqlColumnSize<typename FieldType::ValueType> << ")";
-
-                if constexpr (FieldType::IsMandatory)
-                    sql << " NOT NULL";
-                else
-                    sql << " NULL";
-
-                if constexpr (FieldType::IsPrimaryKey)
-                    sql << " PRIMARY KEY";
-
-                // TODO: properly encode default values to CREATE TABLE statement
-                // This currently always adds quoting, which is wrong.
-                // auto const sqlDefaultValue = Reflection::GetMemberAt<I>(Record {});
-                // SqlQueryFormatter const& formatter = *SqlQueryFormatter::Get(serverType);
-                // constexpr bool isString =
-                //     detail::OneOf<ValueType, SqlTrimmedString, std::string, std::string_view>
-                //     || IsSqlFixedString<ValueType>;
-                // if (sqlDefaultValue.Value() != ValueType {})
-                // {
-                //     if constexpr (isString)
-                //         sql << " DEFAULT " << formatter.StringLiteral(sqlDefaultValue.Value());
-                //     else
-                //         sql << " DEFAULT " << sqlDefaultValue;
-                // }
-            }
-
-            columnsSql.emplace_back(sql.str());
+                createTable.Column(std::string(FieldNameOf<I, Record>()),
+                             SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
         }
     });
 
-    detail::StringBuilder sql;
-    sql << "CREATE TABLE \"" << RecordTableName<Record> << "\" (\n";
-
-    for (auto const&& [i, columnSql]: columnsSql | std::views::enumerate)
-    {
-        sql << "    ";
-        sql << columnSql;
-        if (static_cast<size_t>(i + 1) < columnsSql.size())
-            sql << ",";
-        sql << '\n';
-    }
-
-    sql << ");\n";
-
-    return sql.output;
+    return migration.GetPlan().ToSql();
 }
 
 template <typename FirstRecord, typename... MoreRecords>

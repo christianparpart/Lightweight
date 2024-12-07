@@ -9,6 +9,12 @@
 namespace detail
 {
 
+template <typename T, typename... Comps>
+concept OneOf = (std::same_as<T, Comps> || ...);
+
+template <typename T>
+constexpr auto AlwaysFalse = std::false_type::value;
+
 constexpr auto Finally(auto&& cleanupRoutine) noexcept
 {
     // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)

@@ -757,7 +757,7 @@ TEST_CASE_METHOD(SqlTestFixture, "CreateTable complex demo", "[SqlQueryBuilder][
                     CREATE TABLE "Test" (
                         "a" SERIAL NOT NULL PRIMARY KEY,
                         "b" VARCHAR(32) NOT NULL UNIQUE,
-                        "c" DATETIME,
+                        "c" TIMESTAMP,
                         "d" VARCHAR(255)
                     );
                     CREATE INDEX "Test_c_index" ON "Test"("c");

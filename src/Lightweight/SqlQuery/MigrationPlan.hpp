@@ -3,6 +3,8 @@
 #pragma once
 
 #include "../Api.hpp"
+#include "../SqlDataBinder.hpp"
+#include "../Utils.hpp"
 
 #include <reflection-cpp/reflection.hpp>
 
@@ -51,6 +53,114 @@ using SqlColumnTypeDefinition = std::variant<
     SqlColumnTypeDefinitions::Varchar
 >;
 // clang-format on
+
+namespace detail
+{
+
+template <typename T>
+struct SqlColumnTypeDefinitionOf
+{
+    static_assert(AlwaysFalse<T>, "Unsupported type for SQL column definition.");
+};
+
+template <>
+struct SqlColumnTypeDefinitionOf<bool>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Bool {};
+};
+
+template <>
+struct SqlColumnTypeDefinitionOf<char>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Char { 1 };
+};
+
+template <>
+struct SqlColumnTypeDefinitionOf<SqlDate>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Date {};
+};
+
+template <>
+struct SqlColumnTypeDefinitionOf<SqlDateTime>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::DateTime {};
+};
+
+template <>
+struct SqlColumnTypeDefinitionOf<SqlTime>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Time {};
+};
+
+template <size_t Precision, size_t Scale>
+struct SqlColumnTypeDefinitionOf<SqlNumeric<Precision, Scale>>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Decimal { .precision = Precision, .scale = Scale };
+};
+
+template <>
+struct SqlColumnTypeDefinitionOf<SqlGuid>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Guid {};
+};
+
+template <typename T>
+    requires(detail::OneOf<T, int16_t, uint16_t>)
+struct SqlColumnTypeDefinitionOf<T>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Smallint {};
+};
+
+template <typename T>
+    requires(detail::OneOf<T, int32_t, uint32_t>)
+struct SqlColumnTypeDefinitionOf<T>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Integer {};
+};
+
+template <typename T>
+    requires(detail::OneOf<T, int64_t, uint64_t>)
+struct SqlColumnTypeDefinitionOf<T>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Bigint {};
+};
+
+template <typename T>
+    requires(detail::OneOf<T, float, double>)
+struct SqlColumnTypeDefinitionOf<T>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Real {};
+};
+
+template <size_t N, typename CharT>
+struct SqlColumnTypeDefinitionOf<SqlFixedString<N, CharT, SqlFixedStringMode::VARIABLE_SIZE>>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Varchar { N };
+};
+
+template <size_t N, typename CharT>
+struct SqlColumnTypeDefinitionOf<SqlFixedString<N, CharT, SqlFixedStringMode::FIXED_SIZE>>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Char { N };
+};
+
+template <size_t N, typename CharT>
+struct SqlColumnTypeDefinitionOf<SqlFixedString<N, CharT, SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED>>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Char { N };
+};
+
+template <typename T>
+struct SqlColumnTypeDefinitionOf<std::optional<T>>
+{
+    static constexpr auto value = SqlColumnTypeDefinitionOf<T>::value;
+};
+
+} // namespace detail
+
+template <typename T>
+constexpr auto SqlColumnTypeDefinitionOf = detail::SqlColumnTypeDefinitionOf<T>::value;
 
 enum class SqlPrimaryKeyType : uint8_t
 {
