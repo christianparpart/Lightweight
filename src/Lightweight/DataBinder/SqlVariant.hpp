@@ -245,8 +245,6 @@ struct LIGHTWEIGHT_API std::formatter<SqlVariant>: formatter<string>
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlVariant>
 {
-    static constexpr auto ColumnType = SqlColumnType::UNKNOWN;
-
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,
                                     SqlVariant const& variantValue,

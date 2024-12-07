@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../SqlColumnTypeDefinitions.hpp"
 #include "Core.hpp"
 
 #include <chrono>
@@ -110,7 +111,7 @@ struct SqlTime
 template <>
 struct SqlDataBinder<SqlTime>
 {
-    static constexpr auto ColumnType = SqlColumnType::TIME;
+    static constexpr auto ColumnType = SqlColumnTypeDefinitions::Time {};
 
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
                                                              SQLUSMALLINT column,

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../SqlColumnTypeDefinitions.hpp"
 #include "Core.hpp"
 
 #include <chrono>
@@ -84,7 +85,7 @@ struct std::formatter<SqlDate>: std::formatter<std::string>
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlDate>
 {
-    static constexpr auto ColumnType = SqlColumnType::DATE;
+    static constexpr auto ColumnType = SqlColumnTypeDefinitions::Date {};
 
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
                                                              SQLUSMALLINT column,

@@ -82,7 +82,7 @@ struct LIGHTWEIGHT_API SqlDataBinder<AnsiStringType>
     using CharType = typename AnsiStringType::value_type;
     using StringTraits = SqlBasicStringOperations<AnsiStringType>;
 
-    static constexpr SqlColumnType ColumnType = StringTraits::ColumnType;
+    static constexpr auto ColumnType = StringTraits::ColumnType;
 
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,
@@ -250,7 +250,7 @@ struct LIGHTWEIGHT_API SqlDataBinder<Utf16StringType>
     using CharType = typename Utf16StringType::value_type;
     using StringTraits = SqlBasicStringOperations<Utf16StringType>;
 
-    static constexpr SqlColumnType ColumnType = StringTraits::ColumnType;
+    static constexpr auto ColumnType = StringTraits::ColumnType;
 
     static constexpr auto CType = SQL_C_WCHAR;
     static constexpr auto SqlType = SQL_WVARCHAR;
@@ -361,7 +361,7 @@ struct LIGHTWEIGHT_API SqlDataBinder<Utf32StringType>
     using CharType = typename Utf32StringType::value_type;
     using StringTraits = SqlBasicStringOperations<Utf32StringType>;
 
-    static constexpr SqlColumnType ColumnType = StringTraits::ColumnType;
+    static constexpr auto ColumnType = StringTraits::ColumnType;
 
     static constexpr auto CType = SQL_C_WCHAR;
     static constexpr auto SqlType = SQL_WVARCHAR;

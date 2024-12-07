@@ -53,7 +53,7 @@ std::ostream& operator<<(std::ostream& os, CustomType const& value)
 template <>
 struct SqlDataBinder<CustomType>
 {
-    static constexpr SqlColumnType ColumnType = SqlDataBinder<decltype(CustomType::value)>::ColumnType;
+    static constexpr auto ColumnType = SqlDataBinder<decltype(CustomType::value)>::ColumnType;
 
     static SQLRETURN InputParameter(SQLHSTMT hStmt,
                                     SQLUSMALLINT column,
@@ -692,7 +692,7 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
             if constexpr (requires { TestTypeTraits<TestType>::sqlColumnTypeNameOverride; })
                 return conn.QueryFormatter().ColumnType(TestTypeTraits<TestType>::sqlColumnTypeNameOverride);
             else
-                return std::string(conn.Traits().ColumnTypeName(SqlDataBinder<TestType>::ColumnType));
+                return conn.QueryFormatter().ColumnType(SqlDataBinder<TestType>::ColumnType);
         }();
 
         stmt.ExecuteDirect(std::format("CREATE TABLE Test (Value {} NULL)", sqlColumnType));
