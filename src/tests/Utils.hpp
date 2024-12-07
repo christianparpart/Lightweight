@@ -12,6 +12,7 @@
 #include "../Lightweight/SqlDataBinder.hpp"
 #include "../Lightweight/SqlLogger.hpp"
 #include "../Lightweight/SqlStatement.hpp"
+#include "../Lightweight/Utils.hpp"
 
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -61,8 +62,13 @@ namespace std
 // so that we can get them pretty-printed in REQUIRE() and CHECK() macros.
 
 template <typename WideStringT>
-    requires(same_as<WideStringT, WideString> || same_as<WideStringT, WideStringView>
-             || same_as<WideStringT, std::u16string> || same_as<WideStringT, std::u32string>)
+    requires(detail::OneOf<WideStringT,
+                           std::wstring,
+                           std::wstring_view,
+                           std::u16string,
+                           std::u16string_view,
+                           std::u32string,
+                           std::u32string_view>)
 ostream& operator<<(ostream& os, WideStringT const& str)
 {
     auto constexpr BitsPerChar = sizeof(typename WideStringT::value_type) * 8;

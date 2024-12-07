@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../SqlColumnTypeDefinitions.hpp"
 #include "Core.hpp"
 #include "StdString.hpp"
 
@@ -33,7 +34,7 @@ struct SqlBasicStringOperations<SqlText>
 {
     using Traits = SqlBasicStringOperations<typename SqlText::value_type>;
 
-    static constexpr auto ColumnType = SqlColumnType::TEXT;
+    static constexpr auto ColumnType = SqlColumnTypeDefinitions::Text {};
 
     // clang-format off
     static LIGHTWEIGHT_FORCE_INLINE char const* Data(SqlText const* str) noexcept { return Traits::Data(&str->value); }

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../SqlColumnTypeDefinitions.hpp"
 #include "Core.hpp"
 #include "StdString.hpp"
 
@@ -31,7 +32,7 @@ struct std::formatter<SqlTrimmedString>: std::formatter<std::string>
 template <>
 struct SqlDataBinder<SqlTrimmedString>
 {
-    static constexpr auto ColumnType = SqlColumnType::STRING;
+    static constexpr auto ColumnType = SqlColumnTypeDefinitions::Varchar { 255 };
 
     using InnerStringType = decltype(std::declval<SqlTrimmedString>().value);
     using StringTraits = SqlBasicStringOperations<InnerStringType>;

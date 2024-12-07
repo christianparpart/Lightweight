@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../SqlColumnTypeDefinitions.hpp"
 #include "BasicStringBinder.hpp"
 #include "Core.hpp"
 #include "StdString.hpp"
@@ -96,7 +97,7 @@ inline LIGHTWEIGHT_FORCE_INLINE std::string to_string(SqlGuid const& guid)
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlGuid>
 {
-    static constexpr auto ColumnType = SqlColumnType::GUID;
+    static constexpr auto ColumnType = SqlColumnTypeDefinitions::Guid {};
 
     static SQLRETURN InputParameter(SQLHSTMT stmt,
                                     SQLUSMALLINT column,

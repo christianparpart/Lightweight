@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../SqlColumnTypeDefinitions.hpp"
 #include "Core.hpp"
 #include "UnicodeConverter.hpp"
 
@@ -17,7 +18,7 @@ struct SqlBasicStringOperations<std::basic_string<CharT>>
     using CharType = CharT;
     using StringType = std::basic_string<CharT>;
 
-    static constexpr SqlColumnType ColumnType = SqlColumnType::STRING;
+    static constexpr auto ColumnType = SqlColumnTypeDefinitions::Varchar { 255 };
 
     static LIGHTWEIGHT_FORCE_INLINE CharType const* Data(StringType const* str) noexcept
     {

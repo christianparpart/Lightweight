@@ -13,7 +13,7 @@ struct SqlDataBinder<std::optional<T>>
 {
     using OptionalValue = std::optional<T>;
 
-    static constexpr SqlColumnType ColumnType = SqlDataBinder<T>::ColumnType;
+    static constexpr auto ColumnType = SqlDataBinder<T>::ColumnType;
 
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
                                                              SQLUSMALLINT column,

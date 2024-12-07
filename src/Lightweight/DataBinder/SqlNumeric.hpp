@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../SqlColumnTypeDefinitions.hpp"
 #include "../SqlError.hpp"
 #include "../SqlLogger.hpp"
 #include "Primitives.hpp"
@@ -29,7 +30,7 @@
 template <std::size_t ThePrecision, std::size_t TheScale>
 struct SqlNumeric
 {
-    static constexpr auto ColumnType = SqlColumnType::NUMERIC;
+    static constexpr auto ColumnType = SqlColumnTypeDefinitions::Decimal { .precision = ThePrecision, .scale = TheScale };
 
     // Number of total digits
     static constexpr auto Precision = ThePrecision;
@@ -145,7 +146,7 @@ struct SqlDataBinder<SqlNumeric<Precision, Scale>>
 {
     using ValueType = SqlNumeric<Precision, Scale>;
 
-    static constexpr SqlColumnType ColumnType = SqlColumnType::NUMERIC;
+    static constexpr auto ColumnType = SqlColumnTypeDefinitions::Decimal { .precision = Precision, .scale = Scale };
 
     static void RequireSuccess(SQLHSTMT stmt, SQLRETURN error, std::source_location sourceLocation = std::source_location::current())
     {

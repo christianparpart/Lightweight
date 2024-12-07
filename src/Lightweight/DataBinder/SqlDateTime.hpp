@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core.hpp"
+#include "../SqlColumnTypeDefinitions.hpp"
 
 #include <chrono>
 #include <format>
@@ -131,7 +132,7 @@ struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime::native_type>
 template <>
 struct LIGHTWEIGHT_API SqlDataBinder<SqlDateTime>
 {
-    static constexpr auto ColumnType = SqlColumnType::DATETIME;
+    static constexpr auto ColumnType = SqlColumnTypeDefinitions::DateTime {};
 
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,
                                                              SQLUSMALLINT column,

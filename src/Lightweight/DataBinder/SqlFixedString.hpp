@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../SqlColumnTypeDefinitions.hpp"
 #include "Core.hpp"
 #include "UnicodeConverter.hpp"
 
@@ -263,7 +264,22 @@ struct SqlBasicStringOperations<SqlFixedString<N, T, Mode>>
 {
     using CharType = T;
     using ValueType = SqlFixedString<N, CharType, Mode>;
-    static constexpr SqlColumnType ColumnType = SqlColumnType::STRING;
+    static constexpr auto ColumnType = []() constexpr -> SqlColumnTypeDefinition {
+        if constexpr (std::same_as<CharType, char>)
+        {
+            if constexpr (Mode == SqlFixedStringMode::VARIABLE_SIZE)
+                return SqlColumnTypeDefinitions::Varchar { N };
+            else
+                return SqlColumnTypeDefinitions::Char { N };
+        }
+        else
+        {
+            if constexpr (Mode == SqlFixedStringMode::VARIABLE_SIZE)
+                return SqlColumnTypeDefinitions::NVarchar { N };
+            else
+                return SqlColumnTypeDefinitions::NChar { N };
+        }
+    }();
 
     static CharType const* Data(ValueType const* str) noexcept
     {

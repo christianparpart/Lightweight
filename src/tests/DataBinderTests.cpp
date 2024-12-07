@@ -53,7 +53,7 @@ std::ostream& operator<<(std::ostream& os, CustomType const& value)
 template <>
 struct SqlDataBinder<CustomType>
 {
-    static constexpr SqlColumnType ColumnType = SqlDataBinder<decltype(CustomType::value)>::ColumnType;
+    static constexpr auto ColumnType = SqlDataBinder<decltype(CustomType::value)>::ColumnType;
 
     static SQLRETURN InputParameter(SQLHSTMT hStmt,
                                     SQLUSMALLINT column,
@@ -287,21 +287,23 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
 
     auto stmt = SqlStatement {};
     UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
-    stmt.ExecuteDirect("CREATE TABLE Test (Value TEXT)");
     auto const expectedText = MakeLargeText(8 * 1000);
-    stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+    stmt.MigrateDirect([size = expectedText.size()](auto& migration) {
+        migration.CreateTable("Test").Column("Value", SqlColumnTypeDefinitions::Text { size });
+    });
+    stmt.Prepare(stmt.Query("Test").Insert().Set("Value", SqlWildcard));
     stmt.Execute(expectedText);
 
     SECTION("check handling for explicitly fetched output columns")
     {
-        stmt.ExecuteDirect("SELECT Value FROM Test");
+        stmt.ExecuteDirect(stmt.Query("Test").Select().Field("Value").All());
         (void) stmt.FetchRow();
         CHECK(stmt.GetColumn<std::string>(1) == expectedText);
     }
 
     SECTION("check handling for explicitly fetched output columns (in-place store)")
     {
-        stmt.ExecuteDirect("SELECT Value FROM Test");
+        stmt.ExecuteDirect(stmt.Query("Test").Select().Field("Value").All());
         (void) stmt.FetchRow();
         std::string actualText;
         CHECK(stmt.GetColumn(1, &actualText));
@@ -310,7 +312,7 @@ TEST_CASE_METHOD(SqlTestFixture, "InputParameter and GetColumn for very large va
 
     SECTION("check handling for bound output columns")
     {
-        stmt.Prepare("SELECT Value FROM Test");
+        stmt.Prepare(stmt.Query("Test").Select().Field("Value").All());
         stmt.Execute();
         auto reader = stmt.GetResultCursor();
 
@@ -446,7 +448,7 @@ template <>
 struct TestTypeTraits<SqlTrimmedFixedString<20, char>>
 {
     using ValueType = SqlTrimmedFixedString<20, char>;
-    static constexpr auto sqlColumnTypeNameOverride = "CHAR(20)";
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::Char { 20 };
     static constexpr auto inputValue = ValueType { "Hello " };
     static constexpr auto expectedOutputValue = ValueType { "Hello" };
 };
@@ -455,7 +457,7 @@ template <>
 struct TestTypeTraits<SqlString<20>>
 {
     using ValueType = SqlString<20>;
-    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(20)";
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::Varchar { 20 };
     static constexpr auto inputValue = ValueType { "Hello" };
     static constexpr auto expectedOutputValue = ValueType { "Hello" };
 };
@@ -464,7 +466,7 @@ template <>
 struct TestTypeTraits<SqlString<20, char16_t>>
 {
     using ValueType = SqlString<20, char16_t>;
-    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(20)";
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 20 };
     static constexpr auto inputValue = ValueType { u"Hello" };
     static constexpr auto expectedOutputValue = ValueType { u"Hello" };
 };
@@ -473,7 +475,7 @@ template <>
 struct TestTypeTraits<SqlString<20, char32_t>>
 {
     using ValueType = SqlString<20, char32_t>;
-    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(20)";
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 20 };
     static constexpr auto inputValue = ValueType { U"Hello" };
     static constexpr auto expectedOutputValue = ValueType { U"Hello" };
 };
@@ -482,7 +484,7 @@ template <>
 struct TestTypeTraits<SqlString<20, wchar_t>>
 {
     using ValueType = SqlString<20, wchar_t>;
-    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(20)";
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 20 };
     static constexpr auto inputValue = ValueType { L"Hello" };
     static constexpr auto expectedOutputValue = ValueType { L"Hello" };
 };
@@ -490,7 +492,7 @@ struct TestTypeTraits<SqlString<20, wchar_t>>
 template <>
 struct TestTypeTraits<SqlText>
 {
-    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(255)"; // Oracle does not support TEXT column, so we use VARCHAR(255) here
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::Text { 255 };
     static auto const inline inputValue = SqlText { "Hello, World!" };
     static auto const inline expectedOutputValue = SqlText { "Hello, World!" };
     static auto const inline outputInitializer = SqlText { std::string(255, '\0') };
@@ -530,7 +532,7 @@ struct TestTypeTraits<SqlNumeric<15, 2>>
     static constexpr auto blacklist = std::array {
         std::pair { SqlServerType::SQLITE, "SQLite does not support NUMERIC type"sv },
     };
-    static constexpr auto sqlColumnTypeNameOverride = "NUMERIC(15, 2)";
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::Decimal { .precision=15, .scale=2 };
     static const inline auto inputValue = SqlNumeric<15, 2> { 123.45 };
     static const inline auto expectedOutputValue = SqlNumeric<15, 2> { 123.45 };
 };
@@ -538,77 +540,96 @@ struct TestTypeTraits<SqlNumeric<15, 2>>
 template <>
 struct TestTypeTraits<SqlTrimmedString>
 {
-    static constexpr auto sqlColumnTypeNameOverride = "CHAR(50)";
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::Char { 20 };
     static auto const inline inputValue = SqlTrimmedString { "Alice    " };
     static auto const inline expectedOutputValue = SqlTrimmedString { "Alice" };
 };
 
+template <typename T>
+T MakeStringOuputInitializer(SqlServerType serverType)
+{
+    if (serverType == SqlServerType::MICROSOFT_SQL)
+        // For MS SQL Server, we need to allocate a large enough buffer for the output column.
+        // Because MS SQL's ODBC driver does not support SQLGetData after SQLFetch for truncated data, it seems.
+        return T(50, '\0');
+    else
+        return T {};
+}
+
 template <>
 struct TestTypeTraits<std::string>
 {
-    static constexpr auto sqlColumnTypeNameOverride = "VARCHAR(50)";
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::Varchar { 50 };
     static auto const inline inputValue = std::string { "Alice" };
     static auto const inline expectedOutputValue = std::string { "Alice" };
+    static auto const inline outputInitializer = &MakeStringOuputInitializer<std::string>;
+};
 
-    static auto const inline outputInitializer = [](SqlServerType serverType) {
-        if (serverType == SqlServerType::MICROSOFT_SQL)
-            // For MS SQL Server, we need to allocate a large enough buffer for the output column.
-            // Because MS SQL's ODBC driver does not support SQLGetData after SQLFetch for truncated data, it seems.
-            return std::string(50, '\0');
-        else
-            return std::string {};
-    };
+template <>
+struct TestTypeTraits<std::string_view>
+{
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::Varchar { 50 };
+    static auto const inline inputValue = std::string_view { "Alice" };
+    static auto const inline expectedOutputValue = std::string_view { "Alice" };
+    static auto const inline outputInitializer = &MakeStringOuputInitializer<std::string>;
+    using GetColumnTypeOverride = std::string;
 };
 
 template <>
 struct TestTypeTraits<std::u16string>
 {
-    static auto constexpr sqlColumnTypeNameOverride = "VARCHAR(50)";
+    static auto constexpr sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 50 };
     static auto const inline inputValue = u"Alice"s;
     static auto const inline expectedOutputValue = u"Alice"s;
+    static auto const inline outputInitializer = &MakeStringOuputInitializer<std::u16string>;
+};
 
-    static auto const inline outputInitializer = [](SqlServerType serverType) {
-        if (serverType == SqlServerType::MICROSOFT_SQL)
-            // For MS SQL Server, we need to allocate a large enough buffer for the output column.
-            // Because MS SQL's ODBC driver does not support SQLGetData after SQLFetch for truncated data, it seems.
-            return std::u16string(50, '\0');
-        else
-            return std::u16string {};
-    };
+template <>
+struct TestTypeTraits<std::u16string_view>
+{
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 50 };
+    static auto const inline inputValue = std::u16string_view { u"Alice" };
+    static auto const inline expectedOutputValue = std::u16string_view { u"Alice" };
+    static auto const inline outputInitializer = &MakeStringOuputInitializer<std::u16string>;
+    using GetColumnTypeOverride = std::u16string;
 };
 
 template <>
 struct TestTypeTraits<std::u32string>
 {
-    static auto constexpr sqlColumnTypeNameOverride = "VARCHAR(50)";
+    static auto constexpr sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 50 };
     static auto const inline inputValue = U"Alice"s;
     static auto const inline expectedOutputValue = U"Alice"s;
+    static auto const inline outputInitializer = &MakeStringOuputInitializer<std::u32string>;
+};
 
-    static auto const inline outputInitializer = [](SqlServerType serverType) {
-        if (serverType == SqlServerType::MICROSOFT_SQL)
-            // For MS SQL Server, we need to allocate a large enough buffer for the output column.
-            // Because MS SQL's ODBC driver does not support SQLGetData after SQLFetch for truncated data, it seems.
-            return std::u32string(50, '\0');
-        else
-            return std::u32string {};
-    };
+template <>
+struct TestTypeTraits<std::u32string_view>
+{
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 50 };
+    static auto const inline inputValue = std::u32string_view { U"Alice" };
+    static auto const inline expectedOutputValue = std::u32string_view { U"Alice" };
+    static auto const inline outputInitializer = &MakeStringOuputInitializer<std::u32string>;
+    using GetColumnTypeOverride = std::u32string;
 };
 
 template <>
 struct TestTypeTraits<std::wstring>
 {
-    static auto constexpr sqlColumnTypeNameOverride = "VARCHAR(50)";
+    static auto constexpr sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 50 };
     static auto const inline inputValue = L"Alice"s;
     static auto const inline expectedOutputValue = L"Alice"s;
+    static auto const inline outputInitializer = &MakeStringOuputInitializer<std::wstring>;
+};
 
-    static auto const inline outputInitializer = [](SqlServerType serverType) {
-        if (serverType == SqlServerType::MICROSOFT_SQL)
-            // For MS SQL Server, we need to allocate a large enough buffer for the output column.
-            // Because MS SQL's ODBC driver does not support SQLGetData after SQLFetch for truncated data, it seems.
-            return std::wstring(50, '\0');
-        else
-            return std::wstring {};
-    };
+template <>
+struct TestTypeTraits<std::wstring_view>
+{
+    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 50 };
+    static auto const inline inputValue = std::wstring_view { L"Alice" };
+    static auto const inline expectedOutputValue = std::wstring_view { L"Alice" };
+    static auto const inline outputInitializer = &MakeStringOuputInitializer<std::wstring>;
+    using GetColumnTypeOverride = std::wstring;
 };
 
 using TypesToTest = std::tuple<
@@ -631,9 +652,13 @@ using TypesToTest = std::tuple<
     int32_t,
     int64_t,
     std::string,
+    std::string_view,
     std::u16string,
+    std::u16string_view,
     std::u32string,
-    std::wstring
+    std::u32string_view,
+    std::wstring,
+    std::wstring_view
 >;
 // clang-format on
 
@@ -663,11 +688,11 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
 
         auto stmt = SqlStatement { conn };
 
-        auto const sqlColumnType = [&]() -> std::string_view {
+        auto const sqlColumnType = [&]() -> std::string {
             if constexpr (requires { TestTypeTraits<TestType>::sqlColumnTypeNameOverride; })
-                return TestTypeTraits<TestType>::sqlColumnTypeNameOverride;
+                return conn.QueryFormatter().ColumnType(TestTypeTraits<TestType>::sqlColumnTypeNameOverride);
             else
-                return conn.Traits().ColumnTypeName(SqlDataBinder<TestType>::ColumnType);
+                return conn.QueryFormatter().ColumnType(SqlDataBinder<TestType>::ColumnType);
         }();
 
         stmt.ExecuteDirect(std::format("CREATE TABLE Test (Value {} NULL)", sqlColumnType));
@@ -685,59 +710,68 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
                     CHECK_THAT(
                         stmt.GetColumn<TestType>(1),
                         (Catch::Matchers::WithinAbs(double(TestTypeTraits<TestType>::expectedOutputValue), 0.001)));
+                else if constexpr (requires { typename TestTypeTraits<TestType>::GetColumnTypeOverride; })
+                    CHECK(stmt.GetColumn<typename TestTypeTraits<TestType>::GetColumnTypeOverride>(1)
+                          == TestTypeTraits<TestType>::expectedOutputValue);
                 else
                     CHECK(stmt.GetColumn<TestType>(1) == TestTypeTraits<TestType>::expectedOutputValue);
             }
 
-            THEN("Retrieve value via BindOutputColumns()")
+            if constexpr (!requires { typename TestTypeTraits<TestType>::GetColumnTypeOverride; })
             {
-                stmt.ExecuteDirect("SELECT Value FROM Test");
-                auto actualValue = [&]() -> TestType {
-                    if constexpr (requires(SqlServerType st) { TestTypeTraits<TestType>::outputInitializer(st); })
-                        return TestTypeTraits<TestType>::outputInitializer(conn.ServerType());
-                    else if constexpr (requires { TestTypeTraits<TestType>::outputInitializer; })
-                        return TestTypeTraits<TestType>::outputInitializer;
+                THEN("Retrieve value via BindOutputColumns()")
+                {
+                    stmt.ExecuteDirect("SELECT Value FROM Test");
+                    auto actualValue = [&]() -> TestType {
+                        if constexpr (requires(SqlServerType st) { TestTypeTraits<TestType>::outputInitializer(st); })
+                            return TestTypeTraits<TestType>::outputInitializer(conn.ServerType());
+                        else if constexpr (requires { TestTypeTraits<TestType>::outputInitializer; })
+                            return TestTypeTraits<TestType>::outputInitializer;
+                        else
+                            return TestType {};
+                    }();
+                    stmt.BindOutputColumns(&actualValue);
+                    (void) stmt.FetchRow();
+                    if constexpr (std::is_convertible_v<TestType, double> && !std::integral<TestType>)
+                        CHECK_THAT(
+                            double(actualValue),
+                            (Catch::Matchers::WithinAbs(double(TestTypeTraits<TestType>::expectedOutputValue), 0.001)));
                     else
-                        return TestType {};
-                }();
-                stmt.BindOutputColumns(&actualValue);
-                (void) stmt.FetchRow();
-                if constexpr (std::is_convertible_v<TestType, double> && !std::integral<TestType>)
-                    CHECK_THAT(
-                        double(actualValue),
-                        (Catch::Matchers::WithinAbs(double(TestTypeTraits<TestType>::expectedOutputValue), 0.001)));
-                else
-                    CHECK(actualValue == TestTypeTraits<TestType>::expectedOutputValue);
+                        CHECK(actualValue == TestTypeTraits<TestType>::expectedOutputValue);
+                }
             }
         }
 
-        WHEN("Inserting a NULL value")
+        if constexpr (!requires { typename TestTypeTraits<TestType>::GetColumnTypeOverride; })
         {
-            stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
-            stmt.Execute(SqlNullValue);
-
-            THEN("Retrieve value via GetNullableColumn()")
+            WHEN("Inserting a NULL value")
             {
-                stmt.ExecuteDirect("SELECT Value FROM Test");
-                (void) stmt.FetchRow();
-                CHECK(!stmt.GetNullableColumn<TestType>(1).has_value());
-            }
+                stmt.Prepare("INSERT INTO Test (Value) VALUES (?)");
+                stmt.Execute(SqlNullValue);
 
-            THEN("Retrieve value via GetColumn()")
-            {
-                stmt.ExecuteDirect("SELECT Value FROM Test");
-                (void) stmt.FetchRow();
-                CHECK_THROWS_AS(stmt.GetColumn<TestType>(1), std::runtime_error);
-            }
+                THEN("Retrieve value via GetNullableColumn()")
+                {
+                    stmt.ExecuteDirect("SELECT Value FROM Test");
+                    (void) stmt.FetchRow();
+                    CHECK(!stmt.GetNullableColumn<TestType>(1).has_value());
+                }
 
-            THEN("Retrieve value via BindOutputColumns()")
-            {
-                stmt.Prepare("SELECT Value FROM Test");
-                stmt.Execute();
-                auto actualValue = std::optional<TestType> {};
-                stmt.BindOutputColumns(&actualValue);
-                (void) stmt.FetchRow();
-                CHECK(!actualValue.has_value());
+                THEN("Retrieve value via GetColumn()")
+                {
+                    stmt.ExecuteDirect("SELECT Value FROM Test");
+                    (void) stmt.FetchRow();
+                    CHECK_THROWS_AS(stmt.GetColumn<TestType>(1), std::runtime_error);
+                }
+
+                THEN("Retrieve value via BindOutputColumns()")
+                {
+                    stmt.Prepare("SELECT Value FROM Test");
+                    stmt.Execute();
+                    auto actualValue = std::optional<TestType> {};
+                    stmt.BindOutputColumns(&actualValue);
+                    (void) stmt.FetchRow();
+                    CHECK(!actualValue.has_value());
+                }
             }
         }
     }
