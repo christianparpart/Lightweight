@@ -21,7 +21,9 @@ namespace SqlColumnTypeDefinitions
 
 struct Bool {};
 struct Char { size_t size = 1; };
+struct NChar { size_t size = 1; };
 struct Varchar { size_t size {}; };
+struct NVarchar { size_t size {}; };
 struct Text { size_t size {}; };
 struct Smallint {};
 struct Integer {};
@@ -45,6 +47,8 @@ using SqlColumnTypeDefinition = std::variant<
     SqlColumnTypeDefinitions::Decimal,
     SqlColumnTypeDefinitions::Guid,
     SqlColumnTypeDefinitions::Integer,
+    SqlColumnTypeDefinitions::NChar,
+    SqlColumnTypeDefinitions::NVarchar,
     SqlColumnTypeDefinitions::Real,
     SqlColumnTypeDefinitions::Smallint,
     SqlColumnTypeDefinitions::Text,
@@ -134,21 +138,44 @@ struct SqlColumnTypeDefinitionOf<T>
 };
 
 template <size_t N, typename CharT>
+    requires(detail::OneOf<CharT, char>)
 struct SqlColumnTypeDefinitionOf<SqlFixedString<N, CharT, SqlFixedStringMode::VARIABLE_SIZE>>
 {
     static constexpr auto value = SqlColumnTypeDefinitions::Varchar { N };
 };
 
 template <size_t N, typename CharT>
+    requires(detail::OneOf<CharT, char16_t, char32_t, wchar_t>)
+struct SqlColumnTypeDefinitionOf<SqlFixedString<N, CharT, SqlFixedStringMode::VARIABLE_SIZE>>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::NVarchar { N };
+};
+
+template <size_t N, typename CharT>
+    requires(detail::OneOf<CharT, char>)
 struct SqlColumnTypeDefinitionOf<SqlFixedString<N, CharT, SqlFixedStringMode::FIXED_SIZE>>
 {
     static constexpr auto value = SqlColumnTypeDefinitions::Char { N };
 };
 
 template <size_t N, typename CharT>
+    requires(detail::OneOf<CharT, char16_t, char32_t, wchar_t>)
+struct SqlColumnTypeDefinitionOf<SqlFixedString<N, CharT, SqlFixedStringMode::FIXED_SIZE>>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::NChar { N };
+};
+
+template <size_t N, typename CharT>
 struct SqlColumnTypeDefinitionOf<SqlFixedString<N, CharT, SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED>>
 {
     static constexpr auto value = SqlColumnTypeDefinitions::Char { N };
+};
+
+template <size_t N, typename CharT>
+    requires(detail::OneOf<CharT, char16_t, char32_t, wchar_t>)
+struct SqlColumnTypeDefinitionOf<SqlFixedString<N, CharT, SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED>>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::NChar { N };
 };
 
 template <typename T>

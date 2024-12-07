@@ -318,6 +318,10 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                     return "GUID";
                 else if constexpr (std::same_as<Type, Integer>)
                     return "INTEGER";
+                else if constexpr (std::same_as<Type, NChar>)
+                    return std::format("NCHAR({})", actualType.size);
+                else if constexpr (std::same_as<Type, NVarchar>)
+                    return std::format("NVARCHAR({})", actualType.size);
                 else if constexpr (std::same_as<Type, Real>)
                     return "REAL";
                 else if constexpr (std::same_as<Type, Smallint>)
@@ -438,6 +442,107 @@ class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
     }
 };
 
+class OracleSqlQueryFormatter final: public BasicSqlQueryFormatter
+{
+  public:
+    [[nodiscard]] std::string_view BooleanLiteral(bool literalValue) const noexcept override
+    {
+        return literalValue ? "1"sv : "0"sv;
+    }
+
+    [[nodiscard]] std::string SelectFirst(bool distinct,
+                                          std::string const& fields,
+                                          std::string const& fromTable,
+                                          std::string const& fromTableAlias,
+                                          std::string const& tableJoins,
+                                          std::string const& whereCondition,
+                                          std::string const& orderBy,
+                                          size_t count) const override
+    {
+        std::stringstream sqlQueryString;
+        sqlQueryString << "SELECT";
+        if (distinct)
+            sqlQueryString << " DISTINCT";
+        sqlQueryString << " TOP " << count;
+        sqlQueryString << ' ' << fields;
+        sqlQueryString << " FROM \"" << fromTable << '"';
+        if (!fromTableAlias.empty())
+            sqlQueryString << " AS \"" << fromTableAlias << '"';
+        sqlQueryString << tableJoins;
+        sqlQueryString << whereCondition;
+        sqlQueryString << orderBy;
+        ;
+        return sqlQueryString.str();
+    }
+
+    [[nodiscard]] std::string SelectRange(bool distinct,
+                                          std::string const& fields,
+                                          std::string const& fromTable,
+                                          std::string const& fromTableAlias,
+                                          std::string const& tableJoins,
+                                          std::string const& whereCondition,
+                                          std::string const& orderBy,
+                                          std::string const& groupBy,
+                                          std::size_t offset,
+                                          std::size_t limit) const override
+    {
+        assert(!orderBy.empty());
+        std::stringstream sqlQueryString;
+        sqlQueryString << "SELECT " << fields;
+        if (distinct)
+            sqlQueryString << " DISTINCT";
+        sqlQueryString << " FROM \"" << fromTable << "\"";
+        if (!fromTableAlias.empty())
+            sqlQueryString << " AS \"" << fromTableAlias << "\"";
+        sqlQueryString << tableJoins;
+        sqlQueryString << whereCondition;
+        sqlQueryString << groupBy;
+        sqlQueryString << orderBy;
+        sqlQueryString << " OFFSET " << offset << " ROWS FETCH NEXT " << limit << " ROWS ONLY";
+        return sqlQueryString.str();
+    }
+
+    [[nodiscard]] std::string ColumnType(SqlColumnTypeDefinition const& type) const override
+    {
+        using namespace SqlColumnTypeDefinitions;
+        return std::visit(
+            [this, type](auto const& actualType) -> std::string {
+                using Type = std::decay_t<decltype(actualType)>;
+                if constexpr (std::same_as<Type, Bool>)
+                    return "BIT";
+                else if constexpr (std::same_as<Type, Guid>)
+                    return "UNIQUEIDENTIFIER";
+                else if constexpr (std::same_as<Type, Text>)
+                {
+                    if (actualType.size <= 4000)
+                        return std::format("VARCHAR2({})", actualType.size);
+                    else
+                        return "CLOB";
+                }
+                else
+                    return BasicSqlQueryFormatter::ColumnType(type);
+            },
+            type);
+    }
+
+    [[nodiscard]] std::string BuildColumnDefinition(SqlColumnDeclaration const& column) const override
+    {
+        std::stringstream sqlQueryString;
+        sqlQueryString << '"' << column.name << "\" " << ColumnType(column.type);
+
+        if (column.required)
+            sqlQueryString << " NOT NULL";
+
+        if (column.primaryKey == SqlPrimaryKeyType::AUTO_INCREMENT)
+            sqlQueryString << " IDENTITY(1,1) PRIMARY KEY";
+
+        if (column.unique && !column.index)
+            sqlQueryString << " UNIQUE";
+
+        return sqlQueryString.str();
+    }
+};
+
 class PostgreSqlFormatter final: public BasicSqlQueryFormatter
 {
   public:
@@ -470,7 +575,13 @@ class PostgreSqlFormatter final: public BasicSqlQueryFormatter
         return std::visit(
             [this, type](auto const& actualType) -> std::string {
                 using Type = std::decay_t<decltype(actualType)>;
-                if constexpr (std::same_as<Type, Guid>)
+                if constexpr (std::same_as<Type, NChar>)
+                    // PostgreSQL stores all strings as UTF-8
+                    return std::format("CHAR({})", actualType.size);
+                else if constexpr (std::same_as<Type, NVarchar>)
+                    // PostgreSQL stores all strings as UTF-8
+                    return std::format("VARCHAR({})", actualType.size);
+                else if constexpr (std::same_as<Type, Guid>)
                     return "UUID";
                 else if constexpr (std::same_as<Type, DateTime>)
                     return "TIMESTAMP";
@@ -503,7 +614,8 @@ SqlQueryFormatter const& SqlQueryFormatter::PostgrSQL()
 
 SqlQueryFormatter const& SqlQueryFormatter::OracleSQL()
 {
-    return SqlServer(); // So far, Oracle SQL is similar to Microsoft SQL Server.
+    static const OracleSqlQueryFormatter formatter {};
+    return formatter;
 }
 
 SqlQueryFormatter const* SqlQueryFormatter::Get(SqlServerType serverType) noexcept
