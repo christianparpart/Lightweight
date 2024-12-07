@@ -537,14 +537,6 @@ struct TestTypeTraits<SqlNumeric<15, 2>>
     static const inline auto expectedOutputValue = SqlNumeric<15, 2> { 123.45 };
 };
 
-template <>
-struct TestTypeTraits<SqlTrimmedString>
-{
-    static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::Char { 20 };
-    static auto const inline inputValue = SqlTrimmedString { "Alice    " };
-    static auto const inline expectedOutputValue = SqlTrimmedString { "Alice" };
-};
-
 template <typename T>
 T MakeStringOuputInitializer(SqlServerType serverType)
 {
@@ -645,7 +637,6 @@ using TypesToTest = std::tuple<
     SqlText,
     SqlTime,
     SqlTrimmedFixedString<20, char>,
-    SqlTrimmedString,
     double,
     float,
     int16_t,

@@ -40,7 +40,7 @@ std::string MakeType(SqlSchema::Column const& column)
             if (column.size == 1)
                 return "char";
             else
-                return std::format("SqlTrimmedString<{}>", column.size);
+                return std::format("SqlTrimmedFixedString<{}>", column.size);
         case ColumnType::STRING:
             if (column.size == 1)
                 return "char";

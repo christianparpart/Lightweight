@@ -178,12 +178,6 @@ inline LIGHTWEIGHT_FORCE_INLINE std::string Field<T, IsPrimaryKey>::InspectValue
         result << std::quoted(_value, '\'');
         return result.str();
     }
-    else if constexpr (std::is_same_v<T, SqlTrimmedString>)
-    {
-        std::stringstream result;
-        result << std::quoted(_value.value, '\'');
-        return result.str();
-    }
     else if constexpr (std::is_same_v<T, SqlText>)
     {
         std::stringstream result;

@@ -13,7 +13,6 @@
 #include "DataBinder/SqlNumeric.hpp"
 #include "DataBinder/SqlText.hpp"
 #include "DataBinder/SqlTime.hpp"
-#include "DataBinder/SqlTrimmedString.hpp"
 #include "DataBinder/SqlVariant.hpp"
 #include "DataBinder/StdOptional.hpp"
 #include "DataBinder/StdString.hpp"

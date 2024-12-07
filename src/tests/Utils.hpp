@@ -414,11 +414,6 @@ inline std::ostream& operator<<(std::ostream& os, SqlText const& value)
     return os << std::format("SqlText({})", value.value);
 }
 
-inline std::ostream& operator<<(std::ostream& os, SqlTrimmedString const& value)
-{
-    return os << std::format("SqlTrimmedString {{ '{}' }}", value);
-}
-
 inline std::ostream& operator<<(std::ostream& os, SqlDate const& date)
 {
     auto const ymd = date.value();
