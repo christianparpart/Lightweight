@@ -30,7 +30,6 @@ set(HEADER_FILES
     DataBinder/SqlNumeric.hpp
     DataBinder/SqlText.hpp
     DataBinder/SqlTime.hpp
-    DataBinder/SqlTrimmedString.hpp
     DataBinder/SqlVariant.hpp
     DataBinder/StdOptional.hpp
     DataBinder/StdString.hpp

@@ -93,7 +93,6 @@ struct Field
     // Returns a string representation of the value, suitable for use in debugging and logging.
     [[nodiscard]] std::string InspectValue() const;
 
-    // void BindInputParameter(SQLSMALLINT parameterIndex, SqlStatement& stmt) const;
     void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt);
 
     constexpr void SetModified(bool value) noexcept;
@@ -178,12 +177,6 @@ inline LIGHTWEIGHT_FORCE_INLINE std::string Field<T, IsPrimaryKey>::InspectValue
         result << std::quoted(_value, '\'');
         return result.str();
     }
-    else if constexpr (std::is_same_v<T, SqlTrimmedString>)
-    {
-        std::stringstream result;
-        result << std::quoted(_value.value, '\'');
-        return result.str();
-    }
     else if constexpr (std::is_same_v<T, SqlText>)
     {
         std::stringstream result;
@@ -199,13 +192,6 @@ inline LIGHTWEIGHT_FORCE_INLINE std::string Field<T, IsPrimaryKey>::InspectValue
     else
         return std::format("{}", _value);
 }
-
-// template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-// inline LIGHTWEIGHT_FORCE_INLINE void Field<T, IsPrimaryKey>::BindInputParameter(SQLSMALLINT parameterIndex,
-//                                                                                 SqlStatement& stmt) const
-// {
-//     return stmt.BindInputParameter(parameterIndex, _value);
-// }
 
 template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
 inline LIGHTWEIGHT_FORCE_INLINE void Field<T, IsPrimaryKey>::BindOutputColumn(SQLSMALLINT outputIndex,
