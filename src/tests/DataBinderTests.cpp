@@ -186,7 +186,6 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlVariant: GetColumn in-place store variant",
     CHECK(!stmt.GetColumn(2, &lastName));
     CHECK(lastName.IsNull());
 
-    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
     SqlVariant salary;
     CHECK(stmt.GetColumn(3, &salary));
     CHECK(salary.TryGetInt().value_or(0) == 50'000);
