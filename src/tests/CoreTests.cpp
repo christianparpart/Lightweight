@@ -324,13 +324,12 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlConnection: manual connect (invalid)", "[Sq
 TEST_CASE_METHOD(SqlTestFixture, "LastInsertId", "[SqlStatement]")
 {
     auto stmt = SqlStatement {};
-    UNSUPPORTED_DATABASE(stmt, SqlServerType::ORACLE);
 
     CreateEmployeesTable(stmt);
     FillEmployeesTable(stmt);
 
     // 3 because we inserted 3 rows
-    REQUIRE(stmt.LastInsertId() == 3);
+    REQUIRE(stmt.LastInsertId("Employees") == 3);
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SELECT * FROM Table", "[SqlStatement]")

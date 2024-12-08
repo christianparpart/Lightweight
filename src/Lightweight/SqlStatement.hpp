@@ -199,8 +199,8 @@ class SqlStatement final: public SqlDataBinderCallback
     // Retrieves the number of columns affected by the last query.
     [[nodiscard]] LIGHTWEIGHT_API size_t NumColumnsAffected() const;
 
-    // Retrieves the last insert ID of the last query's primary key.
-    [[nodiscard]] LIGHTWEIGHT_API size_t LastInsertId();
+    // Retrieves the last insert ID of the given table.
+    [[nodiscard]] LIGHTWEIGHT_API size_t LastInsertId(std::string_view tableName);
 
     // Fetches the next row of the result set.
     //
