@@ -54,9 +54,15 @@ SQLRETURN SqlDataBinder<SqlVariant>::GetColumn(
         case SQL_CHAR:          // fixed-length string
         case SQL_VARCHAR:       // variable-length string
         case SQL_LONGVARCHAR:   // long string
+            returnCode =
+                SqlDataBinder<std::string>::GetColumn(stmt, column, &variant.emplace<std::string>(), indicator, cb);
+            break;
         case SQL_WCHAR:         // fixed-length Unicode (UTF-16) string
         case SQL_WVARCHAR:      // variable-length Unicode (UTF-16) string
         case SQL_WLONGVARCHAR:  // long Unicode (UTF-16) string
+            returnCode =
+                SqlDataBinder<std::u16string>::GetColumn(stmt, column, &variant.emplace<std::u16string>(), indicator, cb);
+            break;
         case SQL_BINARY:        // fixed-length binary
         case SQL_VARBINARY:     // variable-length binary
         case SQL_LONGVARBINARY: // long binary
@@ -64,9 +70,10 @@ SQLRETURN SqlDataBinder<SqlVariant>::GetColumn(
                 SqlDataBinder<std::string>::GetColumn(stmt, column, &variant.emplace<std::string>(), indicator, cb);
             break;
         case SQL_DATE:
-            SqlLogger::GetLogger().OnWarning(
-                std::format("SQL_DATE is from ODBC 2. SQL_TYPE_DATE should have been received instead."));
-            [[fallthrough]];
+            // Oracle ODBC driver returns SQL_DATE for DATE columns
+            returnCode =
+                SqlDataBinder<SqlDateTime>::GetColumn(stmt, column, &variant.emplace<SqlDateTime>(), indicator, cb);
+            break;
         case SQL_TYPE_DATE:
             returnCode = SqlDataBinder<SqlDate>::GetColumn(stmt, column, &variant.emplace<SqlDate>(), indicator, cb);
             break;
@@ -83,8 +90,35 @@ SQLRETURN SqlDataBinder<SqlVariant>::GetColumn(
                 SqlDataBinder<SqlDateTime>::GetColumn(stmt, column, &variant.emplace<SqlDateTime>(), indicator, cb);
             break;
         case SQL_TYPE_NULL:
+            variant = SqlNullValue;
+            returnCode = SQL_SUCCESS;
+            break;
         case SQL_DECIMAL:
-        case SQL_NUMERIC:
+        case SQL_NUMERIC: {
+            auto numeric = SQL_NUMERIC_STRUCT {};
+            returnCode = SQLGetData(stmt, column, SQL_C_NUMERIC, &numeric, sizeof(numeric), indicator);
+
+            if (SQL_SUCCEEDED(returnCode) && *indicator != SQL_NULL_DATA)
+            {
+                // clang-format off
+                switch (numeric.scale)
+                {
+                    case 0: variant = static_cast<int64_t>(SqlNumeric<15, 0>(numeric).ToUnscaledValue()); break;
+                    case 1: variant = SqlNumeric<15, 1>(numeric).ToFloat(); break;
+                    case 2: variant = SqlNumeric<15, 2>(numeric).ToFloat(); break;
+                    case 3: variant = SqlNumeric<15, 3>(numeric).ToFloat(); break;
+                    case 4: variant = SqlNumeric<15, 4>(numeric).ToFloat(); break;
+                    case 5: variant = SqlNumeric<15, 5>(numeric).ToFloat(); break;
+                    case 6: variant = SqlNumeric<15, 6>(numeric).ToFloat(); break;
+                    case 7: variant = SqlNumeric<15, 7>(numeric).ToFloat(); break;
+                    case 8: variant = SqlNumeric<15, 8>(numeric).ToFloat(); break;
+                    default: variant = SqlNumeric<15, 9>(numeric).ToFloat(); break;
+                }
+                // clang-format on
+            }
+
+            break;
+        }
         case SQL_GUID:
             // TODO: Get them implemented on demand
             [[fallthrough]];

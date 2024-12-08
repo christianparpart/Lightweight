@@ -331,7 +331,7 @@ RecordId DataMapper::CreateExplicit(Record const& record)
     _stmt.Execute();
 
     if constexpr (HasAutoIncrementPrimaryKey<Record>)
-        return { _stmt.LastInsertId() };
+        return { _stmt.LastInsertId(RecordTableName<Record>) };
     else
         return {};
 }

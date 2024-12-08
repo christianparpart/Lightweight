@@ -32,6 +32,8 @@ class [[nodiscard]] LIGHTWEIGHT_API SqlQueryFormatter
                                              std::string const& fields,
                                              std::string const& values) const = 0;
 
+    [[nodiscard]] virtual std::string QueryLastInsertId(std::string_view tableName) const = 0;
+
     [[nodiscard]] virtual std::string SelectAll(bool distinct,
                                                 std::string const& fields,
                                                 std::string const& fromTable,
