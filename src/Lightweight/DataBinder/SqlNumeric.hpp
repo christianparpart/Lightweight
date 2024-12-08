@@ -56,6 +56,11 @@ struct SqlNumeric
         assign(value);
     }
 
+    constexpr explicit SqlNumeric(SQL_NUMERIC_STRUCT const& value) noexcept:
+        sqlValue(value)
+    {
+    }
+
     // For encoding/decoding purposes, we assume little-endian.
     static_assert(std::endian::native == std::endian::little);
 
@@ -84,10 +89,11 @@ struct SqlNumeric
 
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE auto ToUnscaledValue() const noexcept
     {
+        auto const sign = sqlValue.sign ? 1 : -1;
 #if defined(LIGHTWEIGHT_INT128_T)
-        return *reinterpret_cast<LIGHTWEIGHT_INT128_T const*>(sqlValue.val);
+        return sign * *reinterpret_cast<LIGHTWEIGHT_INT128_T const*>(sqlValue.val);
 #else
-        return *reinterpret_cast<int64_t const*>(sqlValue.val);
+        return sign * *reinterpret_cast<int64_t const*>(sqlValue.val);
 #endif
     }
 

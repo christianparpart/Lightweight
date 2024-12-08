@@ -83,8 +83,35 @@ SQLRETURN SqlDataBinder<SqlVariant>::GetColumn(
                 SqlDataBinder<SqlDateTime>::GetColumn(stmt, column, &variant.emplace<SqlDateTime>(), indicator, cb);
             break;
         case SQL_TYPE_NULL:
+            variant = SqlNullValue;
+            returnCode = SQL_SUCCESS;
+            break;
         case SQL_DECIMAL:
-        case SQL_NUMERIC:
+        case SQL_NUMERIC: {
+            auto numeric = SQL_NUMERIC_STRUCT {};
+            returnCode = SQLGetData(stmt, column, SQL_C_NUMERIC, &numeric, sizeof(numeric), indicator);
+
+            if (SQL_SUCCEEDED(returnCode) && *indicator != SQL_NULL_DATA)
+            {
+                // clang-format off
+                switch (numeric.scale)
+                {
+                    case 0: variant = static_cast<int64_t>(SqlNumeric<15, 0>(numeric).ToUnscaledValue()); break;
+                    case 1: variant = SqlNumeric<15, 1>(numeric).ToFloat(); break;
+                    case 2: variant = SqlNumeric<15, 2>(numeric).ToFloat(); break;
+                    case 3: variant = SqlNumeric<15, 3>(numeric).ToFloat(); break;
+                    case 4: variant = SqlNumeric<15, 4>(numeric).ToFloat(); break;
+                    case 5: variant = SqlNumeric<15, 5>(numeric).ToFloat(); break;
+                    case 6: variant = SqlNumeric<15, 6>(numeric).ToFloat(); break;
+                    case 7: variant = SqlNumeric<15, 7>(numeric).ToFloat(); break;
+                    case 8: variant = SqlNumeric<15, 8>(numeric).ToFloat(); break;
+                    default: variant = SqlNumeric<15, 9>(numeric).ToFloat(); break;
+                }
+                // clang-format on
+            }
+
+            break;
+        }
         case SQL_GUID:
             // TODO: Get them implemented on demand
             [[fallthrough]];
