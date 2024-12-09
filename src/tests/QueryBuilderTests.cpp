@@ -456,8 +456,8 @@ TEST_CASE_METHOD(SqlTestFixture, "Where: left IS NULL", "[SqlQueryBuilder]")
             return q.FromTable("That")
                 .Select()
                 .Field("foo")
-                .Not().Where("Left1", SqlNullValue)
-                .Or().Not().Where("Left2", std::nullopt)
+                .WhereNotEqual("Left1", SqlNullValue)
+                .Or().WhereNotEqual("Left2", std::nullopt)
                 .All();
             // clang-format on
         },
