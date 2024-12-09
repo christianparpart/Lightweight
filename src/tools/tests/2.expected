@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+#include <Lightweight/DataMapper/DataMapper.hpp>
+#include <Lightweight/SqlConnection.hpp>
+#include <Lightweight/SqlDataBinder.hpp>
+#include <Lightweight/SqlQuery.hpp>
+#include <Lightweight/SqlQueryFormatter.hpp>
+#include <Lightweight/SqlScopedTraceLogger.hpp>
+#include <Lightweight/SqlStatement.hpp>
+#include <Lightweight/SqlTransaction.hpp>
+
+struct Account;
+struct AccountHistory;
+struct Suppliers;
+
+struct Suppliers final
+{
+    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<std::string> name;
+    HasOneThrough<AccountHistory, Account> accountHistory;
+}
+
+struct Account final
+{
+    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<std::string> iban;
+    BelongsTo<&Suppliers::id> supplier;
+};
+
+struct AccountHistory final
+{
+    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<int> credit_rating;
+    BelongsTo<&Account::id> account;
+};
