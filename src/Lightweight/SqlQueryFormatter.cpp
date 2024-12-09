@@ -23,6 +23,12 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         return std::format(R"(INSERT INTO "{}" ({}) VALUES ({}))", intoTable, fields, values);
     }
 
+    [[nodiscard]] std::string QueryLastInsertId(std::string_view /*tableName*/) const override
+    {
+        // This is SQLite syntax. We might want to provide aspecialized SQLite class instead.
+        return "SELECT LAST_INSERT_ROWID()";
+    }
+
     [[nodiscard]] std::string_view BooleanLiteral(bool literalValue) const noexcept override
     {
         return literalValue ? "TRUE"sv : "FALSE"sv;
@@ -349,6 +355,12 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
 class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
 {
   public:
+    [[nodiscard]] std::string QueryLastInsertId(std::string_view /*tableName*/) const override
+    {
+        // TODO: Figure out how to get the last insert id in SQL Server for a given table.
+        return std::format("SELECT @@IDENTITY");
+    }
+
     [[nodiscard]] std::string_view BooleanLiteral(bool literalValue) const noexcept override
     {
         return literalValue ? "1"sv : "0"sv;
@@ -445,6 +457,11 @@ class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
 class OracleSqlQueryFormatter final: public BasicSqlQueryFormatter
 {
   public:
+    [[nodiscard]] std::string QueryLastInsertId(std::string_view tableName) const override
+    {
+        return std::format("SELECT \"{}_SEQ\".CURRVAL FROM DUAL;", tableName);
+    }
+
     [[nodiscard]] std::string_view BooleanLiteral(bool literalValue) const noexcept override
     {
         return literalValue ? "1"sv : "0"sv;
@@ -510,8 +527,16 @@ class OracleSqlQueryFormatter final: public BasicSqlQueryFormatter
                 using Type = std::decay_t<decltype(actualType)>;
                 if constexpr (std::same_as<Type, Bool>)
                     return "BIT";
+                else if constexpr (std::same_as<Type, Bigint>)
+                    return "NUMBER(19, 0)";
+                else if constexpr (std::same_as<Type, DateTime>)
+                    return "TIMESTAMP";
+                else if constexpr (std::same_as<Type, Time>)
+                    return "TIMESTAMP";
                 else if constexpr (std::same_as<Type, Guid>)
-                    return "UNIQUEIDENTIFIER";
+                    return "RAW(16)";
+                else if constexpr (std::same_as<Type, NVarchar>)
+                    return std::format("NVARCHAR2({})", actualType.size);
                 else if constexpr (std::same_as<Type, Text>)
                 {
                     if (actualType.size <= 4000)
@@ -530,15 +555,18 @@ class OracleSqlQueryFormatter final: public BasicSqlQueryFormatter
         std::stringstream sqlQueryString;
         sqlQueryString << '"' << column.name << "\" " << ColumnType(column.type);
 
-        if (column.required)
+        if (column.required && column.primaryKey != SqlPrimaryKeyType::AUTO_INCREMENT)
             sqlQueryString << " NOT NULL";
 
         if (column.primaryKey == SqlPrimaryKeyType::AUTO_INCREMENT)
-            sqlQueryString << " IDENTITY(1,1) PRIMARY KEY";
-
-        if (column.unique && !column.index)
+            sqlQueryString << " GENERATED ALWAYS AS IDENTITY";
+        else if (column.unique && !column.index)
             sqlQueryString << " UNIQUE";
 
+        if (column.primaryKey == SqlPrimaryKeyType::AUTO_INCREMENT)
+        {
+            sqlQueryString << ",\n    PRIMARY KEY (\"" << column.name << "\")";
+        }
         return sqlQueryString.str();
     }
 };
@@ -546,6 +574,14 @@ class OracleSqlQueryFormatter final: public BasicSqlQueryFormatter
 class PostgreSqlFormatter final: public BasicSqlQueryFormatter
 {
   public:
+    [[nodiscard]] std::string QueryLastInsertId(std::string_view /*tableName*/) const override
+    {
+        // NB: Find a better way to do this on the given table.
+        // In our case it works, because we're expected to call this right after an insert.
+        // But a race condition may still happen if another client inserts a row at the same time too.
+        return std::format("SELECT lastval();");
+    }
+
     [[nodiscard]] std::string BuildColumnDefinition(SqlColumnDeclaration const& column) const override
     {
         std::stringstream sqlQueryString;

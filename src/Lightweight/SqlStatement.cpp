@@ -195,9 +195,9 @@ size_t SqlStatement::NumColumnsAffected() const
 }
 
 // Retrieves the last insert ID of the last query's primary key.
-size_t SqlStatement::LastInsertId()
+size_t SqlStatement::LastInsertId(std::string_view tableName)
 {
-    return ExecuteDirectScalar<size_t>(m_connection->Traits().LastInsertIdQuery).value_or(0);
+    return ExecuteDirectScalar<size_t>(Query(tableName).LastInsertId()).value_or(0);
 }
 
 // Fetches the next row of the result set.
@@ -243,9 +243,11 @@ void SqlStatement::RequireSuccess(SQLRETURN error, std::source_location sourceLo
         return;
 
     auto errorInfo = LastError();
-    SqlLogger::GetLogger().OnError(errorInfo, sourceLocation);
     if (errorInfo.sqlState == "07009")
+    {
+        SqlLogger::GetLogger().OnError(errorInfo, sourceLocation);
         throw std::invalid_argument(std::format("SQL error: {}", errorInfo));
+    }
     else
         throw SqlException(std::move(errorInfo));
 }

@@ -8,6 +8,17 @@
 #include "SqlQuery/Select.hpp"
 #include "SqlQuery/Update.hpp"
 
+struct [[nodiscard]] SqlLastInsertIdQuery
+{
+    std::string tableName;
+    SqlQueryFormatter const* formatter;
+
+    [[nodiscard]] std::string ToSql() const
+    {
+        return formatter->QueryLastInsertId(tableName);
+    }
+};
+
 // API Entry point for building SQL queries.
 class [[nodiscard]] SqlQueryBuilder final
 {
@@ -29,6 +40,9 @@ class [[nodiscard]] SqlQueryBuilder final
     //                    If provided, the inputs will be appended to this vector and can be used
     //                    to bind the values to the query via SqlStatement::ExecuteWithVariants(...)
     LIGHTWEIGHT_API SqlInsertQueryBuilder Insert(std::vector<SqlVariant>* boundInputs = nullptr) noexcept;
+
+    // Constructs a query to retrieve the last insert ID for the given table.
+    LIGHTWEIGHT_API SqlLastInsertIdQuery LastInsertId();
 
     // Initiates SELECT query building
     LIGHTWEIGHT_API SqlSelectQueryBuilder Select() noexcept;
