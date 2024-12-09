@@ -1,10 +1,11 @@
 #pragma once
 
+#include <reflection-cpp/reflection.hpp>
+
+#include <optional>
 #include <string_view>
 #include <type_traits>
 #include <utility>
-
-#include <reflection-cpp/reflection.hpp>
 
 namespace detail
 {

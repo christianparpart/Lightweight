@@ -436,6 +436,35 @@ TEST_CASE_METHOD(SqlTestFixture,
                                   WHERE "That"."left" = "That"."right")"));
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "Where: left IS NULL", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            return q.FromTable("That")
+                .Select()
+                .Field("foo")
+                .Where("Left1", SqlNullValue)
+                .Where("Left2", std::nullopt)
+                .All();
+        },
+        QueryExpectations::All(R"(SELECT "foo" FROM "That"
+                                  WHERE "Left1" IS NULL AND "Left2" IS NULL)"));
+
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            // clang-format off
+            return q.FromTable("That")
+                .Select()
+                .Field("foo")
+                .Not().Where("Left1", SqlNullValue)
+                .Or().Not().Where("Left2", std::nullopt)
+                .All();
+            // clang-format on
+        },
+        QueryExpectations::All(R"(SELECT "foo" FROM "That"
+                                  WHERE "Left1" IS NOT NULL OR "Left2" IS NOT NULL)"));
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "Varying: multiple varying final query types", "[SqlQueryBuilder]")
 {
     auto const& sqliteFormatter = SqlQueryFormatter::Sqlite();
