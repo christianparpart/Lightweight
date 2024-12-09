@@ -79,7 +79,7 @@ template <typename AnsiStringType>
 struct LIGHTWEIGHT_API SqlDataBinder<AnsiStringType>
 {
     using ValueType = AnsiStringType;
-    using CharType = typename AnsiStringType::value_type;
+    using CharType = char;
     using StringTraits = SqlBasicStringOperations<AnsiStringType>;
 
     static constexpr auto ColumnType = StringTraits::ColumnType;
@@ -247,7 +247,7 @@ template <typename Utf16StringType>
 struct LIGHTWEIGHT_API SqlDataBinder<Utf16StringType>
 {
     using ValueType = Utf16StringType;
-    using CharType = typename Utf16StringType::value_type;
+    using CharType = std::remove_cvref_t<decltype(std::declval<Utf16StringType>()[0])>;
     using StringTraits = SqlBasicStringOperations<Utf16StringType>;
 
     static constexpr auto ColumnType = StringTraits::ColumnType;

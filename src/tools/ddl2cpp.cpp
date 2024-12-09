@@ -106,20 +106,6 @@ constexpr bool isVowel(char c) noexcept
     }
 }
 
-std::string MakePluralVariableName(SqlSchema::FullyQualifiedTableName const& table)
-{
-    auto const& sqlName = table.table;
-    if (sqlName.back() == 'y' && sqlName.size() > 1 && !isVowel(sqlName.at(sqlName.size() - 2)))
-    {
-        auto name = std::format("{}ies", sqlName.substr(0, sqlName.size() - 1));
-        name.at(0) = static_cast<char>(std::tolower(name.at(0)));
-        return name;
-    }
-    auto name = std::format("{}s", sqlName);
-    name.at(0) = static_cast<char>(std::tolower(name.at(0)));
-    return name;
-}
-
 class CxxModelPrinter
 {
   private:

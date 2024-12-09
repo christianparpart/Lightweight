@@ -18,8 +18,6 @@
 #include <concepts>
 #include <type_traits>
 
-#include <iostream>
-
 // Requires that T satisfies to be a field with storage.
 template <typename T>
 concept FieldWithStorage = requires(T const& field, T& mutableField) {

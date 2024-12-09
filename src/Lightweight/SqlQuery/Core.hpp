@@ -183,6 +183,9 @@ class [[nodiscard]] SqlWhereClauseBuilder
     template <typename ColumnName>
     [[nodiscard]] Derived& WhereNotNull(ColumnName const& columnName);
 
+    template <typename ColumnName, typename T>
+    [[nodiscard]] Derived& WhereNotEqual(ColumnName const& columnName, T const& value);
+
     template <typename ColumnName>
     [[nodiscard]] Derived& WhereTrue(ColumnName const& columnName);
 
@@ -326,7 +329,18 @@ template <typename ColumnName, typename T>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Where(ColumnName const& columnName,
                                                                                T const& value)
 {
-    return Where(columnName, "=", value);
+    if constexpr (detail::OneOf<T, SqlNullType, std::nullopt_t>)
+    {
+        if (m_nextIsNot)
+        {
+            m_nextIsNot = false;
+            return Where(columnName, "IS NOT", value);
+        }
+        else
+            return Where(columnName, "IS", value);
+    }
+    else
+        return Where(columnName, "=", value);
 }
 
 template <typename Derived>
@@ -334,7 +348,7 @@ template <typename ColumnName, typename T>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::OrWhere(ColumnName const& columnName,
                                                                                  T const& value)
 {
-    return Or().Where(columnName, "=", value);
+    return Or().Where(columnName, value);
 }
 
 template <typename Derived>
@@ -414,14 +428,25 @@ template <typename Derived>
 template <typename ColumnName>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::WhereNotNull(ColumnName const& columnName)
 {
-    return Where(columnName, "!=", "NULL");
+    return Where(columnName, "IS NOT", "NULL");
 }
 
 template <typename Derived>
 template <typename ColumnName>
 inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::WhereNull(ColumnName const& columnName)
 {
-    return Where(columnName, "=", "NULL");
+    return Where(columnName, "IS", "NULL");
+}
+
+template <typename Derived>
+template <typename ColumnName, typename T>
+inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::WhereNotEqual(ColumnName const& columnName,
+                                                                                       T const& value)
+{
+    if constexpr (detail::OneOf<T, SqlNullType, std::nullopt_t>)
+        return Where(columnName, "IS NOT", value);
+    else
+        return Where(columnName, "!=", value);
 }
 
 template <typename Derived>
@@ -485,7 +510,19 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Where(C
     searchCondition.condition += binaryOp;
     searchCondition.condition += ' ';
 
-    if constexpr (std::is_same_v<T, SqlWildcardType>)
+    if constexpr (std::is_same_v<T, SqlQualifiedTableColumnName>)
+    {
+        searchCondition.condition += '"';
+        searchCondition.condition += value.tableName;
+        searchCondition.condition += "\".\"";
+        searchCondition.condition += value.columnName;
+        searchCondition.condition += '"';
+    }
+    else if constexpr (detail::OneOf<T, SqlNullType, std::nullopt_t>)
+    {
+        searchCondition.condition += "NULL";
+    }
+    else if constexpr (std::is_same_v<T, SqlWildcardType>)
     {
         searchCondition.condition += '?';
     }
