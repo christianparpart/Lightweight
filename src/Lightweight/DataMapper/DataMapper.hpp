@@ -18,6 +18,8 @@
 #include <concepts>
 #include <type_traits>
 
+#include <iostream>
+
 // Requires that T satisfies to be a field with storage.
 template <typename T>
 concept FieldWithStorage = requires(T const& field, T& mutableField) {
@@ -262,16 +264,16 @@ std::string DataMapper::CreateTableString(SqlServerType serverType)
         {
             if constexpr (IsAutoIncrementPrimaryKey<FieldType>)
                 createTable.PrimaryKeyWithAutoIncrement(std::string(FieldNameOf<I, Record>()),
-                                                  SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+                                                        SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
             else if constexpr (FieldType::IsPrimaryKey)
                 createTable.PrimaryKey(std::string(FieldNameOf<I, Record>()),
-                                 SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+                                       SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
             else if constexpr (FieldType::IsMandatory)
                 createTable.RequiredColumn(std::string(FieldNameOf<I, Record>()),
-                                     SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+                                           SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
             else
                 createTable.Column(std::string(FieldNameOf<I, Record>()),
-                             SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+                                   SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
         }
     });
 

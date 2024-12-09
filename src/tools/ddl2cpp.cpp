@@ -34,42 +34,49 @@ constexpr auto finally(auto&& cleanupRoutine) noexcept
 std::string MakeType(SqlSchema::Column const& column)
 {
     using ColumnType = SqlColumnType;
+
+    auto optional = [&](auto const& type) {
+        if (column.isNullable)
+            return std::format("std::optional<{}>", type);
+        return std::string { type };
+    };
+
     switch (column.type)
     {
         case ColumnType::CHAR:
             if (column.size == 1)
-                return "char";
+                return optional("char");
             else
                 return std::format("SqlTrimmedFixedString<{}>", column.size);
         case ColumnType::STRING:
             if (column.size == 1)
-                return "char";
+                return optional("char");
             else
                 return std::format("std::string", column.size);
         case ColumnType::TEXT:
-            return std::format("SqlText");
+            return optional("SqlText");
         case ColumnType::BOOLEAN:
-            return "bool";
+            return optional("bool");
         case ColumnType::SMALLINT:
-            return "short";
+            return optional("short");
         case ColumnType::INTEGER:
-            return "int";
+            return optional("int");
         case ColumnType::BIGINT:
-            return "int64_t";
+            return optional("int64_t");
         case ColumnType::NUMERIC:
             return std::format("SqlNumeric<{}, {}>", column.size, column.decimalDigits);
         case ColumnType::REAL:
-            return "double";
+            return optional("double");
         case ColumnType::BLOB:
             return "std::vector<std::byte>";
         case ColumnType::DATE:
-            return "SqlDate";
+            return optional("SqlDate");
         case ColumnType::TIME:
-            return "SqlTime";
+            return optional("SqlTime");
         case ColumnType::DATETIME:
-            return "SqlDateTime";
+            return optional("SqlDateTime");
         case ColumnType::GUID:
-            return "SqlGuid";
+            return optional("SqlGuid");
         case ColumnType::UNKNOWN:
             break;
     }
@@ -125,7 +132,18 @@ class CxxModelPrinter
         std::ranges::sort(m_forwwardDeclarations);
 
         std::stringstream output;
-        output << "#include \"src/Lightweight/Model/All.hpp\"\n\n";
+        output << "// SPDX-License-Identifier: Apache-2.0\n";
+        output << "#pragma once\n";
+        output << "#include <Lightweight/DataMapper/DataMapper.hpp>\n";
+        output << "#include <Lightweight/SqlConnection.hpp>\n";
+        output << "#include <Lightweight/SqlDataBinder.hpp>\n";
+        output << "#include <Lightweight/SqlQuery.hpp>\n";
+        output << "#include <Lightweight/SqlQueryFormatter.hpp>\n";
+        output << "#include <Lightweight/SqlScopedTraceLogger.hpp>\n";
+        output << "#include <Lightweight/SqlStatement.hpp>\n";
+        output << "#include <Lightweight/SqlTransaction.hpp>\n";
+        output << "\n";
+
         if (!modelNamespace.empty())
             output << std::format("namespace {}\n{{\n\n", modelNamespace);
         for (auto const& name: m_forwwardDeclarations)
@@ -151,7 +169,7 @@ class CxxModelPrinter
             cxxPrimaryKeys += '"' + key + '"';
         }
 
-        m_definitions << std::format("struct {0} final: Model::Record<{0}>\n", table.name);
+        m_definitions << std::format("struct {} final\n", table.name);
         m_definitions << std::format("{{\n");
 
         int columnPosition = 0;
@@ -160,73 +178,35 @@ class CxxModelPrinter
             ++columnPosition;
             std::string type = MakeType(column);
             if (column.isPrimaryKey)
+            {
+                m_definitions << std::format("    Field<{}, PrimaryKey::AutoIncrement> {};\n", type, column.name);
                 continue;
+            }
             if (column.isForeignKey)
                 continue;
-            m_definitions << std::format("    Model::Field<{}, {}, \"{}\"{}> {};\n",
-                                         type,
-                                         columnPosition,
-                                         column.name,
-                                         column.isNullable ? ", Nullable" : "",
-                                         column.name);
+            m_definitions << std::format("    Field<{}> {};\n", type, column.name);
         }
 
         columnPosition = 0;
         for (auto const& foreignKey: table.foreignKeys)
         {
             ++columnPosition;
-            m_definitions << std::format("    Model::BelongsTo<{}, {}, \"{}\"> {};\n",
-                                         foreignKey.primaryKey.table,
-                                         columnPosition,
-                                         foreignKey.foreignKey.column,
-                                         MakeVariableName(foreignKey.primaryKey.table));
+            m_definitions << std::format(
+                "    BelongsTo<&{}> {};\n",
+                [&]() {
+                    return std::format("{}::{}", foreignKey.primaryKey.table, "id"); // TODO
+                }(),
+                MakeVariableName(foreignKey.primaryKey.table));
         }
 
         for (SqlSchema::ForeignKeyConstraint const& foreignKey: table.externalForeignKeys)
         {
-            m_definitions << std::format("    Model::HasMany<{}, \"{}\"> {};\n",
-                                         foreignKey.foreignKey.table,
-                                         foreignKey.foreignKey.column,
-                                         MakePluralVariableName(foreignKey.foreignKey.table));
         }
 
         std::vector<std::string> fieldNames;
         for (auto const& column: table.columns)
             if (!column.isPrimaryKey && !column.isForeignKey)
                 fieldNames.push_back(column.name);
-
-        // Create default ctor
-        auto const cxxModelTypeName = table.name;
-        m_definitions << '\n';
-        m_definitions << std::format("    {}():\n", cxxModelTypeName);
-        m_definitions << std::format("        Record {{ \"{}\", {} }}", table.name, cxxPrimaryKeys);
-        for (auto const& fieldName: fieldNames)
-            m_definitions << std::format(",\n        {} {{ *this }}", fieldName, fieldName);
-        for (auto const& constraint: table.foreignKeys)
-            m_definitions << std::format(",\n        {} {{ *this }}", MakeVariableName(constraint.primaryKey.table));
-        for (auto const& constraint: table.externalForeignKeys)
-            m_definitions << std::format(",\n        {} {{ *this }}",
-                                         MakePluralVariableName(constraint.foreignKey.table));
-        m_definitions << "\n";
-        m_definitions << "    {\n";
-        m_definitions << "    }\n";
-
-        m_definitions << "\n";
-
-        // Create move ctor
-        m_definitions << std::format("    {0}({0}&& other) noexcept:\n", cxxModelTypeName);
-        m_definitions << std::format("        Record {{ std::move(other) }}");
-        for (auto const& fieldName: fieldNames)
-            m_definitions << std::format(",\n        {0} {{ *this, std::move(other.{0}) }}", fieldName);
-        for (auto const& constraint: table.foreignKeys)
-            m_definitions << std::format(",\n        {0} {{ *this, std::move(other.{0}) }}",
-                                         MakeVariableName(constraint.primaryKey.table));
-        for (auto const& constraint: table.externalForeignKeys)
-            m_definitions << std::format(",\n        {0} {{ *this, std::move(other.{0}) }}",
-                                         MakePluralVariableName(constraint.foreignKey.table));
-        m_definitions << "\n";
-        m_definitions << "    {\n";
-        m_definitions << "    }\n";
 
         m_definitions << "};\n\n";
     }
@@ -392,6 +372,7 @@ int main(int argc, char const* argv[])
 
     std::vector<SqlSchema::Table> tables = SqlSchema::ReadAllTables(config.database, config.schema);
     CxxModelPrinter printer;
+
     for (auto const& table: tables)
         printer.PrintTable(table);
 

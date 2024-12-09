@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-#include <Lightweight/DataBinder/UnicodeConverter.hpp>
+#include "tables.hpp"
+
+#include <Lightweight/SqlConnectInfo.hpp>
 #include <Lightweight/SqlConnection.hpp>
-#include <Lightweight/SqlDataBinder.hpp>
-#include <Lightweight/SqlQuery.hpp>
-#include <Lightweight/SqlQueryFormatter.hpp>
-#include <Lightweight/SqlScopedTraceLogger.hpp>
+#include <Lightweight/SqlSchema.hpp>
 #include <Lightweight/SqlStatement.hpp>
-#include <Lightweight/SqlTransaction.hpp>
+#include <Lightweight/SqlTraits.hpp>
 
 #include <print>
 #include <regex>
@@ -208,6 +207,17 @@ void count()
     // count_and_compare("ratings", 15520005); // TODO fix this
 }
 
+void iterate()
+{
+    auto dm = DataMapper();
+    auto stmt = SqlStatement { dm.Connection() };
+    int count = 0;
+    for (auto&& person: SqlRowIterator<movies>(stmt))
+    {
+        ++count;
+    }
+}
+
 void run()
 {
     auto measureTime = [](auto&& f, std::string_view name, size_t measured) {
@@ -221,6 +231,7 @@ void run()
     };
     measureTime(count, "count", 15);
     measureTime(longQuery, "longQuery", 4018);
+    measureTime(iterate, "iterate", 0);
 }
 
 int main(int argc, char** argv)
