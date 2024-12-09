@@ -418,6 +418,24 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.WhereColumn", "[SqlQueryBuilde
                                   WHERE "left" = "right")"));
 }
 
+TEST_CASE_METHOD(SqlTestFixture,
+                 "Where: SqlQualifiedTableColumnName OP SqlQualifiedTableColumnName",
+                 "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            return q.FromTable("That")
+                .Select()
+                .Field("foo")
+                .Where(SqlQualifiedTableColumnName { .tableName = "That", .columnName = "left" },
+                       "=",
+                       SqlQualifiedTableColumnName { .tableName = "That", .columnName = "right" })
+                .All();
+        },
+        QueryExpectations::All(R"(SELECT "foo" FROM "That"
+                                  WHERE "That"."left" = "That"."right")"));
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "Varying: multiple varying final query types", "[SqlQueryBuilder]")
 {
     auto const& sqliteFormatter = SqlQueryFormatter::Sqlite();

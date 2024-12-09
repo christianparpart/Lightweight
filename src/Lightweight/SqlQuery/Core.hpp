@@ -485,7 +485,15 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Where(C
     searchCondition.condition += binaryOp;
     searchCondition.condition += ' ';
 
-    if constexpr (std::is_same_v<T, SqlWildcardType>)
+    if constexpr (std::is_same_v<T, SqlQualifiedTableColumnName>)
+    {
+        searchCondition.condition += '"';
+        searchCondition.condition += value.tableName;
+        searchCondition.condition += "\".\"";
+        searchCondition.condition += value.columnName;
+        searchCondition.condition += '"';
+    }
+    else if constexpr (std::is_same_v<T, SqlWildcardType>)
     {
         searchCondition.condition += '?';
     }
