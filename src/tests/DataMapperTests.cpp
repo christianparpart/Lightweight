@@ -10,8 +10,8 @@
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <ostream>
 #include <iostream>
+#include <ostream>
 
 using namespace std::string_view_literals;
 
@@ -41,7 +41,7 @@ std::ostream& operator<<(std::ostream& os, Field<T, IsPrimaryKeyValue> const& fi
 
 struct Person
 {
-    Field<uint64_t, PrimaryKey::AutoIncrement> id;
+    Field<SqlGuid, PrimaryKey::Manual> id;
     Field<SqlAnsiString<25>> name;
     Field<bool> is_active { true };
     Field<std::optional<int>> age;
@@ -50,7 +50,7 @@ struct Person
 // This is a test to only partially query a table row (a few columns)
 struct PersonName
 {
-    Field<uint64_t, PrimaryKey::AutoIncrement> id;
+    Field<SqlGuid, PrimaryKey::Manual> id;
     Field<SqlAnsiString<25>> name;
 
     static constexpr std::string_view TableName = RecordTableName<Person>;
@@ -66,9 +66,9 @@ TEST_CASE_METHOD(SqlTestFixture, "CRUD", "[DataMapper]")
     person.name = "John Doe";
     person.is_active = true;
 
-    REQUIRE(person.id == 0);
+    REQUIRE(!person.id.Value());
     dm.Create(person);
-    REQUIRE(person.id.Value() != 0);
+    REQUIRE(person.id.Value());
 
     // Read (by primary key)
     auto po = dm.QuerySingle<Person>(person.id);
@@ -105,7 +105,7 @@ TEST_CASE_METHOD(SqlTestFixture, "partial row retrieval", "[DataMapper]")
     auto person = Person {};
     person.name = "John Doe";
     person.is_active = true;
-    REQUIRE(person.id == 0);
+    REQUIRE(!person.id.Value());
     dm.Create(person);
 
     auto po = dm.QuerySingle<PersonName>(person.id);
@@ -128,14 +128,12 @@ TEST_CASE_METHOD(SqlTestFixture, "iterate over database", "[SqlRowIterator]")
 
     auto stmt = SqlStatement { dm.Connection() };
     int age = 40;
-    std::uint64_t id = 1;
     for (auto&& person: SqlRowIterator<Person>(stmt))
     {
         CHECK(person.name.Value() == "John");
         CHECK(person.age.Value() == age);
-        CHECK(person.id.Value() == id);
+        CHECK(person.id.Value());
         ++age;
-        ++id;
     }
 }
 
@@ -377,7 +375,7 @@ struct Patient;
 
 struct Physician
 {
-    Field<uint64_t, PrimaryKey::AutoIncrement> id;
+    Field<SqlGuid, PrimaryKey::Manual> id;
     Field<SqlAnsiString<30>> name;
     HasMany<Appointment> appointments;
     HasManyThrough<Patient, Appointment> patients;
@@ -385,7 +383,7 @@ struct Physician
 
 struct Patient
 {
-    Field<uint64_t, PrimaryKey::AutoIncrement> id;
+    Field<SqlGuid, PrimaryKey::Manual> id;
     Field<SqlAnsiString<30>> name;
     Field<SqlAnsiString<30>> comment;
     HasMany<Appointment> appointments;
@@ -394,7 +392,7 @@ struct Patient
 
 struct Appointment
 {
-    Field<uint64_t, PrimaryKey::AutoIncrement> id;
+    Field<SqlGuid, PrimaryKey::Manual> id;
     Field<SqlDateTime> date;
     Field<SqlAnsiString<80>> comment;
     BelongsTo<&Physician::id> physician;
