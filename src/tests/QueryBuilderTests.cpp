@@ -216,6 +216,31 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FieldsWithBelongsTo", "[SqlQue
         });
 }
 
+TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.ComplexOR", "[SqlQueryBuilder]")
+{
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            using namespace std::string_view_literals;
+            return q.FromTable("Table1")
+                .Select()
+                .LeftOuterJoin("Table2"sv, "id"sv, "id"sv)
+                .RightOuterJoin("Table3"sv,
+                                [](SqlJoinConditionBuilder q) {
+                                    // clang-format off
+                                    return q.On("id", { .tableName = "Table1", .columnName = "column1" })
+                                            .OrOn("id", { .tableName = "Table1", .columnName = "column2" })
+                                            .OrOn("id", { .tableName = "Table1", .columnName = "column3" })
+                                            .OrOn("id", { .tableName = "Table1", .columnName = "column4" });
+                                    // clang-format on
+                                })
+                .Fields({ "id"sv, "name"sv }, "Table1")
+                .All();
+        },
+        QueryExpectations::All(R"(SELECT "Table1"."id", "Table1"."name" FROM "Table1"
+                                 LEFT OUTER JOIN "Table2" ON "Table2"."id" = "Table1"."id"
+                                 RIGHT OUTER JOIN "Table3" ON "Table3"."id" = "Table1"."column1" OR "Table3"."id" = "Table1"."column2" OR "Table3"."id" = "Table1"."column3" OR "Table3"."id" = "Table1"."column4")"));
+}
+
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Where.Junctors", "[SqlQueryBuilder]")
 {
     checkSqlQueryBuilder(

@@ -83,10 +83,22 @@ class SqlJoinConditionBuilder
 
     SqlJoinConditionBuilder& On(std::string_view joinColumnName, SqlQualifiedTableColumnName onOtherColumn)
     {
+        return Operator(joinColumnName, onOtherColumn, "AND");
+    }
+
+    SqlJoinConditionBuilder& OrOn(std::string_view joinColumnName, SqlQualifiedTableColumnName onOtherColumn)
+    {
+        return Operator(joinColumnName, onOtherColumn, "OR");
+    }
+
+    SqlJoinConditionBuilder& Operator(std::string_view joinColumnName,
+                                      SqlQualifiedTableColumnName onOtherColumn,
+                                      std::string_view op)
+    {
         if (_firstCall)
             _firstCall = !_firstCall;
         else
-            _condition += " AND ";
+            _condition += std::format(" {} ", op);
 
         _condition += '"';
         _condition += _referenceTable;
@@ -613,7 +625,8 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::LeftOut
 template <typename Derived>
 template <typename OnChainCallable>
     requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
-Derived& SqlWhereClauseBuilder<Derived>::LeftOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder)
+Derived& SqlWhereClauseBuilder<Derived>::LeftOuterJoin(std::string_view joinTable,
+                                                       OnChainCallable const& onClauseBuilder)
 {
     return Join(JoinType::LEFT, joinTable, onClauseBuilder);
 }
@@ -635,7 +648,8 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::RightOu
 template <typename Derived>
 template <typename OnChainCallable>
     requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
-Derived& SqlWhereClauseBuilder<Derived>::RightOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder)
+Derived& SqlWhereClauseBuilder<Derived>::RightOuterJoin(std::string_view joinTable,
+                                                        OnChainCallable const& onClauseBuilder)
 {
     return Join(JoinType::RIGHT, joinTable, onClauseBuilder);
 }
@@ -657,7 +671,8 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::FullOut
 template <typename Derived>
 template <typename OnChainCallable>
     requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
-Derived& SqlWhereClauseBuilder<Derived>::FullOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder)
+Derived& SqlWhereClauseBuilder<Derived>::FullOuterJoin(std::string_view joinTable,
+                                                       OnChainCallable const& onClauseBuilder)
 {
     return Join(JoinType::FULL, joinTable, onClauseBuilder);
 }
@@ -776,10 +791,9 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Join(Jo
     };
 
     size_t const originalSize = SearchCondition().tableJoins.size();
-    SearchCondition().tableJoins += std::format("\n {0} JOIN \"{1}\" ON ",
-                                                JoinTypeStrings[static_cast<std::size_t>(joinType)],
-                                                joinTable);
-    size_t const sizeBefore  = SearchCondition().tableJoins.size();
+    SearchCondition().tableJoins +=
+        std::format("\n {0} JOIN \"{1}\" ON ", JoinTypeStrings[static_cast<std::size_t>(joinType)], joinTable);
+    size_t const sizeBefore = SearchCondition().tableJoins.size();
     onClauseBuilder(SqlJoinConditionBuilder { joinTable, &SearchCondition().tableJoins });
     size_t const sizeAfter = SearchCondition().tableJoins.size();
     if (sizeBefore == sizeAfter)
