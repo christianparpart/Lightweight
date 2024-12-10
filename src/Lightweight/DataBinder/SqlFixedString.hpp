@@ -241,6 +241,18 @@ struct IsSqlFixedStringType<SqlFixedString<N, T, Mode>>: std::true_type
 template <typename T>
 constexpr bool IsSqlFixedString = IsSqlFixedStringType<T>::value;
 
+template <std::size_t N>
+using SqlAnsiString = SqlFixedString<N, char, SqlFixedStringMode::VARIABLE_SIZE>;
+
+template <std::size_t N>
+using SqlUtf16String = SqlFixedString<N, char16_t, SqlFixedStringMode::VARIABLE_SIZE>;
+
+template <std::size_t N>
+using SqlUtf32String = SqlFixedString<N, char32_t, SqlFixedStringMode::VARIABLE_SIZE>;
+
+template <std::size_t N>
+using SqlWideString = SqlFixedString<N, wchar_t, SqlFixedStringMode::VARIABLE_SIZE>;
+
 template <std::size_t N, typename T = char>
 using SqlTrimmedFixedString = SqlFixedString<N, T, SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED>;
 

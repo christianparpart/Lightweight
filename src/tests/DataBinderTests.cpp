@@ -459,36 +459,36 @@ struct TestTypeTraits<SqlTrimmedFixedString<20, char>>
 };
 
 template <>
-struct TestTypeTraits<SqlString<20>>
+struct TestTypeTraits<SqlAnsiString<20>>
 {
-    using ValueType = SqlString<20>;
+    using ValueType = SqlAnsiString<20>;
     static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::Varchar { 20 };
     static constexpr auto inputValue = ValueType { "Hello" };
     static constexpr auto expectedOutputValue = ValueType { "Hello" };
 };
 
 template <>
-struct TestTypeTraits<SqlString<20, char16_t>>
+struct TestTypeTraits<SqlUtf16String<20>>
 {
-    using ValueType = SqlString<20, char16_t>;
+    using ValueType = SqlUtf16String<20>;
     static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 20 };
     static constexpr auto inputValue = ValueType { u"Hello" };
     static constexpr auto expectedOutputValue = ValueType { u"Hello" };
 };
 
 template <>
-struct TestTypeTraits<SqlString<20, char32_t>>
+struct TestTypeTraits<SqlUtf32String<20>>
 {
-    using ValueType = SqlString<20, char32_t>;
+    using ValueType = SqlUtf32String<20>;
     static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 20 };
     static constexpr auto inputValue = ValueType { U"Hello" };
     static constexpr auto expectedOutputValue = ValueType { U"Hello" };
 };
 
 template <>
-struct TestTypeTraits<SqlString<20, wchar_t>>
+struct TestTypeTraits<SqlWideString<20>>
 {
-    using ValueType = SqlString<20, wchar_t>;
+    using ValueType = SqlWideString<20>;
     static constexpr auto sqlColumnTypeNameOverride = SqlColumnTypeDefinitions::NVarchar { 20 };
     static constexpr auto inputValue = ValueType { L"Hello" };
     static constexpr auto expectedOutputValue = ValueType { L"Hello" };
@@ -635,10 +635,10 @@ using TypesToTest = std::tuple<
     SqlDateTime,
     SqlGuid,
     SqlNumeric<15, 2>,
-    SqlString<20, char16_t>,
-    SqlString<20, char32_t>,
-    SqlString<20, wchar_t>,
-    SqlString<20>,
+    SqlAnsiString<20>,
+    SqlUtf16String<20>,
+    SqlUtf32String<20>,
+    SqlWideString<20>,
     SqlText,
     SqlTime,
     SqlTrimmedFixedString<20, char>,
