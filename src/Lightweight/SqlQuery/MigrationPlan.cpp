@@ -3,15 +3,18 @@
 #include "../SqlQueryFormatter.hpp"
 #include "MigrationPlan.hpp"
 
-std::string SqlMigrationPlan::ToSql() const
+std::vector<std::string> SqlMigrationPlan::ToSql() const
 {
-    std::string result;
+    std::vector<std::string> result;
     for (auto const& step: steps)
-        result += ToSql(formatter, step);
+    {
+        auto subSteps = ::ToSql(formatter, step);
+        result.insert(result.end(), subSteps.begin(), subSteps.end());
+    }
     return result;
 }
 
-std::string SqlMigrationPlan::ToSql(SqlQueryFormatter const& formatter, SqlMigrationPlanElement const& element)
+std::vector<std::string> ToSql(SqlQueryFormatter const& formatter, SqlMigrationPlanElement const& element)
 {
     using namespace std::string_literals;
     return std::visit(
