@@ -28,6 +28,8 @@
 #include <sqlspi.h>
 #include <sqltypes.h>
 
+#include <print>
+
 class SqlQueryBuilder;
 class SqlMigrationQueryBuilder;
 class SqlQueryFormatter;

@@ -167,6 +167,15 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
     [[nodiscard]] virtual std::string BuildColumnDefinition(SqlColumnDeclaration const& column) const
     {
         std::stringstream sqlQueryString;
+
+        if (column.foreignKey)
+        {
+            return std::format(R"(FOREIGN KEY ("{}") REFERENCES "{}"("{}"))",
+                               column.name,
+                               column.foreignKey->tableName,
+                               column.foreignKey->columnName);
+        }
+
         sqlQueryString << '"' << column.name << "\" ";
 
         if (column.primaryKey != SqlPrimaryKeyType::AUTO_INCREMENT)

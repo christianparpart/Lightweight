@@ -243,6 +243,19 @@ TEST_CASE_METHOD(SqlTestFixture, "BelongsTo", "[DataMapper][relations]")
 
     actualEmail1.user.Unload();
     REQUIRE(!actualEmail1.user.IsLoaded());
+
+    REQUIRE(dm.CreateTableString<User>(dm.Connection().ServerType())
+            == "CREATE TABLE \"User\" (\n"
+               "    \"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n"
+               "    \"name\" VARCHAR(30) NOT NULL\n"
+               ");");
+    REQUIRE(dm.CreateTableString<Email>(dm.Connection().ServerType())
+            == "CREATE TABLE \"Email\" (\n"
+               "    \"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n"
+               "    \"address\" VARCHAR(30) NOT NULL,\n"
+               "    \"user_id\" INTEGER,\n"
+               "    FOREIGN KEY (\"user_id\") REFERENCES \"User\"(\"id\")\n"
+               ");");
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "HasMany", "[DataMapper][relations]")

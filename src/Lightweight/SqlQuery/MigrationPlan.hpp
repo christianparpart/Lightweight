@@ -155,11 +155,18 @@ enum class SqlPrimaryKeyType : uint8_t
     GUID,
 };
 
+struct SqlForeignKeyDefinition
+{
+    std::string tableName;
+    std::string columnName;
+};
+
 struct SqlColumnDeclaration
 {
     std::string name;
     SqlColumnTypeDefinition type;
     SqlPrimaryKeyType primaryKey { SqlPrimaryKeyType::NONE };
+    std::optional<SqlForeignKeyDefinition> foreignKey {};
     bool required { false };
     bool unique { false };
     bool index { false };

@@ -257,6 +257,13 @@ std::string DataMapper::CreateTableString(SqlServerType serverType)
     auto migration = SqlQueryBuilder(*SqlQueryFormatter::Get(serverType)).Migration();
     auto createTable = migration.CreateTable(RecordTableName<Record>);
 
+    auto handleField = [&]<size_t I, typename FieldType>(auto... args) {
+        if constexpr (FieldType::IsMandatory)
+            createTable.RequiredColumn(args...);
+        else
+            createTable.Column(args...);
+    };
+
     Reflection::EnumerateMembers<Record>([&]<size_t I, typename FieldType>() {
         if constexpr (FieldWithStorage<FieldType>)
         {
@@ -266,12 +273,27 @@ std::string DataMapper::CreateTableString(SqlServerType serverType)
             else if constexpr (FieldType::IsPrimaryKey)
                 createTable.PrimaryKey(std::string(FieldNameOf<I, Record>()),
                                        SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
-            else if constexpr (FieldType::IsMandatory)
-                createTable.RequiredColumn(std::string(FieldNameOf<I, Record>()),
-                                           SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+            else if constexpr (IsBelongsTo<FieldType>)
+            {
+                handleField.template operator()<I, FieldType>(std::string(FieldNameOf<I, Record>()),
+                                                              SqlColumnTypeDefinitionOf<FieldType>);
+            }
             else
-                createTable.Column(std::string(FieldNameOf<I, Record>()),
-                                   SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+                handleField.template operator()<I, FieldType>(std::string(FieldNameOf<I, Record>()),
+                                                              SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+        }
+    });
+
+    // Add Foreign Key constraints
+    Reflection::EnumerateMembers<Record>([&]<size_t I, typename FieldType>() {
+        if constexpr (FieldWithStorage<FieldType> && IsBelongsTo<FieldType>)
+        {
+            createTable.ForeignKey(std::string(FieldNameOf<I, Record>()),
+                                   SqlColumnTypeDefinitionOf<typename FieldType::ValueType>,
+                                   SqlForeignKeyDefinition {
+                                       .tableName = std::string(RecordTableName<typename FieldType::ReferencedRecord>),
+                                       .columnName = "id",
+                                   });
         }
     });
 

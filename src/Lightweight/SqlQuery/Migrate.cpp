@@ -147,6 +147,18 @@ SqlCreateTableQueryBuilder& SqlCreateTableQueryBuilder::PrimaryKeyWithAutoIncrem
     });
 }
 
+SqlCreateTableQueryBuilder& SqlCreateTableQueryBuilder::ForeignKey(std::string columnName,
+                                                                   SqlColumnTypeDefinition columnType,
+                                                                   SqlForeignKeyDefinition foreignKey)
+{
+    return Column(SqlColumnDeclaration {
+        .name = std::move(columnName),
+        .type = columnType,
+        .foreignKey = std::move(foreignKey),
+        .required = true,
+    });
+}
+
 SqlCreateTableQueryBuilder& SqlCreateTableQueryBuilder::Unique()
 {
     _plan.columns.back().unique = true;
