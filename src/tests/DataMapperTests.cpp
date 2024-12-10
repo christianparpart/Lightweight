@@ -42,7 +42,7 @@ std::ostream& operator<<(std::ostream& os, Field<T, IsPrimaryKeyValue> const& fi
 struct Person
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<SqlString<25>> name;
+    Field<SqlAnsiString<25>> name;
     Field<bool> is_active { true };
     Field<std::optional<int>> age;
 };
@@ -51,7 +51,7 @@ struct Person
 struct PersonName
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<SqlString<25>> name;
+    Field<SqlAnsiString<25>> name;
 
     static constexpr std::string_view TableName = RecordTableName<Person>;
 };
@@ -142,8 +142,8 @@ TEST_CASE_METHOD(SqlTestFixture, "iterate over database", "[SqlRowIterator]")
 struct RecordWithDefaults
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<SqlString<30>> name1 { "John Doe" };
-    Field<std::optional<SqlString<30>>> name2 { "John Doe" };
+    Field<SqlAnsiString<30>> name1 { "John Doe" };
+    Field<std::optional<SqlAnsiString<30>>> name2 { "John Doe" };
     Field<bool> boolean1 { true };
     Field<bool> boolean2 { false };
     Field<std::optional<int>> int1 { 42 };
@@ -153,8 +153,8 @@ struct RecordWithDefaults
 struct RecordWithNoDefaults
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<SqlString<30>> name1;
-    Field<std::optional<SqlString<30>>> name2;
+    Field<SqlAnsiString<30>> name1;
+    Field<std::optional<SqlAnsiString<30>>> name2;
     Field<bool> boolean1;
     Field<bool> boolean2;
     Field<std::optional<int>> int1;
@@ -188,7 +188,7 @@ struct Email;
 struct User
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id {};
-    Field<SqlString<30>> name {};
+    Field<SqlAnsiString<30>> name {};
 
     HasMany<Email> emails {};
 };
@@ -196,7 +196,7 @@ struct User
 struct Email
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id {};
-    Field<SqlString<30>> address {};
+    Field<SqlAnsiString<30>> address {};
     BelongsTo<&User::id> user {};
 
     constexpr std::weak_ordering operator<=>(Email const& other) const = default;
@@ -299,7 +299,7 @@ struct AccountHistory;
 struct Suppliers
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id {};
-    Field<SqlString<30>> name {};
+    Field<SqlAnsiString<30>> name {};
 
     // TODO: HasOne<Account> account;
     HasOneThrough<AccountHistory, Account> accountHistory {};
@@ -313,7 +313,7 @@ std::ostream& operator<<(std::ostream& os, Suppliers const& record)
 struct Account
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id {};
-    Field<SqlString<30>> iban {};
+    Field<SqlAnsiString<30>> iban {};
     BelongsTo<&Suppliers::id> supplier {};
 
     constexpr std::weak_ordering operator<=>(Account const& other) const = default;
@@ -378,7 +378,7 @@ struct Patient;
 struct Physician
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<SqlString<30>> name;
+    Field<SqlAnsiString<30>> name;
     HasMany<Appointment> appointments;
     HasManyThrough<Patient, Appointment> patients;
 };
@@ -386,8 +386,8 @@ struct Physician
 struct Patient
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
-    Field<SqlString<30>> name;
-    Field<SqlString<30>> comment;
+    Field<SqlAnsiString<30>> name;
+    Field<SqlAnsiString<30>> comment;
     HasMany<Appointment> appointments;
     HasManyThrough<Physician, Appointment> physicians;
 };
@@ -396,7 +396,7 @@ struct Appointment
 {
     Field<uint64_t, PrimaryKey::AutoIncrement> id;
     Field<SqlDateTime> date;
-    Field<SqlString<80>> comment;
+    Field<SqlAnsiString<80>> comment;
     BelongsTo<&Physician::id> physician;
     BelongsTo<&Patient::id> patient;
 };
@@ -482,7 +482,7 @@ TEST_CASE_METHOD(SqlTestFixture, "HasManyThrough", "[DataMapper][relations]")
 struct TestRecord
 {
     Field<uint64_t, PrimaryKey::Manual> id {};
-    Field<SqlString<30>> comment;
+    Field<SqlAnsiString<30>> comment;
 
     std::weak_ordering operator<=>(TestRecord const& other) const = default;
 };
@@ -517,10 +517,10 @@ struct SimpleStruct
 {
     uint64_t pkFromA;
     uint64_t pkFromB;
-    SqlString<30> c1FromA;
-    SqlString<30> c2FromA;
-    SqlString<30> c1FromB;
-    SqlString<30> c2FromB;
+    SqlAnsiString<30> c1FromA;
+    SqlAnsiString<30> c2FromA;
+    SqlAnsiString<30> c1FromB;
+    SqlAnsiString<30> c2FromB;
 };
 
 TEST_CASE_METHOD(SqlTestFixture, "Query: SELECT into simple struct", "[DataMapper]")
@@ -565,8 +565,8 @@ TEST_CASE_METHOD(SqlTestFixture, "Query: SELECT into simple struct", "[DataMappe
 
 struct MultiPkRecord
 {
-    Field<SqlString<32>, PrimaryKey::Manual> firstName;
-    Field<SqlString<32>, PrimaryKey::Manual> lastName;
+    Field<SqlAnsiString<32>, PrimaryKey::Manual> firstName;
+    Field<SqlAnsiString<32>, PrimaryKey::Manual> lastName;
 
     constexpr std::weak_ordering operator<=>(MultiPkRecord const& other) const = default;
 };
