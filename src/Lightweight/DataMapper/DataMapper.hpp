@@ -346,7 +346,12 @@ RecordId DataMapper::Create(Record& record)
         if constexpr (!PrimaryKeyType::IsAutoIncrementPrimaryKey)
         {
             using ValueType = typename PrimaryKeyType::ValueType;
-            if constexpr (requires { ValueType {} + 1; })
+            if constexpr (std::same_as<ValueType, SqlGuid>)
+            {
+                if (!primaryKeyField.IsModified())
+                    primaryKeyField = SqlGuid::Create();
+            }
+            else if constexpr (requires { ValueType {} + 1; })
             {
                 if (!primaryKeyField.IsModified())
                 {
