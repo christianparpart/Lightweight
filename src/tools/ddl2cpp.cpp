@@ -185,7 +185,7 @@ class CxxModelPrinter
                 MakeVariableName(foreignKey.primaryKey.table));
         }
 
-        for (SqlSchema::ForeignKeyConstraint const& foreignKey: table.externalForeignKeys)
+        for ([[maybe_unused]] SqlSchema::ForeignKeyConstraint const& foreignKey: table.externalForeignKeys)
         {
         }
 

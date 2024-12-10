@@ -217,3 +217,11 @@ struct SqlDataBinder<BelongsTo<ReferencedField>>
         return sqlReturn;
     }
 };
+
+// TODO Something is wrong with the ValueType of BelongsTo. It should be the same as the primary key of the other
+// record. Which is Integer, but SqlColumnTypeDefinitionOf deduce it as Bigint.
+template <auto F>
+struct detail::SqlColumnTypeDefinitionOf<BelongsTo<F>>
+{
+    static constexpr auto value = SqlColumnTypeDefinitions::Integer {};
+};
