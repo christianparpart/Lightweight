@@ -3,25 +3,49 @@
 #pragma once
 
 #include "../SqlColumnTypeDefinitions.hpp"
-#include "BasicStringBinder.hpp"
 #include "Core.hpp"
-#include "StdString.hpp"
 
 #include <format>
 #include <optional>
 #include <string>
 
+// Represents a GUID (Globally Unique Identifier).
 struct LIGHTWEIGHT_API SqlGuid
 {
     uint8_t data[16] {};
 
+    // Creates a new non-empty GUID.
     static SqlGuid Create() noexcept;
 
+    // Parses a GUID from a string.
     static std::optional<SqlGuid> TryParse(std::string_view const& text) noexcept;
 
+    // Parses a GUID from a string. Use with caution and always prefer TryParse at all cost.
     static SqlGuid constexpr UnsafeParse(std::string_view const& text) noexcept;
 
     constexpr std::weak_ordering operator<=>(SqlGuid const& other) const noexcept = default;
+
+    constexpr bool operator==(SqlGuid const& other) const noexcept
+    {
+        return (*this <=> other) == std::weak_ordering::equivalent;
+    }
+
+    constexpr bool operator!=(SqlGuid const& other) const noexcept
+    {
+        return !(*this == other);
+    }
+
+    // Test if the GUID is non-empty.
+    constexpr explicit operator bool() const noexcept
+    {
+        return *this != SqlGuid {};
+    }
+
+    // Test if the GUID is empty.
+    constexpr bool operator!() const noexcept
+    {
+        return !static_cast<bool>(*this);
+    }
 };
 
 constexpr SqlGuid SqlGuid::UnsafeParse(std::string_view const& text) noexcept
