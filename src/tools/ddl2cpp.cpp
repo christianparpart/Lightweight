@@ -187,6 +187,7 @@ class CxxModelPrinter
 
         for (SqlSchema::ForeignKeyConstraint const& foreignKey: table.externalForeignKeys)
         {
+            (void) foreignKey; // TODO
         }
 
         std::vector<std::string> fieldNames;
