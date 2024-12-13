@@ -55,6 +55,18 @@ auto EraseLinefeeds(std::string str) noexcept -> std::string
     return result;
 }
 
+[[nodiscard]] std::string NormalizeText(std::vector<std::string> const& texts)
+{
+    auto result = std::string {};
+    for (auto const& text: texts)
+    {
+        if (!result.empty())
+            result += '\n';
+        result += NormalizeText(text);
+    }
+    return result;
+}
+
 template <typename TheSqlQuery>
     requires(std::is_invocable_v<TheSqlQuery, SqlQueryBuilder&>)
 void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
@@ -895,11 +907,15 @@ TEST_CASE_METHOD(SqlTestFixture, "AlterTable AddColumn", "[SqlQueryBuilder][Migr
     checkSqlQueryBuilder(
         [](SqlQueryBuilder& q) {
             auto migration = q.Migration();
-            migration.AlterTable("Table").AddColumn("column", Integer {});
+            migration.AlterTable("Table").AddColumn("column", Bigint {});
             return migration.GetPlan();
         },
-        QueryExpectations::All(R"sql(ALTER TABLE "Table" ADD COLUMN "column" INTEGER;
-                               )sql"));
+        QueryExpectations {
+            .sqlite = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT;)sql",
+            .postgres = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT;)sql",
+            .sqlServer = R"sql(ALTER TABLE "Table" ADD "column" BIGINT;)sql",
+            .oracle = R"sql(ALTER TABLE "Table" ADD COLUMN "column" NUMBER;)sql",
+        });
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "AlterTable multiple AddColumn calls", "[SqlQueryBuilder][Migration]")
@@ -908,12 +924,23 @@ TEST_CASE_METHOD(SqlTestFixture, "AlterTable multiple AddColumn calls", "[SqlQue
     checkSqlQueryBuilder(
         [](SqlQueryBuilder& q) {
             auto migration = q.Migration();
-            migration.AlterTable("Table").AddColumn("column", Integer {}).AddColumn("column2", Varchar { 255 });
+            migration.AlterTable("Table").AddColumn("column", Bigint {}).AddColumn("column2", Varchar { 255 });
             return migration.GetPlan();
         },
-        QueryExpectations::All(R"sql(ALTER TABLE "Table" ADD COLUMN "column" INTEGER;
-                                     ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR(255);
-                               )sql"));
+        QueryExpectations {
+            .sqlite = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT;
+                             ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR(255);
+                       )sql",
+            .postgres = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT;
+                             ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR(255);
+                       )sql",
+            .sqlServer = R"sql(ALTER TABLE "Table" ADD "column" BIGINT;
+                             ALTER TABLE "Table" ADD "column2" VARCHAR(255);
+                       )sql",
+            .oracle = R"sql(ALTER TABLE "Table" ADD COLUMN "column" NUMBER;
+                             ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR2(255 CHAR);
+                       )sql",
+        });
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "AlterTable RenameColumn", "[SqlQueryBuilder][Migration]")

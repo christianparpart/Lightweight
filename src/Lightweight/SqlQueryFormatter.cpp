@@ -230,36 +230,37 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         return sqlQueryString.str();
     }
 
-    [[nodiscard]] std::string CreateTable(std::string_view tableName,
-                                          std::vector<SqlColumnDeclaration> const& columns) const override
+    [[nodiscard]] StringList CreateTable(std::string_view tableName,
+                                         std::vector<SqlColumnDeclaration> const& columns) const override
     {
-        std::stringstream sqlQueryString;
+        auto sqlQueries = StringList {};
 
-        sqlQueryString << "CREATE TABLE \"" << tableName << "\" (";
-
-        size_t currentColumn = 0;
-        std::string primaryKeyColumns;
-        for (SqlColumnDeclaration const& column: columns)
-        {
-            if (currentColumn > 0)
-                sqlQueryString << ",";
-            ++currentColumn;
-            sqlQueryString << "\n    ";
-            sqlQueryString << BuildColumnDefinition(column);
-            if (column.primaryKey == SqlPrimaryKeyType::MANUAL)
+        sqlQueries.emplace_back([&]() {
+            std::stringstream sqlQueryString;
+            sqlQueryString << "CREATE TABLE \"" << tableName << "\" (";
+            size_t currentColumn = 0;
+            std::string primaryKeyColumns;
+            for (SqlColumnDeclaration const& column: columns)
             {
-                if (!primaryKeyColumns.empty())
-                    primaryKeyColumns += ", ";
-                primaryKeyColumns += '"';
-                primaryKeyColumns += column.name;
-                primaryKeyColumns += '"';
+                if (currentColumn > 0)
+                    sqlQueryString << ",";
+                ++currentColumn;
+                sqlQueryString << "\n    ";
+                sqlQueryString << BuildColumnDefinition(column);
+                if (column.primaryKey == SqlPrimaryKeyType::MANUAL)
+                {
+                    if (!primaryKeyColumns.empty())
+                        primaryKeyColumns += ", ";
+                    primaryKeyColumns += '"';
+                    primaryKeyColumns += column.name;
+                    primaryKeyColumns += '"';
+                }
             }
-        }
-
-        if (!primaryKeyColumns.empty())
-            sqlQueryString << ",\n    PRIMARY KEY (" << primaryKeyColumns << ")";
-
-        sqlQueryString << "\n);";
+            if (!primaryKeyColumns.empty())
+                sqlQueryString << ",\n    PRIMARY KEY (" << primaryKeyColumns << ")";
+            sqlQueryString << "\n);";
+            return sqlQueryString.str();
+        }());
 
         for (SqlColumnDeclaration const& column: columns)
         {
@@ -267,25 +268,25 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
             {
                 // primary keys are always indexed
                 if (column.unique)
-                    sqlQueryString << std::format("\nCREATE UNIQUE INDEX \"{}_{}_index\" ON \"{}\"(\"{}\");",
-                                                  tableName,
-                                                  column.name,
-                                                  tableName,
-                                                  column.name);
+                    sqlQueries.emplace_back(std::format(R"(CREATE UNIQUE INDEX "{}_{}_index" ON "{}"("{}");)",
+                                                        tableName,
+                                                        column.name,
+                                                        tableName,
+                                                        column.name));
                 else
-                    sqlQueryString << std::format("\nCREATE INDEX \"{}_{}_index\" ON \"{}\"(\"{}\");",
-                                                  tableName,
-                                                  column.name,
-                                                  tableName,
-                                                  column.name);
+                    sqlQueries.emplace_back(std::format(R"(CREATE INDEX "{}_{}_index" ON "{}"("{}");)",
+                                                        tableName,
+                                                        column.name,
+                                                        tableName,
+                                                        column.name));
             }
         }
 
-        return sqlQueryString.str();
+        return sqlQueries;
     }
 
-    [[nodiscard]] std::string AlterTable(std::string_view tableName,
-                                         std::vector<SqlAlterTableCommand> const& commands) const override
+    [[nodiscard]] StringList AlterTable(std::string_view tableName,
+                                        std::vector<SqlAlterTableCommand> const& commands) const override
     {
         std::stringstream sqlQueryString;
 
@@ -344,7 +345,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                 command);
         }
 
-        return sqlQueryString.str();
+        return { sqlQueryString.str() };
     }
 
     [[nodiscard]] std::string ColumnType(SqlColumnTypeDefinition const& type) const override
@@ -391,9 +392,9 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
             type);
     }
 
-    [[nodiscard]] std::string DropTable(std::string_view const& tableName) const override
+    [[nodiscard]] StringList DropTable(std::string_view const& tableName) const override
     {
-        return std::format(R"(DROP TABLE "{}";)", tableName);
+        return { std::format(R"(DROP TABLE "{}";)", tableName) };
     }
 };
 
@@ -501,6 +502,69 @@ class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
             sqlQueryString << " UNIQUE";
 
         return sqlQueryString.str();
+    }
+
+    [[nodiscard]] StringList AlterTable(std::string_view tableName,
+                                        std::vector<SqlAlterTableCommand> const& commands) const override
+    {
+        std::stringstream sqlQueryString;
+
+        int currentCommand = 0;
+        for (SqlAlterTableCommand const& command: commands)
+        {
+            if (currentCommand > 0)
+                sqlQueryString << '\n';
+            ++currentCommand;
+
+            sqlQueryString << std::visit(
+                [this, tableName](auto const& actualCommand) -> std::string {
+                    using Type = std::decay_t<decltype(actualCommand)>;
+                    if constexpr (std::same_as<Type, SqlAlterTableCommands::RenameTable>)
+                    {
+                        return std::format(
+                            R"(ALTER TABLE "{}" RENAME TO "{}";)", tableName, actualCommand.newTableName);
+                    }
+                    else if constexpr (std::same_as<Type, SqlAlterTableCommands::AddColumn>)
+                    {
+                        return std::format(R"(ALTER TABLE "{}" ADD "{}" {};)",
+                                           tableName,
+                                           actualCommand.columnName,
+                                           ColumnType(actualCommand.columnType));
+                    }
+                    else if constexpr (std::same_as<Type, SqlAlterTableCommands::RenameColumn>)
+                    {
+                        return std::format(R"(ALTER TABLE "{}" RENAME COLUMN "{}" TO "{}";)",
+                                           tableName,
+                                           actualCommand.oldColumnName,
+                                           actualCommand.newColumnName);
+                    }
+                    else if constexpr (std::same_as<Type, SqlAlterTableCommands::DropColumn>)
+                    {
+                        return std::format(
+                            R"(ALTER TABLE "{}" DROP COLUMN "{}";)", tableName, actualCommand.columnName);
+                    }
+                    else if constexpr (std::same_as<Type, SqlAlterTableCommands::AddIndex>)
+                    {
+                        auto const uniqueStr = actualCommand.unique ? "UNIQUE "sv : ""sv;
+                        return std::format(R"(CREATE {2}INDEX "{0}_{1}_index" ON "{0}"("{1}");)",
+                                           tableName,
+                                           actualCommand.columnName,
+                                           uniqueStr);
+                    }
+                    else if constexpr (std::same_as<Type, SqlAlterTableCommands::DropIndex>)
+                    {
+                        return std::format(R"(DROP INDEX "{0}_{1}_index";)", tableName, actualCommand.columnName);
+                    }
+                    else
+                    {
+                        throw std::runtime_error(
+                            std::format("Unknown alter table command: {}", Reflection::TypeName<Type>));
+                    }
+                },
+                command);
+        }
+
+        return { sqlQueryString.str() };
     }
 };
 

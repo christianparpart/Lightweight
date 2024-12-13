@@ -94,10 +94,10 @@ class DataMapper
     static std::string Inspect(Record const& record);
 
     template <typename Record>
-    std::string CreateTableString(SqlServerType serverType);
+    std::vector<std::string> CreateTableString(SqlServerType serverType);
 
     template <typename FirstRecord, typename... MoreRecords>
-    std::string CreateTablesString(SqlServerType serverType);
+    std::vector<std::string> CreateTablesString(SqlServerType serverType);
 
     // Creates the table for the given record type.
     template <typename Record>
@@ -252,7 +252,7 @@ constexpr std::string_view FieldNameOf()
 };
 
 template <typename Record>
-std::string DataMapper::CreateTableString(SqlServerType serverType)
+std::vector<std::string> DataMapper::CreateTableString(SqlServerType serverType)
 {
     auto migration = SqlQueryBuilder(*SqlQueryFormatter::Get(serverType)).Migration();
     auto createTable = migration.CreateTable(RecordTableName<Record>);
@@ -279,18 +279,21 @@ std::string DataMapper::CreateTableString(SqlServerType serverType)
 }
 
 template <typename FirstRecord, typename... MoreRecords>
-std::string DataMapper::CreateTablesString(SqlServerType serverType)
+std::vector<std::string> DataMapper::CreateTablesString(SqlServerType serverType)
 {
-    detail::StringBuilder sql;
-    sql << CreateTableString<FirstRecord>(serverType) << (CreateTableString<MoreRecords>(serverType) << ...);
-    return sql.output;
+    std::vector<std::string> output;
+    auto const append = [&output](auto const& sql) { output.insert(output.end(), sql.begin(), sql.end()); };
+    append(CreateTableString<FirstRecord>(serverType));
+    (append(CreateTableString<MoreRecords>(serverType)), ...);
+    return output;
 }
 
 template <typename Record>
 void DataMapper::CreateTable()
 {
-    auto const sqlQueryString = CreateTableString<Record>(_connection.ServerType());
-    _stmt.ExecuteDirect(sqlQueryString);
+    auto const sqlQueryStrings = CreateTableString<Record>(_connection.ServerType());
+    for (auto const& sqlQueryString: sqlQueryStrings)
+        _stmt.ExecuteDirect(sqlQueryString);
 }
 
 template <typename FirstRecord, typename... MoreRecords>
@@ -824,7 +827,7 @@ void DataMapper::BindOutputColumns(Record& record, SqlStatement* stmt)
     static_assert(!std::is_const_v<Record>);
 
     Reflection::EnumerateMembers(record,
-                                 [this, stmt, i = SQLSMALLINT { 1 }]<size_t I, typename Field>(Field& field) mutable {
+                                 [stmt, i = SQLSMALLINT { 1 }]<size_t I, typename Field>(Field& field) mutable {
                                      if constexpr (requires { field.BindOutputColumn(i, *stmt); })
                                      {
                                          field.BindOutputColumn(i++, *stmt);
