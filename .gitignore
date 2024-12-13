@@ -9,3 +9,4 @@ vcpkg_installed/
 CMakeSettings.json
 compile_commands.json
 *.sqlite
+/html/

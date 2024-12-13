@@ -19,7 +19,9 @@ struct [[nodiscard]] SqlLastInsertIdQuery
     }
 };
 
-// API Entry point for building SQL queries.
+/////////////////////////////////////////////////
+/// API Entry point for building SQL queries.
+/////////////////////////////////////////////////
 class [[nodiscard]] SqlQueryBuilder final
 {
   public:
@@ -34,11 +36,13 @@ class [[nodiscard]] SqlQueryBuilder final
     // Constructs a new query builder for the given table with an alias.
     LIGHTWEIGHT_API SqlQueryBuilder& FromTableAs(std::string table, std::string alias);
 
-    // Initiates INSERT query building
-    //
-    // @param boundInputs Optional vector to store bound inputs.
-    //                    If provided, the inputs will be appended to this vector and can be used
-    //                    to bind the values to the query via SqlStatement::ExecuteWithVariants(...)
+    /////////////////////////////////////////////////
+    ///  Initiates INSERT query building
+    ///
+    ///  @param boundInputs Optional vector to store bound inputs.
+    ///                     If provided, the inputs will be appended to this vector and can be used
+    ///                    to bind the values to the query via SqlStatement::ExecuteWithVariants(...)
+    /////////////////////////////////////////////////
     LIGHTWEIGHT_API SqlInsertQueryBuilder Insert(std::vector<SqlVariant>* boundInputs = nullptr) noexcept;
 
     // Constructs a query to retrieve the last insert ID for the given table.
