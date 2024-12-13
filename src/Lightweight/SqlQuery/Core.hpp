@@ -9,13 +9,23 @@
 #include <concepts>
 #include <ranges>
 
-// SqlWildcardType is a placeholder for an explicit wildcard input parameter in a SQL query.
-//
-// Use this in the SqlQueryBuilder::Where method to insert a '?' placeholder for a wildcard.
+/// @defgroup QueryBuilder Query Builder
+///
+/// The query builder is a high level API for building SQL queries using high level C++ syntax.
+
+/// @ingroup QueryBuilder
+/// @{
+
+/// @brief SqlWildcardType is a placeholder for an explicit wildcard input parameter in a SQL query.
+///
+/// Use this in the SqlQueryBuilder::Where method to insert a '?' placeholder for a wildcard.
+///
+/// @ingroup QueryBuilder
 struct SqlWildcardType
 {
 };
 
+/// @brief SqlWildcard is a placeholder for an explicit wildcard input parameter in a SQL query.
 static constexpr inline auto SqlWildcard = SqlWildcardType {};
 
 namespace detail
@@ -28,6 +38,7 @@ struct RawSqlCondition
 
 } // namespace detail
 
+/// @brief SqlQualifiedTableColumnName represents a column name qualified with a table name.
 struct SqlQualifiedTableColumnName
 {
     std::string_view tableName;
@@ -72,6 +83,7 @@ struct [[nodiscard]] SqlSearchCondition
     std::vector<SqlVariant>* inputBindings = nullptr;
 };
 
+/// @brief Query builder for building JOIN conditions.
 class SqlJoinConditionBuilder
 {
   public:
@@ -122,148 +134,155 @@ class SqlJoinConditionBuilder
 namespace detail
 {
 
-// Helper CRTP-based class for building WHERE clauses.
-//
-// This class is inherited by the SqlSelectQueryBuilder, SqlUpdateQueryBuilder, and SqlDeleteQueryBuilder
+/// Helper CRTP-based class for building WHERE clauses.
+///
+/// This class is inherited by the SqlSelectQueryBuilder, SqlUpdateQueryBuilder, and SqlDeleteQueryBuilder
+///
+/// @see SqlQueryBuilder
 template <typename Derived>
 class [[nodiscard]] SqlWhereClauseBuilder
 {
   public:
-    // Indicates, that the next WHERE clause should be AND-ed (default).
+    /// Indicates, that the next WHERE clause should be AND-ed (default).
     [[nodiscard]] Derived& And() noexcept;
 
-    // Indicates, that the next WHERE clause should be OR-ed.
+    /// Indicates, that the next WHERE clause should be OR-ed.
     [[nodiscard]] Derived& Or() noexcept;
 
-    // Indicates, that the next WHERE clause should be negated.
+    /// Indicates, that the next WHERE clause should be negated.
     [[nodiscard]] Derived& Not() noexcept;
 
-    // Constructs or extends a raw WHERE clause.
+    /// Constructs or extends a raw WHERE clause.
     [[nodiscard]] Derived& WhereRaw(std::string_view sqlConditionExpression);
 
-    // Constructs or extends a WHERE clause to test for a binary operation.
+    /// Constructs or extends a WHERE clause to test for a binary operation.
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& Where(ColumnName const& columnName, std::string_view binaryOp, T const& value);
 
-    // Constructs or extends a WHERE clause to test for a binary operation for RHS as sub-select query.
+    /// Constructs or extends a WHERE clause to test for a binary operation for RHS as sub-select query.
     template <typename ColumnName, typename SubSelectQuery>
         requires(std::is_invocable_r_v<std::string, decltype(&SubSelectQuery::ToSql), SubSelectQuery const&>)
     [[nodiscard]] Derived& Where(ColumnName const& columnName, std::string_view binaryOp, SubSelectQuery const& value);
 
-    // Constructs or extends a WHERE/OR clause to test for a binary operation.
+    /// Constructs or extends a WHERE/OR clause to test for a binary operation.
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& OrWhere(ColumnName const& columnName, std::string_view binaryOp, T const& value);
 
-    // Constructs or extends a WHERE clause to test for a binary operation for RHS as string literal.
+    /// Constructs or extends a WHERE clause to test for a binary operation for RHS as string literal.
     template <typename ColumnName, std::size_t N>
     Derived& Where(ColumnName const& columnName, std::string_view binaryOp, char const (&value)[N]);
 
-    // Constructs or extends a WHERE clause to test for equality.
+    /// Constructs or extends a WHERE clause to test for equality.
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& Where(ColumnName const& columnName, T const& value);
 
-    // Constructs or extends an WHERE/OR clause to test for equality.
+    /// Constructs or extends an WHERE/OR clause to test for equality.
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& OrWhere(ColumnName const& columnName, T const& value);
 
-    // Constructs or extends a WHERE/AND clause to test for a group of values.
+    /// Constructs or extends a WHERE/AND clause to test for a group of values.
     template <typename Callable>
         requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
     [[nodiscard]] Derived& Where(Callable const& callable);
 
-    // Constructs or extends an WHERE/OR clause to test for a group of values.
+    /// Constructs or extends an WHERE/OR clause to test for a group of values.
     template <typename Callable>
         requires std::invocable<Callable, SqlWhereClauseBuilder<Derived>&>
     [[nodiscard]] Derived& OrWhere(Callable const& callable);
 
-    // Constructs or extends an WHERE/OR clause to test for a value, satisfying std::ranges::input_range.
+    /// Constructs or extends an WHERE/OR clause to test for a value, satisfying std::ranges::input_range.
     template <typename ColumnName, std::ranges::input_range InputRange>
     [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, InputRange const& values);
 
-    // Constructs or extends an WHERE/OR clause to test for a value, satisfying std::initializer_list.
+    /// Constructs or extends an WHERE/OR clause to test for a value, satisfying std::initializer_list.
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, std::initializer_list<T> const& values);
 
-    // Constructs or extends an WHERE/OR clause to test for a value, satisfying a sub-select query.
+    /// Constructs or extends an WHERE/OR clause to test for a value, satisfying a sub-select query.
     template <typename ColumnName, typename SubSelectQuery>
         requires(std::is_invocable_r_v<std::string, decltype(&SubSelectQuery::ToSql), SubSelectQuery const&>)
     [[nodiscard]] Derived& WhereIn(ColumnName const& columnName, SubSelectQuery const& subSelectQuery);
 
+    /// Constructs or extends an WHERE/OR clause to test for a value to be NULL.
     template <typename ColumnName>
     [[nodiscard]] Derived& WhereNull(ColumnName const& columnName);
 
+    /// Constructs or extends a WHERE clause to test for a value being not null.
     template <typename ColumnName>
     [[nodiscard]] Derived& WhereNotNull(ColumnName const& columnName);
 
+    /// Constructs or extends a WHERE clause to test for a value being equal to another column.
     template <typename ColumnName, typename T>
     [[nodiscard]] Derived& WhereNotEqual(ColumnName const& columnName, T const& value);
 
+    /// Constructs or extends a WHERE clause to test for a value being true.
     template <typename ColumnName>
     [[nodiscard]] Derived& WhereTrue(ColumnName const& columnName);
 
+    /// Constructs or extends a WHERE clause to test for a value being false.
     template <typename ColumnName>
     [[nodiscard]] Derived& WhereFalse(ColumnName const& columnName);
 
-    // Construts or extends a WHERE clause to test for a binary operation between two columns.
+    /// Construts or extends a WHERE clause to test for a binary operation between two columns.
     template <typename LeftColumn, typename RightColumn>
     [[nodiscard]] Derived& WhereColumn(LeftColumn const& left, std::string_view binaryOp, RightColumn const& right);
 
-    // Constructs an INNER JOIN clause.
+    /// Constructs an INNER JOIN clause.
     [[nodiscard]] Derived& InnerJoin(std::string_view joinTable,
                                      std::string_view joinColumnName,
                                      SqlQualifiedTableColumnName onOtherColumn);
 
-    // Constructs an INNER JOIN clause.
+    /// Constructs an INNER JOIN clause.
     [[nodiscard]] Derived& InnerJoin(std::string_view joinTable,
                                      std::string_view joinColumnName,
                                      std::string_view onMainTableColumn);
 
-    // Constructs an INNER JOIN clause with a custom ON clause.
+    /// Constructs an INNER JOIN clause with a custom ON clause.
     template <typename OnChainCallable>
         requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
     [[nodiscard]] Derived& InnerJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder);
 
-    // Constructs an LEFT OUTER JOIN clause.
+    /// Constructs an LEFT OUTER JOIN clause.
     [[nodiscard]] Derived& LeftOuterJoin(std::string_view joinTable,
                                          std::string_view joinColumnName,
                                          SqlQualifiedTableColumnName onOtherColumn);
 
-    // Constructs an LEFT OUTER JOIN clause.
+    /// Constructs an LEFT OUTER JOIN clause.
     [[nodiscard]] Derived& LeftOuterJoin(std::string_view joinTable,
                                          std::string_view joinColumnName,
                                          std::string_view onMainTableColumn);
 
-    // Constructs an LEFT OUTER JOIN clause with a custom ON clause.
+    /// Constructs an LEFT OUTER JOIN clause with a custom ON clause.
     template <typename OnChainCallable>
         requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
     [[nodiscard]] Derived& LeftOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder);
 
-    // Constructs an RIGHT OUTER JOIN clause.
+    /// Constructs an RIGHT OUTER JOIN clause.
     [[nodiscard]] Derived& RightOuterJoin(std::string_view joinTable,
                                           std::string_view joinColumnName,
                                           SqlQualifiedTableColumnName onOtherColumn);
 
-    // Constructs an RIGHT OUTER JOIN clause.
+    /// Constructs an RIGHT OUTER JOIN clause.
     [[nodiscard]] Derived& RightOuterJoin(std::string_view joinTable,
                                           std::string_view joinColumnName,
                                           std::string_view onMainTableColumn);
 
-    // Constructs an RIGHT OUTER JOIN clause with a custom ON clause.
+    /// Constructs an RIGHT OUTER JOIN clause with a custom ON clause.
     template <typename OnChainCallable>
         requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
     [[nodiscard]] Derived& RightOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder);
 
-    // Constructs an FULL OUTER JOIN clause.
+    /// Constructs an FULL OUTER JOIN clause.
     [[nodiscard]] Derived& FullOuterJoin(std::string_view joinTable,
                                          std::string_view joinColumnName,
                                          SqlQualifiedTableColumnName onOtherColumn);
 
-    // Constructs an FULL OUTER JOIN clause.
+    /// Constructs an FULL OUTER JOIN clause.
     [[nodiscard]] Derived& FullOuterJoin(std::string_view joinTable,
                                          std::string_view joinColumnName,
                                          std::string_view onMainTableColumn);
 
-    // Constructs an FULL OUTER JOIN clause with a custom ON clause.
+    /// Constructs an FULL OUTER JOIN clause with a custom ON clause.
     template <typename OnChainCallable>
         requires std::invocable<OnChainCallable, SqlJoinConditionBuilder>
     [[nodiscard]] Derived& FullOuterJoin(std::string_view joinTable, OnChainCallable const& onClauseBuilder);
@@ -803,3 +822,6 @@ inline LIGHTWEIGHT_FORCE_INLINE Derived& SqlWhereClauseBuilder<Derived>::Join(Jo
 }
 
 } // namespace detail
+
+/// @}
+

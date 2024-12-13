@@ -18,28 +18,35 @@
 #include <sqlspi.h>
 #include <sqltypes.h>
 
-// NOTE: This is a simple wrapper around the SQL return codes. It is not meant to be
-// comprehensive, but rather to provide a simple way to convert SQL return codes to
-// std::error_code.
-//
-// The code below is DRAFT and may be subject to change.
-
+/// @brief Represents an ODBC SQL error.
+///
+/// NOTE: This is a simple wrapper around the SQL return codes. It is not meant to be
+/// comprehensive, but rather to provide a simple way to convert SQL return codes to
+/// std::error_code.
+///
+/// The code below is DRAFT and may be subject to change.
 struct SqlErrorInfo
 {
     SQLINTEGER nativeErrorCode {};
     std::string sqlState = "     "; // 5 characters + null terminator
     std::string message;
 
+    /// Constructs an ODBC error info object from the given ODBC connection handle.
     static SqlErrorInfo fromConnectionHandle(SQLHDBC hDbc)
     {
         return fromHandle(SQL_HANDLE_DBC, hDbc);
     }
 
+    /// Constructs an ODBC error info object from the given ODBC statement handle.
     static SqlErrorInfo fromStatementHandle(SQLHSTMT hStmt)
     {
         return fromHandle(SQL_HANDLE_STMT, hStmt);
     }
 
+    /// Asserts that the given result is a success code, otherwise throws an exception.
+    static void RequireStatementSuccess(SQLRETURN result, SQLHSTMT hStmt, std::string_view message);
+
+  private:
     static SqlErrorInfo fromHandle(SQLSMALLINT handleType, SQLHANDLE handle)
     {
         SqlErrorInfo info {};
@@ -57,8 +64,6 @@ struct SqlErrorInfo
         info.message.resize(msgLen);
         return info;
     }
-
-    static void RequireStatementSuccess(SQLRETURN result, SQLHSTMT hStmt, std::string_view message);
 };
 
 class SqlException: public std::runtime_error

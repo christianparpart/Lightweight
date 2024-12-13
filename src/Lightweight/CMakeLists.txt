@@ -46,9 +46,13 @@ set(HEADER_FILES
     SqlQuery/Select.hpp
     SqlQuery/Update.hpp
 
+    DataMapper/BelongsTo.hpp
     DataMapper/DataMapper.hpp
-    DataMapper/Detail.hpp
+    DataMapper/Error.hpp
     DataMapper/Field.hpp
+    DataMapper/HasMany.hpp
+    DataMapper/HasManyThrough.hpp
+    DataMapper/HasOneThrough.hpp
     DataMapper/RecordId.hpp
 
     SqlConnectInfo.hpp

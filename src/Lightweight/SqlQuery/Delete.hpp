@@ -6,6 +6,9 @@
 
 #include <string>
 
+/// @brief Query builder for building DELETE FROM ... queries.
+///
+/// @ingroup QueryBuilder
 class LIGHTWEIGHT_API SqlDeleteQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlDeleteQueryBuilder>
 {
   public:

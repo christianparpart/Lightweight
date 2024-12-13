@@ -10,6 +10,7 @@
 #include <string>
 #include <variant>
 
+/// Represents an ODBC connection string.
 struct SqlConnectionString
 {
     std::string value;
@@ -23,9 +24,13 @@ struct SqlConnectionString
 
 using SqlConnectionStringMap = std::map<std::string, std::string>;
 
+/// Parses an ODBC connection string into a map.
 LIGHTWEIGHT_API SqlConnectionStringMap ParseConnectionString(SqlConnectionString const& connectionString);
+
+/// Builds an ODBC connection string from a map.
 LIGHTWEIGHT_API SqlConnectionString BuildConnectionString(SqlConnectionStringMap const& map);
 
+/// Represents a connection data source as a DSN, username, password, and timeout.
 struct SqlConnectionDataSource
 {
     std::string datasource;

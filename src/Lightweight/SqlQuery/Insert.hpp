@@ -9,6 +9,10 @@
 #include <string_view>
 #include <vector>
 
+/// @brief Query builder for building INSERT INTO ... queries.
+///
+/// @see SqlQueryBuilder
+/// @ingroup QueryBuilder
 class [[nodiscard]] SqlInsertQueryBuilder final
 {
   public:

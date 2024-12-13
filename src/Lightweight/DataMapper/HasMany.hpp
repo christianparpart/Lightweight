@@ -7,6 +7,7 @@
 #include "../SqlStatement.hpp"
 #include "BelongsTo.hpp"
 #include "Field.hpp"
+#include "Record.hpp"
 
 #include <reflection-cpp/reflection.hpp>
 
@@ -16,41 +17,82 @@
 #include <type_traits>
 #include <vector>
 
-// This HasMany<OtherRecord> represents a simple one-to-many relationship between two records.
-//
-// The HasMany<OtherRecord> is a member of the "one" side of the relationship.
-//
-// This implemenation of `HasMany<OtherRecord>` must have only one `BelongsTo` member
-// that points back to this "one" side.
+/// @brief This HasMany<OtherRecord> represents a simple one-to-many relationship between two records.
+///
+/// The HasMany<OtherRecord> is a member of the "one" side of the relationship.
+///
+/// This implemenation of `HasMany<OtherRecord>` must have only one `BelongsTo` member
+/// that points back to this "one" side.
+///
+/// @see DataMapper, Field, HasManyThrough
+/// @ingroup DataMapper
 template <typename OtherRecord>
 class HasMany
 {
   public:
+    /// The record type of the "many" side of the relationship.
     using ReferencedRecord = OtherRecord;
+
+    /// The list of records on the "many" side of the relationship.
     using ReferencedRecordList = std::vector<std::shared_ptr<OtherRecord>>;
 
-    // Record type of the "many" side of the relationship.
+    /// Record type of the "many" side of the relationship.
     using value_type = OtherRecord;
+
+    /// Iterator type for the list of records.
     using iterator = typename ReferencedRecordList::iterator;
+
+    /// Const iterator type for the list of records.
     using const_iterator = typename ReferencedRecordList::const_iterator;
 
-    // Retrieves the list of loaded records.
+    /// Retrieves the list of loaded records.
     [[nodiscard]] ReferencedRecordList const& All() const noexcept;
 
-    // Retrieves the list of records as mutable reference.
+    /// Retrieves the list of records as mutable reference.
     [[nodiscard]] ReferencedRecordList& All() noexcept;
 
+    /// @brief Iterates over the list of records and calls the given callable for each record.
+    ///
+    /// @note Use this method if you want to iterate over all records but do not need to store them all in memory, e.g.
+    ///       because the full data set wuold be too large.
     template <typename Callable>
     void Each(Callable const& callable);
 
-    // Emplaces the given list of records.
+    /// Emplaces the given list of records.
     ReferencedRecordList& Emplace(ReferencedRecordList&& records) noexcept;
 
+    /// Retrieves the number of records in this 1-to-many relationship.
     [[nodiscard]] std::size_t Count() const noexcept;
+
+    /// Checks if this 1-to-many relationship is empty.
     [[nodiscard]] bool IsEmpty() const noexcept;
+
+    /// @brief Retrieves the record at the given index.
+    ///
+    /// @param index The index of the record to retrieve.
+    /// @note This method will on-demand load the records if they are not already loaded.
+    /// @note This method will throw if the index is out of bounds.
     [[nodiscard]] OtherRecord const& At(std::size_t index) const;
+
+    /// @brief Retrieves the record at the given index.
+    ///
+    /// @param index The index of the record to retrieve.
+    /// @note This method will on-demand load the records if they are not already loaded.
+    /// @note This method will throw if the index is out of bounds.
     [[nodiscard]] OtherRecord& At(std::size_t index);
+
+    /// @brief Retrieves the record at the given index.
+    ///
+    /// @param index The index of the record to retrieve.
+    /// @note This method will on-demand load the records if they are not already loaded.
+    /// @note This method will NOT throw if the index is out of bounds. The behaviour is undefined.
     [[nodiscard]] OtherRecord const& operator[](std::size_t index) const;
+
+    /// @brief Retrieves the record at the given index.
+    ///
+    /// @param index The index of the record to retrieve.
+    /// @note This method will on-demand load the records if they are not already loaded.
+    /// @note This method will NOT throw if the index is out of bounds. The behaviour is undefined.
     [[nodiscard]] OtherRecord& operator[](std::size_t index);
 
     iterator begin() noexcept;
@@ -59,7 +101,6 @@ class HasMany
     const_iterator end() const noexcept;
 
     constexpr std::weak_ordering operator<=>(HasMany<OtherRecord> const& other) const noexcept = default;
-
     constexpr bool operator==(HasMany<OtherRecord> const& other) const noexcept = default;
     constexpr bool operator!=(HasMany<OtherRecord> const& other) const noexcept = default;
 
@@ -70,6 +111,7 @@ class HasMany
         std::function<void(std::function<void(ReferencedRecord const&)>)> each {};
     };
 
+    /// Used internally to configure on-demand loading of the records.
     void SetAutoLoader(Loader loader) noexcept;
 
   private:

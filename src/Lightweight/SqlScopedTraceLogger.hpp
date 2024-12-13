@@ -8,7 +8,11 @@
 
 #include <filesystem>
 
-// TODO: move to public API
+/// @brief Enables protocol-level ODBC trace logging for the given connection.
+///
+/// The trace logging is active for the lifetime of this object.
+///
+/// The logging output is sent to the standard output stream.
 class LIGHTWEIGHT_API SqlScopedTraceLogger
 {
     SQLHDBC m_nativeConnection;

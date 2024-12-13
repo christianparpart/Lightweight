@@ -39,11 +39,16 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
   set(DOXYGEN_EXCLUDE_SYMBOLS "detail,detail::*,std,std::*,benchmark,test")
 
+  # TODO: get include paths correct, e.g. <Lightweight/SqlConnection.hpp> rather than <SqlConnection.hpp>
+  set(DOXYGEN_FULL_PATH_NAMES YES)
+  set(DOXYGEN_STRIP_FROM_PATH "${PROJECT_SOURCE_DIR}/src")
+
   doxygen_add_docs(doc
     "${PROJECT_SOURCE_DIR}/src;${PROJECT_SOURCE_DIR}/README.md;${PROJECT_SOURCE_DIR}/docs/usage.md"
     ALL
-    COMMENT "Generate HTML documentation")
-
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    COMMENT "Generate HTML documentation"
+  )
 
 else()
     message(WARNING "Doxygen not found, not generating documentation")
