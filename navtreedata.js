@@ -52,7 +52,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_api_8hpp_source.html",
-"class_sql_statement.html#acd12aea32817fef21321a48d3daf7e7a"
+"class_sql_statement.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

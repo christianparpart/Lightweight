@@ -91,12 +91,20 @@ $(document).ready(function(){initNavTree('group___data_mapper.html',''); initRes
 
 <div class="header">
   <div class="summary">
+<a href="#concepts">Concepts</a> &#124;
 <a href="#nested-classes">Classes</a> &#124;
+<a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">Data Mapper</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="concepts" name="concepts"></a>
+Concepts</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">concept &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="concept_data_mapper_record.html">DataMapperRecord</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents a record type that can be used with the <a class="el" href="class_data_mapper.html" title="Main API for mapping records to and from the database using high level C++ syntax.">DataMapper</a>. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_belongs_to.html">BelongsTo&lt; TheReferencedField &gt;</a></td></tr>
@@ -104,6 +112,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_data_mapper.html">DataMapper</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main API for mapping records to and from the database using high level C++ syntax.  <a href="class_data_mapper.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_sql_require_loaded_error.html">SqlRequireLoadedError</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents an error when a record is required to be loaded but is not.  <a href="class_sql_require_loaded_error.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_field.html">Field&lt; T, IsPrimaryKeyValue &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents a single column in a table.  <a href="struct_field.html#details">More...</a><br /></td></tr>
@@ -118,6 +129,13 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents a one-to-one relationship through a join table.  <a href="class_has_one_through.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ga5c450483b9a3f4df48eafb835242946f" id="r_ga5c450483b9a3f4df48eafb835242946f"><td class="memTemplParams" colspan="2">template&lt;auto I, typename Record &gt; </td></tr>
+<tr class="memitem:ga5c450483b9a3f4df48eafb835242946f"><td class="memTemplItemLeft" align="right" valign="top">constexpr std::string_view&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group___data_mapper.html#ga5c450483b9a3f4df48eafb835242946f">FieldNameOf</a> ()</td></tr>
+<tr class="memdesc:ga5c450483b9a3f4df48eafb835242946f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the SQL field name of the given field index in the record.  <br /></td></tr>
+<tr class="separator:ga5c450483b9a3f4df48eafb835242946f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:ga4565e3cf41830db5a08951da5702c776" id="r_ga4565e3cf41830db5a08951da5702c776"><td class="memTemplParams" colspan="2">template&lt;typename Record &gt; </td></tr>
@@ -127,6 +145,38 @@ Variables</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>The data mapper is a high level API for mapping records to and from the database using high level C++ syntax. </p>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="ga5c450483b9a3f4df48eafb835242946f" name="ga5c450483b9a3f4df48eafb835242946f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5c450483b9a3f4df48eafb835242946f">&#9670;&#160;</a></span>FieldNameOf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;auto I, typename Record &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr std::string_view FieldNameOf </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the SQL field name of the given field index in the record. </p>
+
+<p class="definition">Definition at line <a class="el" href="_data_mapper_8hpp_source.html#l00283">283</a> of file <a class="el" href="_data_mapper_8hpp_source.html">DataMapper.hpp</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Variable Documentation</h2>
 <a id="ga4565e3cf41830db5a08951da5702c776" name="ga4565e3cf41830db5a08951da5702c776"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga4565e3cf41830db5a08951da5702c776">&#9670;&#160;</a></span>RecordTableName</h2>
@@ -152,7 +202,7 @@ template&lt;typename Record &gt; </div>
 
 <p>Holds the SQL tabl ename for the given record type. </p>
 
-<p class="definition">Definition at line <a class="el" href="_data_mapper_8hpp_source.html#l00067">67</a> of file <a class="el" href="_data_mapper_8hpp_source.html">DataMapper.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_mapper_8hpp_source.html#l00068">68</a> of file <a class="el" href="_data_mapper_8hpp_source.html">DataMapper.hpp</a>.</p>
 
 </div>
 </div>

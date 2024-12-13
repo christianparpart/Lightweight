@@ -205,7 +205,7 @@ LIGHTWEIGHT_API void&#160;</td><td class="memItemRight" valign="bottom"><b>Execu
 <tr class="memdesc:ac37b4a541621dd7b1a6c3a2111c4c027"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes the given query directly.  <br /></td></tr>
 <tr class="separator:ac37b4a541621dd7b1a6c3a2111c4c027"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1665766fa52c6fcdf8ca06c3895ea2d" id="r_ab1665766fa52c6fcdf8ca06c3895ea2d"><td class="memTemplParams" colspan="2">template&lt;typename Callable &gt; <br />
-requires std::invocable&lt;Callable, SqlMigrationQueryBuilder&amp;&gt;</td></tr>
+requires std::invocable&lt;Callable, <a class="el" href="class_sql_migration_query_builder.html">SqlMigrationQueryBuilder</a>&amp;&gt;</td></tr>
 <tr class="memitem:ab1665766fa52c6fcdf8ca06c3895ea2d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_sql_statement.html#ab1665766fa52c6fcdf8ca06c3895ea2d">MigrateDirect</a> (Callable const &amp;callable, std::source_location location=std::source_location::current())</td></tr>
 <tr class="memdesc:ab1665766fa52c6fcdf8ca06c3895ea2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes an SQL migration query, as created b the callback.  <br /></td></tr>
 <tr class="separator:ab1665766fa52c6fcdf8ca06c3895ea2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -477,7 +477,7 @@ LIGHTWEIGHT_API std::expected&lt; bool, <a class="el" href="struct_sql_error_inf
 <p>Prepares the statement for execution.</p>
 <dl class="section note"><dt>Note</dt><dd>When preparing a new SQL statement the previously executed statement, yielding a result set, must have been closed. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00884">DataMapper::ConfigureRelationAutoLoading()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00357">DataMapper::CreateExplicit()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00476">DataMapper::Delete()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00565">DataMapper::Query()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00502">DataMapper::QuerySingle()</a>, and <a class="el" href="_data_mapper_8hpp_source.html#l00439">DataMapper::Update()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00888">DataMapper::ConfigureRelationAutoLoading()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00362">DataMapper::CreateExplicit()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00481">DataMapper::Delete()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00570">DataMapper::Query()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00507">DataMapper::QuerySingle()</a>, and <a class="el" href="_data_mapper_8hpp_source.html#l00444">DataMapper::Update()</a>.</p>
 
 </div>
 </div>
@@ -612,7 +612,7 @@ template&lt;SqlInputParameterBinder... Args&gt; </div>
 
 <p class="reference">References <a class="el" href="_sql_error_8hpp_source.html#l00041">SqlErrorInfo::fromStatementHandle()</a>, <a class="el" href="class_sql_logger.html#ad4fb423ef4baab3b543ca4201b6ae83a">SqlLogger::GetLogger()</a>, <a class="el" href="_sql_logger_8hpp_source.html#l00072">SqlLogger::OnBindInputParameter()</a>, and <a class="el" href="class_sql_logger.html#a34067c0bc7798ce1e59466210bd6bf0c">SqlLogger::OnExecute()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00884">DataMapper::ConfigureRelationAutoLoading()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00357">DataMapper::CreateExplicit()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00476">DataMapper::Delete()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00565">DataMapper::Query()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00502">DataMapper::QuerySingle()</a>, and <a class="el" href="_data_mapper_8hpp_source.html#l00439">DataMapper::Update()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00888">DataMapper::ConfigureRelationAutoLoading()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00362">DataMapper::CreateExplicit()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00481">DataMapper::Delete()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00570">DataMapper::Query()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00507">DataMapper::QuerySingle()</a>, and <a class="el" href="_data_mapper_8hpp_source.html#l00444">DataMapper::Update()</a>.</p>
 
 </div>
 </div>
@@ -767,7 +767,7 @@ template&lt;SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::range...
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename Callable &gt; <br />
-requires std::invocable&lt;Callable, SqlMigrationQueryBuilder&amp;&gt;</div>
+requires std::invocable&lt;Callable, <a class="el" href="class_sql_migration_query_builder.html">SqlMigrationQueryBuilder</a>&amp;&gt;</div>
       <table class="memname">
         <tr>
           <td class="memname">void SqlStatement::MigrateDirect </td>
@@ -987,7 +987,7 @@ requires (std::same_as&lt;T, SqlVariant&gt;)</div>
   </dd>
 </dl>
 
-<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00884">DataMapper::ConfigureRelationAutoLoading()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00565">DataMapper::Query()</a>, and <a class="el" href="_data_mapper_8hpp_source.html#l00502">DataMapper::QuerySingle()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00888">DataMapper::ConfigureRelationAutoLoading()</a>, <a class="el" href="_data_mapper_8hpp_source.html#l00570">DataMapper::Query()</a>, and <a class="el" href="_data_mapper_8hpp_source.html#l00507">DataMapper::QuerySingle()</a>.</p>
 
 </div>
 </div>
@@ -1020,7 +1020,7 @@ requires (std::same_as&lt;T, SqlVariant&gt;)</div>
 
 <p class="reference">References <a class="el" href="class_sql_logger.html#ad4fb423ef4baab3b543ca4201b6ae83a">SqlLogger::GetLogger()</a>, and <a class="el" href="class_sql_logger.html#ac720982980acdea160239738c1fe9af5">SqlLogger::OnFetchEnd()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00884">DataMapper::ConfigureRelationAutoLoading()</a>, and <a class="el" href="_data_mapper_8hpp_source.html#l00502">DataMapper::QuerySingle()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00888">DataMapper::ConfigureRelationAutoLoading()</a>, and <a class="el" href="_data_mapper_8hpp_source.html#l00507">DataMapper::QuerySingle()</a>.</p>
 
 </div>
 </div>
@@ -1093,7 +1093,7 @@ template&lt;SqlGetColumnNativeType T&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_sql_statement_8hpp_source.html#l00607">607</a> of file <a class="el" href="_sql_statement_8hpp_source.html">SqlStatement.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00884">DataMapper::ConfigureRelationAutoLoading()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00888">DataMapper::ConfigureRelationAutoLoading()</a>.</p>
 
 </div>
 </div>

@@ -1,5 +1,6 @@
 var group___data_mapper =
 [
+    [ "DataMapperRecord", "concept_data_mapper_record.html", null ],
     [ "BelongsTo< TheReferencedField >", "class_belongs_to.html", [
       [ "ReferencedRecord", "class_belongs_to.html#aea130e4d5a9a171aa4bdcc0920068ec4", null ],
       [ "ValueType", "class_belongs_to.html#a2930a787681074c1e3ebac2d3be47762", null ],
@@ -48,6 +49,7 @@ var group___data_mapper =
       [ "GetPrimaryKeyField", "class_data_mapper.html#a02eb0501dadc42e84041be41e2ca9022", null ],
       [ "ConfigureRelationAutoLoading", "class_data_mapper.html#ac70dd13e657b5ccb3cdda272e51dee30", null ]
     ] ],
+    [ "SqlRequireLoadedError", "class_sql_require_loaded_error.html", null ],
     [ "Field< T, IsPrimaryKeyValue >", "struct_field.html", [
       [ "InspectValue", "struct_field.html#ab03fc137848c0ec9d76efcea7229be8c", null ],
       [ "SetModified", "struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed", null ],
@@ -104,5 +106,6 @@ var group___data_mapper =
       [ "operator->", "class_has_one_through.html#ab8dd2cec742cef96bb13bf935cf23c3f", null ],
       [ "SetAutoLoader", "class_has_one_through.html#a6f6f6b0db57bb1b21866f113384ce076", null ]
     ] ],
+    [ "FieldNameOf", "group___data_mapper.html#ga5c450483b9a3f4df48eafb835242946f", null ],
     [ "RecordTableName", "group___data_mapper.html#ga4565e3cf41830db5a08951da5702c776", null ]
 ];

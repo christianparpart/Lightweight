@@ -6,5 +6,6 @@ var searchData=
   ['getnullablecolumn_3',['getnullablecolumn',['../class_sql_statement.html#ac85a805bae4ddf2ee4d2b118aa53281c',1,'SqlStatement::GetNullableColumn()'],['../class_sql_result_cursor.html#a42f1b14f00a444b581d74b2ebea1d87c',1,'SqlResultCursor::GetNullableColumn()']]],
   ['getprimarykeyfield_4',['GetPrimaryKeyField',['../class_data_mapper.html#a02eb0501dadc42e84041be41e2ca9022',1,'DataMapper']]],
   ['getresultcursor_5',['GetResultCursor',['../class_sql_statement.html#a67eaf53d5379651a706ac331d05dd3c9',1,'SqlStatement']]],
-  ['goals_6',['goals',['../index.html#goals',1,'Goals'],['../index.html#non-goals',1,'Non-Goals']]]
+  ['goals_6',['goals',['../index.html#goals',1,'Goals'],['../index.html#non-goals',1,'Non-Goals']]],
+  ['groupby_7',['GroupBy',['../class_sql_select_query_builder.html#a82296628440002df15f0884927170d2c',1,'SqlSelectQueryBuilder']]]
 ];

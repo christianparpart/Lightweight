@@ -109,7 +109,7 @@ $(document).ready(function(){initNavTree('_sql_query_formatter_8hpp_source.html'
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#include &lt;string&gt;</span></div>
 <div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#include &lt;string_view&gt;</span></div>
 <div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="keyword">struct </span>SqlQualifiedTableColumnName;</div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="keyword">struct </span><a class="code hl_struct" href="struct_sql_qualified_table_column_name.html">SqlQualifiedTableColumnName</a>;</div>
 <div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment"></span> </div>
 <div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment">/// API to format SQL queries for different SQL dialects.</span></div>
 <div class="foldopen" id="foldopen00015" data-start="{" data-end="};">
@@ -248,6 +248,7 @@ $(document).ready(function(){initNavTree('_sql_query_formatter_8hpp_source.html'
 <div class="ttc" id="aclass_sql_query_formatter_html_ac4e10a48122871f2bf5797433626c309"><div class="ttname"><a href="class_sql_query_formatter.html#ac4e10a48122871f2bf5797433626c309">SqlQueryFormatter::Insert</a></div><div class="ttdeci">virtual std::string Insert(std::string const &amp;intoTable, std::string const &amp;fields, std::string const &amp;values) const =0</div></div>
 <div class="ttc" id="aclass_sql_query_formatter_html_aca40006a5a2df6170c1bfaf2f07d0e83"><div class="ttname"><a href="class_sql_query_formatter.html#aca40006a5a2df6170c1bfaf2f07d0e83">SqlQueryFormatter::Sqlite</a></div><div class="ttdeci">static SqlQueryFormatter const &amp; Sqlite()</div><div class="ttdoc">Retrieves the SQL query formatter for SQLite.</div></div>
 <div class="ttc" id="aclass_sql_query_formatter_html_ad42e538f5828b10fda8af49be16d20f2"><div class="ttname"><a href="class_sql_query_formatter.html#ad42e538f5828b10fda8af49be16d20f2">SqlQueryFormatter::SelectRange</a></div><div class="ttdeci">virtual std::string SelectRange(bool distinct, std::string const &amp;fields, std::string const &amp;fromTable, std::string const &amp;fromTableAlias, std::string const &amp;tableJoins, std::string const &amp;whereCondition, std::string const &amp;orderBy, std::string const &amp;groupBy, std::size_t offset, std::size_t limit) const =0</div><div class="ttdoc">Constructs an SQL SELECT query for a range of rows.</div></div>
+<div class="ttc" id="astruct_sql_qualified_table_column_name_html"><div class="ttname"><a href="struct_sql_qualified_table_column_name.html">SqlQualifiedTableColumnName</a></div><div class="ttdoc">SqlQualifiedTableColumnName represents a column name qualified with a table name.</div><div class="ttdef"><b>Definition</b> <a href="_sql_query_2_core_8hpp_source.html#l00042">Core.hpp:43</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
