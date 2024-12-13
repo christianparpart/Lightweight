@@ -758,59 +758,61 @@ $(document).ready(function(){initNavTree('_sql_statement_8hpp_source.html',''); 
 <div class="line"><a id="l00658" name="l00658"></a><span class="lineno">  658</span>{</div>
 <div class="line"><a id="l00659" name="l00659"></a><span class="lineno">  659</span>    <span class="keyword">auto</span> migration = SqlMigrationQueryBuilder { Connection().QueryFormatter() };</div>
 <div class="line"><a id="l00660" name="l00660"></a><span class="lineno">  660</span>    callable(migration);</div>
-<div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>    ExecuteDirect(migration.GetPlan(), location);</div>
-<div class="line"><a id="l00662" name="l00662"></a><span class="lineno">  662</span>}</div>
-<div class="line"><a id="l00663" name="l00663"></a><span class="lineno">  663</span> </div>
-<div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00665" name="l00665"></a><span class="lineno">  665</span>    <span class="keyword">requires</span>(!std::same_as&lt;T, SqlVariant&gt;)</div>
-<div class="line"><a id="l00666" name="l00666"></a><span class="lineno">  666</span><span class="keyword">inline</span> std::optional&lt;T&gt; SqlStatement::ExecuteDirectScalar(<span class="keyword">const</span> std::string_view&amp; query, std::source_location location)</div>
-<div class="line"><a id="l00667" name="l00667"></a><span class="lineno">  667</span>{</div>
-<div class="line"><a id="l00668" name="l00668"></a><span class="lineno">  668</span>    <span class="keyword">auto</span> <span class="keyword">const</span> _ = detail::Finally([<span class="keyword">this</span>] { CloseCursor(); });</div>
-<div class="line"><a id="l00669" name="l00669"></a><span class="lineno">  669</span>    ExecuteDirect(query, location);</div>
-<div class="line"><a id="l00670" name="l00670"></a><span class="lineno">  670</span>    RequireSuccess(FetchRow());</div>
-<div class="line"><a id="l00671" name="l00671"></a><span class="lineno">  671</span>    <span class="keywordflow">return</span> GetNullableColumn&lt;T&gt;(1);</div>
-<div class="line"><a id="l00672" name="l00672"></a><span class="lineno">  672</span>}</div>
-<div class="line"><a id="l00673" name="l00673"></a><span class="lineno">  673</span> </div>
-<div class="line"><a id="l00674" name="l00674"></a><span class="lineno">  674</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00675" name="l00675"></a><span class="lineno">  675</span>    <span class="keyword">requires</span>(std::same_as&lt;T, SqlVariant&gt;)</div>
-<div class="line"><a id="l00676" name="l00676"></a><span class="lineno">  676</span><span class="keyword">inline</span> T SqlStatement::ExecuteDirectScalar(<span class="keyword">const</span> std::string_view&amp; query, std::source_location location)</div>
-<div class="line"><a id="l00677" name="l00677"></a><span class="lineno">  677</span>{</div>
-<div class="line"><a id="l00678" name="l00678"></a><span class="lineno">  678</span>    <span class="keyword">auto</span> <span class="keyword">const</span> _ = detail::Finally([<span class="keyword">this</span>] { CloseCursor(); });</div>
-<div class="line"><a id="l00679" name="l00679"></a><span class="lineno">  679</span>    ExecuteDirect(query, location);</div>
-<div class="line"><a id="l00680" name="l00680"></a><span class="lineno">  680</span>    RequireSuccess(FetchRow());</div>
-<div class="line"><a id="l00681" name="l00681"></a><span class="lineno">  681</span>    <span class="keywordflow">if</span> (<span class="keyword">auto</span> result = GetNullableColumn&lt;T&gt;(1); result.has_value())</div>
-<div class="line"><a id="l00682" name="l00682"></a><span class="lineno">  682</span>        <span class="keywordflow">return</span> *result;</div>
-<div class="line"><a id="l00683" name="l00683"></a><span class="lineno">  683</span>    <span class="keywordflow">return</span> SqlVariant { SqlNullValue };</div>
-<div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>}</div>
-<div class="line"><a id="l00685" name="l00685"></a><span class="lineno">  685</span> </div>
-<div class="line"><a id="l00686" name="l00686"></a><span class="lineno">  686</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00687" name="l00687"></a><span class="lineno">  687</span>    <span class="keyword">requires</span>(!std::same_as&lt;T, SqlVariant&gt;)</div>
-<div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span><span class="keyword">inline</span> std::optional&lt;T&gt; SqlStatement::ExecuteDirectScalar(SqlQueryObject <span class="keyword">auto</span> <span class="keyword">const</span>&amp; query,</div>
-<div class="line"><a id="l00689" name="l00689"></a><span class="lineno">  689</span>                                                          std::source_location location)</div>
-<div class="line"><a id="l00690" name="l00690"></a><span class="lineno">  690</span>{</div>
-<div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>    <span class="keywordflow">return</span> ExecuteDirectScalar&lt;T&gt;(query.ToSql(), location);</div>
-<div class="line"><a id="l00692" name="l00692"></a><span class="lineno">  692</span>}</div>
-<div class="line"><a id="l00693" name="l00693"></a><span class="lineno">  693</span> </div>
-<div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00695" name="l00695"></a><span class="lineno">  695</span>    <span class="keyword">requires</span>(std::same_as&lt;T, SqlVariant&gt;)</div>
-<div class="line"><a id="l00696" name="l00696"></a><span class="lineno">  696</span><span class="keyword">inline</span> T SqlStatement::ExecuteDirectScalar(SqlQueryObject <span class="keyword">auto</span> <span class="keyword">const</span>&amp; query, std::source_location location)</div>
-<div class="line"><a id="l00697" name="l00697"></a><span class="lineno">  697</span>{</div>
-<div class="line"><a id="l00698" name="l00698"></a><span class="lineno">  698</span>    <span class="keywordflow">return</span> ExecuteDirectScalar&lt;T&gt;(query.ToSql(), location);</div>
-<div class="line"><a id="l00699" name="l00699"></a><span class="lineno">  699</span>}</div>
-<div class="line"><a id="l00700" name="l00700"></a><span class="lineno">  700</span> </div>
-<div class="line"><a id="l00701" name="l00701"></a><span class="lineno">  701</span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">void</span> SqlStatement::CloseCursor() noexcept</div>
-<div class="line"><a id="l00702" name="l00702"></a><span class="lineno">  702</span>{</div>
-<div class="line"><a id="l00703" name="l00703"></a><span class="lineno">  703</span>    <span class="comment">// SQLCloseCursor(m_hStmt);</span></div>
-<div class="line"><a id="l00704" name="l00704"></a><span class="lineno">  704</span>    SQLFreeStmt(m_hStmt, SQL_CLOSE);</div>
-<div class="line"><a id="l00705" name="l00705"></a><span class="lineno">  705</span>    SqlLogger::GetLogger().OnFetchEnd();</div>
-<div class="line"><a id="l00706" name="l00706"></a><span class="lineno">  706</span>}</div>
-<div class="line"><a id="l00707" name="l00707"></a><span class="lineno">  707</span> </div>
-<div class="line"><a id="l00708" name="l00708"></a><span class="lineno">  708</span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE SqlResultCursor SqlStatement::GetResultCursor() noexcept</div>
-<div class="line"><a id="l00709" name="l00709"></a><span class="lineno">  709</span>{</div>
-<div class="line"><a id="l00710" name="l00710"></a><span class="lineno">  710</span>    <span class="keywordflow">return</span> SqlResultCursor { *<span class="keyword">this</span> };</div>
-<div class="line"><a id="l00711" name="l00711"></a><span class="lineno">  711</span>}</div>
-<div class="line"><a id="l00712" name="l00712"></a><span class="lineno">  712</span> </div>
-<div class="line"><a id="l00713" name="l00713"></a><span class="lineno">  713</span><span class="comment">// }}}</span></div>
+<div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>    <span class="keyword">auto</span> <span class="keyword">const</span> queries = migration.GetPlan().ToSql();</div>
+<div class="line"><a id="l00662" name="l00662"></a><span class="lineno">  662</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; query: queries)</div>
+<div class="line"><a id="l00663" name="l00663"></a><span class="lineno">  663</span>        ExecuteDirect(query, location);</div>
+<div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span>}</div>
+<div class="line"><a id="l00665" name="l00665"></a><span class="lineno">  665</span> </div>
+<div class="line"><a id="l00666" name="l00666"></a><span class="lineno">  666</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00667" name="l00667"></a><span class="lineno">  667</span>    <span class="keyword">requires</span>(!std::same_as&lt;T, SqlVariant&gt;)</div>
+<div class="line"><a id="l00668" name="l00668"></a><span class="lineno">  668</span><span class="keyword">inline</span> std::optional&lt;T&gt; SqlStatement::ExecuteDirectScalar(<span class="keyword">const</span> std::string_view&amp; query, std::source_location location)</div>
+<div class="line"><a id="l00669" name="l00669"></a><span class="lineno">  669</span>{</div>
+<div class="line"><a id="l00670" name="l00670"></a><span class="lineno">  670</span>    <span class="keyword">auto</span> <span class="keyword">const</span> _ = detail::Finally([<span class="keyword">this</span>] { CloseCursor(); });</div>
+<div class="line"><a id="l00671" name="l00671"></a><span class="lineno">  671</span>    ExecuteDirect(query, location);</div>
+<div class="line"><a id="l00672" name="l00672"></a><span class="lineno">  672</span>    RequireSuccess(FetchRow());</div>
+<div class="line"><a id="l00673" name="l00673"></a><span class="lineno">  673</span>    <span class="keywordflow">return</span> GetNullableColumn&lt;T&gt;(1);</div>
+<div class="line"><a id="l00674" name="l00674"></a><span class="lineno">  674</span>}</div>
+<div class="line"><a id="l00675" name="l00675"></a><span class="lineno">  675</span> </div>
+<div class="line"><a id="l00676" name="l00676"></a><span class="lineno">  676</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00677" name="l00677"></a><span class="lineno">  677</span>    <span class="keyword">requires</span>(std::same_as&lt;T, SqlVariant&gt;)</div>
+<div class="line"><a id="l00678" name="l00678"></a><span class="lineno">  678</span><span class="keyword">inline</span> T SqlStatement::ExecuteDirectScalar(<span class="keyword">const</span> std::string_view&amp; query, std::source_location location)</div>
+<div class="line"><a id="l00679" name="l00679"></a><span class="lineno">  679</span>{</div>
+<div class="line"><a id="l00680" name="l00680"></a><span class="lineno">  680</span>    <span class="keyword">auto</span> <span class="keyword">const</span> _ = detail::Finally([<span class="keyword">this</span>] { CloseCursor(); });</div>
+<div class="line"><a id="l00681" name="l00681"></a><span class="lineno">  681</span>    ExecuteDirect(query, location);</div>
+<div class="line"><a id="l00682" name="l00682"></a><span class="lineno">  682</span>    RequireSuccess(FetchRow());</div>
+<div class="line"><a id="l00683" name="l00683"></a><span class="lineno">  683</span>    <span class="keywordflow">if</span> (<span class="keyword">auto</span> result = GetNullableColumn&lt;T&gt;(1); result.has_value())</div>
+<div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>        <span class="keywordflow">return</span> *result;</div>
+<div class="line"><a id="l00685" name="l00685"></a><span class="lineno">  685</span>    <span class="keywordflow">return</span> SqlVariant { SqlNullValue };</div>
+<div class="line"><a id="l00686" name="l00686"></a><span class="lineno">  686</span>}</div>
+<div class="line"><a id="l00687" name="l00687"></a><span class="lineno">  687</span> </div>
+<div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00689" name="l00689"></a><span class="lineno">  689</span>    <span class="keyword">requires</span>(!std::same_as&lt;T, SqlVariant&gt;)</div>
+<div class="line"><a id="l00690" name="l00690"></a><span class="lineno">  690</span><span class="keyword">inline</span> std::optional&lt;T&gt; SqlStatement::ExecuteDirectScalar(SqlQueryObject <span class="keyword">auto</span> <span class="keyword">const</span>&amp; query,</div>
+<div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>                                                          std::source_location location)</div>
+<div class="line"><a id="l00692" name="l00692"></a><span class="lineno">  692</span>{</div>
+<div class="line"><a id="l00693" name="l00693"></a><span class="lineno">  693</span>    <span class="keywordflow">return</span> ExecuteDirectScalar&lt;T&gt;(query.ToSql(), location);</div>
+<div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span>}</div>
+<div class="line"><a id="l00695" name="l00695"></a><span class="lineno">  695</span> </div>
+<div class="line"><a id="l00696" name="l00696"></a><span class="lineno">  696</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00697" name="l00697"></a><span class="lineno">  697</span>    <span class="keyword">requires</span>(std::same_as&lt;T, SqlVariant&gt;)</div>
+<div class="line"><a id="l00698" name="l00698"></a><span class="lineno">  698</span><span class="keyword">inline</span> T SqlStatement::ExecuteDirectScalar(SqlQueryObject <span class="keyword">auto</span> <span class="keyword">const</span>&amp; query, std::source_location location)</div>
+<div class="line"><a id="l00699" name="l00699"></a><span class="lineno">  699</span>{</div>
+<div class="line"><a id="l00700" name="l00700"></a><span class="lineno">  700</span>    <span class="keywordflow">return</span> ExecuteDirectScalar&lt;T&gt;(query.ToSql(), location);</div>
+<div class="line"><a id="l00701" name="l00701"></a><span class="lineno">  701</span>}</div>
+<div class="line"><a id="l00702" name="l00702"></a><span class="lineno">  702</span> </div>
+<div class="line"><a id="l00703" name="l00703"></a><span class="lineno">  703</span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">void</span> SqlStatement::CloseCursor() noexcept</div>
+<div class="line"><a id="l00704" name="l00704"></a><span class="lineno">  704</span>{</div>
+<div class="line"><a id="l00705" name="l00705"></a><span class="lineno">  705</span>    <span class="comment">// SQLCloseCursor(m_hStmt);</span></div>
+<div class="line"><a id="l00706" name="l00706"></a><span class="lineno">  706</span>    SQLFreeStmt(m_hStmt, SQL_CLOSE);</div>
+<div class="line"><a id="l00707" name="l00707"></a><span class="lineno">  707</span>    SqlLogger::GetLogger().OnFetchEnd();</div>
+<div class="line"><a id="l00708" name="l00708"></a><span class="lineno">  708</span>}</div>
+<div class="line"><a id="l00709" name="l00709"></a><span class="lineno">  709</span> </div>
+<div class="line"><a id="l00710" name="l00710"></a><span class="lineno">  710</span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE SqlResultCursor SqlStatement::GetResultCursor() noexcept</div>
+<div class="line"><a id="l00711" name="l00711"></a><span class="lineno">  711</span>{</div>
+<div class="line"><a id="l00712" name="l00712"></a><span class="lineno">  712</span>    <span class="keywordflow">return</span> SqlResultCursor { *<span class="keyword">this</span> };</div>
+<div class="line"><a id="l00713" name="l00713"></a><span class="lineno">  713</span>}</div>
+<div class="line"><a id="l00714" name="l00714"></a><span class="lineno">  714</span> </div>
+<div class="line"><a id="l00715" name="l00715"></a><span class="lineno">  715</span><span class="comment">// }}}</span></div>
 <div class="ttc" id="aclass_sql_query_builder_html"><div class="ttname"><a href="class_sql_query_builder.html">SqlQueryBuilder</a></div><div class="ttdoc">API Entry point for building SQL queries.</div><div class="ttdef"><b>Definition</b> <a href="_sql_query_8hpp_source.html#l00025">SqlQuery.hpp:26</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
