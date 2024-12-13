@@ -1,0 +1,38 @@
+name: Docs
+
+on:
+  merge_group:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+jobs:
+  create_documentation:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: update apt
+        run: sudo apt -q update
+      - name: install dependencies
+        run: sudo apt install -y cmake ninja-build catch2 unixodbc-dev sqlite3 libsqlite3-dev libsqliteodbc valgrind uuid-dev g++-14  doxygen
+      - name: cmake configure
+        run: cmake --preset linux-gcc-release
+      - name: build
+        run: cmake --build --preset linux-gcc-release --target doc
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: html
