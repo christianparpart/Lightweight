@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Lightweight: /home/runner/work/Lightweight/Lightweight/src/Lightweight/DataMapper/BelongsTo.hpp Source File</title>
+<title>Lightweight: Lightweight/DataMapper/BelongsTo.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -174,7 +174,7 @@ $(document).ready(function(){initNavTree('_belongs_to_8hpp_source.html',''); ini
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE <span class="keyword">constexpr</span> <span class="keywordtype">bool</span> IsModified() const noexcept { <span class="keywordflow">return</span> _modified; }</div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE <span class="keyword">constexpr</span> ValueType <span class="keyword">const</span>&amp; Value() const noexcept { <span class="keywordflow">return</span> _referencedFieldValue; }</div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE <span class="keyword">constexpr</span> ValueType&amp; MutableValue() noexcept { <span class="keywordflow">return</span> _referencedFieldValue; }</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">void</span> BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement&amp; stmt) { stmt.BindOutputColumn(outputIndex, &amp;_referencedFieldValue); }</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">void</span> BindOutputColumn(SQLSMALLINT outputIndex, <a class="code hl_class" href="class_sql_statement.html">SqlStatement</a>&amp; stmt) { stmt.BindOutputColumn(outputIndex, &amp;_referencedFieldValue); }</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE <span class="keyword">constexpr</span> ReferencedRecord&amp; EmplaceRecord() { _loaded = <span class="keyword">true</span>; <span class="keywordflow">return</span> _record.emplace(); }</div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE <span class="keyword">constexpr</span> ReferencedRecord&amp; Record() noexcept { RequireLoaded(); <span class="keywordflow">return</span> _record.value(); }</div>
@@ -200,7 +200,7 @@ $(document).ready(function(){initNavTree('_belongs_to_8hpp_source.html',''); ini
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    }</div>
 <div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    <span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKey::No&gt;</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    std::weak_ordering operator&lt;=&gt;(Field&lt;T, IsPrimaryKeyValue&gt; <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    std::weak_ordering operator&lt;=&gt;(<a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKeyValue&gt;</a> <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    {</div>
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        <span class="keywordflow">return</span> _referencedFieldValue &lt;=&gt; other.Value();</div>
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    }</div>
@@ -218,13 +218,13 @@ $(document).ready(function(){initNavTree('_belongs_to_8hpp_source.html',''); ini
 <div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    }</div>
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span> </div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    <span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKey::No&gt;</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="keywordtype">bool</span> operator==(Field&lt;T, IsPrimaryKeyValue&gt; <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="keywordtype">bool</span> operator==(<a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKeyValue&gt;</a> <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
 <div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>    {</div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        <span class="keywordflow">return</span> (_referencedFieldValue &lt;=&gt; other.Value()) == std::weak_ordering::equivalent;</div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    }</div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
 <div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>    <span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKey::No&gt;</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>    <span class="keywordtype">bool</span> operator!=(Field&lt;T, IsPrimaryKeyValue&gt; <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>    <span class="keywordtype">bool</span> operator!=(<a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKeyValue&gt;</a> <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
 <div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>    {</div>
 <div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <span class="keywordflow">return</span> (_referencedFieldValue &lt;=&gt; other.Value()) != std::weak_ordering::equivalent;</div>
 <div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>    }</div>
@@ -317,12 +317,14 @@ $(document).ready(function(){initNavTree('_belongs_to_8hpp_source.html',''); ini
 <div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>        <span class="keywordflow">return</span> sqlReturn;</div>
 <div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>    }</div>
 <div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>};</div>
+<div class="ttc" id="aclass_sql_statement_html"><div class="ttname"><a href="class_sql_statement.html">SqlStatement</a></div><div class="ttdoc">High level API for (prepared) raw SQL statements.</div><div class="ttdef"><b>Definition</b> <a href="_sql_statement_8hpp_source.html#l00045">SqlStatement.hpp:46</a></div></div>
+<div class="ttc" id="astruct_field_html"><div class="ttname"><a href="struct_field.html">Field</a></div><div class="ttdoc">Represents a single column in a table.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00056">Field.hpp:57</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_07cc544e6394bf3dfdd028b8dfeac742.html">Lightweight</a></li><li class="navelem"><a class="el" href="dir_928313e3f834eaf7c2b65386b629cfde.html">DataMapper</a></li><li class="navelem"><b>BelongsTo.hpp</b></li>
+    <li class="navelem"><a class="el" href="dir_07cc544e6394bf3dfdd028b8dfeac742.html">Lightweight</a></li><li class="navelem"><a class="el" href="dir_928313e3f834eaf7c2b65386b629cfde.html">DataMapper</a></li><li class="navelem"><b>BelongsTo.hpp</b></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8 </li>
   </ul>
 </div>

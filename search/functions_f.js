@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['select_0',['Select',['../class_sql_query_builder.html#a540942748905edd6045fe8c3fb16a124',1,'SqlQueryBuilder']]],
+  ['selectall_1',['SelectAll',['../class_sql_query_formatter.html#a15ad4a795d7491086e54b4a303710175',1,'SqlQueryFormatter']]],
+  ['selectcount_2',['SelectCount',['../class_sql_query_formatter.html#aad0b3cf14f6fc8934524a9ef8203e6d8',1,'SqlQueryFormatter']]],
+  ['selectfirst_3',['SelectFirst',['../class_sql_query_formatter.html#a1cf9063f1221c6c5941d3e575e750f4b',1,'SqlQueryFormatter']]],
+  ['selectrange_4',['SelectRange',['../class_sql_query_formatter.html#ad42e538f5828b10fda8af49be16d20f2',1,'SqlQueryFormatter']]],
+  ['servername_5',['ServerName',['../class_sql_connection.html#a33aa28e149a45dceb064248868cda83f',1,'SqlConnection']]],
+  ['servertype_6',['ServerType',['../class_sql_connection.html#a0dbada057b48928c5ac60f01687a58c0',1,'SqlConnection']]],
+  ['serverversion_7',['ServerVersion',['../class_sql_connection.html#a424f8f22cc848dc67294f22784639b54',1,'SqlConnection']]],
+  ['setdefaultconnectionstring_8',['SetDefaultConnectionString',['../class_sql_connection.html#a5f49d6d04ccccfc9110f0d6f5d8bb662',1,'SqlConnection']]],
+  ['setdefaultdatasource_9',['SetDefaultDataSource',['../class_sql_connection.html#ab342d12c86553c3538b6747be06952cb',1,'SqlConnection']]],
+  ['setlastused_10',['SetLastUsed',['../class_sql_connection.html#a5d4b9a6597703cb0b9bb2b2199fbdea3',1,'SqlConnection']]],
+  ['setlogger_11',['SetLogger',['../class_sql_logger.html#a6f58dd38fccd2cffe22d7d49dadaefc9',1,'SqlLogger']]],
+  ['setmodified_12',['SetModified',['../struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed',1,'Field']]],
+  ['setpostconnectedhook_13',['SetPostConnectedHook',['../class_sql_connection.html#a691dae3c5ba482cf10066acde86db4ff',1,'SqlConnection']]],
+  ['sqlconnection_14',['sqlconnection',['../class_sql_connection.html#a028de5cb7c541ac5d123ca73554f582c',1,'SqlConnection::SqlConnection()'],['../class_sql_connection.html#a311848ca83901b216a4f4b66ba208b23',1,'SqlConnection::SqlConnection(std::optional&lt; SqlConnectionString &gt; connectInfo)']]],
+  ['sqlite_15',['Sqlite',['../class_sql_query_formatter.html#aca40006a5a2df6170c1bfaf2f07d0e83',1,'SqlQueryFormatter']]],
+  ['sqllogger_16',['SqlLogger',['../class_sql_logger.html#a13d2224bfd4f6dc2411046a0275d46cc',1,'SqlLogger']]],
+  ['sqlquerybuilder_17',['SqlQueryBuilder',['../class_sql_query_builder.html#af3be10b9fb3de18497738c168afc956e',1,'SqlQueryBuilder']]],
+  ['sqlserver_18',['SqlServer',['../class_sql_query_formatter.html#a404ff4974035b8aa9e04c4a3d1ab9ca9',1,'SqlQueryFormatter']]],
+  ['sqlstatement_19',['sqlstatement',['../class_sql_statement.html#af0e6121595d226f3926dbd915f7c7491',1,'SqlStatement::SqlStatement()'],['../class_sql_statement.html#aed36aff23ba36b1c67206ff0c56baa62',1,'SqlStatement::SqlStatement(SqlConnection &amp;relatedConnection)'],['../class_sql_statement.html#aa7424b0be1089537e0d7f4c5bb2dc422',1,'SqlStatement::SqlStatement(std::nullopt_t)']]],
+  ['standardlogger_20',['StandardLogger',['../class_sql_logger.html#aca4de43dbc3eb58fbcb698e1119ad4bb',1,'SqlLogger']]],
+  ['stringliteral_21',['stringliteral',['../class_sql_query_formatter.html#aac1959bfd9d491cd46ffcbf1473d65cd',1,'SqlQueryFormatter::StringLiteral(std::string_view value) const noexcept=0'],['../class_sql_query_formatter.html#a9b621bdfa1fbe2d0f68c0fd4c8b9e00b',1,'SqlQueryFormatter::StringLiteral(char value) const noexcept=0']]]
+];

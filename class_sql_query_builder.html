@@ -104,36 +104,42 @@ $(document).ready(function(){initNavTree('class_sql_query_builder.html',''); ini
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:af3be10b9fb3de18497738c168afc956e" id="r_af3be10b9fb3de18497738c168afc956e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_sql_query_builder.html#af3be10b9fb3de18497738c168afc956e">SqlQueryBuilder</a> (SqlQueryFormatter const &amp;formatter, std::string &amp;&amp;table={}, std::string &amp;&amp;alias={}) noexcept</td></tr>
+<tr class="memitem:af3be10b9fb3de18497738c168afc956e" id="r_af3be10b9fb3de18497738c168afc956e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_sql_query_builder.html#af3be10b9fb3de18497738c168afc956e">SqlQueryBuilder</a> (<a class="el" href="class_sql_query_formatter.html">SqlQueryFormatter</a> const &amp;formatter, std::string &amp;&amp;table={}, std::string &amp;&amp;alias={}) noexcept</td></tr>
+<tr class="memdesc:af3be10b9fb3de18497738c168afc956e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a new query builder for the given table.  <br /></td></tr>
 <tr class="separator:af3be10b9fb3de18497738c168afc956e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a708ebf8948cd6668a5c83a1b22ea73dc" id="r_a708ebf8948cd6668a5c83a1b22ea73dc"><td class="memItemLeft" align="right" valign="top"><a id="a708ebf8948cd6668a5c83a1b22ea73dc" name="a708ebf8948cd6668a5c83a1b22ea73dc"></a>
 LIGHTWEIGHT_API <a class="el" href="class_sql_query_builder.html">SqlQueryBuilder</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>FromTable</b> (std::string table)</td></tr>
+<tr class="memdesc:a708ebf8948cd6668a5c83a1b22ea73dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a new query builder for the given table. <br /></td></tr>
 <tr class="separator:a708ebf8948cd6668a5c83a1b22ea73dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7c9c120430951e524eeee4746b1531e" id="r_ac7c9c120430951e524eeee4746b1531e"><td class="memItemLeft" align="right" valign="top"><a id="ac7c9c120430951e524eeee4746b1531e" name="ac7c9c120430951e524eeee4746b1531e"></a>
 LIGHTWEIGHT_API <a class="el" href="class_sql_query_builder.html">SqlQueryBuilder</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>FromTableAs</b> (std::string table, std::string alias)</td></tr>
+<tr class="memdesc:ac7c9c120430951e524eeee4746b1531e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a new query builder for the given table with an alias. <br /></td></tr>
 <tr class="separator:ac7c9c120430951e524eeee4746b1531e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2752da20dcda5fc1527670062fb45bdf" id="r_a2752da20dcda5fc1527670062fb45bdf"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_API SqlInsertQueryBuilder&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_sql_query_builder.html#a2752da20dcda5fc1527670062fb45bdf">Insert</a> (std::vector&lt; SqlVariant &gt; *boundInputs=nullptr) noexcept</td></tr>
 <tr class="separator:a2752da20dcda5fc1527670062fb45bdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4cebfec7d16571e61e728c506889d603" id="r_a4cebfec7d16571e61e728c506889d603"><td class="memItemLeft" align="right" valign="top"><a id="a4cebfec7d16571e61e728c506889d603" name="a4cebfec7d16571e61e728c506889d603"></a>
 LIGHTWEIGHT_API SqlLastInsertIdQuery&#160;</td><td class="memItemRight" valign="bottom"><b>LastInsertId</b> ()</td></tr>
+<tr class="memdesc:a4cebfec7d16571e61e728c506889d603"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a query to retrieve the last insert ID for the given table. <br /></td></tr>
 <tr class="separator:a4cebfec7d16571e61e728c506889d603"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a540942748905edd6045fe8c3fb16a124" id="r_a540942748905edd6045fe8c3fb16a124"><td class="memItemLeft" align="right" valign="top"><a id="a540942748905edd6045fe8c3fb16a124" name="a540942748905edd6045fe8c3fb16a124"></a>
 LIGHTWEIGHT_API SqlSelectQueryBuilder&#160;</td><td class="memItemRight" valign="bottom"><b>Select</b> () noexcept</td></tr>
+<tr class="memdesc:a540942748905edd6045fe8c3fb16a124"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiates SELECT query building. <br /></td></tr>
 <tr class="separator:a540942748905edd6045fe8c3fb16a124"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ba41a3e575f9edd7254ff1f002ff789" id="r_a7ba41a3e575f9edd7254ff1f002ff789"><td class="memItemLeft" align="right" valign="top"><a id="a7ba41a3e575f9edd7254ff1f002ff789" name="a7ba41a3e575f9edd7254ff1f002ff789"></a>
-LIGHTWEIGHT_API SqlUpdateQueryBuilder&#160;</td><td class="memItemRight" valign="bottom"><b>Update</b> (std::vector&lt; SqlVariant &gt; *boundInputs=nullptr) noexcept</td></tr>
+<tr class="memitem:a7ba41a3e575f9edd7254ff1f002ff789" id="r_a7ba41a3e575f9edd7254ff1f002ff789"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_API SqlUpdateQueryBuilder&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_sql_query_builder.html#a7ba41a3e575f9edd7254ff1f002ff789">Update</a> (std::vector&lt; SqlVariant &gt; *boundInputs=nullptr) noexcept</td></tr>
 <tr class="separator:a7ba41a3e575f9edd7254ff1f002ff789"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b67b677befdd73664827d292e2fac61" id="r_a4b67b677befdd73664827d292e2fac61"><td class="memItemLeft" align="right" valign="top"><a id="a4b67b677befdd73664827d292e2fac61" name="a4b67b677befdd73664827d292e2fac61"></a>
 LIGHTWEIGHT_API SqlDeleteQueryBuilder&#160;</td><td class="memItemRight" valign="bottom"><b>Delete</b> () noexcept</td></tr>
+<tr class="memdesc:a4b67b677befdd73664827d292e2fac61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiates DELETE query building. <br /></td></tr>
 <tr class="separator:a4b67b677befdd73664827d292e2fac61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef9b2b49b2ebde2e23fcdabd1d450eb2" id="r_aef9b2b49b2ebde2e23fcdabd1d450eb2"><td class="memItemLeft" align="right" valign="top"><a id="aef9b2b49b2ebde2e23fcdabd1d450eb2" name="aef9b2b49b2ebde2e23fcdabd1d450eb2"></a>
 LIGHTWEIGHT_API SqlMigrationQueryBuilder&#160;</td><td class="memItemRight" valign="bottom"><b>Migration</b> ()</td></tr>
+<tr class="memdesc:aef9b2b49b2ebde2e23fcdabd1d450eb2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiates query for building database migrations. <br /></td></tr>
 <tr class="separator:aef9b2b49b2ebde2e23fcdabd1d450eb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>API Entry point for building SQL queries. </p>
 
-<p class="definition">Definition at line <a class="el" href="_sql_query_8hpp_source.html#l00025">25</a> of file <a class="el" href="_sql_query_8hpp_source.html">SqlQuery.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_sql_query_8hpp_source.html#l00023">23</a> of file <a class="el" href="_sql_query_8hpp_source.html">SqlQuery.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="af3be10b9fb3de18497738c168afc956e" name="af3be10b9fb3de18497738c168afc956e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af3be10b9fb3de18497738c168afc956e">&#9670;&#160;</a></span>SqlQueryBuilder()</h2>
@@ -147,7 +153,7 @@ LIGHTWEIGHT_API SqlMigrationQueryBuilder&#160;</td><td class="memItemRight" vali
         <tr>
           <td class="memname">LIGHTWEIGHT_FORCE_INLINE SqlQueryBuilder::SqlQueryBuilder </td>
           <td>(</td>
-          <td class="paramtype">SqlQueryFormatter const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="class_sql_query_formatter.html">SqlQueryFormatter</a> const &amp;&#160;</td>
           <td class="paramname"><em>formatter</em>, </td>
         </tr>
         <tr>
@@ -175,7 +181,9 @@ LIGHTWEIGHT_API SqlMigrationQueryBuilder&#160;</td><td class="memItemRight" vali
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_sql_query_8hpp_source.html#l00072">72</a> of file <a class="el" href="_sql_query_8hpp_source.html">SqlQuery.hpp</a>.</p>
+<p>Constructs a new query builder for the given table. </p>
+
+<p class="definition">Definition at line <a class="el" href="_sql_query_8hpp_source.html#l00069">69</a> of file <a class="el" href="_sql_query_8hpp_source.html">SqlQuery.hpp</a>.</p>
 
 </div>
 </div>
@@ -211,10 +219,47 @@ LIGHTWEIGHT_API SqlMigrationQueryBuilder&#160;</td><td class="memItemRight" vali
   </dd>
 </dl>
 
+<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00348">DataMapper::CreateExplicit()</a>.</p>
+
+</div>
+</div>
+<a id="a7ba41a3e575f9edd7254ff1f002ff789" name="a7ba41a3e575f9edd7254ff1f002ff789"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ba41a3e575f9edd7254ff1f002ff789">&#9670;&#160;</a></span>Update()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">LIGHTWEIGHT_API SqlUpdateQueryBuilder SqlQueryBuilder::Update </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; SqlVariant &gt; *&#160;</td>
+          <td class="paramname"><em>boundInputs</em> = <code>nullptr</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Initiates UPDATE query building.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">boundInputs</td><td>Optional vector to store bound inputs. If provided, the inputs will be appended to this vector and can be used to bind the values to the query via SqlStatement::ExecuteWithVariants(...) </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00430">DataMapper::Update()</a>.</p>
+
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>/home/runner/work/Lightweight/Lightweight/src/Lightweight/<a class="el" href="_sql_query_8hpp_source.html">SqlQuery.hpp</a></li>
+<li>Lightweight/<a class="el" href="_sql_query_8hpp_source.html">SqlQuery.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

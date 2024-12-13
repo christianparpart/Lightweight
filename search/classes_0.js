@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['sqlquerybuilder_0',['SqlQueryBuilder',['../class_sql_query_builder.html',1,'']]]
+  ['datamapper_0',['DataMapper',['../class_data_mapper.html',1,'']]]
 ];

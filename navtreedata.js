@@ -26,15 +26,18 @@ var NAVTREE =
 [
   [ "Lightweight", "index.html", [
     [ "Lightweight, an ODBC SQL API for C++23", "index.html", "index" ],
-    [ "Examples", "md_usage.html", [
-      [ "Configure connection to the database", "md_usage.html#configure-connection-to-the-database", null ],
-      [ "Sql Query", "md_usage.html#sql-query", null ]
+    [ "Examples", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html", [
+      [ "Configure connection to the database", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#configure-connection-to-the-database", null ],
+      [ "Sql Query", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#sql-query", null ]
     ] ],
+    [ "Concepts", "concepts.html", "concepts" ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
+      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
       [ "Class Members", "functions.html", [
         [ "All", "functions.html", null ],
-        [ "Functions", "functions_func.html", null ]
+        [ "Functions", "functions_func.html", null ],
+        [ "Enumerations", "functions_enum.html", null ]
       ] ]
     ] ],
     [ "Files", "files.html", [
