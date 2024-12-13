@@ -179,18 +179,19 @@ $(document).ready(function(){initNavTree('_sql_query_formatter_8hpp_source.html'
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>                                             std::string <span class="keyword">const</span>&amp; tableJoins,</div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>                                             std::string <span class="keyword">const</span>&amp; whereCondition) <span class="keyword">const</span> = 0;</div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span> </div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    [[nodiscard]] <span class="keyword">virtual</span> std::string ColumnType(SqlColumnTypeDefinition <span class="keyword">const</span>&amp; type) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    [[nodiscard]] <span class="keyword">virtual</span> std::string CreateTable(std::string_view tableName, std::vector&lt;SqlColumnDeclaration&gt; <span class="keyword">const</span>&amp; columns) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    [[nodiscard]] <span class="keyword">virtual</span> std::string AlterTable(std::string_view tableName, std::vector&lt;SqlAlterTableCommand&gt; <span class="keyword">const</span>&amp; commands) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    [[nodiscard]] <span class="keyword">virtual</span> std::string DropTable(std::string_view <span class="keyword">const</span>&amp; tableName) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span> </div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>&amp; Sqlite();</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>&amp; SqlServer();</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>&amp; PostgrSQL();</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>&amp; OracleSQL();</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>* Get(SqlServerType serverType) <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>};</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keyword">using </span>StringList = std::vector&lt;std::string&gt;;</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    [[nodiscard]] <span class="keyword">virtual</span> std::string ColumnType(SqlColumnTypeDefinition <span class="keyword">const</span>&amp; type) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    [[nodiscard]] <span class="keyword">virtual</span> StringList CreateTable(std::string_view tableName, std::vector&lt;SqlColumnDeclaration&gt; <span class="keyword">const</span>&amp; columns) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    [[nodiscard]] <span class="keyword">virtual</span> StringList AlterTable(std::string_view tableName, std::vector&lt;SqlAlterTableCommand&gt; <span class="keyword">const</span>&amp; commands) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    [[nodiscard]] <span class="keyword">virtual</span> StringList DropTable(std::string_view <span class="keyword">const</span>&amp; tableName) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span> </div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>&amp; Sqlite();</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>&amp; SqlServer();</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>&amp; PostgrSQL();</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>&amp; OracleSQL();</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span> </div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <span class="keyword">static</span> SqlQueryFormatter <span class="keyword">const</span>* Get(SqlServerType serverType) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>};</div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
