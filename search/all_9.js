@@ -5,5 +5,8 @@ var searchData=
   ['inspectvalue_2',['InspectValue',['../struct_field.html#ab03fc137848c0ec9d76efcea7229be8c',1,'Field']]],
   ['installation_20on_20other_20operating_20systems_3',['SQLite ODBC driver installation on other operating systems',['../index.html#sqlite-odbc-driver-installation-on-other-operating-systems',1,'']]],
   ['isalive_4',['IsAlive',['../class_sql_connection.html#ab0ffa86b235846196d55554a005ba05f',1,'SqlConnection']]],
-  ['ismodified_5',['ismodified',['../class_data_mapper.html#a0cfde49ef08f08db4ae20518e30a6a0a',1,'DataMapper::IsModified()'],['../struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e',1,'Field::IsModified()']]]
+  ['isempty_5',['isempty',['../class_has_many.html#a54200f1623f32404fe361da2f71a95b5',1,'HasMany::IsEmpty()'],['../class_has_many_through.html#a75b212d9afc6f26766bb140dfc998dd5',1,'HasManyThrough::IsEmpty()']]],
+  ['isloaded_6',['isloaded',['../class_belongs_to.html#ae1695f198ca4d68009af3beb96657daa',1,'BelongsTo::IsLoaded()'],['../class_has_one_through.html#af567fe189d861b5804c7401014404335',1,'HasOneThrough::IsLoaded()']]],
+  ['ismodified_7',['ismodified',['../class_belongs_to.html#ad19408148978dc5eed5d26bae93705fa',1,'BelongsTo::IsModified()'],['../class_data_mapper.html#a0cfde49ef08f08db4ae20518e30a6a0a',1,'DataMapper::IsModified()'],['../struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e',1,'Field::IsModified()']]],
+  ['iterator_8',['iterator',['../class_has_many.html#a3691f70d4679323b4033439a35578a88',1,'HasMany']]]
 ];

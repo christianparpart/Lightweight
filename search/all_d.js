@@ -20,6 +20,11 @@ var searchData=
   ['onwarning_17',['OnWarning',['../class_sql_logger.html#af8c543e3b315aa73d32707443c265dd2',1,'SqlLogger']]],
   ['operating_20system_18',['Using SQLite for testing on Windows operating system',['../index.html#using-sqlite-for-testing-on-windows-operating-system',1,'']]],
   ['operating_20systems_19',['SQLite ODBC driver installation on other operating systems',['../index.html#sqlite-odbc-driver-installation-on-other-operating-systems',1,'']]],
-  ['oraclesql_20',['OracleSQL',['../class_sql_query_formatter.html#a729b2caeb3f74c0f56810176eae69a7f',1,'SqlQueryFormatter']]],
-  ['other_20operating_20systems_21',['SQLite ODBC driver installation on other operating systems',['../index.html#sqlite-odbc-driver-installation-on-other-operating-systems',1,'']]]
+  ['operator_20bool_20',['operator bool',['../class_belongs_to.html#aaa5a9b021926b2dd739acb6e9bd43080',1,'BelongsTo']]],
+  ['operator_21_21',['operator!',['../class_belongs_to.html#aaa76c0aaca0b4abe9c1c31a6c76e2752',1,'BelongsTo']]],
+  ['operator_2a_22',['operator*',['../class_has_one_through.html#aaec6e045f7b17a8aa1f82194e8e13d43',1,'HasOneThrough::operator*() const noexcept'],['../class_has_one_through.html#a0f38e92e01f7d677ac39b9133a9871aa',1,'HasOneThrough::operator*() noexcept'],['../class_belongs_to.html#a328a5182844038d0ce74f628518c29c2',1,'BelongsTo::operator*() const noexcept'],['../class_belongs_to.html#a010b8fff4d8dac018dad98e83bb3916e',1,'BelongsTo::operator*() noexcept']]],
+  ['operator_2d_3e_23',['operator-&gt;',['../class_belongs_to.html#a485e4d7f24837bfa993d0cf4bf30f3ee',1,'BelongsTo::operator-&gt;() noexcept'],['../class_belongs_to.html#a7c3411e79773d614c9b3d25568ff42ec',1,'BelongsTo::operator-&gt;() const noexcept'],['../class_has_one_through.html#a8032e49407825e9cb87549e40a5071ad',1,'HasOneThrough::operator-&gt;() noexcept'],['../class_has_one_through.html#ab8dd2cec742cef96bb13bf935cf23c3f',1,'HasOneThrough::operator-&gt;() const noexcept']]],
+  ['operator_5b_5d_24',['operator[]',['../class_has_many.html#afc62e829c017a00151a6db5ff4eec771',1,'HasMany::operator[](std::size_t index) const'],['../class_has_many.html#a4ba3ad1343f1179ca6ae6581970645a5',1,'HasMany::operator[](std::size_t index)'],['../class_has_many_through.html#ae11ff20cf335b54d17c999a48598ecb3',1,'HasManyThrough::operator[](std::size_t index) const'],['../class_has_many_through.html#a56e2846ccbab38e110dc8933a803601f',1,'HasManyThrough::operator[](std::size_t index)']]],
+  ['oraclesql_25',['OracleSQL',['../class_sql_query_formatter.html#a729b2caeb3f74c0f56810176eae69a7f',1,'SqlQueryFormatter']]],
+  ['other_20operating_20systems_26',['SQLite ODBC driver installation on other operating systems',['../index.html#sqlite-odbc-driver-installation-on-other-operating-systems',1,'']]]
 ];

@@ -1,9 +1,11 @@
 var annotated_dup =
 [
+    [ "BelongsTo", "class_belongs_to.html", "class_belongs_to" ],
     [ "DataMapper", "class_data_mapper.html", "class_data_mapper" ],
     [ "Field", "struct_field.html", "struct_field" ],
-    [ "HasMany", "class_has_many.html", null ],
-    [ "HasManyThrough", "class_has_many_through.html", null ],
+    [ "HasMany", "class_has_many.html", "class_has_many" ],
+    [ "HasManyThrough", "class_has_many_through.html", "class_has_many_through" ],
+    [ "HasOneThrough", "class_has_one_through.html", "class_has_one_through" ],
     [ "SqlConnection", "class_sql_connection.html", "class_sql_connection" ],
     [ "SqlConnectionDataSource", "struct_sql_connection_data_source.html", null ],
     [ "SqlConnectionString", "struct_sql_connection_string.html", null ],

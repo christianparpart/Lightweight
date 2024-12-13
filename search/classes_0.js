@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['datamapper_0',['DataMapper',['../class_data_mapper.html',1,'']]]
+  ['belongsto_0',['BelongsTo',['../class_belongs_to.html',1,'']]]
 ];

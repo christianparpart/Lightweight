@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('class_has_many_through.html',''); init
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="class_has_many_through-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">HasManyThrough&lt; ReferencedRecordT, ThroughRecordT &gt; Class Template Reference</div></div>
+  <div class="headertitle"><div class="title">HasManyThrough&lt; ReferencedRecordT, ThroughRecordT &gt; Class Template Reference<div class="ingroups"><a class="el" href="group___data_mapper.html">Data Mapper</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
@@ -106,12 +106,15 @@ $(document).ready(function(){initNavTree('class_has_many_through.html',''); init
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a379b3afee3886e4166554b650ce0886b" id="r_a379b3afee3886e4166554b650ce0886b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a379b3afee3886e4166554b650ce0886b">ThroughRecord</a> = ThroughRecordT</td></tr>
+<tr class="memdesc:a379b3afee3886e4166554b650ce0886b"><td class="mdescLeft">&#160;</td><td class="mdescRight">The record type of the "through" side of the relationship.  <br /></td></tr>
 <tr class="separator:a379b3afee3886e4166554b650ce0886b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a302f58acb9de3b2feebf5a000f08b72e" id="r_a302f58acb9de3b2feebf5a000f08b72e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">ReferencedRecord</a> = ReferencedRecordT</td></tr>
+<tr class="memdesc:a302f58acb9de3b2feebf5a000f08b72e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The record type of the "many" side of the relationship.  <br /></td></tr>
 <tr class="separator:a302f58acb9de3b2feebf5a000f08b72e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad933650d8d25c20431da3672f81b7450" id="r_ad933650d8d25c20431da3672f81b7450"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">ReferencedRecordList</a> = std::vector&lt; std::shared_ptr&lt; ReferencedRecord &gt; &gt;</td></tr>
+<tr class="memitem:ad933650d8d25c20431da3672f81b7450" id="r_ad933650d8d25c20431da3672f81b7450"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">ReferencedRecordList</a> = std::vector&lt; std::shared_ptr&lt; <a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">ReferencedRecord</a> &gt; &gt;</td></tr>
+<tr class="memdesc:ad933650d8d25c20431da3672f81b7450"><td class="mdescLeft">&#160;</td><td class="mdescRight">The list of records on the "many" side of the relationship.  <br /></td></tr>
 <tr class="separator:ad933650d8d25c20431da3672f81b7450"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae8cb08908f0f1e3b4fe496f0c87c5d6d" id="r_ae8cb08908f0f1e3b4fe496f0c87c5d6d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#ae8cb08908f0f1e3b4fe496f0c87c5d6d">value_type</a> = ReferencedRecord</td></tr>
+<tr class="memitem:ae8cb08908f0f1e3b4fe496f0c87c5d6d" id="r_ae8cb08908f0f1e3b4fe496f0c87c5d6d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#ae8cb08908f0f1e3b4fe496f0c87c5d6d">value_type</a> = <a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">ReferencedRecord</a></td></tr>
 <tr class="separator:ae8cb08908f0f1e3b4fe496f0c87c5d6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44e04d457d059aa202d0bfcccc072569" id="r_a44e04d457d059aa202d0bfcccc072569"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a44e04d457d059aa202d0bfcccc072569">iterator</a> = typename ReferencedRecordList::iterator</td></tr>
 <tr class="separator:a44e04d457d059aa202d0bfcccc072569"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -120,23 +123,32 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a0dd54929e7942a919ce0ec5d5890b03f" id="r_a0dd54929e7942a919ce0ec5d5890b03f"><td class="memItemLeft" align="right" valign="top">ReferencedRecordList const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a0dd54929e7942a919ce0ec5d5890b03f">All</a> () const noexcept</td></tr>
+<tr class="memitem:a0dd54929e7942a919ce0ec5d5890b03f" id="r_a0dd54929e7942a919ce0ec5d5890b03f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">ReferencedRecordList</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a0dd54929e7942a919ce0ec5d5890b03f">All</a> () const noexcept</td></tr>
+<tr class="memdesc:a0dd54929e7942a919ce0ec5d5890b03f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the list of loaded records.  <br /></td></tr>
 <tr class="separator:a0dd54929e7942a919ce0ec5d5890b03f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacf4f1b9fd8bfae73dce606bb7baf56e" id="r_aacf4f1b9fd8bfae73dce606bb7baf56e"><td class="memItemLeft" align="right" valign="top">ReferencedRecordList &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#aacf4f1b9fd8bfae73dce606bb7baf56e">All</a> () noexcept</td></tr>
+<tr class="memitem:aacf4f1b9fd8bfae73dce606bb7baf56e" id="r_aacf4f1b9fd8bfae73dce606bb7baf56e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">ReferencedRecordList</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#aacf4f1b9fd8bfae73dce606bb7baf56e">All</a> () noexcept</td></tr>
+<tr class="memdesc:aacf4f1b9fd8bfae73dce606bb7baf56e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the list of records as mutable reference.  <br /></td></tr>
 <tr class="separator:aacf4f1b9fd8bfae73dce606bb7baf56e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2064ef55f4172fedb05962508c86f6ed" id="r_a2064ef55f4172fedb05962508c86f6ed"><td class="memItemLeft" align="right" valign="top">ReferencedRecordList &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a2064ef55f4172fedb05962508c86f6ed">Emplace</a> (ReferencedRecordList &amp;&amp;records) noexcept</td></tr>
+<tr class="memitem:a2064ef55f4172fedb05962508c86f6ed" id="r_a2064ef55f4172fedb05962508c86f6ed"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">ReferencedRecordList</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a2064ef55f4172fedb05962508c86f6ed">Emplace</a> (<a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">ReferencedRecordList</a> &amp;&amp;records) noexcept</td></tr>
+<tr class="memdesc:a2064ef55f4172fedb05962508c86f6ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emplaces the given list of records into this relationship.  <br /></td></tr>
 <tr class="separator:a2064ef55f4172fedb05962508c86f6ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21529e666f46d27a466d6cffc9367a67" id="r_a21529e666f46d27a466d6cffc9367a67"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a21529e666f46d27a466d6cffc9367a67">Count</a> () const</td></tr>
+<tr class="memdesc:a21529e666f46d27a466d6cffc9367a67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the number of records in this relationship.  <br /></td></tr>
 <tr class="separator:a21529e666f46d27a466d6cffc9367a67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75b212d9afc6f26766bb140dfc998dd5" id="r_a75b212d9afc6f26766bb140dfc998dd5"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a75b212d9afc6f26766bb140dfc998dd5">IsEmpty</a> () const</td></tr>
+<tr class="memdesc:a75b212d9afc6f26766bb140dfc998dd5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if this relationship is empty.  <br /></td></tr>
 <tr class="separator:a75b212d9afc6f26766bb140dfc998dd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a289cfe87f4182e13ca5bce87203e004a" id="r_a289cfe87f4182e13ca5bce87203e004a"><td class="memItemLeft" align="right" valign="top">ReferencedRecord const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a289cfe87f4182e13ca5bce87203e004a">At</a> (std::size_t index) const</td></tr>
+<tr class="memitem:a289cfe87f4182e13ca5bce87203e004a" id="r_a289cfe87f4182e13ca5bce87203e004a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">ReferencedRecord</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a289cfe87f4182e13ca5bce87203e004a">At</a> (std::size_t index) const</td></tr>
+<tr class="memdesc:a289cfe87f4182e13ca5bce87203e004a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the record at the given index.  <br /></td></tr>
 <tr class="separator:a289cfe87f4182e13ca5bce87203e004a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac7febd9e38b439c6b0907e6dcf85f99c" id="r_ac7febd9e38b439c6b0907e6dcf85f99c"><td class="memItemLeft" align="right" valign="top">ReferencedRecord &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#ac7febd9e38b439c6b0907e6dcf85f99c">At</a> (std::size_t index)</td></tr>
+<tr class="memitem:ac7febd9e38b439c6b0907e6dcf85f99c" id="r_ac7febd9e38b439c6b0907e6dcf85f99c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">ReferencedRecord</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#ac7febd9e38b439c6b0907e6dcf85f99c">At</a> (std::size_t index)</td></tr>
+<tr class="memdesc:ac7febd9e38b439c6b0907e6dcf85f99c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the record at the given index.  <br /></td></tr>
 <tr class="separator:ac7febd9e38b439c6b0907e6dcf85f99c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae11ff20cf335b54d17c999a48598ecb3" id="r_ae11ff20cf335b54d17c999a48598ecb3"><td class="memItemLeft" align="right" valign="top">ReferencedRecord const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#ae11ff20cf335b54d17c999a48598ecb3">operator[]</a> (std::size_t index) const</td></tr>
+<tr class="memitem:ae11ff20cf335b54d17c999a48598ecb3" id="r_ae11ff20cf335b54d17c999a48598ecb3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">ReferencedRecord</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#ae11ff20cf335b54d17c999a48598ecb3">operator[]</a> (std::size_t index) const</td></tr>
+<tr class="memdesc:ae11ff20cf335b54d17c999a48598ecb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the record at the given index.  <br /></td></tr>
 <tr class="separator:ae11ff20cf335b54d17c999a48598ecb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a56e2846ccbab38e110dc8933a803601f" id="r_a56e2846ccbab38e110dc8933a803601f"><td class="memItemLeft" align="right" valign="top">ReferencedRecord &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a56e2846ccbab38e110dc8933a803601f">operator[]</a> (std::size_t index)</td></tr>
+<tr class="memitem:a56e2846ccbab38e110dc8933a803601f" id="r_a56e2846ccbab38e110dc8933a803601f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">ReferencedRecord</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a56e2846ccbab38e110dc8933a803601f">operator[]</a> (std::size_t index)</td></tr>
+<tr class="memdesc:a56e2846ccbab38e110dc8933a803601f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the record at the given index.  <br /></td></tr>
 <tr class="separator:a56e2846ccbab38e110dc8933a803601f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f5a62f9f6bdd980c6f0c80962d2d1be" id="r_a1f5a62f9f6bdd980c6f0c80962d2d1be"><td class="memItemLeft" align="right" valign="top">iterator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#a1f5a62f9f6bdd980c6f0c80962d2d1be">begin</a> () noexcept</td></tr>
 <tr class="separator:a1f5a62f9f6bdd980c6f0c80962d2d1be"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -150,11 +162,14 @@ Public Member Functions</h2></td></tr>
 std::weak_ordering&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;=&gt;</b> (<a class="el" href="class_has_many_through.html">HasManyThrough</a> const &amp;other) const noexcept=default</td></tr>
 <tr class="separator:a72014e318aa469cdf203a5a393f1e54e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af53f24e8136d20febd9631228457216d" id="r_af53f24e8136d20febd9631228457216d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#af53f24e8136d20febd9631228457216d">SetAutoLoader</a> (Loader loader) noexcept</td></tr>
+<tr class="memdesc:af53f24e8136d20febd9631228457216d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Used internally to configure on-demand loading of the records.  <br /></td></tr>
 <tr class="separator:af53f24e8136d20febd9631228457216d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af01e87a889bb14b2aa93401cb013004a" id="r_af01e87a889bb14b2aa93401cb013004a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#af01e87a889bb14b2aa93401cb013004a">Reload</a> ()</td></tr>
+<tr class="memdesc:af01e87a889bb14b2aa93401cb013004a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reloads the records from the database.  <br /></td></tr>
 <tr class="separator:af01e87a889bb14b2aa93401cb013004a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa03ed517bdce05cd3d2ccd4f3a42110a" id="r_aa03ed517bdce05cd3d2ccd4f3a42110a"><td class="memTemplParams" colspan="2">template&lt;typename Callable &gt; </td></tr>
 <tr class="memitem:aa03ed517bdce05cd3d2ccd4f3a42110a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_has_many_through.html#aa03ed517bdce05cd3d2ccd4f3a42110a">Each</a> (Callable const &amp;callable)</td></tr>
+<tr class="memdesc:aa03ed517bdce05cd3d2ccd4f3a42110a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterates over all records in this relationship.  <br /></td></tr>
 <tr class="separator:aa03ed517bdce05cd3d2ccd4f3a42110a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -162,7 +177,7 @@ std::weak_ordering&#160;</td><td class="memItemRight" valign="bottom"><b>operato
 class HasManyThrough&lt; ReferencedRecordT, ThroughRecordT &gt;</div><p>This API represents a many-to-many relationship between two records through a third record. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="class_data_mapper.html" title="Main API for mapping records to and from the database using high level C++ syntax.">DataMapper</a>, <a class="el" href="struct_field.html" title="Represents a single column in a table.">Field</a>, <a class="el" href="class_has_many.html" title="This HasMany&lt;OtherRecord&gt; represents a simple one-to-many relationship between two records.">HasMany</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00019">19</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00020">20</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a379b3afee3886e4166554b650ce0886b" name="a379b3afee3886e4166554b650ce0886b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a379b3afee3886e4166554b650ce0886b">&#9670;&#160;</a></span>ThroughRecord</h2>
@@ -178,7 +193,9 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00022">22</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>The record type of the "through" side of the relationship. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00024">24</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -196,7 +213,9 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00023">23</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>The record type of the "many" side of the relationship. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00027">27</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -209,12 +228,14 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::ReferencedRecordList =  std::vector&lt;std::shared_ptr&lt;ReferencedRecord&gt; &gt;</td>
+          <td class="memname">using <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::ReferencedRecordList =  std::vector&lt;std::shared_ptr&lt;<a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">ReferencedRecord</a>&gt; &gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00024">24</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>The list of records on the "many" side of the relationship. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00030">30</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -227,12 +248,12 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::value_type =  ReferencedRecord</td>
+          <td class="memname">using <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::value_type =  <a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">ReferencedRecord</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00026">26</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00032">32</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -250,7 +271,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00027">27</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00033">33</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -268,7 +289,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00028">28</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00034">34</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -285,7 +306,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::ReferencedRecordList const  &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::All </td>
+          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;<a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">::ReferencedRecordList</a> const  &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::All </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -298,7 +319,11 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00109">109</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Retrieves the list of loaded records. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00149">149</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_has_many_through_8hpp_source.html#l00113">HasManyThrough&lt; ReferencedRecordT, ThroughRecordT &gt;::Each()</a>.</p>
 
 </div>
 </div>
@@ -314,7 +339,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::ReferencedRecordList &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::All </td>
+          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;<a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">::ReferencedRecordList</a> &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::All </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -327,7 +352,9 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00119">119</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Retrieves the list of records as mutable reference. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00159">159</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -343,9 +370,9 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::ReferencedRecordList &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::Emplace </td>
+          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;<a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">::ReferencedRecordList</a> &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::Emplace </td>
           <td>(</td>
-          <td class="paramtype">ReferencedRecordList &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="class_has_many_through.html#ad933650d8d25c20431da3672f81b7450">ReferencedRecordList</a> &amp;&amp;&#160;</td>
           <td class="paramname"><em>records</em></td><td>)</td>
           <td></td>
         </tr>
@@ -357,7 +384,9 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00129">129</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Emplaces the given list of records into this relationship. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00169">169</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -378,7 +407,9 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00137">137</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Retrieves the number of records in this relationship. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00177">177</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -399,7 +430,9 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00149">149</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Checks if this relationship is empty. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00189">189</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -412,7 +445,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::ReferencedRecord const  &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::At </td>
+          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;<a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">::ReferencedRecord</a> const  &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::At </td>
           <td>(</td>
           <td class="paramtype">std::size_t&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -421,7 +454,18 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00157">157</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Retrieves the record at the given index. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">index</td><td>The index of the record to retrieve. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>This method will on-demand load the records if they are not already loaded. </dd>
+<dd>
+This method will throw if the index is out of bounds. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00197">197</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -434,7 +478,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::ReferencedRecord &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::At </td>
+          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;<a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">::ReferencedRecord</a> &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::At </td>
           <td>(</td>
           <td class="paramtype">std::size_t&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -443,7 +487,18 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00163">163</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Retrieves the record at the given index. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">index</td><td>The index of the record to retrieve. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>This method will on-demand load the records if they are not already loaded. </dd>
+<dd>
+This method will throw if the index is out of bounds. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00203">203</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -456,7 +511,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::ReferencedRecord const  &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::operator[] </td>
+          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;<a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">::ReferencedRecord</a> const  &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::operator[] </td>
           <td>(</td>
           <td class="paramtype">std::size_t&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -465,7 +520,18 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00172">172</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Retrieves the record at the given index. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">index</td><td>The index of the record to retrieve. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>This method will on-demand load the records if they are not already loaded. </dd>
+<dd>
+This method will NOT throw if the index is out of bounds. The behaviour is undefined. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00212">212</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -478,7 +544,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::ReferencedRecord &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::operator[] </td>
+          <td class="memname"><a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;<a class="el" href="class_has_many_through.html#a302f58acb9de3b2feebf5a000f08b72e">::ReferencedRecord</a> &amp; <a class="el" href="class_has_many_through.html">HasManyThrough</a>&lt; ReferencedRecordT, ThroughRecordT &gt;::operator[] </td>
           <td>(</td>
           <td class="paramtype">std::size_t&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -487,7 +553,18 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00178">178</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Retrieves the record at the given index. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">index</td><td>The index of the record to retrieve. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>This method will on-demand load the records if they are not already loaded. </dd>
+<dd>
+This method will NOT throw if the index is out of bounds. The behaviour is undefined. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00218">218</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -516,7 +593,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00186">186</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00226">226</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -545,7 +622,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00193">193</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00233">233</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -574,7 +651,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00200">200</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00240">240</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -603,7 +680,7 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00207">207</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00247">247</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -633,7 +710,11 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00060">60</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Used internally to configure on-demand loading of the records. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00094">94</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_data_mapper_8hpp_source.html#l00884">DataMapper::ConfigureRelationAutoLoading()</a>.</p>
 
 </div>
 </div>
@@ -662,7 +743,9 @@ template&lt;typename ReferencedRecordT , typename ThroughRecordT &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00065">65</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Reloads the records from the database. </p>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00100">100</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
 
 </div>
 </div>
@@ -694,7 +777,18 @@ template&lt;typename Callable &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00073">73</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+<p>Iterates over all records in this relationship. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">callable</td><td>The callable to invoke for each record. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>This method will on-demand load the records if they are not already loaded, but not hold them all in memory. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_has_many_through_8hpp_source.html#l00113">113</a> of file <a class="el" href="_has_many_through_8hpp_source.html">HasManyThrough.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_has_many_through_8hpp_source.html#l00149">HasManyThrough&lt; ReferencedRecordT, ThroughRecordT &gt;::All()</a>.</p>
 
 </div>
 </div>

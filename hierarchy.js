@@ -1,9 +1,11 @@
 var hierarchy =
 [
+    [ "BelongsTo< TheReferencedField >", "class_belongs_to.html", null ],
     [ "DataMapper", "class_data_mapper.html", null ],
     [ "Field< T, IsPrimaryKeyValue >", "struct_field.html", null ],
     [ "HasMany< OtherRecord >", "class_has_many.html", null ],
     [ "HasManyThrough< ReferencedRecordT, ThroughRecordT >", "class_has_many_through.html", null ],
+    [ "HasOneThrough< OtherTable, ThroughTable >", "class_has_one_through.html", null ],
     [ "SqlConnection", "class_sql_connection.html", null ],
     [ "SqlConnectionDataSource", "struct_sql_connection_data_source.html", null ],
     [ "SqlConnectionString", "struct_sql_connection_string.html", null ],

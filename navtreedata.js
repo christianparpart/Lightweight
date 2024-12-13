@@ -30,13 +30,16 @@ var NAVTREE =
       [ "Configure connection to the database", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#configure-connection-to-the-database", null ],
       [ "Sql Query", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#sql-query", null ]
     ] ],
+    [ "Topics", "topics.html", "topics" ],
     [ "Concepts", "concepts.html", "concepts" ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
       [ "Class Members", "functions.html", [
-        [ "All", "functions.html", null ],
-        [ "Functions", "functions_func.html", null ],
+        [ "All", "functions.html", "functions_dup" ],
+        [ "Functions", "functions_func.html", "functions_func" ],
+        [ "Variables", "functions_vars.html", null ],
+        [ "Typedefs", "functions_type.html", null ],
         [ "Enumerations", "functions_enum.html", null ]
       ] ]
     ] ],
@@ -48,7 +51,8 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"_api_8hpp_source.html"
+"_api_8hpp_source.html",
+"class_sql_statement.html#acd12aea32817fef21321a48d3daf7e7a"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
