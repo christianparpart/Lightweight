@@ -268,6 +268,23 @@ TEST_CASE_METHOD(SqlTestFixture, "BelongsTo", "[DataMapper][relations]")
 
     actualEmail1.user.Unload();
     REQUIRE(!actualEmail1.user.IsLoaded());
+
+    if (dm.Connection().ServerType() == SqlServerType::SQLITE)
+    {
+
+        REQUIRE(NormalizeText(dm.CreateTableString<User>(dm.Connection().ServerType()))
+                == NormalizeText(R"(CREATE TABLE "User" (
+                                    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                                    "name" VARCHAR(30) NOT NULL
+                                    );)"));
+        REQUIRE(NormalizeText(dm.CreateTableString<Email>(dm.Connection().ServerType()))
+                == NormalizeText(R"(CREATE TABLE "Email" (
+                                    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                                    "address" VARCHAR(30) NOT NULL,
+                                    "user_id" BIGINT,
+                                    CONSTRAINT FK_user_id FOREIGN KEY ("user_id") REFERENCES "User"("id")
+                                    );)"));
+    }
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "HasMany", "[DataMapper][relations]")
@@ -364,6 +381,7 @@ std::ostream& operator<<(std::ostream& os, AccountHistory const& record)
 TEST_CASE_METHOD(SqlTestFixture, "HasOneThrough", "[DataMapper][relations]")
 {
     auto dm = DataMapper();
+
     dm.CreateTables<Suppliers, Account, AccountHistory>();
 
     auto supplier1 = Suppliers { .name = "Supplier 1" };
@@ -500,6 +518,35 @@ TEST_CASE_METHOD(SqlTestFixture, "HasManyThrough", "[DataMapper][relations]")
     CHECK(patient.physicians.Count() == 2);
     CHECK(patient.physicians.At(0).name.Value() == "Granny");
     CHECK(DataMapper::Inspect(patient.physicians.At(0)) == DataMapper::Inspect(physician2));
+
+    if (dm.Connection().ServerType() == SqlServerType::SQLITE)
+    {
+        REQUIRE(NormalizeText(dm.CreateTableString<Physician>(dm.Connection().ServerType()))
+                == NormalizeText(R"(CREATE TABLE "Physician" (
+                                    "id" GUID NOT NULL,
+                                    "name" VARCHAR(30) NOT NULL,
+                                    PRIMARY KEY ("id")
+                                    );)"));
+
+        REQUIRE(NormalizeText(dm.CreateTableString<Patient>(dm.Connection().ServerType()))
+                == NormalizeText(R"(CREATE TABLE "Patient" (
+                                    "id" GUID NOT NULL,
+                                    "name" VARCHAR(30) NOT NULL,
+                                    "comment" VARCHAR(30) NOT NULL,
+                                    PRIMARY KEY ("id")
+                                    );)"));
+        REQUIRE(NormalizeText(dm.CreateTableString<Appointment>(dm.Connection().ServerType()))
+                == NormalizeText(R"(CREATE TABLE "Appointment" (
+                                    "id" GUID NOT NULL,
+                                    "date" DATETIME NOT NULL,
+                                    "comment" VARCHAR(80) NOT NULL,
+                                    "physician_id" GUID,
+                                    "patient_id" GUID,
+                                    PRIMARY KEY ("id"),
+                                    CONSTRAINT FK_physician_id FOREIGN KEY ("physician_id") REFERENCES "Physician"("id"),
+                                    CONSTRAINT FK_patient_id FOREIGN KEY ("patient_id") REFERENCES "Patient"("id")
+                                    );)"));
+    }
 }
 
 struct TestRecord
@@ -632,6 +679,12 @@ struct AliasedRecord
     constexpr std::weak_ordering operator<=>(AliasedRecord const& other) const = default;
 };
 
+struct BelongsToAliasedRecord
+{
+    Field<uint64_t, PrimaryKey::ServerSideAutoIncrement> id {};
+    BelongsTo<&AliasedRecord::id> record;
+};
+
 std::ostream& operator<<(std::ostream& os, AliasedRecord const& record)
 {
     return os << DataMapper::Inspect(record);
@@ -654,4 +707,20 @@ TEST_CASE_METHOD(SqlTestFixture, "Table with aliased column names", "[DataMapper
     CHECK(queriedRecords2.size() == 1);
     auto const& queriedRecord2 = queriedRecords2.at(0);
     CHECK(queriedRecord2 == record);
+
+    if (dm.Connection().ServerType() == SqlServerType::SQLITE)
+    {
+        REQUIRE(NormalizeText(dm.CreateTableString<AliasedRecord>(dm.Connection().ServerType()))
+                == NormalizeText(R"(CREATE TABLE "TheAliasedRecord" (
+                                    "pk" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                                    "c1" VARCHAR(30) NOT NULL,
+                                    "c2" VARCHAR(30) NOT NULL
+                                    );)"));
+        REQUIRE(NormalizeText(dm.CreateTableString<BelongsToAliasedRecord>(dm.Connection().ServerType()))
+                == NormalizeText(R"(CREATE TABLE "BelongsToAliasedRecord" (
+                                    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                                    "record_id" BIGINT,
+                                    CONSTRAINT FK_record_id FOREIGN KEY ("record_id") REFERENCES "TheAliasedRecord"("pk")
+                                    );)"));
+    }
 }

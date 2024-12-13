@@ -510,6 +510,37 @@ inline std::ostream& operator<<(std::ostream& os, SqlFixedString<N, T, Mode> con
         return os << std::format("SqlFixedString<{}> {{ size: {}, data: '{}' }}", N, value.size(), value.data());
 }
 
+[[nodiscard]] inline std::string NormalizeText(std::string_view const& text)
+{
+    auto result = std::string(text);
+
+    // Remove any newlines and reduce all whitespace to a single space
+    result.erase(
+        std::unique(result.begin(), result.end(), [](char a, char b) { return std::isspace(a) && std::isspace(b); }),
+        result.end());
+
+    // trim lading and trailing whitespace
+    while (!result.empty() && std::isspace(result.front()))
+        result.erase(result.begin());
+
+    while (!result.empty() && std::isspace(result.back()))
+        result.pop_back();
+
+    return result;
+}
+
+[[nodiscard]] inline std::string NormalizeText(std::vector<std::string> const& texts)
+{
+    auto result = std::string {};
+    for (auto const& text: texts)
+    {
+        if (!result.empty())
+            result += '\n';
+        result += NormalizeText(text);
+    }
+    return result;
+}
+
 // }}}
 
 inline void CreateEmployeesTable(SqlStatement& stmt, std::source_location location = std::source_location::current())
@@ -547,3 +578,4 @@ inline void FillEmployeesTable(SqlStatement& stmt)
     stmt.Execute("Bob", "Johnson", 60'000);
     stmt.Execute("Charlie", "Brown", 70'000);
 }
+
