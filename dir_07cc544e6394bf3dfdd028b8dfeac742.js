@@ -10,7 +10,6 @@ var dir_07cc544e6394bf3dfdd028b8dfeac742 =
     [ "SqlDataBinder.hpp", "_sql_data_binder_8hpp_source.html", null ],
     [ "SqlError.hpp", "_sql_error_8hpp_source.html", null ],
     [ "SqlLogger.hpp", "_sql_logger_8hpp_source.html", null ],
-    [ "SqlMigration.hpp", "_sql_migration_8hpp_source.html", null ],
     [ "SqlQuery.hpp", "_sql_query_8hpp_source.html", null ],
     [ "SqlQueryFormatter.hpp", "_sql_query_formatter_8hpp_source.html", null ],
     [ "SqlSchema.hpp", "_sql_schema_8hpp_source.html", null ],

@@ -342,15 +342,16 @@ $(document).ready(function(){initNavTree('_migration_plan_8hpp_source.html','');
 <div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>&gt;;</div>
 <div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span><span class="comment">// clang-format on</span></div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span> </div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>std::vector&lt;std::string&gt; ToSql(SqlQueryFormatter <span class="keyword">const</span>&amp; formatter, SqlMigrationPlanElement <span class="keyword">const</span>&amp; element);</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span> </div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span><span class="keyword">struct </span>[[nodiscard]] SqlMigrationPlan</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>{</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>    SqlQueryFormatter <span class="keyword">const</span>&amp; formatter;</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>    std::vector&lt;SqlMigrationPlanElement&gt; steps {};</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span><span class="keyword">struct </span>[[nodiscard]] SqlMigrationPlan</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>{</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    SqlQueryFormatter <span class="keyword">const</span>&amp; formatter;</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>    std::vector&lt;SqlMigrationPlanElement&gt; steps {};</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span> </div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>    [[nodiscard]] LIGHTWEIGHT_API std::string ToSql() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span> </div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>    [[nodiscard]] LIGHTWEIGHT_API std::vector&lt;std::string&gt; ToSql() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>};</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>    [[nodiscard]] LIGHTWEIGHT_API <span class="keyword">static</span> std::string ToSql(SqlQueryFormatter <span class="keyword">const</span>&amp; formatter,</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                                                           SqlMigrationPlanElement <span class="keyword">const</span>&amp; element);</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>};</div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
