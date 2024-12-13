@@ -12,19 +12,23 @@
 #include <compare>
 #include <type_traits>
 
-// Represents a one-to-one relationship.
-//
-// The `TheReferencedField` parameter is the field in the other record that references the current record.
+/// @brief Represents a one-to-one relationship.
+///
+/// The `TheReferencedField` parameter is the field in the other record that references the current record,
+/// in the form of `&OtherRecord::Field`.
+///
+/// @ingroup DataMapper
 template <auto TheReferencedField>
 class BelongsTo
 {
   public:
+    /// The field in the other record that references the current record.
     static constexpr auto ReferencedField = TheReferencedField;
 
-    // Represents the record type of the other field.
+    /// Represents the record type of the other field.
     using ReferencedRecord = MemberClassType<decltype(TheReferencedField)>;
 
-    // Represents the column type of the foreign key, matching the primary key of the other record.
+    /// Represents the column type of the foreign key, matching the primary key of the other record.
     using ValueType =
         typename std::remove_cvref_t<decltype(std::declval<ReferencedRecord>().*ReferencedField)>::ValueType;
 
@@ -70,27 +74,53 @@ class BelongsTo
     }
 
     // clang-format off
-    LIGHTWEIGHT_FORCE_INLINE constexpr void SetModified(bool value) noexcept { _modified = value; }
-    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr bool IsModified() const noexcept { return _modified; }
-    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ValueType const& Value() const noexcept { return _referencedFieldValue; }
-    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ValueType& MutableValue() noexcept { return _referencedFieldValue; }
-    LIGHTWEIGHT_FORCE_INLINE void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt) { stmt.BindOutputColumn(outputIndex, &_referencedFieldValue); }
 
-    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord& EmplaceRecord() { _loaded = true; return _record.emplace(); }
+    /// Marks the field as modified or unmodified.
+    LIGHTWEIGHT_FORCE_INLINE constexpr void SetModified(bool value) noexcept { _modified = value; }
+
+    /// Checks if the field is modified.
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr bool IsModified() const noexcept { return _modified; }
+
+    /// Retrieves the reference to the value of the field.
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ValueType const& Value() const noexcept { return _referencedFieldValue; }
+
+    /// Retrieves the mutable reference to the value of the field.
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ValueType& MutableValue() noexcept { return _referencedFieldValue; }
+
+    /// Retrieves a record from the relationship.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord& Record() noexcept { RequireLoaded(); return _record.value(); }
+
+    /// Retrieves an immutable reference to the record from the relationship.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord const& Record() const noexcept { RequireLoaded(); return _record.value(); }
 
+    /// Checks if the record is loaded into memory.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr bool IsLoaded() const noexcept { return _loaded; }
+
+    /// Unloads the record from memory.
     LIGHTWEIGHT_FORCE_INLINE void Unload() noexcept { _record = std::nullopt; _loaded = false; }
 
+    /// Retrieves the record from the relationship.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord& operator*() noexcept { RequireLoaded(); return _record.value(); }
+
+    /// Retrieves the record from the relationship.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord const& operator*() const noexcept { RequireLoaded(); return _record.value(); }
 
+    /// Retrieves the record from the relationship.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord* operator->() noexcept { RequireLoaded(); return &_record.value(); }
+
+    /// Retrieves the record from the relationship.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord const* operator->() const noexcept { RequireLoaded(); return &_record.value(); }
 
+    /// Checks if the field value is NULL.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr bool operator!() const noexcept { return !_referencedFieldValue; }
+
+    /// Checks if the field value is not NULL.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr explicit operator bool() const noexcept { return static_cast<bool>(_referencedFieldValue); }
+
+    /// Emplaces a record into the relationship. This will mark the relationship as loaded.
+    [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr ReferencedRecord& EmplaceRecord() { _loaded = true; return _record.emplace(); }
+
+    LIGHTWEIGHT_FORCE_INLINE void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt) { stmt.BindOutputColumn(outputIndex, &_referencedFieldValue); }
     // clang-format on
 
     template <auto OtherReferencedField>
@@ -134,6 +164,7 @@ class BelongsTo
         std::function<void()> loadReference {};
     };
 
+    /// Used internally to configure on-demand loading of the record.
     void SetAutoLoader(Loader loader) noexcept
     {
         _loader = std::move(loader);

@@ -13,11 +13,12 @@ class SqlConnection;
 
 struct SqlVariant;
 
-// Represents a logger for SQL operations.
+/// Represents a logger for SQL operations.
 class LIGHTWEIGHT_API SqlLogger
 {
   public:
-    enum class SupportBindLogging
+    /// Mandates the support for logging bind operations.
+    enum class SupportBindLogging : uint8_t
     {
         No,
         Yes
@@ -30,31 +31,43 @@ class LIGHTWEIGHT_API SqlLogger
     SqlLogger& operator=(SqlLogger&& /*other*/) = default;
     virtual ~SqlLogger() = default;
 
+    /// Constructs a new logger.
+    ///
+    /// @param supportBindLogging Indicates if the logger should support bind logging.
     explicit SqlLogger(SupportBindLogging supportBindLogging):
         _supportsBindLogging { supportBindLogging == SupportBindLogging::Yes }
     {
     }
 
-    // Logs a warning message.
+    /// Invoked on a warning.
     virtual void OnWarning(std::string_view const& message) = 0;
 
-    // An ODBC SQL error occurred.
+    /// Invoked on ODBC SQL error occurred.
     virtual void OnError(SqlError errorCode, std::source_location sourceLocation = std::source_location::current()) = 0;
+
+    /// Invoked an ODBC SQL error occurred, with extended error information.
     virtual void OnError(SqlErrorInfo const& errorInfo,
                          std::source_location sourceLocation = std::source_location::current()) = 0;
 
-    // connection level events
-
+    /// Invoked when a connection is opened.
     virtual void OnConnectionOpened(SqlConnection const& connection) = 0;
+
+    /// Invoked when a connection is closed.
     virtual void OnConnectionClosed(SqlConnection const& connection) = 0;
+
+    /// Invoked when a connection is idle.
     virtual void OnConnectionIdle(SqlConnection const& connection) = 0;
+
+    /// Invoked when a connection is reused.
     virtual void OnConnectionReuse(SqlConnection const& connection) = 0;
 
-    // statement level events
-
+    /// Invoked when a direct query is executed.
     virtual void OnExecuteDirect(std::string_view const& query) = 0;
+
+    /// Invoked when a query is prepared.
     virtual void OnPrepare(std::string_view const& query) = 0;
 
+    /// Invoked when an input parameter is bound.
     template <typename T>
     void OnBindInputParameter(std::string_view const& name, T&& value)
     {
@@ -68,28 +81,38 @@ class LIGHTWEIGHT_API SqlLogger
         }
     }
 
+    /// Invoked when an input parameter is bound, by name.
     virtual void OnBind(std::string_view const& name, std::string value) = 0;
+
+    /// Invoked when a prepared query is executed.
     virtual void OnExecute(std::string_view const& query) = 0;
+
+    /// Invoked when a batch of queries is executed
     virtual void OnExecuteBatch() = 0;
+
+    /// Invoked when a row is fetched.
     virtual void OnFetchRow() = 0;
+
+    /// Invoked when fetching is done.
     virtual void OnFetchEnd() = 0;
 
     class Null;
 
-    // Logs nothing.
+    /// Retrieves a null logger that does nothing.
     static Null& NullLogger() noexcept;
 
-    // Logs the most important events to standard output in a human-readable format.
+    /// Retrieves a logger that logs to standard output.
     static SqlLogger& StandardLogger();
 
-    // Logs every little event to standard output in a human-readable compact format.
+    /// Retrieves a logger that logs to the trace logger.
     static SqlLogger& TraceLogger();
 
-    // Retrieves the current logger.
+    /// Retrieves the currently configured logger.
     static SqlLogger& GetLogger();
 
-    // Sets the current logger.
-    // The ownership of the logger is not transferred and remains with the caller.
+    /// Sets the current logger.
+    ///
+    /// The ownership of the logger is not transferred and remains with the caller.
     static void SetLogger(SqlLogger& logger);
 
   private:

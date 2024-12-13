@@ -5,11 +5,11 @@
 #include "../SqlDataBinder.hpp"
 #include "../SqlStatement.hpp"
 #include "BelongsTo.hpp"
-#include "Detail.hpp"
 #include "Field.hpp"
 #include "HasMany.hpp"
 #include "HasManyThrough.hpp"
 #include "HasOneThrough.hpp"
+#include "Record.hpp"
 #include "RecordId.hpp"
 
 #include <reflection-cpp/reflection.hpp>
@@ -17,6 +17,11 @@
 #include <cassert>
 #include <concepts>
 #include <type_traits>
+
+/// @defgroup DataMapper Data Mapper
+///
+/// The data mapper is a high level API for mapping records to and from the database
+/// using high level C++ syntax.
 
 // Requires that T satisfies to be a field with storage.
 template <typename T>
@@ -56,18 +61,27 @@ auto ToSharedPtrList(Container<Object, Allocator<Object>> container)
 
 } // namespace detail
 
+/// @brief Holds the SQL tabl ename for the given record type.
+///
+/// @ingroup DataMapper
 template <typename Record>
 constexpr std::string_view RecordTableName = detail::RecordTableName<Record>::Value;
 
+/// @brief Main API for mapping records to and from the database using high level C++ syntax.
+///
+/// @see Field, BelongsTo, HasMany, HasManyThrough, HasOneThrough
+/// @ingroup DataMapper
 class DataMapper
 {
   public:
+    /// Constructs a new data mapper, using the default connection.
     DataMapper():
         _connection {},
         _stmt { _connection }
     {
     }
 
+    /// Constructs a new data mapper, using the given connection.
     explicit DataMapper(SqlConnection&& connection):
         _connection { std::move(connection) },
         _stmt { _connection }
@@ -80,109 +94,137 @@ class DataMapper
     DataMapper& operator=(DataMapper&&) noexcept = default;
     ~DataMapper() = default;
 
+    /// Returns the connection reference used by this data mapper.
     [[nodiscard]] SqlConnection const& Connection() const noexcept
     {
         return _connection;
     }
 
+    /// Returns the mutable connection reference used by this data mapper.
     [[nodiscard]] SqlConnection& Connection() noexcept
     {
         return _connection;
     }
 
+    /// Constructs a human readable string representation of the given record.
     template <typename Record>
     static std::string Inspect(Record const& record);
 
+    /// Constructs a string list of SQL queries to create the table for the given record type.
     template <typename Record>
     std::vector<std::string> CreateTableString(SqlServerType serverType);
 
+    /// Constructs a string list of SQL queries to create the tables for the given record types.
     template <typename FirstRecord, typename... MoreRecords>
     std::vector<std::string> CreateTablesString(SqlServerType serverType);
 
-    // Creates the table for the given record type.
+    /// Creates the table for the given record type.
     template <typename Record>
     void CreateTable();
 
+    /// Creates the tables for the given record types.
     template <typename FirstRecord, typename... MoreRecords>
     void CreateTables();
 
-    // Creates a new record in the database.
-    //
-    // The record is inserted into the database and the primary key is set on this record.
-    //
-    // @return The primary key of the newly created record.
+    /// @brief Creates a new record in the database.
+    ///
+    /// The record is inserted into the database and the primary key is set on this record.
+    ///
+    /// @return The primary key of the newly created record.
     template <typename Record>
     RecordId Create(Record& record);
 
-    // Creates a new record in the database.
-    //
-    // @note This is a variation of the Create() method and does not update the record's primary key.
-    //
-    // @return The primary key of the newly created record.
+    /// @brief Creates a new record in the database.
+    ///
+    /// @note This is a variation of the Create() method and does not update the record's primary key.
+    ///
+    /// @return The primary key of the newly created record.
     template <typename Record>
     RecordId CreateExplicit(Record const& record);
 
     template <typename Record, typename... Args>
     std::optional<Record> QuerySingle(SqlSelectQueryBuilder selectQuery, Args&&... args);
 
-    // Queries a single record (based on primary key) from the database.
-    //
-    // The primary key(s) are used to identify the record to load.
-    // If the record is not found, std::nullopt is returned.
+    /// @brief Queries a single record (based on primary key) from the database.
+    ///
+    /// The primary key(s) are used to identify the record to load.
+    /// If the record is not found, std::nullopt is returned.
     template <typename Record, typename... PrimaryKeyTypes>
     std::optional<Record> QuerySingle(PrimaryKeyTypes&&... primaryKeys);
 
-    // Queries multiple records from the database, based on the given query.
+    /// Queries multiple records from the database, based on the given query.
     template <typename Record, typename... InputParameters>
     std::vector<Record> Query(SqlSelectQueryBuilder::ComposedQuery const& selectQuery,
                               InputParameters&&... inputParameters);
 
-    // Queries multiple records from the database, based on the given query.
+    /// Queries multiple records from the database, based on the given query.
     template <typename Record, typename... InputParameters>
     std::vector<Record> Query(std::string_view sqlQueryString, InputParameters&&... inputParameters);
 
+    /// Checks if the record has any modified fields.
     template <typename Record>
     bool IsModified(Record const& record) const noexcept;
 
+    /// Updates the record in the database.
     template <typename Record>
     void Update(Record& record);
 
+    /// Deletes the record from the database.
     template <typename Record>
     std::size_t Delete(Record const& record);
 
+    /// Counts the total number of records in the database for the given record type.
     template <typename Record>
     std::size_t Count();
 
+    /// Loads all records from the database for the given record type.
     template <typename Record>
     std::vector<Record> All();
 
+    /// @brief Finds a record by its primary key.
+    ///
+    /// @param id The primary key of the record to find.
+    /// @return The record if found, otherwise std::nullopt.
     template <typename Record>
     std::optional<Record> Find(RecordId id);
 
+    /// @brief Finds a record by the given column name and value.
+    ///
+    /// @param columnName The name of the column to search.
+    /// @param value The value to search for.
+    /// @return The record if found, otherwise std::nullopt.
     template <typename Record, typename ColumnName, typename T>
     std::optional<Record> FindBy(ColumnName const& columnName, T const& value);
 
+    /// Constructs an SQL query builder for the given record type.
     template <typename Record>
     auto Query() -> SqlQueryBuilder
     {
         return _connection.Query(RecordTableName<Record>);
     }
 
+    /// Constructs an SQL query builder for the given table name.
     SqlQueryBuilder FromTable(std::string_view tableName)
     {
         return _connection.Query(tableName);
     }
 
+    /// Clears the modified state of the record.
     template <typename Record>
     void ClearModifiedState(Record& record) noexcept;
 
-    // Loads the direct relations to this record.
+    /// Loads all direct relations to this record.
     template <typename Record>
     void LoadRelations(Record& record);
 
+    /// Returns the first primary key field of the record.
     template <typename Record>
     decltype(auto) GetPrimaryKeyField(Record const& record) const;
 
+    /// Configures the auto loading of relations for the given record.
+    ///
+    /// This means, that no explicit loading of relations is required.
+    /// The relations are automatically loaded when accessed.
     template <typename Record>
     void ConfigureRelationAutoLoading(Record& record);
 
@@ -234,7 +276,9 @@ std::string DataMapper::Inspect(Record const& record)
     return str;
 }
 
-// Returns the SQL field name of the given field index in the record.
+/// @brief Returns the SQL field name of the given field index in the record.
+///
+/// @ingroup DataMapper
 template <auto I, typename Record>
 constexpr std::string_view FieldNameOf()
 {
@@ -282,7 +326,9 @@ template <typename FirstRecord, typename... MoreRecords>
 std::vector<std::string> DataMapper::CreateTablesString(SqlServerType serverType)
 {
     std::vector<std::string> output;
-    auto const append = [&output](auto const& sql) { output.insert(output.end(), sql.begin(), sql.end()); };
+    auto const append = [&output](auto const& sql) {
+        output.insert(output.end(), sql.begin(), sql.end());
+    };
     append(CreateTableString<FirstRecord>(serverType));
     (append(CreateTableString<MoreRecords>(serverType)), ...);
     return output;
@@ -826,17 +872,16 @@ void DataMapper::BindOutputColumns(Record& record, SqlStatement* stmt)
     assert(stmt != nullptr);
     static_assert(!std::is_const_v<Record>);
 
-    Reflection::EnumerateMembers(record,
-                                 [stmt, i = SQLSMALLINT { 1 }]<size_t I, typename Field>(Field& field) mutable {
-                                     if constexpr (requires { field.BindOutputColumn(i, *stmt); })
-                                     {
-                                         field.BindOutputColumn(i++, *stmt);
-                                     }
-                                     else if constexpr (SqlOutputColumnBinder<Field>)
-                                     {
-                                         stmt->BindOutputColumn(i++, &field);
-                                     }
-                                 });
+    Reflection::EnumerateMembers(record, [stmt, i = SQLSMALLINT { 1 }]<size_t I, typename Field>(Field& field) mutable {
+        if constexpr (requires { field.BindOutputColumn(i, *stmt); })
+        {
+            field.BindOutputColumn(i++, *stmt);
+        }
+        else if constexpr (SqlOutputColumnBinder<Field>)
+        {
+            stmt->BindOutputColumn(i++, &field);
+        }
+    });
 }
 
 template <typename Record>

@@ -6,11 +6,6 @@
 
 #include <reflection-cpp/reflection.hpp>
 
-struct SqlColumnNameView
-{
-    std::string_view name;
-};
-
 enum class FieldValueRequirement : uint8_t
 {
     NULLABLE,
@@ -48,13 +43,16 @@ concept FieldElementType = SqlInputParameterBinder<T> && SqlOutputColumnBinder<T
 
 } // namespace detail
 
-// Represents a single column in a table.
-//
-// The column name, index, and type are known at compile time.
-// If either name or index are not known at compile time, leave them at their default values,
-// but at least one of them msut be known.
-//
-// It is imperative that this data structure is an aggregate type, such that it works with C++20 reflection.
+/// @brief Represents a single column in a table.
+///
+/// The column name, index, and type are known at compile time.
+/// If either name or index are not known at compile time, leave them at their default values,
+/// but at least one of them msut be known.
+///
+/// It is imperative that this data structure is an aggregate type, such that it works with C++20 reflection.
+///
+/// @see DataMapper
+/// @ingroup DataMapper
 template <detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKey::No>
 struct Field
 {
@@ -90,15 +88,24 @@ struct Field
     bool operator==(T const& value) const noexcept;
     bool operator!=(T const& value) const noexcept;
 
-    // Returns a string representation of the value, suitable for use in debugging and logging.
+    /// Returns a string representation of the value, suitable for use in debugging and logging.
     [[nodiscard]] std::string InspectValue() const;
 
-    void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt);
-
+    /// Sets the modified state of the field.
     constexpr void SetModified(bool value) noexcept;
+
+    /// Checks if the field has been modified.
     [[nodiscard]] constexpr bool IsModified() const noexcept;
+
+    /// Returns the value of the field.
     [[nodiscard]] constexpr T const& Value() const noexcept;
+
+    /// Returns a mutable reference to the value of the field.
+    ///
+    /// @note If the field value is changed through this method, it will not be automatically marked as modified.
     [[nodiscard]] constexpr T& MutableValue() noexcept;
+
+    void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt);
 
   private:
     ValueType _value {};

@@ -19,48 +19,45 @@ struct [[nodiscard]] SqlLastInsertIdQuery
     }
 };
 
-/////////////////////////////////////////////////
 /// API Entry point for building SQL queries.
-/////////////////////////////////////////////////
 class [[nodiscard]] SqlQueryBuilder final
 {
   public:
-    // Constructs a new query builder for the given table.
+    /// Constructs a new query builder for the given table.
     explicit SqlQueryBuilder(SqlQueryFormatter const& formatter,
                              std::string&& table = {},
                              std::string&& alias = {}) noexcept;
 
-    // Constructs a new query builder for the given table.
+    /// Constructs a new query builder for the given table.
     LIGHTWEIGHT_API SqlQueryBuilder& FromTable(std::string table);
 
-    // Constructs a new query builder for the given table with an alias.
+    /// Constructs a new query builder for the given table with an alias.
     LIGHTWEIGHT_API SqlQueryBuilder& FromTableAs(std::string table, std::string alias);
 
-    /////////////////////////////////////////////////
     ///  Initiates INSERT query building
     ///
     ///  @param boundInputs Optional vector to store bound inputs.
     ///                     If provided, the inputs will be appended to this vector and can be used
     ///                    to bind the values to the query via SqlStatement::ExecuteWithVariants(...)
-    /////////////////////////////////////////////////
     LIGHTWEIGHT_API SqlInsertQueryBuilder Insert(std::vector<SqlVariant>* boundInputs = nullptr) noexcept;
 
-    // Constructs a query to retrieve the last insert ID for the given table.
+    /// Constructs a query to retrieve the last insert ID for the given table.
     LIGHTWEIGHT_API SqlLastInsertIdQuery LastInsertId();
 
-    // Initiates SELECT query building
+    /// Initiates SELECT query building.
     LIGHTWEIGHT_API SqlSelectQueryBuilder Select() noexcept;
 
-    // Initiates UPDATE query building
-    //
-    // @param boundInputs Optional vector to store bound inputs.
-    //                    If provided, the inputs will be appended to this vector and can be used
-    //                    to bind the values to the query via SqlStatement::ExecuteWithVariants(...)
+    /// Initiates UPDATE query building.
+    ///
+    /// @param boundInputs Optional vector to store bound inputs.
+    ///                    If provided, the inputs will be appended to this vector and can be used
+    ///                    to bind the values to the query via SqlStatement::ExecuteWithVariants(...)
     LIGHTWEIGHT_API SqlUpdateQueryBuilder Update(std::vector<SqlVariant>* boundInputs = nullptr) noexcept;
 
-    // Initiates DELETE query building
+    /// Initiates DELETE query building.
     LIGHTWEIGHT_API SqlDeleteQueryBuilder Delete() noexcept;
 
+    /// Initiates query for building database migrations.
     LIGHTWEIGHT_API SqlMigrationQueryBuilder Migration();
 
   private:

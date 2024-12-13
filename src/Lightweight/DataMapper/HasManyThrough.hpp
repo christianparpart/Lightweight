@@ -4,6 +4,7 @@
 
 #include "../Utils.hpp"
 #include "Error.hpp"
+#include "Record.hpp"
 
 #include <reflection-cpp/reflection.hpp>
 
@@ -12,34 +13,68 @@
 #include <memory>
 #include <vector>
 
-// This HasManyThrough<ReferencedRecord, ThroughRecord> represents a many-to-many relationship between two records
-// through a third record.
+/// @brief This API represents a many-to-many relationship between two records through a third record.
+///
+/// @see DataMapper, Field, HasMany
+/// @ingroup DataMapper
 template <typename ReferencedRecordT, typename ThroughRecordT>
 class HasManyThrough
 {
   public:
+    /// The record type of the "through" side of the relationship.
     using ThroughRecord = ThroughRecordT;
+
+    /// The record type of the "many" side of the relationship.
     using ReferencedRecord = ReferencedRecordT;
+
+    /// The list of records on the "many" side of the relationship.
     using ReferencedRecordList = std::vector<std::shared_ptr<ReferencedRecord>>;
 
     using value_type = ReferencedRecord;
     using iterator = typename ReferencedRecordList::iterator;
     using const_iterator = typename ReferencedRecordList::const_iterator;
 
-    // Retrieves the list of loaded records.
+    /// Retrieves the list of loaded records.
     [[nodiscard]] ReferencedRecordList const& All() const noexcept;
 
-    // Retrieves the list of records as mutable reference.
+    /// Retrieves the list of records as mutable reference.
     [[nodiscard]] ReferencedRecordList& All() noexcept;
 
-    // Emplaces the given list of records.
+    /// Emplaces the given list of records into this relationship.
     ReferencedRecordList& Emplace(ReferencedRecordList&& records) noexcept;
 
+    /// Retrieves the number of records in this relationship.
     [[nodiscard]] std::size_t Count() const;
+
+    /// Checks if this relationship is empty.
     [[nodiscard]] std::size_t IsEmpty() const;
+
+    /// @brief Retrieves the record at the given index.
+    ///
+    /// @param index The index of the record to retrieve.
+    /// @note This method will on-demand load the records if they are not already loaded.
+    /// @note This method will throw if the index is out of bounds.
     [[nodiscard]] ReferencedRecord const& At(std::size_t index) const;
+
+    /// @brief Retrieves the record at the given index.
+    ///
+    /// @param index The index of the record to retrieve.
+    /// @note This method will on-demand load the records if they are not already loaded.
+    /// @note This method will throw if the index is out of bounds.
     [[nodiscard]] ReferencedRecord& At(std::size_t index);
+
+    /// @brief Retrieves the record at the given index.
+    ///
+    /// @param index The index of the record to retrieve.
+    /// @note This method will on-demand load the records if they are not already loaded.
+    /// @note This method will NOT throw if the index is out of bounds. The behaviour is undefined.
     [[nodiscard]] ReferencedRecord const& operator[](std::size_t index) const;
+
+    /// @brief Retrieves the record at the given index.
+    ///
+    /// @param index The index of the record to retrieve.
+    /// @note This method will on-demand load the records if they are not already loaded.
+    /// @note This method will NOT throw if the index is out of bounds. The behaviour is undefined.
     [[nodiscard]] ReferencedRecord& operator[](std::size_t index);
 
     iterator begin() noexcept;
@@ -56,11 +91,13 @@ class HasManyThrough
         std::function<void(std::function<void(ReferencedRecord const&)>)> each;
     };
 
+    /// Used internally to configure on-demand loading of the records.
     void SetAutoLoader(Loader loader) noexcept
     {
         _loader = std::move(loader);
     }
 
+    /// Reloads the records from the database.
     void Reload()
     {
         _count = std::nullopt;
@@ -68,6 +105,11 @@ class HasManyThrough
         RequireLoaded();
     }
 
+    /// @brief Iterates over all records in this relationship.
+    ///
+    /// @param callable The callable to invoke for each record.
+    /// @note This method will on-demand load the records if they are not already loaded,
+    ///       but not hold them all in memory.
     template <typename Callable>
     void Each(Callable const& callable)
     {

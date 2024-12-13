@@ -7,6 +7,12 @@
 
 #include <reflection-cpp/reflection.hpp>
 
+/// @ingroup QueryBuilder
+/// @{
+
+/// @brief Query builder for building CREATE TABLE queries.
+///
+/// @see SqlQueryBuilder
 class [[nodiscard]] SqlCreateTableQueryBuilder final
 {
   public:
@@ -51,6 +57,9 @@ class [[nodiscard]] SqlCreateTableQueryBuilder final
     SqlCreateTablePlan& _plan;
 };
 
+/// @brief Query builder for building ALTER TABLE queries.
+///
+/// @see SqlQueryBuilder
 class [[nodiscard]] SqlAlterTableQueryBuilder final
 {
   public:
@@ -93,6 +102,7 @@ class [[nodiscard]] SqlAlterTableQueryBuilder final
     SqlAlterTablePlan& _plan;
 };
 
+/// @brief Query builder for building SQL migration queries.
 class [[nodiscard]] SqlMigrationQueryBuilder final
 {
   public:
@@ -121,3 +131,5 @@ class [[nodiscard]] SqlMigrationQueryBuilder final
     SqlQueryFormatter const& _formatter;
     SqlMigrationPlan _migrationPlan;
 };
+
+/// @}

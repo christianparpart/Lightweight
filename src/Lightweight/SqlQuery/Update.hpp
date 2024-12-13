@@ -8,6 +8,9 @@
 #include <string_view>
 #include <vector>
 
+/// @brief Query builder for building UPDATE ... queries.
+///
+/// @ingroup QueryBuilder
 class [[nodiscard]] SqlUpdateQueryBuilder final: public detail::SqlWhereClauseBuilder<SqlUpdateQueryBuilder>
 {
   public:
