@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2_lightweight_2_lightweight_2_r_e_a_d_m_e"></a> <b>Lightweight</b> is a thin and modern C++ ODBC wrapper for <b>easy</b> and <b>fast</b> raw database access.</p>
+<p>Documentation is available at <a href="https://lastrada-software.github.io/Lightweight/">https://lastrada-software.github.io/Lightweight/</a>.</p>
 <h1><a class="anchor" id="goals"></a>
 Goals</h1>
 <ul>
@@ -103,20 +104,77 @@ Goals</h1>
 <li><b>Extensible</b> - support for custom data types for writing to and reading from columns</li>
 <li><b>Resource aware</b> - efficient resource management and exception safety</li>
 </ul>
-<h1><a class="anchor" id="non-goals"></a>
-Non-Goals</h1>
-<ul>
-<li>Feature creeping (ODBC is a huge API, we are not going to wrap everything)</li>
-<li>No intend to support non-ODBC connectors directly, in order to keep the codebase simple and focused</li>
-</ul>
-<h1><a class="anchor" id="features"></a>
-Features</h1>
-<ul>
-<li>Customizable logging infrastructure with support for trace and performance timing logging</li>
-<li>Flexible SQL dialect-agnostic query builder API</li>
-<li>Support for custom data types</li>
-</ul>
-<h1><a class="anchor" id="supported-platforms"></a>
+<h1><a class="anchor" id="example-crud-style-high-level-data-mapping"></a>
+Example: CRUD-style High level Data Mapping</h1>
+<div class="fragment"><div class="line"><span class="comment">// Define a person structure, mapping to a table</span></div>
+<div class="line"><span class="comment">// The field members are mapped to the columns in the table,</span></div>
+<div class="line"><span class="comment">// and the Field&lt;&gt; template parameter specifies the type of the column.</span></div>
+<div class="line"><span class="comment">// Field&lt;&gt; is also used to track what fields are modified and need to be updated.</span></div>
+<div class="line"><span class="keyword">struct </span>Person</div>
+<div class="line">{</div>
+<div class="line">    <a class="code hl_struct" href="struct_field.html">Field&lt;uint64_t, PrimaryKey::AutoIncrement&gt;</a> id;</div>
+<div class="line">    <a class="code hl_struct" href="struct_field.html">Field&lt;SqlAnsiString&lt;25&gt;</a>&gt; name;</div>
+<div class="line">    <a class="code hl_struct" href="struct_field.html">Field&lt;bool&gt;</a> is_active { <span class="keyword">true</span> };</div>
+<div class="line">    <a class="code hl_struct" href="struct_field.html">Field&lt;std::optional&lt;int&gt;</a>&gt; age;</div>
+<div class="line">};</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">void</span> CRUD(<a class="code hl_class" href="class_data_mapper.html">DataMapper</a>&amp; dm)</div>
+<div class="line">{</div>
+<div class="line">    <span class="comment">// Creates the table if it does not exist</span></div>
+<div class="line">    dm.<a class="code hl_function" href="class_data_mapper.html#a6a2df09ef7735f0d0e07886ef1b27457">CreateTable</a>&lt;Person&gt;();</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Create a new person</span></div>
+<div class="line">    <span class="keyword">auto</span> person = Person {};</div>
+<div class="line">    person.name = <span class="stringliteral">&quot;John Doe&quot;</span>;</div>
+<div class="line">    person.is_active = <span class="keyword">true</span>;</div>
+<div class="line">    dm.<a class="code hl_function" href="class_data_mapper.html#a12e76849c4b2f5b2f558c546f9c4b62f">Create</a>(person);</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Update the person</span></div>
+<div class="line">    name.age = 25;</div>
+<div class="line">    dm.<a class="code hl_function" href="class_data_mapper.html#acb83d80931e5cd6259290bc795e362f7">Update</a>(person);</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Query the person</span></div>
+<div class="line">    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> po = dm.QuerySingle&lt;Person&gt;(person.id); po)</div>
+<div class="line">        std::println(<span class="stringliteral">&quot;Person: {} ({})&quot;</span>, po-&gt;name, <a class="code hl_function" href="class_data_mapper.html#a4b974aa78414c5dec9a60c13a35516b0">DataMapper::Inspect</a>(*po));</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Query all persons</span></div>
+<div class="line">    <span class="keyword">auto</span> <span class="keyword">const</span> persons = dm.<a class="code hl_function" href="class_data_mapper.html#a06b74e30cf38c79b44615e2fc31f7563">Query</a>&lt;Person&gt;(); </div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Delete the person</span></div>
+<div class="line">    dm.<a class="code hl_function" href="class_data_mapper.html#acfcb03b2a7b0534cfd27287b93e7b907">Delete</a>(person);</div>
+<div class="line">}</div>
+<div class="ttc" id="aclass_data_mapper_html"><div class="ttname"><a href="class_data_mapper.html">DataMapper</a></div><div class="ttdoc">Main API for mapping records to and from the database using high level C++ syntax.</div><div class="ttdef"><b>Definition</b> <a href="_data_mapper_8hpp_source.html#l00074">DataMapper.hpp:75</a></div></div>
+<div class="ttc" id="aclass_data_mapper_html_a06b74e30cf38c79b44615e2fc31f7563"><div class="ttname"><a href="class_data_mapper.html#a06b74e30cf38c79b44615e2fc31f7563">DataMapper::Query</a></div><div class="ttdeci">std::vector&lt; Record &gt; Query(SqlSelectQueryBuilder::ComposedQuery const &amp;selectQuery, InputParameters &amp;&amp;... inputParameters)</div><div class="ttdoc">Queries multiple records from the database, based on the given query.</div></div>
+<div class="ttc" id="aclass_data_mapper_html_a12e76849c4b2f5b2f558c546f9c4b62f"><div class="ttname"><a href="class_data_mapper.html#a12e76849c4b2f5b2f558c546f9c4b62f">DataMapper::Create</a></div><div class="ttdeci">RecordId Create(Record &amp;record)</div><div class="ttdoc">Creates a new record in the database.</div><div class="ttdef"><b>Definition</b> <a href="_data_mapper_8hpp_source.html#l00399">DataMapper.hpp:399</a></div></div>
+<div class="ttc" id="aclass_data_mapper_html_a4b974aa78414c5dec9a60c13a35516b0"><div class="ttname"><a href="class_data_mapper.html#a4b974aa78414c5dec9a60c13a35516b0">DataMapper::Inspect</a></div><div class="ttdeci">static std::string Inspect(Record const &amp;record)</div><div class="ttdoc">Constructs a human readable string representation of the given record.</div><div class="ttdef"><b>Definition</b> <a href="_data_mapper_8hpp_source.html#l00266">DataMapper.hpp:266</a></div></div>
+<div class="ttc" id="aclass_data_mapper_html_a6a2df09ef7735f0d0e07886ef1b27457"><div class="ttname"><a href="class_data_mapper.html#a6a2df09ef7735f0d0e07886ef1b27457">DataMapper::CreateTable</a></div><div class="ttdeci">void CreateTable()</div><div class="ttdoc">Creates the table for the given record type.</div><div class="ttdef"><b>Definition</b> <a href="_data_mapper_8hpp_source.html#l00344">DataMapper.hpp:344</a></div></div>
+<div class="ttc" id="aclass_data_mapper_html_acb83d80931e5cd6259290bc795e362f7"><div class="ttname"><a href="class_data_mapper.html#acb83d80931e5cd6259290bc795e362f7">DataMapper::Update</a></div><div class="ttdeci">void Update(Record &amp;record)</div><div class="ttdoc">Updates the record in the database.</div><div class="ttdef"><b>Definition</b> <a href="_data_mapper_8hpp_source.html#l00457">DataMapper.hpp:457</a></div></div>
+<div class="ttc" id="aclass_data_mapper_html_acfcb03b2a7b0534cfd27287b93e7b907"><div class="ttname"><a href="class_data_mapper.html#acfcb03b2a7b0534cfd27287b93e7b907">DataMapper::Delete</a></div><div class="ttdeci">std::size_t Delete(Record const &amp;record)</div><div class="ttdoc">Deletes the record from the database.</div><div class="ttdef"><b>Definition</b> <a href="_data_mapper_8hpp_source.html#l00496">DataMapper.hpp:496</a></div></div>
+<div class="ttc" id="astruct_field_html"><div class="ttname"><a href="struct_field.html">Field</a></div><div class="ttdoc">Represents a single column in a table.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00057">Field.hpp:58</a></div></div>
+</div><!-- fragment --><h1><a class="anchor" id="example-simple-row-retrieval-via-structs"></a>
+Example: Simple row retrieval via structs</h1>
+<p>When only read access is needed, you can use a simple struct to represent the row, and also do not need to wrap the fields into <code><a class="el" href="struct_field.html" title="Represents a single column in a table.">Field</a>&lt;&gt;</code> template. The struct must have fields that match the columns in the query. The fields can be of any type that can be converted from the column type. The struct can have more fields than the columns in the query, but the fields that match the columns must be in the same order as the columns in the query.</p>
+<div class="fragment"><div class="line"><span class="keyword">struct </span>SimpleStruct</div>
+<div class="line">{</div>
+<div class="line">    uint64_t pkFromA;</div>
+<div class="line">    uint64_t pkFromB;</div>
+<div class="line">    SqlAnsiString&lt;30&gt; c1FromA;</div>
+<div class="line">    SqlAnsiString&lt;30&gt; c2FromA;</div>
+<div class="line">    SqlAnsiString&lt;30&gt; c1FromB;</div>
+<div class="line">    SqlAnsiString&lt;30&gt; c2FromB;</div>
+<div class="line">};</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">void</span> SimpleStructExample(<a class="code hl_class" href="class_data_mapper.html">DataMapper</a>&amp; dm)</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordflow">if</span> (<span class="keyword">auto</span> maybeObject = dm.<a class="code hl_function" href="class_data_mapper.html#a06b74e30cf38c79b44615e2fc31f7563">Query</a>&lt;SimpleString&gt;(</div>
+<div class="line">        <span class="stringliteral">&quot;SELECT A.pk, B.pk, A.c1, A.c2, B.c1, B.c2 FROM A LEFT JOIN B ON A.pk = B.pk&quot;</span>); maybeObject)</div>
+<div class="line">    ))</div>
+<div class="line">    {</div>
+<div class="line">        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; obj : *maybeObject)</div>
+<div class="line">            std::println(<span class="stringliteral">&quot;{}&quot;</span>, <a class="code hl_class" href="class_data_mapper.html">DataMapper</a>::Inspect(obj));</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+</div><!-- fragment --><h1><a class="anchor" id="supported-platforms"></a>
 Supported platforms</h1>
 <p>Only ODBC is supported, so it should work on any platform that has an ODBC driver and a modern enough C++ compiler.</p>
 <ul>
@@ -124,20 +182,12 @@ Supported platforms</h1>
 <li>Linux (GCC 14, Clang 19)</li>
 </ul>
 <h1><a class="anchor" id="supported-databases"></a>
-Supported Databases</h1>
+Supported databases</h1>
 <ul>
 <li>Microsoft SQL</li>
 <li>PostgreSQL</li>
 <li>SQLite3</li>
 <li>Oracle database (work in progress)</li>
-</ul>
-<h1><a class="anchor" id="c-language-requirements"></a>
-C++ Language requirements</h1>
-<p>This library a little bit of more modern C++ language and library features in order to be more expressive and efficient.</p>
-<ul>
-<li>C++23 (<code>std::stacktrace</code>, lambda templates expressions)</li>
-<li>C++20 (<code>std::source_location</code>, <code>std::error_code</code>, <code>operator&lt;=&gt;</code>, <code>std::format()</code>, designated initializers, concepts, ranges)</li>
-<li>C++17 (fold expressions, <code>std::string_view</code>, <code>std::optional</code>, <code>std::variant</code>, <code>std::apply</code>)</li>
 </ul>
 <h1><a class="anchor" id="using-sqlite-for-testing-on-windows-operating-system"></a>
 Using SQLite for testing on Windows operating system</h1>

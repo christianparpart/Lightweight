@@ -26,9 +26,13 @@ var NAVTREE =
 [
   [ "Lightweight", "index.html", [
     [ "Lightweight, an ODBC SQL API for C++23", "index.html", "index" ],
-    [ "Examples", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html", [
-      [ "Configure connection to the database", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#configure-connection-to-the-database", null ],
-      [ "Sql Query", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#sql-query", null ]
+    [ "Usage Examples", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html", [
+      [ "Configure default connection information to the database", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#configure-default-connection-information-to-the-database", null ],
+      [ "Raw SQL Queries", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#raw-sql-queries", null ],
+      [ "Prepared Statements", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#prepared-statements", null ],
+      [ "SQL Query Builder", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#sql-query-builder", null ],
+      [ "High level Data Mapping", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#high-level-data-mapping", null ],
+      [ "Simple row retrieval via structs", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#simple-row-retrieval-via-structs", null ]
     ] ],
     [ "Topics", "topics.html", "topics" ],
     [ "Concepts", "concepts.html", "concepts" ],
