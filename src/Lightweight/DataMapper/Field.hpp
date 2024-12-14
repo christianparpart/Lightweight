@@ -17,9 +17,22 @@ constexpr inline FieldValueRequirement SqlNotNullable = FieldValueRequirement::N
 
 enum class PrimaryKey : uint8_t
 {
+    // The field is not a primary key.
     No,
-    Manual,
-    AutoIncrement
+
+    /// @brief The field is a primary key.
+    ///
+    /// If the field is an auto-incrementable key and not manually set, it is automatically set to the
+    /// next available value on the client side, using a SELECT MAX() query.
+    /// This is happening transparently to the user.
+    ///
+    /// If the field is a GUID, it is automatically set to a new GUID value, if not manually set.
+    ///
+    /// @note If the field is neither auto-incrementable nor a GUID, it must be manually set.
+    AutoAssign,
+
+    /// The field is an integer primary key, and it is auto-incremented by the database.
+    ServerSideAutoIncrement,
 };
 
 namespace detail
@@ -78,7 +91,7 @@ struct Field
     static constexpr auto IsOptional = detail::IsStdOptional<T>;
     static constexpr auto IsMandatory = !IsOptional;
     static constexpr auto IsPrimaryKey = IsPrimaryKeyValue != PrimaryKey::No;
-    static constexpr auto IsAutoIncrementPrimaryKey = IsPrimaryKeyValue == PrimaryKey::AutoIncrement;
+    static constexpr auto IsAutoIncrementPrimaryKey = IsPrimaryKeyValue == PrimaryKey::ServerSideAutoIncrement;
 
     constexpr std::weak_ordering operator<=>(Field const& other) const noexcept;
 
@@ -120,7 +133,7 @@ template <typename T>
 struct IsAutoIncrementPrimaryKeyField: std::false_type {};
 
 template <typename T>
-struct IsAutoIncrementPrimaryKeyField<Field<T, PrimaryKey::AutoIncrement>>: std::true_type {};
+struct IsAutoIncrementPrimaryKeyField<Field<T, PrimaryKey::ServerSideAutoIncrement>>: std::true_type {};
 
 template <typename T>
 struct IsFieldType: std::false_type {};

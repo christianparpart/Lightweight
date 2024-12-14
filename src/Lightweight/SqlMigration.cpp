@@ -33,7 +33,7 @@ void MigrationManager::RemoveAllMigrations()
 
 struct SchemaMigration
 {
-    Field<uint64_t, PrimaryKey::Manual> version;
+    Field<uint64_t, PrimaryKey::AutoAssign> version;
 
     static constexpr std::string_view TableName = "schema_migrations";
 };

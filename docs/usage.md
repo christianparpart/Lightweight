@@ -77,7 +77,7 @@ For more info see `SqlQuery` and `SqlQueryFormatter` documentation
 // Field<> is also used to track what fields are modified and need to be updated.
 struct Person
 {
-    Field<uint64_t, PrimaryKey::AutoIncrement> id;
+    Field<SqlGuid, PrimaryKey::AutoAssign> id;
     Field<SqlAnsiString<25>> name;
     Field<bool> is_active { true };
     Field<std::optional<int>> age;
