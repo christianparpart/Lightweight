@@ -30,7 +30,6 @@ concept FieldWithStorage = requires(T const& field, T& mutableField) {
     { mutableField.MutableValue() } -> std::convertible_to<typename T::ValueType&>;
     { field.IsModified() } -> std::convertible_to<bool>;
     { mutableField.SetModified(bool {}) } -> std::convertible_to<void>;
-    { mutableField.BindOutputColumn(SQLSMALLINT {}, std::declval<SqlStatement&>()) } -> std::convertible_to<void>;
 };
 
 // Represents the number of fields with storage in a record.
@@ -926,9 +925,9 @@ void DataMapper::BindOutputColumns(Record& record, SqlStatement* stmt)
     assert(stmt != nullptr);
 
     Reflection::EnumerateMembers(record, [stmt, i = SQLSMALLINT { 1 }]<size_t I, typename Field>(Field& field) mutable {
-        if constexpr (requires { field.BindOutputColumn(i, *stmt); })
+        if constexpr (IsField<Field>)
         {
-            field.BindOutputColumn(i++, *stmt);
+            stmt->BindOutputColumn(i++, &field.MutableValue());
         }
         else if constexpr (SqlOutputColumnBinder<Field>)
         {
