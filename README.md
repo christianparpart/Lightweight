@@ -2,6 +2,8 @@
 
 **Lightweight** is a thin and modern C++ ODBC wrapper for **easy** and **fast** raw database access.
 
+Documentation is available at [https://lastrada-software.github.io/Lightweight/](https://lastrada-software.github.io/Lightweight/).
+
 ## Goals
 
 - **Easy to use** - simple, expressive and intuitive API
@@ -10,16 +12,76 @@
 - **Extensible** - support for custom data types for writing to and reading from columns
 - **Resource aware** - efficient resource management and exception safety
 
-## Non-Goals
+## Example: CRUD-style High level Data Mapping
 
-- Feature creeping (ODBC is a huge API, we are not going to wrap everything)
-- No intend to support non-ODBC connectors directly, in order to keep the codebase simple and focused
+```cpp
+// Define a person structure, mapping to a table
+// The field members are mapped to the columns in the table,
+// and the Field<> template parameter specifies the type of the column.
+// Field<> is also used to track what fields are modified and need to be updated.
+struct Person
+{
+    Field<uint64_t, PrimaryKey::AutoIncrement> id;
+    Field<SqlAnsiString<25>> name;
+    Field<bool> is_active { true };
+    Field<std::optional<int>> age;
+};
 
-## Features
+void CRUD(DataMapper& dm)
+{
+    // Creates the table if it does not exist
+    dm.CreateTable<Person>();
 
-- Customizable logging infrastructure with support for trace and performance timing logging
-- Flexible SQL dialect-agnostic query builder API
-- Support for custom data types
+    // Create a new person
+    auto person = Person {};
+    person.name = "John Doe";
+    person.is_active = true;
+    dm.Create(person);
+
+    // Update the person
+    name.age = 25;
+    dm.Update(person);
+
+    // Query the person
+    if (auto const po = dm.QuerySingle<Person>(person.id); po)
+        std::println("Person: {} ({})", po->name, DataMapper::Inspect(*po));
+
+    // Query all persons
+    auto const persons = dm.Query<Person>(); 
+
+    // Delete the person
+    dm.Delete(person);
+}
+```
+
+## Example: Simple row retrieval via structs
+
+When only read access is needed, you can use a simple struct to represent the row,
+and also do not need to wrap the fields into `Field<>` template.
+The struct must have fields that match the columns in the query. The fields can be of any type that can be converted from the column type. The struct can have more fields than the columns in the query, but the fields that match the columns must be in the same order as the columns in the query.
+
+```cpp
+struct SimpleStruct
+{
+    uint64_t pkFromA;
+    uint64_t pkFromB;
+    SqlAnsiString<30> c1FromA;
+    SqlAnsiString<30> c2FromA;
+    SqlAnsiString<30> c1FromB;
+    SqlAnsiString<30> c2FromB;
+};
+
+void SimpleStructExample(DataMapper& dm)
+{
+    if (auto maybeObject = dm.Query<SimpleString>(
+        "SELECT A.pk, B.pk, A.c1, A.c2, B.c1, B.c2 FROM A LEFT JOIN B ON A.pk = B.pk"); maybeObject)
+    ))
+    {
+        for (auto const& obj : *maybeObject)
+            std::println("{}", DataMapper::Inspect(obj));
+    }
+}
+```
 
 ## Supported platforms
 
@@ -29,20 +91,12 @@ a modern enough C++ compiler.
 - Windows (Visual Studio 2022, toolkit v143)
 - Linux (GCC 14, Clang 19)
 
-## Supported Databases
+## Supported databases
 
 - Microsoft SQL
 - PostgreSQL
 - SQLite3
 - Oracle database (work in progress)
-
-## C++ Language requirements
-
-This library a little bit of more modern C++ language and library features in order to be more expressive and efficient.
-
-- C++23 (`std::stacktrace`, lambda templates expressions)
-- C++20 (`std::source_location`, `std::error_code`, `operator<=>`, `std::format()`, designated initializers, concepts, ranges)
-- C++17 (fold expressions, `std::string_view`, `std::optional`, `std::variant`, `std::apply`)
 
 ## Using SQLite for testing on Windows operating system
 
@@ -66,3 +120,4 @@ arch -arm64 brew install sqliteodbc
 
 - sqliteODBC Documentation: http://www.ch-werner.de/sqliteodbc/html/index.html
 - Example connection string: `DRIVER=SQLite3;Database=file::memory:`
+
