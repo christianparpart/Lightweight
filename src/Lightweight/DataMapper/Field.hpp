@@ -118,8 +118,6 @@ struct Field
     /// @note If the field value is changed through this method, it will not be automatically marked as modified.
     [[nodiscard]] constexpr T& MutableValue() noexcept;
 
-    void BindOutputColumn(SQLSMALLINT outputIndex, SqlStatement& stmt);
-
   private:
     ValueType _value {};
     bool _modified { false };
@@ -211,13 +209,6 @@ inline LIGHTWEIGHT_FORCE_INLINE std::string Field<T, IsPrimaryKey>::InspectValue
         return std::format("\'{}\'", _value.value());
     else
         return std::format("{}", _value);
-}
-
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-inline LIGHTWEIGHT_FORCE_INLINE void Field<T, IsPrimaryKey>::BindOutputColumn(SQLSMALLINT outputIndex,
-                                                                              SqlStatement& stmt)
-{
-    stmt.BindOutputColumn(outputIndex, &_value);
 }
 
 // ------------------------------------------------------------------------------------------------
