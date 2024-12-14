@@ -3,6 +3,7 @@
 
 #include "../DataBinder/Core.hpp"
 #include "../SqlStatement.hpp"
+#include "SqlRealName.hpp"
 
 #include <reflection-cpp/reflection.hpp>
 
@@ -57,6 +58,20 @@ concept FieldElementType = SqlInputParameterBinder<T> && SqlOutputColumnBinder<T
 
 } // namespace detail
 
+namespace detail
+{
+template <typename TargetType, typename P1, typename P2>
+consteval auto Choose(TargetType defaultValue, P1 p1, P2 p2) noexcept
+{
+    if constexpr (!std::same_as<P1, std::nullopt_t> && requires { TargetType { p1 }; })
+        return p1;
+    else if constexpr (!std::same_as<P2, std::nullopt_t> && requires { TargetType { p2 }; })
+        return p2;
+    else
+        return defaultValue;
+}
+} // namespace detail
+
 /// @brief Represents a single column in a table.
 ///
 /// The column name, index, and type are known at compile time.
@@ -67,10 +82,13 @@ concept FieldElementType = SqlInputParameterBinder<T> && SqlOutputColumnBinder<T
 ///
 /// @see DataMapper
 /// @ingroup DataMapper
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKey::No>
+template <detail::FieldElementType T, auto P1 = std::nullopt, auto P2 = std::nullopt>
 struct Field
 {
     using ValueType = T;
+
+    static constexpr auto IsPrimaryKeyValue = detail::Choose<PrimaryKey>(PrimaryKey::No, P1, P2);
+    static constexpr auto ColumnNameOverride = detail::Choose<std::string_view>({}, P1, P2);
 
     // clang-format off
     constexpr Field() noexcept = default;
@@ -132,14 +150,17 @@ namespace detail
 template <typename T>
 struct IsAutoIncrementPrimaryKeyField: std::false_type {};
 
-template <typename T>
-struct IsAutoIncrementPrimaryKeyField<Field<T, PrimaryKey::ServerSideAutoIncrement>>: std::true_type {};
+template <typename T, auto P>
+struct IsAutoIncrementPrimaryKeyField<Field<T, PrimaryKey::ServerSideAutoIncrement, P>>: std::true_type {};
+
+template <typename T, auto P>
+struct IsAutoIncrementPrimaryKeyField<Field<T, P, PrimaryKey::ServerSideAutoIncrement>>: std::true_type {};
 
 template <typename T>
 struct IsFieldType: std::false_type {};
 
-template <typename T, PrimaryKey IsPrimaryKey>
-struct IsFieldType<Field<T, IsPrimaryKey>>: std::true_type {};
+template <typename T, auto P1, auto P2>
+struct IsFieldType<Field<T, P1, P2>>: std::true_type {};
 
 } // namespace detail
 // clang-format on
@@ -151,45 +172,44 @@ constexpr bool IsAutoIncrementPrimaryKey = detail::IsAutoIncrementPrimaryKeyFiel
 template <typename T>
 constexpr bool IsField = detail::IsFieldType<std::remove_cvref_t<T>>::value;
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
+template <detail::FieldElementType T, auto P1, auto P2>
 template <typename... S>
     requires std::constructible_from<T, S...>
-constexpr LIGHTWEIGHT_FORCE_INLINE Field<T, IsPrimaryKey>::Field(S&&... value) noexcept:
+constexpr LIGHTWEIGHT_FORCE_INLINE Field<T, P1, P2>::Field(S&&... value) noexcept:
     _value(std::forward<S>(value)...)
 {
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
+template <detail::FieldElementType T, auto P1, auto P2>
 template <typename S>
     requires std::constructible_from<T, S>
-constexpr LIGHTWEIGHT_FORCE_INLINE Field<T, IsPrimaryKey>& Field<T, IsPrimaryKey>::operator=(S&& value) noexcept
+constexpr LIGHTWEIGHT_FORCE_INLINE Field<T, P1, P2>& Field<T, P1, P2>::operator=(S&& value) noexcept
 {
     _value = std::forward<S>(value);
     SetModified(true);
     return *this;
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-constexpr std::weak_ordering LIGHTWEIGHT_FORCE_INLINE
-Field<T, IsPrimaryKey>::operator<=>(Field const& other) const noexcept
+template <detail::FieldElementType T, auto P1, auto P2>
+constexpr std::weak_ordering LIGHTWEIGHT_FORCE_INLINE Field<T, P1, P2>::operator<=>(Field const& other) const noexcept
 {
     return _value <=> other._value;
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-inline LIGHTWEIGHT_FORCE_INLINE bool Field<T, IsPrimaryKey>::operator==(T const& value) const noexcept
+template <detail::FieldElementType T, auto P1, auto P2>
+inline LIGHTWEIGHT_FORCE_INLINE bool Field<T, P1, P2>::operator==(T const& value) const noexcept
 {
     return _value == value;
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-inline LIGHTWEIGHT_FORCE_INLINE bool Field<T, IsPrimaryKey>::operator!=(T const& value) const noexcept
+template <detail::FieldElementType T, auto P1, auto P2>
+inline LIGHTWEIGHT_FORCE_INLINE bool Field<T, P1, P2>::operator!=(T const& value) const noexcept
 {
     return _value != value;
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-inline LIGHTWEIGHT_FORCE_INLINE std::string Field<T, IsPrimaryKey>::InspectValue() const
+template <detail::FieldElementType T, auto P1, auto P2>
+inline LIGHTWEIGHT_FORCE_INLINE std::string Field<T, P1, P2>::InspectValue() const
 {
     if constexpr (std::is_same_v<T, std::string>)
     {
@@ -215,34 +235,34 @@ inline LIGHTWEIGHT_FORCE_INLINE std::string Field<T, IsPrimaryKey>::InspectValue
 
 // ------------------------------------------------------------------------------------------------
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-constexpr LIGHTWEIGHT_FORCE_INLINE void Field<T, IsPrimaryKey>::SetModified(bool value) noexcept
+template <detail::FieldElementType T, auto P1, auto P2>
+constexpr LIGHTWEIGHT_FORCE_INLINE void Field<T, P1, P2>::SetModified(bool value) noexcept
 {
     _modified = value;
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-constexpr LIGHTWEIGHT_FORCE_INLINE bool Field<T, IsPrimaryKey>::IsModified() const noexcept
+template <detail::FieldElementType T, auto P1, auto P2>
+constexpr LIGHTWEIGHT_FORCE_INLINE bool Field<T, P1, P2>::IsModified() const noexcept
 {
     return _modified;
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-constexpr LIGHTWEIGHT_FORCE_INLINE T const& Field<T, IsPrimaryKey>::Value() const noexcept
+template <detail::FieldElementType T, auto P1, auto P2>
+constexpr LIGHTWEIGHT_FORCE_INLINE T const& Field<T, P1, P2>::Value() const noexcept
 {
     return _value;
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-constexpr LIGHTWEIGHT_FORCE_INLINE T& Field<T, IsPrimaryKey>::MutableValue() noexcept
+template <detail::FieldElementType T, auto P1, auto P2>
+constexpr LIGHTWEIGHT_FORCE_INLINE T& Field<T, P1, P2>::MutableValue() noexcept
 {
     return _value;
 }
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-struct SqlDataBinder<Field<T, IsPrimaryKey>>
+template <detail::FieldElementType T, auto P1, auto P2>
+struct SqlDataBinder<Field<T, P1, P2>>
 {
-    using ValueType = Field<T, IsPrimaryKey>;
+    using ValueType = Field<T, P1, P2>;
 
     static constexpr auto ColumnType = SqlDataBinder<T>::ColumnType;
 
@@ -257,9 +277,7 @@ struct SqlDataBinder<Field<T, IsPrimaryKey>>
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN
     OutputColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback& cb)
     {
-        auto const sqlReturn = SqlDataBinder<T>::OutputColumn(stmt, column, &result->MutableValue(), indicator, cb);
-        cb.PlanPostProcessOutputColumn([result]() { result->SetModified(true); });
-        return sqlReturn;
+        return SqlDataBinder<T>::OutputColumn(stmt, column, &result->MutableValue(), indicator, cb);
     }
 
     static LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt,
@@ -280,11 +298,11 @@ struct SqlDataBinder<Field<T, IsPrimaryKey>>
     }
 };
 
-template <detail::FieldElementType T, PrimaryKey IsPrimaryKey>
-struct std::formatter<Field<T, IsPrimaryKey>>: std::formatter<T>
+template <detail::FieldElementType T, auto P1, auto P2>
+struct std::formatter<Field<T, P1, P2>>: std::formatter<T>
 {
     template <typename FormatContext>
-    auto format(Field<T, IsPrimaryKey> const& field, FormatContext& ctx)
+    auto format(Field<T, P1, P2> const& field, FormatContext& ctx)
     {
         return formatter<T>::format(field.InspectValue(), ctx);
     }

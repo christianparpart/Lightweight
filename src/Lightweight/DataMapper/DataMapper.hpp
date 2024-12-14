@@ -286,7 +286,13 @@ constexpr std::string_view FieldNameOf()
     static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
 
     using FieldType = Reflection::MemberTypeOf<I, Record>;
-    if constexpr (IsBelongsTo<FieldType>)
+
+    if constexpr (requires { FieldType::ColumnNameOverride; }
+                  && !std::string_view(FieldType::ColumnNameOverride).empty())
+    {
+        return FieldType::ColumnNameOverride;
+    }
+    else if constexpr (IsBelongsTo<FieldType>)
     {
         auto constexpr baseName = Reflection::MemberNameOf<I, Record>;
         static std::array<char, baseName.size() + 3> storage;
