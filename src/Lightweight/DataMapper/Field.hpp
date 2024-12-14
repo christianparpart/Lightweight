@@ -15,9 +15,10 @@ enum class FieldValueRequirement : uint8_t
 constexpr inline FieldValueRequirement SqlNullable = FieldValueRequirement::NULLABLE;
 constexpr inline FieldValueRequirement SqlNotNullable = FieldValueRequirement::NULLABLE;
 
+/// @brief Tells the data mapper that this field is a primary key with given semantics, or not a primary key.
 enum class PrimaryKey : uint8_t
 {
-    // The field is not a primary key.
+    /// The field is not a primary key.
     No,
 
     /// @brief The field is a primary key.
