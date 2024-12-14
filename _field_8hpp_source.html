@@ -192,219 +192,220 @@ $(document).ready(function(){initNavTree('_field_8hpp_source.html',''); initResi
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">auto</span> IsOptional = detail::IsStdOptional&lt;T&gt;;</div>
 <div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">auto</span> IsMandatory = !IsOptional;</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">auto</span> IsPrimaryKey = IsPrimaryKeyValue != PrimaryKey::No;</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">auto</span> IsAutoIncrementPrimaryKey = IsPrimaryKeyValue == PrimaryKey::ServerSideAutoIncrement;</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keyword">constexpr</span> std::weak_ordering operator&lt;=&gt;(<a class="code hl_struct" href="struct_field.html">Field</a> <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span> </div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    <span class="keywordtype">bool</span> operator==(<a class="code hl_struct" href="struct_field.html">Field</a> <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span> = <span class="keywordflow">default</span>;</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>    <span class="keywordtype">bool</span> operator!=(<a class="code hl_struct" href="struct_field.html">Field</a> <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span> = <span class="keywordflow">default</span>;</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> </div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    <span class="keywordtype">bool</span> operator==(T <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    <span class="keywordtype">bool</span> operator!=(T <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="comment"></span> </div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="comment">    /// Returns a string representation of the value, suitable for use in debugging and logging.</span></div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><span class="comment"></span>    [[nodiscard]] std::string <a class="code hl_function" href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">InspectValue</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span><span class="comment"></span> </div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span><span class="comment">    /// Sets the modified state of the field.</span></div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span><span class="comment"></span>    <span class="keyword">constexpr</span> <span class="keywordtype">void</span> <a class="code hl_function" href="struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed">SetModified</a>(<span class="keywordtype">bool</span> value) <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span><span class="comment"></span> </div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span><span class="comment">    /// Checks if the field has been modified.</span></div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span><span class="comment"></span>    [[nodiscard]] <span class="keyword">constexpr</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e">IsModified</a>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span><span class="comment"></span> </div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span><span class="comment">    /// Returns the value of the field.</span></div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span><span class="comment"></span>    [[nodiscard]] <span class="keyword">constexpr</span> T <span class="keyword">const</span>&amp; <a class="code hl_function" href="struct_field.html#aa5449157682c103220be7d81c1cd32d3">Value</a>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span><span class="comment"></span> </div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span><span class="comment">    /// Returns a mutable reference to the value of the field.</span></div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span><span class="comment">    ///</span></div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span><span class="comment">    /// @note If the field value is changed through this method, it will not be automatically marked as modified.</span></div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span><span class="comment"></span>    [[nodiscard]] <span class="keyword">constexpr</span> T&amp; <a class="code hl_function" href="struct_field.html#a800fd9c6125d98e1be467c6c71b7f9df">MutableValue</a>() <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span> </div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>  <span class="keyword">private</span>:</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>    ValueType _value {};</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    <span class="keywordtype">bool</span> _modified { <span class="keyword">false</span> };</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>};</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">auto</span> IsAutoAssignPrimaryKey = IsPrimaryKeyValue == PrimaryKey::AutoAssign;</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">auto</span> IsAutoIncrementPrimaryKey = IsPrimaryKeyValue == PrimaryKey::ServerSideAutoIncrement;</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span> </div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    <span class="keyword">constexpr</span> std::weak_ordering operator&lt;=&gt;(<a class="code hl_struct" href="struct_field.html">Field</a> <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span> </div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>    <span class="keywordtype">bool</span> operator==(<a class="code hl_struct" href="struct_field.html">Field</a> <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span> = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    <span class="keywordtype">bool</span> operator!=(<a class="code hl_struct" href="struct_field.html">Field</a> <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span> = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    <span class="keywordtype">bool</span> operator==(T <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    <span class="keywordtype">bool</span> operator!=(T <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="comment"></span> </div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><span class="comment">    /// Returns a string representation of the value, suitable for use in debugging and logging.</span></div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span><span class="comment"></span>    [[nodiscard]] std::string <a class="code hl_function" href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">InspectValue</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span><span class="comment"></span> </div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span><span class="comment">    /// Sets the modified state of the field.</span></div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span><span class="comment"></span>    <span class="keyword">constexpr</span> <span class="keywordtype">void</span> <a class="code hl_function" href="struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed">SetModified</a>(<span class="keywordtype">bool</span> value) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span><span class="comment"></span> </div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span><span class="comment">    /// Checks if the field has been modified.</span></div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span><span class="comment"></span>    [[nodiscard]] <span class="keyword">constexpr</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e">IsModified</a>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span><span class="comment"></span> </div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span><span class="comment">    /// Returns the value of the field.</span></div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span><span class="comment"></span>    [[nodiscard]] <span class="keyword">constexpr</span> T <span class="keyword">const</span>&amp; <a class="code hl_function" href="struct_field.html#aa5449157682c103220be7d81c1cd32d3">Value</a>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span><span class="comment"></span> </div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span><span class="comment">    /// Returns a mutable reference to the value of the field.</span></div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span><span class="comment">    ///</span></div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span><span class="comment">    /// @note If the field value is changed through this method, it will not be automatically marked as modified.</span></div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span><span class="comment"></span>    [[nodiscard]] <span class="keyword">constexpr</span> T&amp; <a class="code hl_function" href="struct_field.html#a800fd9c6125d98e1be467c6c71b7f9df">MutableValue</a>() <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>  <span class="keyword">private</span>:</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    ValueType _value {};</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    <span class="keywordtype">bool</span> _modified { <span class="keyword">false</span> };</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>};</div>
 </div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span><span class="comment">// clang-format off</span></div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span><span class="keyword">namespace </span>detail</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>{</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span><span class="keyword">struct </span>IsAutoIncrementPrimaryKeyField: std::false_type {};</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span><span class="keyword">struct </span>IsAutoIncrementPrimaryKeyField&lt;<a class="code hl_struct" href="struct_field.html">Field</a>&lt;T, PrimaryKey::ServerSideAutoIncrement&gt;&gt;: std::true_type {};</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span> </div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span><span class="keyword">struct </span>IsFieldType: std::false_type {};</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span> </div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span><span class="keyword">struct </span>IsFieldType&lt;<a class="code hl_struct" href="struct_field.html">Field</a>&lt;T, IsPrimaryKey&gt;&gt;: std::true_type {};</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span> </div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>} <span class="comment">// namespace detail</span></div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span><span class="comment">// clang-format on</span></div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span> </div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span><span class="comment">// Requires that T satisfies to be a field with storage and is considered a primary key.</span></div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span><span class="keyword">constexpr</span> <span class="keywordtype">bool</span> IsAutoIncrementPrimaryKey = detail::IsAutoIncrementPrimaryKeyField&lt;T&gt;::value;</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span> </div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span><span class="keyword">constexpr</span> <span class="keywordtype">bool</span> IsField = detail::IsFieldType&lt;std::remove_cvref_t&lt;T&gt;&gt;::value;</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span> </div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span>... S&gt;</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    <span class="keyword">requires</span> std::constructible_from&lt;T, S...&gt;</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::Field</a>(S&amp;&amp;... value) <span class="keyword">noexcept</span>:</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>    _value(std::forward&lt;S&gt;(value)...)</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>{</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>}</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span> </div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> S&gt;</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>    <span class="keyword">requires</span> std::constructible_from&lt;T, S&gt;</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;</a>&amp; <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::operator=</a>(S&amp;&amp; value) <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>{</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>    _value = std::forward&lt;S&gt;(value);</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    SetModified(<span class="keyword">true</span>);</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>}</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span> </div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span><span class="keyword">constexpr</span> std::weak_ordering LIGHTWEIGHT_FORCE_INLINE</div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span><a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::operator&lt;=&gt;</a>(<a class="code hl_struct" href="struct_field.html">Field</a> <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>{</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    <span class="keywordflow">return</span> _value &lt;=&gt; other._value;</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>}</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span> </div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">bool</span> <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::operator==</a>(T <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>{</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>    <span class="keywordflow">return</span> _value == value;</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>}</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span> </div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">bool</span> <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::operator!=</a>(T <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>{</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>    <span class="keywordflow">return</span> _value != value;</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>}</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span> </div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="foldopen" id="foldopen00190" data-start="{" data-end="}">
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno"><a class="line" href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">  190</a></span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE std::string <a class="code hl_function" href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">Field&lt;T, IsPrimaryKey&gt;::InspectValue</a>()<span class="keyword"> const</span></div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span><span class="keyword"></span>{</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, std::string&gt;)</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>    {</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        std::stringstream result;</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        result &lt;&lt; std::quoted(_value, <span class="charliteral">&#39;\&#39;&#39;</span>);</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        <span class="keywordflow">return</span> result.str();</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    }</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, SqlText&gt;)</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>    {</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>        std::stringstream result;</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>        result &lt;&lt; std::quoted(_value.value, <span class="charliteral">&#39;\&#39;&#39;</span>);</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        <span class="keywordflow">return</span> result.str();</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>    }</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, SqlDate&gt;)</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>        <span class="keywordflow">return</span> std::format(<span class="stringliteral">&quot;\&#39;{}\&#39;&quot;</span>, _value.value);</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, SqlTime&gt;)</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>        <span class="keywordflow">return</span> std::format(<span class="stringliteral">&quot;\&#39;{}\&#39;&quot;</span>, _value.value);</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, SqlDateTime&gt;)</div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>        <span class="keywordflow">return</span> std::format(<span class="stringliteral">&quot;\&#39;{}\&#39;&quot;</span>, _value.value());</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>    <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>        <span class="keywordflow">return</span> std::format(<span class="stringliteral">&quot;{}&quot;</span>, _value);</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>}</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span> </div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span><span class="comment">// clang-format off</span></div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span><span class="keyword">namespace </span>detail</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>{</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span> </div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span><span class="keyword">struct </span>IsAutoIncrementPrimaryKeyField: std::false_type {};</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span> </div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span><span class="keyword">struct </span>IsAutoIncrementPrimaryKeyField&lt;<a class="code hl_struct" href="struct_field.html">Field</a>&lt;T, PrimaryKey::ServerSideAutoIncrement&gt;&gt;: std::true_type {};</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span> </div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span><span class="keyword">struct </span>IsFieldType: std::false_type {};</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span> </div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span><span class="keyword">struct </span>IsFieldType&lt;<a class="code hl_struct" href="struct_field.html">Field</a>&lt;T, IsPrimaryKey&gt;&gt;: std::true_type {};</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span> </div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>} <span class="comment">// namespace detail</span></div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span><span class="comment">// clang-format on</span></div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span> </div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span><span class="comment">// Requires that T satisfies to be a field with storage and is considered a primary key.</span></div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span><span class="keyword">constexpr</span> <span class="keywordtype">bool</span> IsAutoIncrementPrimaryKey = detail::IsAutoIncrementPrimaryKeyField&lt;T&gt;::value;</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span><span class="keyword">constexpr</span> <span class="keywordtype">bool</span> IsField = detail::IsFieldType&lt;std::remove_cvref_t&lt;T&gt;&gt;::value;</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span> </div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span>... S&gt;</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>    <span class="keyword">requires</span> std::constructible_from&lt;T, S...&gt;</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::Field</a>(S&amp;&amp;... value) <span class="keyword">noexcept</span>:</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>    _value(std::forward&lt;S&gt;(value)...)</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>{</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>}</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span> </div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> S&gt;</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>    <span class="keyword">requires</span> std::constructible_from&lt;T, S&gt;</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;</a>&amp; <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::operator=</a>(S&amp;&amp; value) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>{</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    _value = std::forward&lt;S&gt;(value);</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    SetModified(<span class="keyword">true</span>);</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>    <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>}</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span> </div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span><span class="keyword">constexpr</span> std::weak_ordering LIGHTWEIGHT_FORCE_INLINE</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span><a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::operator&lt;=&gt;</a>(<a class="code hl_struct" href="struct_field.html">Field</a> <span class="keyword">const</span>&amp; other) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>{</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>    <span class="keywordflow">return</span> _value &lt;=&gt; other._value;</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>}</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span> </div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">bool</span> <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::operator==</a>(T <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>{</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>    <span class="keywordflow">return</span> _value == value;</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>}</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span> </div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">bool</span> <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;::operator!=</a>(T <span class="keyword">const</span>&amp; value) <span class="keyword">const</span> <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>{</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>    <span class="keywordflow">return</span> _value != value;</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>}</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span> </div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="foldopen" id="foldopen00191" data-start="{" data-end="}">
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno"><a class="line" href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">  191</a></span><span class="keyword">inline</span> LIGHTWEIGHT_FORCE_INLINE std::string <a class="code hl_function" href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">Field&lt;T, IsPrimaryKey&gt;::InspectValue</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span><span class="keyword"></span>{</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, std::string&gt;)</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>    {</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        std::stringstream result;</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        result &lt;&lt; std::quoted(_value, <span class="charliteral">&#39;\&#39;&#39;</span>);</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        <span class="keywordflow">return</span> result.str();</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>    }</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, SqlText&gt;)</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>    {</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>        std::stringstream result;</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        result &lt;&lt; std::quoted(_value.value, <span class="charliteral">&#39;\&#39;&#39;</span>);</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>        <span class="keywordflow">return</span> result.str();</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>    }</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, SqlDate&gt;)</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>        <span class="keywordflow">return</span> std::format(<span class="stringliteral">&quot;\&#39;{}\&#39;&quot;</span>, _value.value);</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, SqlTime&gt;)</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        <span class="keywordflow">return</span> std::format(<span class="stringliteral">&quot;\&#39;{}\&#39;&quot;</span>, _value.value);</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;T, SqlDateTime&gt;)</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>        <span class="keywordflow">return</span> std::format(<span class="stringliteral">&quot;\&#39;{}\&#39;&quot;</span>, _value.value());</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>    <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>        <span class="keywordflow">return</span> std::format(<span class="stringliteral">&quot;{}&quot;</span>, _value);</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>}</div>
 </div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span> </div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span><span class="comment">// ------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span> </div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="foldopen" id="foldopen00217" data-start="{" data-end="}">
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno"><a class="line" href="struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed">  217</a></span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">void</span> <a class="code hl_function" href="struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed">Field&lt;T, IsPrimaryKey&gt;::SetModified</a>(<span class="keywordtype">bool</span> value) <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>{</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>    _modified = value;</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>}</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span> </div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span><span class="comment">// ------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span> </div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="foldopen" id="foldopen00218" data-start="{" data-end="}">
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno"><a class="line" href="struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed">  218</a></span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">void</span> <a class="code hl_function" href="struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed">Field&lt;T, IsPrimaryKey&gt;::SetModified</a>(<span class="keywordtype">bool</span> value) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>{</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>    _modified = value;</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>}</div>
 </div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span> </div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="foldopen" id="foldopen00223" data-start="{" data-end="}">
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno"><a class="line" href="struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e">  223</a></span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">bool</span> <a class="code hl_function" href="struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e">Field&lt;T, IsPrimaryKey&gt;::IsModified</a>() const noexcept</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>{</div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>    <span class="keywordflow">return</span> _modified;</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>}</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span> </div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="foldopen" id="foldopen00224" data-start="{" data-end="}">
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno"><a class="line" href="struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e">  224</a></span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE <span class="keywordtype">bool</span> <a class="code hl_function" href="struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e">Field&lt;T, IsPrimaryKey&gt;::IsModified</a>() const noexcept</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>{</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>    <span class="keywordflow">return</span> _modified;</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>}</div>
 </div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span> </div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="foldopen" id="foldopen00229" data-start="{" data-end="}">
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno"><a class="line" href="struct_field.html#aa5449157682c103220be7d81c1cd32d3">  229</a></span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE T <span class="keyword">const</span>&amp; <a class="code hl_function" href="struct_field.html#aa5449157682c103220be7d81c1cd32d3">Field&lt;T, IsPrimaryKey&gt;::Value</a>() const noexcept</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>{</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    <span class="keywordflow">return</span> _value;</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>}</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span> </div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="foldopen" id="foldopen00230" data-start="{" data-end="}">
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno"><a class="line" href="struct_field.html#aa5449157682c103220be7d81c1cd32d3">  230</a></span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE T <span class="keyword">const</span>&amp; <a class="code hl_function" href="struct_field.html#aa5449157682c103220be7d81c1cd32d3">Field&lt;T, IsPrimaryKey&gt;::Value</a>() const noexcept</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>{</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>    <span class="keywordflow">return</span> _value;</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>}</div>
 </div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span> </div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="foldopen" id="foldopen00235" data-start="{" data-end="}">
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno"><a class="line" href="struct_field.html#a800fd9c6125d98e1be467c6c71b7f9df">  235</a></span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE T&amp; <a class="code hl_function" href="struct_field.html#a800fd9c6125d98e1be467c6c71b7f9df">Field&lt;T, IsPrimaryKey&gt;::MutableValue</a>() noexcept</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>{</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>    <span class="keywordflow">return</span> _value;</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>}</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span> </div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="foldopen" id="foldopen00236" data-start="{" data-end="}">
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno"><a class="line" href="struct_field.html#a800fd9c6125d98e1be467c6c71b7f9df">  236</a></span><span class="keyword">constexpr</span> LIGHTWEIGHT_FORCE_INLINE T&amp; <a class="code hl_function" href="struct_field.html#a800fd9c6125d98e1be467c6c71b7f9df">Field&lt;T, IsPrimaryKey&gt;::MutableValue</a>() noexcept</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>{</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>    <span class="keywordflow">return</span> _value;</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>}</div>
 </div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span> </div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span><span class="keyword">struct </span>SqlDataBinder&lt;<a class="code hl_struct" href="struct_field.html">Field</a>&lt;T, IsPrimaryKey&gt;&gt;</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>{</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>    <span class="keyword">using </span>ValueType = <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;</a>;</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span> </div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">auto</span> ColumnType = SqlDataBinder&lt;T&gt;::ColumnType;</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span> </div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    <span class="keyword">static</span> LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>                                                             SQLUSMALLINT column,</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                                                             ValueType <span class="keyword">const</span>&amp; value,</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                                                             SqlDataBinderCallback&amp; cb)</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>    {</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>        <span class="keywordflow">return</span> SqlDataBinder&lt;T&gt;::InputParameter(stmt, column, value.Value(), cb);</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>    }</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span> </div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>    <span class="keyword">static</span> LIGHTWEIGHT_FORCE_INLINE SQLRETURN</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>    OutputColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback&amp; cb)</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>    {</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>        <span class="keyword">auto</span> <span class="keyword">const</span> sqlReturn = SqlDataBinder&lt;T&gt;::OutputColumn(stmt, column, &amp;result-&gt;MutableValue(), indicator, cb);</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>        cb.PlanPostProcessOutputColumn([result]() { result-&gt;SetModified(<span class="keyword">true</span>); });</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>        <span class="keywordflow">return</span> sqlReturn;</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>    }</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span> </div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>    <span class="keyword">static</span> LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt,</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                                                        SQLUSMALLINT column,</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                                                        ValueType* result,</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                                                        SQLLEN* indicator,</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>                                                        SqlDataBinderCallback <span class="keyword">const</span>&amp; cb) <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>    {</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>        <span class="keyword">auto</span> <span class="keyword">const</span> sqlReturn = SqlDataBinder&lt;T&gt;::GetColumn(stmt, column, &amp;result-&gt;emplace(), indicator, cb);</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>        <span class="keywordflow">if</span> (SQL_SUCCEEDED(sqlReturn))</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>            result-&gt;SetModified(<span class="keyword">true</span>);</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>        <span class="keywordflow">return</span> sqlReturn;</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>    }</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span> </div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>    <span class="keyword">static</span> LIGHTWEIGHT_FORCE_INLINE std::string Inspect(ValueType <span class="keyword">const</span>&amp; value) <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>    {</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        <span class="keywordflow">return</span> value.InspectValue();</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>    }</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>};</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span> </div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span><span class="keyword">struct </span>std::formatter&lt;<a class="code hl_struct" href="struct_field.html">Field</a>&lt;T, IsPrimaryKey&gt;&gt;: std::formatter&lt;T&gt;</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>{</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> FormatContext&gt;</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>    <span class="keyword">auto</span> format(<a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;</a> <span class="keyword">const</span>&amp; field, FormatContext&amp; ctx)</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>    {</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>        <span class="keywordflow">return</span> formatter&lt;T&gt;::format(field.<a class="code hl_function" href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">InspectValue</a>(), ctx);</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>    }</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>};</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span> </div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span><span class="keyword">struct </span>SqlDataBinder&lt;<a class="code hl_struct" href="struct_field.html">Field</a>&lt;T, IsPrimaryKey&gt;&gt;</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>{</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>    <span class="keyword">using </span>ValueType = <a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;</a>;</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span> </div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">auto</span> ColumnType = SqlDataBinder&lt;T&gt;::ColumnType;</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span> </div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>    <span class="keyword">static</span> LIGHTWEIGHT_FORCE_INLINE SQLRETURN InputParameter(SQLHSTMT stmt,</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                                                             SQLUSMALLINT column,</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                                                             ValueType <span class="keyword">const</span>&amp; value,</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>                                                             SqlDataBinderCallback&amp; cb)</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>    {</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>        <span class="keywordflow">return</span> SqlDataBinder&lt;T&gt;::InputParameter(stmt, column, value.Value(), cb);</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>    }</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span> </div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>    <span class="keyword">static</span> LIGHTWEIGHT_FORCE_INLINE SQLRETURN</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>    OutputColumn(SQLHSTMT stmt, SQLUSMALLINT column, ValueType* result, SQLLEN* indicator, SqlDataBinderCallback&amp; cb)</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>    {</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>        <span class="keyword">auto</span> <span class="keyword">const</span> sqlReturn = SqlDataBinder&lt;T&gt;::OutputColumn(stmt, column, &amp;result-&gt;MutableValue(), indicator, cb);</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>        cb.PlanPostProcessOutputColumn([result]() { result-&gt;SetModified(<span class="keyword">true</span>); });</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>        <span class="keywordflow">return</span> sqlReturn;</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>    }</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span> </div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>    <span class="keyword">static</span> LIGHTWEIGHT_FORCE_INLINE SQLRETURN GetColumn(SQLHSTMT stmt,</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                                                        SQLUSMALLINT column,</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                                                        ValueType* result,</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>                                                        SQLLEN* indicator,</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>                                                        SqlDataBinderCallback <span class="keyword">const</span>&amp; cb) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>    {</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>        <span class="keyword">auto</span> <span class="keyword">const</span> sqlReturn = SqlDataBinder&lt;T&gt;::GetColumn(stmt, column, &amp;result-&gt;emplace(), indicator, cb);</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>        <span class="keywordflow">if</span> (SQL_SUCCEEDED(sqlReturn))</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>            result-&gt;SetModified(<span class="keyword">true</span>);</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        <span class="keywordflow">return</span> sqlReturn;</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>    }</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span> </div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>    <span class="keyword">static</span> LIGHTWEIGHT_FORCE_INLINE std::string Inspect(ValueType <span class="keyword">const</span>&amp; value) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>    {</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>        <span class="keywordflow">return</span> value.InspectValue();</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>    }</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>};</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span> </div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span><span class="keyword">template</span> &lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt;</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span><span class="keyword">struct </span>std::formatter&lt;<a class="code hl_struct" href="struct_field.html">Field</a>&lt;T, IsPrimaryKey&gt;&gt;: std::formatter&lt;T&gt;</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>{</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> FormatContext&gt;</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>    <span class="keyword">auto</span> format(<a class="code hl_struct" href="struct_field.html">Field&lt;T, IsPrimaryKey&gt;</a> <span class="keyword">const</span>&amp; field, FormatContext&amp; ctx)</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>    {</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>        <span class="keywordflow">return</span> formatter&lt;T&gt;::format(field.<a class="code hl_function" href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">InspectValue</a>(), ctx);</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>    }</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>};</div>
 <div class="ttc" id="astruct_field_html"><div class="ttname"><a href="struct_field.html">Field</a></div><div class="ttdoc">Represents a single column in a table.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00070">Field.hpp:71</a></div></div>
-<div class="ttc" id="astruct_field_html_a1959c6d90bbadd8573e7a9bba4bdac9e"><div class="ttname"><a href="struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e">Field::IsModified</a></div><div class="ttdeci">constexpr bool IsModified() const noexcept</div><div class="ttdoc">Checks if the field has been modified.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00223">Field.hpp:223</a></div></div>
-<div class="ttc" id="astruct_field_html_a800fd9c6125d98e1be467c6c71b7f9df"><div class="ttname"><a href="struct_field.html#a800fd9c6125d98e1be467c6c71b7f9df">Field::MutableValue</a></div><div class="ttdeci">constexpr T &amp; MutableValue() noexcept</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00235">Field.hpp:235</a></div></div>
-<div class="ttc" id="astruct_field_html_aa5449157682c103220be7d81c1cd32d3"><div class="ttname"><a href="struct_field.html#aa5449157682c103220be7d81c1cd32d3">Field::Value</a></div><div class="ttdeci">constexpr T const &amp; Value() const noexcept</div><div class="ttdoc">Returns the value of the field.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00229">Field.hpp:229</a></div></div>
-<div class="ttc" id="astruct_field_html_aabf2bf55d7417cd21d7d059f2e16d5ed"><div class="ttname"><a href="struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed">Field::SetModified</a></div><div class="ttdeci">constexpr void SetModified(bool value) noexcept</div><div class="ttdoc">Sets the modified state of the field.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00217">Field.hpp:217</a></div></div>
-<div class="ttc" id="astruct_field_html_ab03fc137848c0ec9d76efcea7229be8c"><div class="ttname"><a href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">Field::InspectValue</a></div><div class="ttdeci">std::string InspectValue() const</div><div class="ttdoc">Returns a string representation of the value, suitable for use in debugging and logging.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00190">Field.hpp:190</a></div></div>
+<div class="ttc" id="astruct_field_html_a1959c6d90bbadd8573e7a9bba4bdac9e"><div class="ttname"><a href="struct_field.html#a1959c6d90bbadd8573e7a9bba4bdac9e">Field::IsModified</a></div><div class="ttdeci">constexpr bool IsModified() const noexcept</div><div class="ttdoc">Checks if the field has been modified.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00224">Field.hpp:224</a></div></div>
+<div class="ttc" id="astruct_field_html_a800fd9c6125d98e1be467c6c71b7f9df"><div class="ttname"><a href="struct_field.html#a800fd9c6125d98e1be467c6c71b7f9df">Field::MutableValue</a></div><div class="ttdeci">constexpr T &amp; MutableValue() noexcept</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00236">Field.hpp:236</a></div></div>
+<div class="ttc" id="astruct_field_html_aa5449157682c103220be7d81c1cd32d3"><div class="ttname"><a href="struct_field.html#aa5449157682c103220be7d81c1cd32d3">Field::Value</a></div><div class="ttdeci">constexpr T const &amp; Value() const noexcept</div><div class="ttdoc">Returns the value of the field.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00230">Field.hpp:230</a></div></div>
+<div class="ttc" id="astruct_field_html_aabf2bf55d7417cd21d7d059f2e16d5ed"><div class="ttname"><a href="struct_field.html#aabf2bf55d7417cd21d7d059f2e16d5ed">Field::SetModified</a></div><div class="ttdeci">constexpr void SetModified(bool value) noexcept</div><div class="ttdoc">Sets the modified state of the field.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00218">Field.hpp:218</a></div></div>
+<div class="ttc" id="astruct_field_html_ab03fc137848c0ec9d76efcea7229be8c"><div class="ttname"><a href="struct_field.html#ab03fc137848c0ec9d76efcea7229be8c">Field::InspectValue</a></div><div class="ttdeci">std::string InspectValue() const</div><div class="ttdoc">Returns a string representation of the value, suitable for use in debugging and logging.</div><div class="ttdef"><b>Definition</b> <a href="_field_8hpp_source.html#l00191">Field.hpp:191</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
