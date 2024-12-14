@@ -178,7 +178,7 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:af2d3b1dea637134487ae32a2fb468038"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab305fa82aadd690dafc10513b65efda4" id="r_ab305fa82aadd690dafc10513b65efda4"><td class="memItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_field.html#ab305fa82aadd690dafc10513b65efda4">IsPrimaryKey</a> = IsPrimaryKeyValue != PrimaryKey::No</td></tr>
 <tr class="separator:ab305fa82aadd690dafc10513b65efda4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0bf524921cbb04bc188d2845f1dfe07d" id="r_a0bf524921cbb04bc188d2845f1dfe07d"><td class="memItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_field.html#a0bf524921cbb04bc188d2845f1dfe07d">IsAutoIncrementPrimaryKey</a> = IsPrimaryKeyValue == PrimaryKey::AutoIncrement</td></tr>
+<tr class="memitem:a0bf524921cbb04bc188d2845f1dfe07d" id="r_a0bf524921cbb04bc188d2845f1dfe07d"><td class="memItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_field.html#a0bf524921cbb04bc188d2845f1dfe07d">IsAutoIncrementPrimaryKey</a> = IsPrimaryKeyValue == PrimaryKey::ServerSideAutoIncrement</td></tr>
 <tr class="separator:a0bf524921cbb04bc188d2845f1dfe07d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -188,7 +188,7 @@ struct Field&lt; T, IsPrimaryKeyValue &gt;</div><p>Represents a single column in
 <p>It is imperative that this data structure is an aggregate type, such that it works with C++20 reflection.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="class_data_mapper.html" title="Main API for mapping records to and from the database using high level C++ syntax.">DataMapper</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00057">57</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00070">70</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a74044a330047401f1a88b3099a5dd790" name="a74044a330047401f1a88b3099a5dd790"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a74044a330047401f1a88b3099a5dd790">&#9670;&#160;</a></span>ValueType</h2>
@@ -204,7 +204,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKe
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00059">59</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00072">72</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -238,7 +238,7 @@ requires std::constructible_from&lt;T, S...&gt;</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00144">144</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00157">157</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -269,7 +269,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00160">160</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00173">173</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -299,7 +299,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00167">167</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00180">180</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -329,7 +329,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00173">173</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00186">186</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -360,7 +360,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt; </div>
 
 <p>Returns a string representation of the value, suitable for use in debugging and logging. </p>
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00179">179</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00192">192</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -392,7 +392,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt; </div>
 
 <p>Sets the modified state of the field. </p>
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00213">213</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00226">226</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -423,7 +423,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt; </div>
 
 <p>Checks if the field has been modified. </p>
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00219">219</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00232">232</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -454,7 +454,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt; </div>
 
 <p>Returns the value of the field. </p>
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00225">225</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00238">238</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -485,7 +485,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt; </div>
 <p>Returns a mutable reference to the value of the field.</p>
 <dl class="section note"><dt>Note</dt><dd>If the field value is changed through this method, it will not be automatically marked as modified. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00231">231</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00244">244</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -525,7 +525,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKey&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00204">204</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00217">217</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -558,7 +558,7 @@ requires std::constructible_from&lt;T, S&gt;</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00152">152</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00165">165</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -585,7 +585,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00078">78</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00091">91</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -611,7 +611,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00079">79</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00092">92</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -637,7 +637,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00080">80</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00093">93</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
@@ -653,7 +653,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKe
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr auto <a class="el" href="struct_field.html">Field</a>&lt; T, IsPrimaryKeyValue &gt;::IsAutoIncrementPrimaryKey = IsPrimaryKeyValue == PrimaryKey::AutoIncrement</td>
+          <td class="memname">constexpr auto <a class="el" href="struct_field.html">Field</a>&lt; T, IsPrimaryKeyValue &gt;::IsAutoIncrementPrimaryKey = IsPrimaryKeyValue == PrimaryKey::ServerSideAutoIncrement</td>
         </tr>
       </table>
   </td>
@@ -663,7 +663,7 @@ template&lt;detail::FieldElementType T, PrimaryKey IsPrimaryKeyValue = PrimaryKe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00081">81</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_field_8hpp_source.html#l00094">94</a> of file <a class="el" href="_field_8hpp_source.html">Field.hpp</a>.</p>
 
 </div>
 </div>
