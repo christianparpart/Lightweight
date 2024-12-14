@@ -91,6 +91,7 @@ struct Field
     static constexpr auto IsOptional = detail::IsStdOptional<T>;
     static constexpr auto IsMandatory = !IsOptional;
     static constexpr auto IsPrimaryKey = IsPrimaryKeyValue != PrimaryKey::No;
+    static constexpr auto IsAutoAssignPrimaryKey = IsPrimaryKeyValue == PrimaryKey::AutoAssign;
     static constexpr auto IsAutoIncrementPrimaryKey = IsPrimaryKeyValue == PrimaryKey::ServerSideAutoIncrement;
 
     constexpr std::weak_ordering operator<=>(Field const& other) const noexcept;

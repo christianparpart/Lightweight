@@ -402,17 +402,16 @@ RecordId DataMapper::Create(Record& record)
 
     // If the primary key is not an auto-increment field and the primary key is not set, we need to set it.
     CallOnPrimaryKey(record, [&]<size_t PrimaryKeyIndex, typename PrimaryKeyType>(PrimaryKeyType& primaryKeyField) {
-        if constexpr (!PrimaryKeyType::IsAutoIncrementPrimaryKey)
+        if constexpr (PrimaryKeyType::IsAutoAssignPrimaryKey)
         {
-            using ValueType = typename PrimaryKeyType::ValueType;
-            if constexpr (std::same_as<ValueType, SqlGuid>)
+            if (!primaryKeyField.IsModified())
             {
-                if (!primaryKeyField.IsModified())
+                using ValueType = typename PrimaryKeyType::ValueType;
+                if constexpr (std::same_as<ValueType, SqlGuid>)
+                {
                     primaryKeyField = SqlGuid::Create();
-            }
-            else if constexpr (requires { ValueType {} + 1; })
-            {
-                if (!primaryKeyField.IsModified())
+                }
+                else if constexpr (requires { ValueType {} + 1; })
                 {
                     auto maxId = SqlStatement { _connection }.ExecuteDirectScalar<ValueType>(
                         std::format(R"sql(SELECT MAX("{}") FROM "{}")sql",
