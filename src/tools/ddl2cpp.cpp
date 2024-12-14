@@ -165,7 +165,7 @@ class CxxModelPrinter
             std::string type = MakeType(column);
             if (column.isPrimaryKey)
             {
-                m_definitions << std::format("    Field<{}, PrimaryKey::AutoIncrement> {};\n", type, column.name);
+                m_definitions << std::format("    Field<{}, PrimaryKey::ServerSideAutoIncrement> {};\n", type, column.name);
                 continue;
             }
             if (column.isForeignKey)

@@ -13,7 +13,7 @@ struct Person;
 
 struct Person final
 {
-    Field<int, PrimaryKey::AutoIncrement> id;
+    Field<int, PrimaryKey::ServerSideAutoIncrement> id;
     Field<std::string> name;
     Field<bool> is_active;
     Field<std::optional<int>> age;

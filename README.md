@@ -21,7 +21,7 @@ Documentation is available at [https://lastrada-software.github.io/Lightweight/]
 // Field<> is also used to track what fields are modified and need to be updated.
 struct Person
 {
-    Field<uint64_t, PrimaryKey::AutoIncrement> id;
+    Field<SqlGuid, PrimaryKey::AutoAssgn> id;
     Field<SqlAnsiString<25>> name;
     Field<bool> is_active { true };
     Field<std::optional<int>> age;
