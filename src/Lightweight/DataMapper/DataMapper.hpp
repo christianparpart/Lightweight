@@ -64,7 +64,7 @@ auto ToSharedPtrList(Container<Object, Allocator<Object>> container)
 /// @brief Holds the SQL tabl ename for the given record type.
 ///
 /// @ingroup DataMapper
-template <typename Record>
+template <DataMapperRecord Record>
 constexpr std::string_view RecordTableName = detail::RecordTableName<Record>::Value;
 
 /// @brief Main API for mapping records to and from the database using high level C++ syntax.
@@ -265,6 +265,8 @@ class DataMapper
 template <typename Record>
 std::string DataMapper::Inspect(Record const& record)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     std::string str;
     Reflection::CallOnMembers(record, [&str]<typename Name, typename Value>(Name const& name, Value const& value) {
         if (!str.empty())
@@ -282,6 +284,8 @@ std::string DataMapper::Inspect(Record const& record)
 template <auto I, typename Record>
 constexpr std::string_view FieldNameOf()
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     using FieldType = Reflection::MemberTypeOf<I, Record>;
     if constexpr (IsBelongsTo<FieldType>)
     {
@@ -298,6 +302,8 @@ constexpr std::string_view FieldNameOf()
 template <typename Record>
 std::vector<std::string> DataMapper::CreateTableString(SqlServerType serverType)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     auto migration = SqlQueryBuilder(*SqlQueryFormatter::Get(serverType)).Migration();
     auto createTable = migration.CreateTable(RecordTableName<Record>);
 
@@ -337,6 +343,8 @@ std::vector<std::string> DataMapper::CreateTablesString(SqlServerType serverType
 template <typename Record>
 void DataMapper::CreateTable()
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     auto const sqlQueryStrings = CreateTableString<Record>(_connection.ServerType());
     for (auto const& sqlQueryString: sqlQueryStrings)
         _stmt.ExecuteDirect(sqlQueryString);
@@ -361,6 +369,8 @@ constexpr bool HasAutoIncrementPrimaryKey =
 template <typename Record>
 RecordId DataMapper::CreateExplicit(Record const& record)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     auto query = _connection.Query(RecordTableName<Record>).Insert(nullptr);
 
     Reflection::EnumerateMembers(record, [&query]<auto I, typename FieldType>(FieldType const& /*field*/) {
@@ -389,6 +399,7 @@ template <typename Record>
 RecordId DataMapper::Create(Record& record)
 {
     static_assert(!std::is_const_v<Record>);
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
 
     // If the primary key is not an auto-increment field and the primary key is not set, we need to set it.
     CallOnPrimaryKey(record, [&]<size_t PrimaryKeyIndex, typename PrimaryKeyType>(PrimaryKeyType& primaryKeyField) {
@@ -428,6 +439,8 @@ RecordId DataMapper::Create(Record& record)
 template <typename Record>
 bool DataMapper::IsModified(Record const& record) const noexcept
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     bool modified = false;
 
     Reflection::CallOnMembers(record, [&modified](auto const& /*name*/, auto const& field) {
@@ -443,6 +456,8 @@ bool DataMapper::IsModified(Record const& record) const noexcept
 template <typename Record>
 void DataMapper::Update(Record& record)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     auto query = _connection.Query(RecordTableName<Record>).Update();
 
     Reflection::CallOnMembers(record,
@@ -480,6 +495,8 @@ void DataMapper::Update(Record& record)
 template <typename Record>
 std::size_t DataMapper::Delete(Record const& record)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     auto query = _connection.Query(RecordTableName<Record>).Delete();
 
     Reflection::CallOnMembers(
@@ -506,6 +523,8 @@ std::size_t DataMapper::Delete(Record const& record)
 template <typename Record, typename... PrimaryKeyTypes>
 std::optional<Record> DataMapper::QuerySingle(PrimaryKeyTypes&&... primaryKeys)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     auto queryBuilder = _connection.Query(RecordTableName<Record>).Select();
 
     Reflection::EnumerateMembers<Record>([&]<size_t I, typename FieldType>() {
@@ -537,6 +556,8 @@ std::optional<Record> DataMapper::QuerySingle(PrimaryKeyTypes&&... primaryKeys)
 template <typename Record, typename... Args>
 std::optional<Record> DataMapper::QuerySingle(SqlSelectQueryBuilder selectQuery, Args&&... args)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     Reflection::EnumerateMembers<Record>([&]<size_t I, typename FieldType>() {
         if constexpr (FieldWithStorage<FieldType>)
             selectQuery.Field(SqlQualifiedTableColumnName { RecordTableName<Record>, FieldNameOf<I, Record>() });
@@ -563,12 +584,16 @@ template <typename Record, typename... InputParameters>
 inline LIGHTWEIGHT_FORCE_INLINE std::vector<Record> DataMapper::Query(
     SqlSelectQueryBuilder::ComposedQuery const& selectQuery, InputParameters&&... inputParameters)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     return Query<Record>(selectQuery.ToSql(), std::forward<InputParameters>(inputParameters)...);
 }
 
 template <typename Record, typename... InputParameters>
 std::vector<Record> DataMapper::Query(std::string_view sqlQueryString, InputParameters&&... inputParameters)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     _stmt.Prepare(sqlQueryString);
     _stmt.Execute(std::forward<InputParameters>(inputParameters)...);
 
@@ -593,6 +618,7 @@ template <typename Record>
 void DataMapper::ClearModifiedState(Record& record) noexcept
 {
     static_assert(!std::is_const_v<Record>);
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
 
     Reflection::EnumerateMembers(record, []<size_t I, typename FieldType>(FieldType& field) {
         if constexpr (requires { field.SetModified(false); })
@@ -605,6 +631,8 @@ void DataMapper::ClearModifiedState(Record& record) noexcept
 template <typename Record, typename Callable>
 inline LIGHTWEIGHT_FORCE_INLINE void CallOnPrimaryKey(Record& record, Callable const& callable)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     Reflection::EnumerateMembers(record, [&]<size_t I, typename FieldType>(FieldType& field) {
         if constexpr (IsField<FieldType>)
         {
@@ -619,6 +647,8 @@ inline LIGHTWEIGHT_FORCE_INLINE void CallOnPrimaryKey(Record& record, Callable c
 template <typename Record, typename Callable>
 inline LIGHTWEIGHT_FORCE_INLINE void CallOnPrimaryKey(Callable const& callable)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     Reflection::EnumerateMembers<Record>([&]<size_t I, typename FieldType>() {
         if constexpr (IsField<FieldType>)
         {
@@ -633,6 +663,8 @@ inline LIGHTWEIGHT_FORCE_INLINE void CallOnPrimaryKey(Callable const& callable)
 template <typename Record, typename Callable>
 inline LIGHTWEIGHT_FORCE_INLINE void CallOnBelongsTo(Callable const& callable)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     Reflection::EnumerateMembers<Record>([&]<size_t I, typename FieldType>() {
         if constexpr (IsBelongsTo<FieldType>)
         {
@@ -644,6 +676,8 @@ inline LIGHTWEIGHT_FORCE_INLINE void CallOnBelongsTo(Callable const& callable)
 template <size_t FieldIndex, auto ReferencedRecordField, typename Record>
 void DataMapper::LoadBelongsTo(Record& record, BelongsTo<ReferencedRecordField>& field)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     using FieldType = BelongsTo<ReferencedRecordField>;
     using ReferencedRecord = typename FieldType::ReferencedRecord;
 
@@ -659,6 +693,9 @@ void DataMapper::LoadBelongsTo(Record& record, BelongsTo<ReferencedRecordField>&
 template <size_t FieldIndex, typename Record, typename OtherRecord, typename Callable>
 void DataMapper::CallOnHasMany(Record& record, Callable const& callback)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+    static_assert(DataMapperRecord<OtherRecord>, "OtherRecord must satisfy DataMapperRecord");
+
     using FieldType = HasMany<OtherRecord>;
     using ReferencedRecord = typename FieldType::ReferencedRecord;
 
@@ -683,6 +720,9 @@ void DataMapper::CallOnHasMany(Record& record, Callable const& callback)
 template <size_t FieldIndex, typename Record, typename OtherRecord>
 void DataMapper::LoadHasMany(Record& record, HasMany<OtherRecord>& field)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+    static_assert(DataMapperRecord<OtherRecord>, "OtherRecord must satisfy DataMapperRecord");
+
     CallOnHasMany<FieldIndex, Record, OtherRecord>(
         record, [&](SqlSelectQueryBuilder selectQuery, auto& primaryKeyField) {
             field.Emplace(detail::ToSharedPtrList(Query<OtherRecord>(selectQuery.All(), primaryKeyField.Value())));
@@ -692,6 +732,9 @@ void DataMapper::LoadHasMany(Record& record, HasMany<OtherRecord>& field)
 template <typename ReferencedRecord, typename ThroughRecord, typename Record>
 void DataMapper::LoadHasOneThrough(Record& record, HasOneThrough<ReferencedRecord, ThroughRecord>& field)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+    static_assert(DataMapperRecord<ThroughRecord>, "ThroughRecord must satisfy DataMapperRecord");
+
     // Find the PK of Record
     CallOnPrimaryKey(
         record, [&]<size_t PrimaryKeyIndex, typename PrimaryKeyType>(PrimaryKeyType const& primaryKeyField) {
@@ -744,6 +787,8 @@ void DataMapper::LoadHasOneThrough(Record& record, HasOneThrough<ReferencedRecor
 template <typename ReferencedRecord, typename ThroughRecord, typename Record, typename Callable>
 void DataMapper::CallOnHasManyThrough(Record& record, Callable const& callback)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     // Find the PK of Record
     CallOnPrimaryKey(
         record, [&]<size_t PrimaryKeyIndex, typename PrimaryKeyType>(PrimaryKeyType const& primaryKeyField) {
@@ -799,6 +844,8 @@ void DataMapper::CallOnHasManyThrough(Record& record, Callable const& callback)
 template <typename ReferencedRecord, typename ThroughRecord, typename Record>
 void DataMapper::LoadHasManyThrough(Record& record, HasManyThrough<ReferencedRecord, ThroughRecord>& field)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     CallOnHasManyThrough<ReferencedRecord, ThroughRecord>(
         record, [&](SqlSelectQueryBuilder& selectQuery, auto& primaryKeyField) {
             field.Emplace(detail::ToSharedPtrList(Query<ReferencedRecord>(selectQuery.All(), primaryKeyField.Value())));
@@ -809,6 +856,7 @@ template <typename Record>
 void DataMapper::LoadRelations(Record& record)
 {
     static_assert(!std::is_const_v<Record>);
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
 
     Reflection::EnumerateMembers<Record>(record, [&]<size_t FieldIndex, typename FieldType>(FieldType& field) {
         if constexpr (IsBelongsTo<FieldType>)
@@ -833,6 +881,8 @@ void DataMapper::LoadRelations(Record& record)
 template <typename Record>
 inline LIGHTWEIGHT_FORCE_INLINE decltype(auto) DataMapper::GetPrimaryKeyField(Record const& record) const
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     Reflection::EnumerateMembers(record, [&]<size_t I, typename FieldType>(FieldType& field) {
         if constexpr (IsField<FieldType>)
         {
@@ -847,6 +897,7 @@ inline LIGHTWEIGHT_FORCE_INLINE decltype(auto) DataMapper::GetPrimaryKeyField(Re
 template <typename Record, typename ValueType>
 inline LIGHTWEIGHT_FORCE_INLINE void DataMapper::SetId(Record& record, ValueType&& id)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
     // static_assert(HasPrimaryKey<Record>);
 
     Reflection::EnumerateMembers(record, [&]<size_t I, typename FieldType>(FieldType& field) {
@@ -863,14 +914,16 @@ inline LIGHTWEIGHT_FORCE_INLINE void DataMapper::SetId(Record& record, ValueType
 template <typename Record>
 inline LIGHTWEIGHT_FORCE_INLINE void DataMapper::BindOutputColumns(Record& record)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
     BindOutputColumns(record, &_stmt);
 }
 
 template <typename Record>
 void DataMapper::BindOutputColumns(Record& record, SqlStatement* stmt)
 {
-    assert(stmt != nullptr);
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
     static_assert(!std::is_const_v<Record>);
+    assert(stmt != nullptr);
 
     Reflection::EnumerateMembers(record, [stmt, i = SQLSMALLINT { 1 }]<size_t I, typename Field>(Field& field) mutable {
         if constexpr (requires { field.BindOutputColumn(i, *stmt); })
@@ -887,6 +940,8 @@ void DataMapper::BindOutputColumns(Record& record, SqlStatement* stmt)
 template <typename Record>
 void DataMapper::ConfigureRelationAutoLoading(Record& record)
 {
+    static_assert(DataMapperRecord<Record>, "Record must satisfy DataMapperRecord");
+
     Reflection::EnumerateMembers(record, [&]<size_t FieldIndex, typename FieldType>(FieldType& field) {
         if constexpr (IsBelongsTo<FieldType>)
         {
