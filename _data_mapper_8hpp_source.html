@@ -531,18 +531,18 @@ $(document).ready(function(){initNavTree('_data_mapper_8hpp_source.html',''); in
 <div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span> </div>
 <div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>    <span class="comment">// If the primary key is not an auto-increment field and the primary key is not set, we need to set it.</span></div>
 <div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>    CallOnPrimaryKey(record, [&amp;]&lt;<span class="keywordtype">size_t</span> PrimaryKeyIndex, <span class="keyword">typename</span> PrimaryKeyType&gt;(PrimaryKeyType&amp; primaryKeyField) {</div>
-<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>        <span class="keywordflow">if</span> (!primaryKeyField.IsModified())</div>
+<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>        <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (PrimaryKeyType::IsAutoAssignPrimaryKey)</div>
 <div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>        {</div>
-<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>            if constexpr (PrimaryKeyType::IsAutoAssignPrimaryKey)</div>
+<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>            <span class="keywordflow">if</span> (!primaryKeyField.IsModified())</div>
 <div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span>            {</div>
-<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>                using ValueType = typename PrimaryKeyType::ValueType;</div>
-<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span>                if constexpr (std::same_as&lt;ValueType, SqlGuid&gt;)</div>
+<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>                <span class="keyword">using </span>ValueType = <span class="keyword">typename</span> PrimaryKeyType::ValueType;</div>
+<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span>                <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::same_as&lt;ValueType, SqlGuid&gt;)</div>
 <div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span>                {</div>
 <div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span>                    primaryKeyField = SqlGuid::Create();</div>
 <div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span>                }</div>
-<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span>                else if constexpr (requires { ValueType {} + 1; })</div>
+<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span>                <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (<span class="keyword">requires</span> { ValueType {} + 1; })</div>
 <div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span>                {</div>
-<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span>                    auto maxId = SqlStatement { _connection }.ExecuteDirectScalar&lt;ValueType&gt;(</div>
+<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span>                    <span class="keyword">auto</span> maxId = <a class="code hl_class" href="class_sql_statement.html">SqlStatement</a> { _connection }.ExecuteDirectScalar&lt;ValueType&gt;(</div>
 <div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span>                        std::format(R<span class="stringliteral">&quot;sql(SELECT MAX(&quot;{}&quot;) FROM &quot;{}&quot;)sql&quot;,</span></div>
 <div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span><span class="stringliteral">                                    FieldNameOf&lt;PrimaryKeyIndex, Record&gt;(),</span></div>
 <div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span><span class="stringliteral">                                    RecordTableName&lt;Record&gt;));</span></div>
@@ -552,13 +552,13 @@ $(document).ready(function(){initNavTree('_data_mapper_8hpp_source.html',''); in
 <div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span><span class="stringliteral">        }</span></div>
 <div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span><span class="stringliteral">    });</span></div>
 <div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span><span class="stringliteral"></span> </div>
-<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span><span class="stringliteral">    </span><span class="keyword">auto</span> <span class="keyword">const</span> <span class="keywordtype">id</span> = CreateExplicit(record);</div>
+<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span><span class="stringliteral">    </span><span class="keyword">auto</span> <span class="keyword">const</span> <span class="keywordtype">id</span> = <a class="code hl_function" href="class_data_mapper.html#a7987f75a14a69b7360b995ee54534299">CreateExplicit</a>(record);</div>
 <div class="line"><a id="l00427" name="l00427"></a><span class="lineno">  427</span> </div>
 <div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (HasAutoIncrementPrimaryKey&lt;Record&gt;)</div>
 <div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span>        SetId(record, <span class="keywordtype">id</span>.value);</div>
 <div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span> </div>
-<div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span>    ClearModifiedState(record);</div>
-<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>    ConfigureRelationAutoLoading(record);</div>
+<div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span>    <a class="code hl_function" href="class_data_mapper.html#af4a3ac8c8611aec1ce0757a41dda1994">ClearModifiedState</a>(record);</div>
+<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>    <a class="code hl_function" href="class_data_mapper.html#ac70dd13e657b5ccb3cdda272e51dee30">ConfigureRelationAutoLoading</a>(record);</div>
 <div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span> </div>
 <div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span>    <span class="keywordflow">return</span> id;</div>
 <div class="line"><a id="l00435" name="l00435"></a><span class="lineno">  435</span>}</div>
