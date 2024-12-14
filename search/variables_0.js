@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['recordtablename_0',['RecordTableName',['../group___data_mapper.html#ga4565e3cf41830db5a08951da5702c776',1,'DataMapper.hpp']]],
-  ['referencedfield_1',['ReferencedField',['../class_belongs_to.html#a202b50834016c71710bf8d56006d2442',1,'BelongsTo']]]
+  ['columnnameoverride_0',['ColumnNameOverride',['../class_belongs_to.html#a0e0395997be796b515cf5ecd37d048f8',1,'BelongsTo']]]
 ];

@@ -20,6 +20,7 @@ var annotated_dup =
     [ "SqlQualifiedTableColumnName", "struct_sql_qualified_table_column_name.html", null ],
     [ "SqlQueryBuilder", "class_sql_query_builder.html", "class_sql_query_builder" ],
     [ "SqlQueryFormatter", "class_sql_query_formatter.html", "class_sql_query_formatter" ],
+    [ "SqlRealName", "struct_sql_real_name.html", null ],
     [ "SqlRequireLoadedError", "class_sql_require_loaded_error.html", null ],
     [ "SqlResultCursor", "class_sql_result_cursor.html", "class_sql_result_cursor" ],
     [ "SqlRowIterator", "class_sql_row_iterator.html", null ],

@@ -2,7 +2,7 @@ var searchData=
 [
   ['each_0',['each',['../class_has_many_through.html#aa03ed517bdce05cd3d2ccd4f3a42110a',1,'HasManyThrough::Each()'],['../class_has_many.html#a681d4716f9546a5986110749155cac1d',1,'HasMany::Each(Callable const &amp;callable)']]],
   ['emplace_1',['emplace',['../class_has_many.html#a7ff056401192ae5a1745fc9102b0fb86',1,'HasMany::Emplace()'],['../class_has_many_through.html#a2064ef55f4172fedb05962508c86f6ed',1,'HasManyThrough::Emplace()']]],
-  ['emplacerecord_2',['emplacerecord',['../class_belongs_to.html#a1247cb1b17a503019cfa16b86be87fb4',1,'BelongsTo::EmplaceRecord()'],['../class_has_one_through.html#afa1ba0a866de9922e6935e35db2bc5a7',1,'HasOneThrough::EmplaceRecord()']]],
+  ['emplacerecord_2',['emplacerecord',['../class_belongs_to.html#a80cdd134276af4c8bf91d96ef93aa65e',1,'BelongsTo::EmplaceRecord()'],['../class_has_one_through.html#afa1ba0a866de9922e6935e35db2bc5a7',1,'HasOneThrough::EmplaceRecord()']]],
   ['example_3a_20crud_20style_20high_20level_20data_20mapping_3',['Example: CRUD-style High level Data Mapping',['../index.html#example-crud-style-high-level-data-mapping',1,'']]],
   ['example_3a_20simple_20row_20retrieval_20via_20structs_4',['Example: Simple row retrieval via structs',['../index.html#example-simple-row-retrieval-via-structs',1,'']]],
   ['examples_5',['Usage Examples',['../md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html',1,'']]],

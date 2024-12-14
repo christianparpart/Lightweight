@@ -2,7 +2,7 @@ var searchData=
 [
   ['each_0',['each',['../class_has_many.html#a681d4716f9546a5986110749155cac1d',1,'HasMany::Each()'],['../class_has_many_through.html#aa03ed517bdce05cd3d2ccd4f3a42110a',1,'HasManyThrough::Each()']]],
   ['emplace_1',['emplace',['../class_has_many.html#a7ff056401192ae5a1745fc9102b0fb86',1,'HasMany::Emplace()'],['../class_has_many_through.html#a2064ef55f4172fedb05962508c86f6ed',1,'HasManyThrough::Emplace()']]],
-  ['emplacerecord_2',['emplacerecord',['../class_belongs_to.html#a1247cb1b17a503019cfa16b86be87fb4',1,'BelongsTo::EmplaceRecord()'],['../class_has_one_through.html#afa1ba0a866de9922e6935e35db2bc5a7',1,'HasOneThrough::EmplaceRecord()']]],
+  ['emplacerecord_2',['emplacerecord',['../class_belongs_to.html#a80cdd134276af4c8bf91d96ef93aa65e',1,'BelongsTo::EmplaceRecord()'],['../class_has_one_through.html#afa1ba0a866de9922e6935e35db2bc5a7',1,'HasOneThrough::EmplaceRecord()']]],
   ['execute_3',['Execute',['../class_sql_statement.html#a7d7fc4df758cfd56e3ddaf296b3b1411',1,'SqlStatement']]],
   ['executebatch_4',['ExecuteBatch',['../class_sql_statement.html#a0071b804ef24c9c48ee18e5c1e20aede',1,'SqlStatement']]],
   ['executebatchnative_5',['ExecuteBatchNative',['../class_sql_statement.html#a2433d1a76eaddd26aa22cc49b43a9806',1,'SqlStatement']]],

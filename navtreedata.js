@@ -56,7 +56,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_api_8hpp_source.html",
-"class_sql_statement.html"
+"class_sql_select_query_builder.html#af9636e9707f36e3c6b5e21ff538758e7"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
