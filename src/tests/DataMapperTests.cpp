@@ -39,6 +39,31 @@ std::ostream& operator<<(std::ostream& os, Field<T, P1, P2> const& field)
               << (field.IsModified() ? "modified" : "not modified") << " }";
 }
 
+struct NamingTest1
+{
+    Field<int> normal;
+    Field<int, SqlRealName { "c1" }> name;
+};
+
+struct NamingTest2
+{
+    Field<int, PrimaryKey::AutoAssign, SqlRealName { "First_PK" }> pk1;
+    Field<int, SqlRealName { "Second_PK" }, PrimaryKey::AutoAssign> pk2;
+
+    static constexpr std::string_view TableName = "NamingTest2_aliased"sv;
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "SQL entity naming", "[DataMapper]")
+{
+    CHECK(FieldNameOf<0, NamingTest1> == "normal"sv);
+    CHECK(FieldNameOf<1, NamingTest1> == "c1"sv);
+    CHECK(RecordTableName<NamingTest1> == "NamingTest1"sv);
+
+    CHECK(FieldNameOf<0, NamingTest2> == "First_PK"sv);
+    CHECK(FieldNameOf<1, NamingTest2> == "Second_PK"sv);
+    CHECK(RecordTableName<NamingTest2> == "NamingTest2_aliased"sv);
+}
+
 struct Person
 {
     Field<SqlGuid, PrimaryKey::AutoAssign> id;
