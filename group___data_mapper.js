@@ -106,6 +106,6 @@ var group___data_mapper =
       [ "operator->", "class_has_one_through.html#ab8dd2cec742cef96bb13bf935cf23c3f", null ],
       [ "SetAutoLoader", "class_has_one_through.html#a6f6f6b0db57bb1b21866f113384ce076", null ]
     ] ],
-    [ "FieldNameOf", "group___data_mapper.html#ga5c450483b9a3f4df48eafb835242946f", null ],
-    [ "RecordTableName", "group___data_mapper.html#ga4565e3cf41830db5a08951da5702c776", null ]
+    [ "RecordTableName", "group___data_mapper.html#ga4565e3cf41830db5a08951da5702c776", null ],
+    [ "FieldNameOf", "group___data_mapper.html#ga2665a959d7015cc22cabb0334b056bd8", null ]
 ];
