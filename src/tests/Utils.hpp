@@ -227,6 +227,20 @@ class ScopedSqlNullLogger: public SqlLogger::Null
     }
 };
 
+template <typename Getter, typename Callable>
+constexpr void FixedPointIterate(Getter const& getter, Callable const& callable)
+{
+    auto a = getter();
+    for (;;)
+    {
+        callable(a);
+        auto b = getter();
+        if (a == b)
+            break;
+        a = std::move(b);
+    }
+}
+
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 class SqlTestFixture
 {
@@ -345,11 +359,22 @@ class SqlTestFixture
         switch (stmt.Connection().ServerType())
         {
             case SqlServerType::MICROSOFT_SQL:
+            case SqlServerType::MYSQL:
                 stmt.ExecuteDirect(std::format("USE \"{}\"", testDatabaseName));
+                [[fallthrough]];
+            case SqlServerType::SQLITE:
+            case SqlServerType::UNKNOWN:
+                FixedPointIterate([] { return GetAllTableNames(); },
+                                  [&stmt](auto const& names) {
+                                      for (auto const& name: names)
+                                          stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", name));
+                                  });
+                break;
+            case SqlServerType::POSTGRESQL:
                 if (m_createdTables.empty())
                     m_createdTables = GetAllTableNames();
                 for (auto& createdTable: std::views::reverse(m_createdTables))
-                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", createdTable));
+                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\" CASCADE", createdTable));
                 break;
             case SqlServerType::ORACLE: {
                 // Drop user-created tables
@@ -365,16 +390,6 @@ class SqlTestFixture
                     stmt.ExecuteDirect(std::format("DROP TABLE \"{}\"", tableName));
                 break;
             }
-            case SqlServerType::POSTGRESQL:
-                if (m_createdTables.empty())
-                    m_createdTables = GetAllTableNames();
-                for (auto& createdTable: std::views::reverse(m_createdTables))
-                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\" CASCADE", createdTable));
-                break;
-            default:
-                for (auto& createdTable: std::views::reverse(m_createdTables))
-                    stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", createdTable));
-                break;
         }
         m_createdTables.clear();
     }
