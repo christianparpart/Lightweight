@@ -8,8 +8,11 @@
 #include "../Utils.hpp"
 #include "Error.hpp"
 #include "Field.hpp"
+#include "SqlRealName.hpp"
 
 #include <compare>
+#include <optional>
+#include <string_view>
 #include <type_traits>
 
 /// @brief Represents a one-to-one relationship.
@@ -18,12 +21,20 @@
 /// in the form of `&OtherRecord::Field`.
 ///
 /// @ingroup DataMapper
-template <auto TheReferencedField>
+template <auto TheReferencedField, auto ColumnNameOverrideString = std::nullopt>
 class BelongsTo
 {
   public:
     /// The field in the other record that references the current record.
     static constexpr auto ReferencedField = TheReferencedField;
+
+    /// If not an empty string, this value will be used as the column name in the database.
+    static constexpr std::string_view ColumnNameOverride = []() {
+        if constexpr (!std::same_as<decltype(ColumnNameOverrideString), std::nullopt_t>)
+            return ColumnNameOverrideString;
+        else
+            return std::string_view {};
+    }();
 
     /// Represents the record type of the other field.
     using ReferencedRecord = MemberClassType<decltype(TheReferencedField)>;

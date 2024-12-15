@@ -20,8 +20,8 @@ std::ostream& operator<<(std::ostream& os, RecordId const& id)
     return os << id.value;
 }
 
-template <typename T, PrimaryKey IsPrimaryKeyValue>
-std::ostream& operator<<(std::ostream& os, Field<std::optional<T>, IsPrimaryKeyValue> const& field)
+template <typename T, auto P1, auto P2>
+std::ostream& operator<<(std::ostream& os, Field<std::optional<T>, P1, P2> const& field)
 {
     if (field.Value())
         return os << std::format("Field<{}> {{ {}, {} }}",
@@ -32,11 +32,36 @@ std::ostream& operator<<(std::ostream& os, Field<std::optional<T>, IsPrimaryKeyV
         return os << "NULL";
 }
 
-template <typename T, PrimaryKey IsPrimaryKeyValue>
-std::ostream& operator<<(std::ostream& os, Field<T, IsPrimaryKeyValue> const& field)
+template <typename T, auto P1, auto P2>
+std::ostream& operator<<(std::ostream& os, Field<T, P1, P2> const& field)
 {
     return os << std::format("Field<{}> {{ ", Reflection::TypeName<T>) << "value: " << field.Value() << "; "
               << (field.IsModified() ? "modified" : "not modified") << " }";
+}
+
+struct NamingTest1
+{
+    Field<int> normal;
+    Field<int, SqlRealName { "c1" }> name;
+};
+
+struct NamingTest2
+{
+    Field<int, PrimaryKey::AutoAssign, SqlRealName { "First_PK" }> pk1;
+    Field<int, SqlRealName { "Second_PK" }, PrimaryKey::AutoAssign> pk2;
+
+    static constexpr std::string_view TableName = "NamingTest2_aliased"sv;
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "SQL entity naming", "[DataMapper]")
+{
+    CHECK(FieldNameOf<0, NamingTest1> == "normal"sv);
+    CHECK(FieldNameOf<1, NamingTest1> == "c1"sv);
+    CHECK(RecordTableName<NamingTest1> == "NamingTest1"sv);
+
+    CHECK(FieldNameOf<0, NamingTest2> == "First_PK"sv);
+    CHECK(FieldNameOf<1, NamingTest2> == "Second_PK"sv);
+    CHECK(RecordTableName<NamingTest2> == "NamingTest2_aliased"sv);
 }
 
 struct Person
@@ -594,4 +619,39 @@ TEST_CASE_METHOD(SqlTestFixture, "Table with multiple primary keys", "[DataMappe
     auto const& queriedRecord = queriedRecords.at(0);
     INFO("Queried record: " << DataMapper::Inspect(queriedRecord));
     CHECK(queriedRecord == record);
+}
+
+struct AliasedRecord
+{
+    Field<uint64_t, PrimaryKey::ServerSideAutoIncrement, SqlRealName { "pk" }> id {};
+    Field<SqlAnsiString<30>, SqlRealName { "c1" }> name;
+    Field<SqlAnsiString<30>, SqlRealName { "c2" }> comment;
+
+    static constexpr std::string_view TableName = "TheAliasedRecord";
+
+    constexpr std::weak_ordering operator<=>(AliasedRecord const& other) const = default;
+};
+
+std::ostream& operator<<(std::ostream& os, AliasedRecord const& record)
+{
+    return os << DataMapper::Inspect(record);
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "Table with aliased column names", "[DataMapper]")
+{
+    auto dm = DataMapper {};
+
+    dm.CreateTable<AliasedRecord>();
+
+    auto record = AliasedRecord { .name = "John Doe", .comment = "Hello, World!" };
+    dm.Create(record);
+
+    auto const queriedRecord = dm.QuerySingle<AliasedRecord>(record.id).value();
+    CHECK(queriedRecord == record);
+
+    auto const queriedRecords2 = dm.Query<AliasedRecord>(
+        dm.FromTable(AliasedRecord::TableName).Select().Fields({ "pk"sv, "c1"sv, "c2"sv }, "TheAliasedRecord").All());
+    CHECK(queriedRecords2.size() == 1);
+    auto const& queriedRecord2 = queriedRecords2.at(0);
+    CHECK(queriedRecord2 == record);
 }
