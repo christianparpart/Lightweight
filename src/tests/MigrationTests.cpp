@@ -121,3 +121,78 @@ TEST_CASE_METHOD(SqlMigrationTestFixture, "CreateTable", "[SqlMigration]")
     CHECK(migrationManager.ApplyPendingMigrations() == 1);
     CHECK(migrationManager.GetPending().empty());
 }
+
+// #include <Lightweight/DataMapper/DataMapper.hpp>
+
+namespace FKTests
+{
+struct Order;
+
+struct Person
+{
+    Field<int64_t, PrimaryKey::AutoAssign> id;
+    Field<SqlString<50>> name;
+    Field<SqlString<100>> email;
+    Field<std::optional<SqlString<100>>> password;
+    Field<SqlDateTime> created_at = SqlDateTime::Now();
+    Field<SqlDateTime> updated_at = SqlDateTime::Now();
+    // HasMany<Order> orders;
+
+    static constexpr auto TableName = "persons";
+};
+
+struct Order
+{
+    Field<int64_t, PrimaryKey::AutoAssign> id;
+    BelongsTo<&Person::id> person;
+    Field<SqlDateTime> created_at = SqlDateTime::Now();
+    Field<SqlDateTime> updated_at = SqlDateTime::Now();
+
+    static constexpr auto TableName = "orders";
+};
+} // namespace FKTests
+
+TEST_CASE_METHOD(SqlMigrationTestFixture, "Migration with foreign key", "[SqlMigration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+
+    // clang-format off
+    auto createPersonMigration = SqlMigration::Migration(
+        SqlMigration::MigrationTimestamp { 202412102211 },
+        "description here",
+        [](SqlMigrationQueryBuilder& plan) {
+            plan.CreateTable("persons")
+                .PrimaryKey("id", Bigint())
+                .RequiredColumn("name", Varchar(50)).Unique().Index()
+                .RequiredColumn("email", Varchar(100)).Unique().Index()
+                .Column("password", Varchar(100))
+                .Timestamps();
+        }
+    );
+
+    auto createOrderMigration = SqlMigration::Migration(
+        SqlMigration::MigrationTimestamp { 202412102212 },
+        "description here",
+        [](SqlMigrationQueryBuilder& plan) {
+            plan.CreateTable("orders")
+                .PrimaryKey("id", Bigint())
+                .ForeignKey("person_id", Bigint(), SqlForeignKeyReferenceDefinition { .tableName = "persons", .columnName = "id" })
+                .Timestamps();
+        }
+    );
+    // clang-format on
+
+    auto& migrationManager = SqlMigration::MigrationManager::GetInstance();
+    auto& dm = migrationManager.GetDataMapper();
+    migrationManager.CreateMigrationHistory();
+    migrationManager.ApplyPendingMigrations();
+
+    auto person = FKTests::Person {};
+    person.name = "John Doe";
+    person.email = "john@doe.com";
+    dm.Create(person);
+
+    auto order = FKTests::Order {};
+    order.person = person;
+    dm.Create(order);
+}

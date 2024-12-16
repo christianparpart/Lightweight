@@ -20,38 +20,6 @@ class PostgreSqlFormatter;
 class SqlServerQueryFormatter;
 class OracleSqlQueryFormatter;
 
-template <typename Database>
-struct ForeignKeyFormatter;
-
-template <typename Database>
-    requires(detail::OneOf<Database, BasicSqlQueryFormatter, PostgreSqlFormatter>)
-struct ForeignKeyFormatter<Database>
-{
-
-    [[nodiscard]] std::string operator()(SqlColumnDeclaration const& column)
-    {
-        return std::format(R"(FOREIGN KEY ("{}") REFERENCES "{}"("{}"))",
-                           column.name,
-                           column.foreignKey->tableName,
-                           column.foreignKey->columnName);
-    }
-};
-
-template <typename Database>
-    requires(detail::OneOf<Database, SqlServerQueryFormatter, OracleSqlQueryFormatter>)
-struct ForeignKeyFormatter<Database>
-{
-
-    [[nodiscard]] std::string operator()(SqlColumnDeclaration const& column)
-    {
-        return std::format(R"(CONSTRAINT {} FOREIGN KEY ("{}") REFERENCES "{}"("{}"))",
-                           std::format("FK_{}", column.name),
-                           column.name,
-                           column.foreignKey->tableName,
-                           column.foreignKey->columnName);
-    }
-};
-
 class BasicSqlQueryFormatter: public SqlQueryFormatter
 {
   public:
@@ -207,11 +175,6 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
     {
         std::stringstream sqlQueryString;
 
-        if (column.foreignKey)
-        {
-            return ForeignKeyFormatter<std::remove_cvref_t<decltype(*this)>> {}(column);
-        }
-
         sqlQueryString << '"' << column.name << "\" ";
 
         if (column.primaryKey != SqlPrimaryKeyType::AUTO_INCREMENT)
@@ -230,6 +193,15 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
         return sqlQueryString.str();
     }
 
+    [[nodiscard]] static std::string BuildForeignKeyConstraint(SqlColumnDeclaration const& column)
+    {
+        return std::format(R"(CONSTRAINT {} FOREIGN KEY ("{}") REFERENCES "{}"("{}"))",
+                           std::format("FK_{}", column.name),
+                           column.name,
+                           column.foreignKey->tableName,
+                           column.foreignKey->columnName);
+    }
+
     [[nodiscard]] StringList CreateTable(std::string_view tableName,
                                          std::vector<SqlColumnDeclaration> const& columns) const override
     {
@@ -240,6 +212,7 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
             sqlQueryString << "CREATE TABLE \"" << tableName << "\" (";
             size_t currentColumn = 0;
             std::string primaryKeyColumns;
+            std::string foreignKeyConstraints;
             for (SqlColumnDeclaration const& column: columns)
             {
                 if (currentColumn > 0)
@@ -255,9 +228,17 @@ class BasicSqlQueryFormatter: public SqlQueryFormatter
                     primaryKeyColumns += column.name;
                     primaryKeyColumns += '"';
                 }
+                if (column.foreignKey)
+                {
+                    foreignKeyConstraints += ",\n    ";
+                    foreignKeyConstraints += BuildForeignKeyConstraint(column);
+                }
             }
             if (!primaryKeyColumns.empty())
                 sqlQueryString << ",\n    PRIMARY KEY (" << primaryKeyColumns << ")";
+
+            sqlQueryString << foreignKeyConstraints;
+
             sqlQueryString << "\n);";
             return sqlQueryString.str();
         }());
@@ -484,11 +465,6 @@ class SqlServerQueryFormatter final: public BasicSqlQueryFormatter
 
     [[nodiscard]] std::string BuildColumnDefinition(SqlColumnDeclaration const& column) const override
     {
-        if (column.foreignKey)
-        {
-            return ForeignKeyFormatter<std::remove_cvref_t<decltype(*this)>> {}(column);
-        }
-
         std::stringstream sqlQueryString;
         sqlQueryString << '"' << column.name << "\" " << ColumnType(column.type);
 
@@ -666,11 +642,6 @@ class OracleSqlQueryFormatter final: public BasicSqlQueryFormatter
 
     [[nodiscard]] std::string BuildColumnDefinition(SqlColumnDeclaration const& column) const override
     {
-        if (column.foreignKey)
-        {
-            return ForeignKeyFormatter<std::remove_cvref_t<decltype(*this)>> {}(column);
-        }
-
         std::stringstream sqlQueryString;
         sqlQueryString << '"' << column.name << "\" " << ColumnType(column.type);
 
@@ -703,11 +674,6 @@ class PostgreSqlFormatter final: public BasicSqlQueryFormatter
 
     [[nodiscard]] std::string BuildColumnDefinition(SqlColumnDeclaration const& column) const override
     {
-        if (column.foreignKey)
-        {
-            return ForeignKeyFormatter<std::remove_cvref_t<decltype(*this)>> {}(column);
-        }
-
         std::stringstream sqlQueryString;
 
         sqlQueryString << '"' << column.name << "\" ";
