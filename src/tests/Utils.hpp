@@ -11,6 +11,7 @@
 #include "../Lightweight/SqlConnection.hpp"
 #include "../Lightweight/SqlDataBinder.hpp"
 #include "../Lightweight/SqlLogger.hpp"
+#include "../Lightweight/SqlSchema.hpp"
 #include "../Lightweight/SqlStatement.hpp"
 #include "../Lightweight/Utils.hpp"
 
@@ -346,16 +347,35 @@ class SqlTestFixture
 
     SqlTestFixture()
     {
-        REQUIRE(SqlConnection().IsAlive());
-        DropAllTablesInDatabase();
+        auto stmt = SqlStatement();
+        REQUIRE(stmt.IsAlive());
+        DropAllTablesInDatabase(stmt);
     }
 
     virtual ~SqlTestFixture() = default;
 
-    static void DropAllTablesInDatabase()
+    static std::string ToString(std::vector<std::string> const& values, std::string_view separator)
     {
-        auto stmt = SqlStatement {};
+        auto result = std::string {};
+        for (auto const& value: values)
+        {
+            if (!result.empty())
+                result += separator;
+            result += value;
+        }
+        return result;
+    }
 
+    static void DropTableRecursively(SqlStatement& stmt, SqlSchema::FullyQualifiedTableName const& table)
+    {
+        auto const dependantTables = SqlSchema::AllForeignKeysTo(stmt, table);
+        for (auto const& dependantTable: dependantTables)
+            DropTableRecursively(stmt, dependantTable.foreignKey.table);
+        stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", table.table));
+    }
+
+    static void DropAllTablesInDatabase(SqlStatement& stmt)
+    {
         switch (stmt.Connection().ServerType())
         {
             case SqlServerType::MICROSOFT_SQL:
@@ -363,16 +383,20 @@ class SqlTestFixture
                 stmt.ExecuteDirect(std::format("USE \"{}\"", testDatabaseName));
                 [[fallthrough]];
             case SqlServerType::SQLITE:
-            case SqlServerType::UNKNOWN:
-                FixedPointIterate([] { return GetAllTableNames(); },
-                                  [&stmt](auto const& names) {
-                                      for (auto const& name: names)
-                                          stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\"", name));
-                                  });
+            case SqlServerType::UNKNOWN: {
+                auto const tableNames = GetAllTableNames(stmt);
+                for (auto const& tableName: tableNames)
+                    DropTableRecursively(stmt,
+                                         SqlSchema::FullyQualifiedTableName {
+                                             .catalog = {},
+                                             .schema = {},
+                                             .table = tableName,
+                                         });
                 break;
+            }
             case SqlServerType::POSTGRESQL:
                 if (m_createdTables.empty())
-                    m_createdTables = GetAllTableNames();
+                    m_createdTables = GetAllTableNames(stmt);
                 for (auto& createdTable: std::views::reverse(m_createdTables))
                     stmt.ExecuteDirect(std::format("DROP TABLE IF EXISTS \"{}\" CASCADE", createdTable));
                 break;
@@ -395,11 +419,10 @@ class SqlTestFixture
     }
 
   private:
-    static std::vector<std::string> GetAllTableNames()
+    static std::vector<std::string> GetAllTableNames(SqlStatement& stmt)
     {
         using namespace std::string_view_literals;
         auto result = std::vector<std::string>();
-        auto stmt = SqlStatement();
         auto const schemaName = stmt.Connection().ServerType() == SqlServerType::MICROSOFT_SQL ? "dbo"sv : ""sv;
         auto const sqlResult = SQLTables(stmt.NativeHandle(),
                                          (SQLCHAR*) testDatabaseName.data(),

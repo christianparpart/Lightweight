@@ -664,7 +664,10 @@ TEMPLATE_LIST_TEST_CASE("SqlDataBinder specializations", "[SqlDataBinder]", Type
 
     GIVEN(Reflection::TypeName<TestType>)
     {
-        SqlTestFixture::DropAllTablesInDatabase();
+        {
+            auto stmt = SqlStatement {};
+            SqlTestFixture::DropAllTablesInDatabase(stmt);
+        }
 
         // Connecting to the database (using the default connection) the verbose way,
         // purely to demonstrate how to do it.

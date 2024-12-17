@@ -94,22 +94,28 @@ namespace
         return result;
     }
 
-    std::vector<ForeignKeyConstraint> AllForeignKeys(FullyQualifiedTableName const& primaryKey,
+    std::vector<ForeignKeyConstraint> AllForeignKeys(SqlStatement& stmt,
+                                                     FullyQualifiedTableName const& primaryKey,
                                                      FullyQualifiedTableName const& foreignKey)
     {
-        auto stmt = SqlStatement();
+        auto* pkCatalog = (SQLCHAR*) (!primaryKey.catalog.empty() ? primaryKey.catalog.c_str() : nullptr);
+        auto* pkSchema = (SQLCHAR*) (!primaryKey.schema.empty() ? primaryKey.schema.c_str() : nullptr);
+        auto* pkTable = (SQLCHAR*) (!primaryKey.table.empty() ? primaryKey.table.c_str() : nullptr);
+        auto* fkCatalog = (SQLCHAR*) (!foreignKey.catalog.empty() ? foreignKey.catalog.c_str() : nullptr);
+        auto* fkSchema = (SQLCHAR*) (!foreignKey.schema.empty() ? foreignKey.schema.c_str() : nullptr);
+        auto* fkTable = (SQLCHAR*) (!foreignKey.table.empty() ? foreignKey.table.c_str() : nullptr);
         auto sqlResult = SQLForeignKeys(stmt.NativeHandle(),
-                                        (SQLCHAR*) primaryKey.catalog.data(),
+                                        pkCatalog,
                                         (SQLSMALLINT) primaryKey.catalog.size(),
-                                        (SQLCHAR*) primaryKey.schema.data(),
+                                        pkSchema,
                                         (SQLSMALLINT) primaryKey.schema.size(),
-                                        (SQLCHAR*) primaryKey.table.data(),
+                                        pkTable,
                                         (SQLSMALLINT) primaryKey.table.size(),
-                                        (SQLCHAR*) foreignKey.catalog.data(),
+                                        fkCatalog,
                                         (SQLSMALLINT) foreignKey.catalog.size(),
-                                        (SQLCHAR*) foreignKey.schema.data(),
+                                        fkSchema,
                                         (SQLSMALLINT) foreignKey.schema.size(),
-                                        (SQLCHAR*) foreignKey.table.data(),
+                                        fkTable,
                                         (SQLSMALLINT) foreignKey.table.size());
 
         if (!SQL_SUCCEEDED(sqlResult))
@@ -124,6 +130,7 @@ namespace
                 .schema = stmt.GetColumn<std::string>(2),
                 .table = stmt.GetColumn<std::string>(3),
             };
+            auto pkColumnName = stmt.GetColumn<std::string>(4);
             auto foreignKeyTable = FullyQualifiedTableColumn {
                 .table =
                     FullyQualifiedTableName {
@@ -133,11 +140,11 @@ namespace
                     },
                 .column = stmt.GetColumn<std::string>(8),
             };
-            ColumnList& keyColumns = constraints[{ primaryKeyTable, foreignKeyTable }];
             auto const sequenceNumber = stmt.GetColumn<size_t>(9);
+            ColumnList& keyColumns = constraints[{ primaryKeyTable, foreignKeyTable }];
             if (sequenceNumber > keyColumns.size())
                 keyColumns.resize(sequenceNumber);
-            keyColumns[sequenceNumber - 1] = stmt.GetColumn<std::string>(4);
+            keyColumns[sequenceNumber - 1] = std::move(pkColumnName);
         }
 
         auto result = std::vector<ForeignKeyConstraint>();
@@ -154,22 +161,10 @@ namespace
         return result;
     }
 
-    std::vector<ForeignKeyConstraint> AllForeignKeysTo(FullyQualifiedTableName const& table)
-    {
-        return AllForeignKeys(table, FullyQualifiedTableName {});
-    }
-
-    std::vector<ForeignKeyConstraint> AllForeignKeysFrom(FullyQualifiedTableName const& table)
-    {
-        return AllForeignKeys(FullyQualifiedTableName {}, table);
-    }
-
-    std::vector<std::string> AllPrimaryKeys(FullyQualifiedTableName const& table)
+    std::vector<std::string> AllPrimaryKeys(SqlStatement& stmt, FullyQualifiedTableName const& table)
     {
         std::vector<std::string> keys;
         std::vector<size_t> sequenceNumbers;
-
-        auto stmt = SqlStatement();
 
         auto sqlResult = SQLPrimaryKeys(stmt.NativeHandle(),
                                         (SQLCHAR*) table.catalog.data(),
@@ -199,6 +194,7 @@ namespace
 
 void ReadAllTables(std::string_view database, std::string_view schema, EventHandler& eventHandler)
 {
+    auto stmt = SqlStatement {};
     auto const tableNames = AllTables(database, schema);
 
     for (auto const& tableName: tableNames)
@@ -215,11 +211,11 @@ void ReadAllTables(std::string_view database, std::string_view schema, EventHand
             .table = std::string(tableName),
         };
 
-        auto const primaryKeys = AllPrimaryKeys(fullyQualifiedTableName);
+        auto const primaryKeys = AllPrimaryKeys(stmt, fullyQualifiedTableName);
         eventHandler.OnPrimaryKeys(tableName, primaryKeys);
 
-        auto const foreignKeys = AllForeignKeysFrom(fullyQualifiedTableName);
-        auto const incomingForeignKeys = AllForeignKeysTo(fullyQualifiedTableName);
+        auto const foreignKeys = AllForeignKeysFrom(stmt, fullyQualifiedTableName);
+        auto const incomingForeignKeys = AllForeignKeysTo(stmt, fullyQualifiedTableName);
 
         for (auto const& foreignKey: foreignKeys)
             eventHandler.OnForeignKey(foreignKey);
@@ -344,6 +340,16 @@ TableList ReadAllTables(std::string_view database, std::string_view schema)
     }
 
     return tables;
+}
+
+std::vector<ForeignKeyConstraint> AllForeignKeysTo(SqlStatement& stmt, FullyQualifiedTableName const& table)
+{
+    return AllForeignKeys(stmt, table, FullyQualifiedTableName {});
+}
+
+std::vector<ForeignKeyConstraint> AllForeignKeysFrom(SqlStatement& stmt, FullyQualifiedTableName const& table)
+{
+    return AllForeignKeys(stmt, FullyQualifiedTableName {}, table);
 }
 
 } // namespace SqlSchema
