@@ -394,4 +394,70 @@ TEST_CASE_METHOD(SqlTestFixture, "Prepare and move", "[SqlStatement]")
     CHECK(stmt.GetColumn<int>(1) == 42);
 }
 
+struct Simple1
+{
+    uint64_t pk;
+    SqlAnsiString<30> c1;
+    SqlAnsiString<30> c2;
+};
+
+struct Simple2
+{
+    uint64_t pk;
+    SqlAnsiString<30> c1;
+    SqlAnsiString<30> c2;
+};
+
+TEST_CASE_METHOD(SqlTestFixture, "SELECT into two structs", "[SqlStatement]")
+{
+    auto conn = SqlConnection {};
+    auto stmt = SqlStatement { conn };
+
+    GIVEN("two tables")
+    {
+        stmt.MigrateDirect([](SqlMigrationQueryBuilder& migration) {
+            using namespace SqlColumnTypeDefinitions;
+            migration.CreateTable(RecordTableName<Simple1>)
+                .PrimaryKeyWithAutoIncrement("pk", Bigint {})
+                .Column("c1", Varchar { 30 })
+                .Column("c2", Varchar { 30 });
+            migration.CreateTable(RecordTableName<Simple2>)
+                .PrimaryKeyWithAutoIncrement("pk", Bigint {})
+                .Column("c1", Varchar { 30 })
+                .Column("c2", Varchar { 30 });
+        });
+
+        WHEN("inserting some data and getting it via multi struct query building")
+        {
+            stmt.ExecuteDirect(conn.Query(RecordTableName<Simple1>).Insert().Set("c1", "a").Set("c2", "b"));
+            stmt.ExecuteDirect(conn.Query(RecordTableName<Simple2>).Insert().Set("c1", "a").Set("c2", "c"));
+
+            // clang-format off
+            stmt.Prepare(
+                conn.Query(RecordTableName<Simple1>)
+                    .Select()
+                    .Fields<Simple1, Simple2>()
+                    .LeftOuterJoin(RecordTableName<Simple2>, "c1", "c1").All());
+            // clang-format on
+
+            stmt.Execute();
+
+            THEN("we can fetch the data using multi struct output binding")
+            {
+                auto s1 = Simple1 {};
+                auto s2 = Simple2 {};
+                stmt.BindOutputColumnsToRecord(&s1, &s2);
+
+                REQUIRE(stmt.FetchRow());
+                CHECK(s1.c1 == "a");
+                CHECK(s1.c2 == "b");
+                CHECK(s2.c1 == "a");
+                CHECK(s2.c2 == "c");
+
+                REQUIRE(!stmt.FetchRow());
+            }
+        }
+    }
+}
+
 // NOLINTEND(readability-container-size-empty)

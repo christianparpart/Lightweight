@@ -111,9 +111,19 @@ class SqlStatement final: public SqlDataBinderCallback
 
     /// Binds the given arguments to the prepared statement to store the fetched data to.
     ///
-    /// The statement must be prepared before calling this function.
+    /// @note The statement must be prepared before calling this function.
     template <SqlOutputColumnBinder... Args>
     void BindOutputColumns(Args*... args);
+
+    /// Binds the given arguments to the prepared statement to store the fetched data to.
+    ///
+    /// @param records The records to bind each member to.
+    ///
+    /// @note The statement must be prepared before calling this function.
+    /// @note The records must be aggregate types, i.e. classes with public members and no user-defined constructors.
+    template <typename... Records>
+        requires(((std::is_class_v<Records> && std::is_aggregate_v<Records>) && ...))
+    void BindOutputColumnsToRecord(Records*... records);
 
     template <SqlOutputColumnBinder T>
     void BindOutputColumn(SQLUSMALLINT columnIndex, T* arg);
@@ -449,6 +459,22 @@ inline LIGHTWEIGHT_FORCE_INLINE void SqlStatement::BindOutputColumns(Args*... ar
 
     SQLUSMALLINT i = 0;
     ((++i, RequireSuccess(SqlDataBinder<Args>::OutputColumn(m_hStmt, i, args, GetIndicatorForColumn(i), *this))), ...);
+}
+
+template <typename... Records>
+    requires(((std::is_class_v<Records> && std::is_aggregate_v<Records>) && ...))
+void SqlStatement::BindOutputColumnsToRecord(Records*... records)
+{
+    RequireIndicators();
+
+    SQLUSMALLINT i = 0;
+    ((Reflection::EnumerateMembers(*records,
+                                   [this, &i]<size_t I, typename FieldType>(FieldType& value) {
+                                       ++i;
+                                       RequireSuccess(SqlDataBinder<FieldType>::OutputColumn(
+                                           m_hStmt, i, &value, GetIndicatorForColumn(i), *this));
+                                   })),
+     ...);
 }
 
 template <SqlOutputColumnBinder T>
