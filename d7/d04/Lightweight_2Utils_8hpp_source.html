@@ -162,13 +162,19 @@ $(document).ready(function(){initNavTree('d7/d04/Lightweight_2Utils_8hpp_source.
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>};</div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>} <span class="comment">// namespace detail</span></div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span> </div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="keyword">template</span> &lt;<span class="keyword">template</span> &lt;<span class="keyword">typename</span>...&gt; <span class="keyword">class </span>S, <span class="keyword">class </span>T&gt;</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span><span class="keyword">concept </span>IsSpecializationOf = detail::is_specialization_of&lt;S, T&gt;::value;</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span><span class="keyword">using </span>MemberClassType = <span class="keyword">typename</span> detail::MemberClassTypeHelper&lt;T&gt;::type;</div>
-<div class="ttc" id="agroup__DataMapper_html_ga4565e3cf41830db5a08951da5702c776"><div class="ttname"><a href="../../d7/d2f/group__DataMapper.html#ga4565e3cf41830db5a08951da5702c776">RecordTableName</a></div><div class="ttdeci">constexpr std::string_view RecordTableName</div><div class="ttdoc">Holds the SQL tabl ename for the given record type.</div><div class="ttdef"><b>Definition</b> <a href="../../df/d4f/DataMapper_8hpp_source.html#l00067">DataMapper.hpp:67</a></div></div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="comment"></span> </div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="comment">/// @brief Holds the SQL tabl ename for the given record type.</span></div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span><span class="comment">///</span></div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><span class="comment">/// @ingroup DataMapper</span></div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="comment"></span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Record&gt;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno"><a class="line" href="../../d7/d2f/group__DataMapper.html#ga4565e3cf41830db5a08951da5702c776">   70</a></span><span class="keyword">constexpr</span> std::string_view <a class="code hl_variable" href="../../d7/d2f/group__DataMapper.html#ga4565e3cf41830db5a08951da5702c776">RecordTableName</a> = detail::RecordTableName&lt;Record&gt;::Value;</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="keyword">template</span> &lt;<span class="keyword">template</span> &lt;<span class="keyword">typename</span>...&gt; <span class="keyword">class </span>S, <span class="keyword">class </span>T&gt;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span><span class="keyword">concept </span>IsSpecializationOf = detail::is_specialization_of&lt;S, T&gt;::value;</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span><span class="keyword">using </span>MemberClassType = <span class="keyword">typename</span> detail::MemberClassTypeHelper&lt;T&gt;::type;</div>
+<div class="ttc" id="agroup__DataMapper_html_ga4565e3cf41830db5a08951da5702c776"><div class="ttname"><a href="../../d7/d2f/group__DataMapper.html#ga4565e3cf41830db5a08951da5702c776">RecordTableName</a></div><div class="ttdeci">constexpr std::string_view RecordTableName</div><div class="ttdoc">Holds the SQL tabl ename for the given record type.</div><div class="ttdef"><b>Definition</b> <a href="../../d7/d04/Lightweight_2Utils_8hpp_source.html#l00070">Utils.hpp:70</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

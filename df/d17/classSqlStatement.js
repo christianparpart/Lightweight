@@ -12,6 +12,7 @@ var classSqlStatement =
     [ "Prepare", "df/d17/classSqlStatement.html#ad1f82687b79ea6c3027839204818e9da", null ],
     [ "Prepare", "df/d17/classSqlStatement.html#a946ce0c96d2fcbddc2b2e3a1dcdd676c", null ],
     [ "BindOutputColumns", "df/d17/classSqlStatement.html#ad1b732b98002ac13a593a2c09b057e48", null ],
+    [ "BindOutputColumnsToRecord", "df/d17/classSqlStatement.html#a2e35262bbb0eae1a90961e7b1d52863c", null ],
     [ "Execute", "df/d17/classSqlStatement.html#a7d7fc4df758cfd56e3ddaf296b3b1411", null ],
     [ "ExecuteWithVariants", "df/d17/classSqlStatement.html#aa3101fb879feddf2e2f1674a3c7cf93b", null ],
     [ "ExecuteBatchNative", "df/d17/classSqlStatement.html#a2433d1a76eaddd26aa22cc49b43a9806", null ],

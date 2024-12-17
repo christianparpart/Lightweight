@@ -152,10 +152,11 @@ LIGHTWEIGHT_API <a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html
 <tr class="memitem:ab4cab7a55c3bcdf675fa10251f4818e8" id="r_ab4cab7a55c3bcdf675fa10251f4818e8"><td class="memItemLeft" align="right" valign="top"><a id="ab4cab7a55c3bcdf675fa10251f4818e8" name="ab4cab7a55c3bcdf675fa10251f4818e8"></a>
 LIGHTWEIGHT_API <a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html">SqlSelectQueryBuilder</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>Fields</b> (std::initializer_list&lt; std::string_view &gt; const &amp;fieldNames, std::string_view tableName)</td></tr>
 <tr class="separator:ab4cab7a55c3bcdf675fa10251f4818e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a649f7e2c3728d550e5e2007ab25ee6fc" id="r_a649f7e2c3728d550e5e2007ab25ee6fc"><td class="memTemplParams" colspan="2"><a id="a649f7e2c3728d550e5e2007ab25ee6fc" name="a649f7e2c3728d550e5e2007ab25ee6fc"></a>
-template&lt;typename Record &gt; </td></tr>
-<tr class="memitem:a649f7e2c3728d550e5e2007ab25ee6fc"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html">SqlSelectQueryBuilder</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Fields</b> ()</td></tr>
-<tr class="separator:a649f7e2c3728d550e5e2007ab25ee6fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3248430e23718b805abd386a679ccce" id="r_ae3248430e23718b805abd386a679ccce"><td class="memTemplParams" colspan="2"><a id="ae3248430e23718b805abd386a679ccce" name="ae3248430e23718b805abd386a679ccce"></a>
+template&lt;typename FirstRecord , typename... MoreRecords&gt; </td></tr>
+<tr class="memitem:ae3248430e23718b805abd386a679ccce"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html">SqlSelectQueryBuilder</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Fields</b> ()</td></tr>
+<tr class="memdesc:ae3248430e23718b805abd386a679ccce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a sequence of columns from the given tables to the SELECT clause. <br /></td></tr>
+<tr class="separator:ae3248430e23718b805abd386a679ccce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9597de90d1e074a0e9caaa7a1dd121b4" id="r_a9597de90d1e074a0e9caaa7a1dd121b4"><td class="memItemLeft" align="right" valign="top"><a id="a9597de90d1e074a0e9caaa7a1dd121b4" name="a9597de90d1e074a0e9caaa7a1dd121b4"></a>
 LIGHTWEIGHT_API <a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html">SqlSelectQueryBuilder</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>FieldAs</b> (std::string_view const &amp;fieldName, std::string_view const &amp;alias)</td></tr>
 <tr class="memdesc:a9597de90d1e074a0e9caaa7a1dd121b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a single column with an alias to the SELECT clause. <br /></td></tr>
@@ -208,15 +209,15 @@ LIGHTWEIGHT_API ComposedQuery&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:a4884e627c07c7cd35026e5409143ec23" id="r_a4884e627c07c7cd35026e5409143ec23"><td class="memTemplParams" colspan="2">template&lt;typename Callable &gt; </td></tr>
 <tr class="memitem:a4884e627c07c7cd35026e5409143ec23"><td class="memTemplItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE <a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html">SqlSelectQueryBuilder</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html#a4884e627c07c7cd35026e5409143ec23">Build</a> (Callable const &amp;callable)</td></tr>
 <tr class="separator:a4884e627c07c7cd35026e5409143ec23"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a74e4ac05e176a819399f09218ecbfc12" id="r_a74e4ac05e176a819399f09218ecbfc12"><td class="memTemplParams" colspan="2">template&lt;typename Record &gt; </td></tr>
-<tr class="memitem:a74e4ac05e176a819399f09218ecbfc12"><td class="memTemplItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE <a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html">SqlSelectQueryBuilder</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html#a74e4ac05e176a819399f09218ecbfc12">Fields</a> ()</td></tr>
-<tr class="separator:a74e4ac05e176a819399f09218ecbfc12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a165c5a9b711f769fb0fa8ca3d894f50c" id="r_a165c5a9b711f769fb0fa8ca3d894f50c"><td class="memTemplParams" colspan="2">template&lt;typename FirstRecord , typename... MoreRecords&gt; </td></tr>
+<tr class="memitem:a165c5a9b711f769fb0fa8ca3d894f50c"><td class="memTemplItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE <a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html">SqlSelectQueryBuilder</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html#a165c5a9b711f769fb0fa8ca3d894f50c">Fields</a> ()</td></tr>
+<tr class="separator:a165c5a9b711f769fb0fa8ca3d894f50c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Query builder for building SELECT ... queries. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="../../d0/d78/classSqlQueryBuilder.html" title="API Entry point for building SQL queries.">SqlQueryBuilder</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00027">27</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00028">28</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="ac37f034878bcd06535f5f82d597cc7f6" name="ac37f034878bcd06535f5f82d597cc7f6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac37f034878bcd06535f5f82d597cc7f6">&#9670;&#160;</a></span>SelectType</h2>
@@ -238,7 +239,7 @@ LIGHTWEIGHT_API ComposedQuery&#160;</td><td class="memItemRight" valign="bottom"
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00030">30</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00031">31</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
 
 </div>
 </div>
@@ -283,7 +284,7 @@ LIGHTWEIGHT_API ComposedQuery&#160;</td><td class="memItemRight" valign="bottom"
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00058">58</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00059">59</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
 
 </div>
 </div>
@@ -313,7 +314,7 @@ LIGHTWEIGHT_API ComposedQuery&#160;</td><td class="memItemRight" valign="bottom"
 
 <p>Sets the builder mode to Varying, allowing varying final query types. </p>
 
-<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00071">71</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00072">72</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
 
 </div>
 </div>
@@ -347,11 +348,7 @@ template&lt;typename... MoreFields&gt; </div>
 
 <p>Adds a sequence of columns to the SELECT clause. </p>
 
-<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00153">153</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
-
-<p class="reference">References <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00153">Fields()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00153">Fields()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00155">155</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
 
 </div>
 </div>
@@ -378,7 +375,7 @@ template&lt;typename... MoreFields&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00136">136</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00138">138</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
 
 </div>
 </div>
@@ -405,7 +402,7 @@ template&lt;typename... MoreFields&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00141">141</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00143">143</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
 
 </div>
 </div>
@@ -435,17 +432,17 @@ template&lt;typename Callable &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00172">172</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00174">174</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a74e4ac05e176a819399f09218ecbfc12" name="a74e4ac05e176a819399f09218ecbfc12"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74e4ac05e176a819399f09218ecbfc12">&#9670;&#160;</a></span>Fields() <span class="overload">[2/2]</span></h2>
+<a id="a165c5a9b711f769fb0fa8ca3d894f50c" name="a165c5a9b711f769fb0fa8ca3d894f50c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a165c5a9b711f769fb0fa8ca3d894f50c">&#9670;&#160;</a></span>Fields() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Record &gt; </div>
+template&lt;typename FirstRecord , typename... MoreRecords&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -464,7 +461,7 @@ template&lt;typename Record &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00179">179</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d2/d51/Select_8hpp_source.html#l00181">181</a> of file <a class="el" href="../../d2/d51/Select_8hpp_source.html">Select.hpp</a>.</p>
 
 </div>
 </div>

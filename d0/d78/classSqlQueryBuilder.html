@@ -111,6 +111,14 @@ Public Member Functions</h2></td></tr>
 LIGHTWEIGHT_API <a class="el" href="../../d0/d78/classSqlQueryBuilder.html">SqlQueryBuilder</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>FromTable</b> (std::string table)</td></tr>
 <tr class="memdesc:a708ebf8948cd6668a5c83a1b22ea73dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a new query builder for the given table. <br /></td></tr>
 <tr class="separator:a708ebf8948cd6668a5c83a1b22ea73dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8924e50fd21880e87a978ca2fe6ff3f6" id="r_a8924e50fd21880e87a978ca2fe6ff3f6"><td class="memItemLeft" align="right" valign="top"><a id="a8924e50fd21880e87a978ca2fe6ff3f6" name="a8924e50fd21880e87a978ca2fe6ff3f6"></a>
+LIGHTWEIGHT_API <a class="el" href="../../d0/d78/classSqlQueryBuilder.html">SqlQueryBuilder</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>FromTable</b> (std::string_view table)</td></tr>
+<tr class="memdesc:a8924e50fd21880e87a978ca2fe6ff3f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a new query builder for the given table. <br /></td></tr>
+<tr class="separator:a8924e50fd21880e87a978ca2fe6ff3f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9a2d8b19792a79249dcbffa5f065b61" id="r_ae9a2d8b19792a79249dcbffa5f065b61"><td class="memTemplParams" colspan="2">template&lt;size_t N&gt; </td></tr>
+<tr class="memitem:ae9a2d8b19792a79249dcbffa5f065b61"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="../../d0/d78/classSqlQueryBuilder.html">SqlQueryBuilder</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../d0/d78/classSqlQueryBuilder.html#ae9a2d8b19792a79249dcbffa5f065b61">FromTable</a> (char const (&amp;table)[N])</td></tr>
+<tr class="memdesc:ae9a2d8b19792a79249dcbffa5f065b61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a new query builder for the given table.  <br /></td></tr>
+<tr class="separator:ae9a2d8b19792a79249dcbffa5f065b61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7c9c120430951e524eeee4746b1531e" id="r_ac7c9c120430951e524eeee4746b1531e"><td class="memItemLeft" align="right" valign="top"><a id="ac7c9c120430951e524eeee4746b1531e" name="ac7c9c120430951e524eeee4746b1531e"></a>
 LIGHTWEIGHT_API <a class="el" href="../../d0/d78/classSqlQueryBuilder.html">SqlQueryBuilder</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>FromTableAs</b> (std::string table, std::string alias)</td></tr>
 <tr class="memdesc:ac7c9c120430951e524eeee4746b1531e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a new query builder for the given table with an alias. <br /></td></tr>
@@ -183,11 +191,43 @@ LIGHTWEIGHT_API <a class="el" href="../../d3/d15/classSqlMigrationQueryBuilder.h
 
 <p>Constructs a new query builder for the given table. </p>
 
-<p class="definition">Definition at line <a class="el" href="../../dc/dcc/SqlQuery_8hpp_source.html#l00069">69</a> of file <a class="el" href="../../dc/dcc/SqlQuery_8hpp_source.html">SqlQuery.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../dc/dcc/SqlQuery_8hpp_source.html#l00079">79</a> of file <a class="el" href="../../dc/dcc/SqlQuery_8hpp_source.html">SqlQuery.hpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ae9a2d8b19792a79249dcbffa5f065b61" name="ae9a2d8b19792a79249dcbffa5f065b61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9a2d8b19792a79249dcbffa5f065b61">&#9670;&#160;</a></span>FromTable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;size_t N&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="../../d0/d78/classSqlQueryBuilder.html">SqlQueryBuilder</a> &amp; SqlQueryBuilder::FromTable </td>
+          <td>(</td>
+          <td class="paramtype">char const (&amp;)&#160;</td>
+          <td class="paramname"><em>table</em>[N]</td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Constructs a new query builder for the given table. </p>
+
+<p class="definition">Definition at line <a class="el" href="../../dc/dcc/SqlQuery_8hpp_source.html#l00039">39</a> of file <a class="el" href="../../dc/dcc/SqlQuery_8hpp_source.html">SqlQuery.hpp</a>.</p>
+
+</div>
+</div>
 <a id="a2752da20dcda5fc1527670062fb45bdf" name="a2752da20dcda5fc1527670062fb45bdf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2752da20dcda5fc1527670062fb45bdf">&#9670;&#160;</a></span>Insert()</h2>
 
@@ -219,7 +259,7 @@ LIGHTWEIGHT_API <a class="el" href="../../d3/d15/classSqlMigrationQueryBuilder.h
   </dd>
 </dl>
 
-<p class="reference">Referenced by <a class="el" href="../../df/d4f/DataMapper_8hpp_source.html#l00389">DataMapper::CreateExplicit()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="../../df/d4f/DataMapper_8hpp_source.html#l00383">DataMapper::CreateExplicit()</a>.</p>
 
 </div>
 </div>
@@ -254,7 +294,7 @@ LIGHTWEIGHT_API <a class="el" href="../../d3/d15/classSqlMigrationQueryBuilder.h
   </dd>
 </dl>
 
-<p class="reference">Referenced by <a class="el" href="../../df/d4f/DataMapper_8hpp_source.html#l00475">DataMapper::Update()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="../../df/d4f/DataMapper_8hpp_source.html#l00469">DataMapper::Update()</a>.</p>
 
 </div>
 </div>

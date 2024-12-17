@@ -108,6 +108,6 @@ var group__DataMapper =
       [ "operator->", "da/d9d/classHasOneThrough.html#ab8dd2cec742cef96bb13bf935cf23c3f", null ],
       [ "SetAutoLoader", "da/d9d/classHasOneThrough.html#a6f6f6b0db57bb1b21866f113384ce076", null ]
     ] ],
-    [ "RecordTableName", "d7/d2f/group__DataMapper.html#ga4565e3cf41830db5a08951da5702c776", null ],
-    [ "FieldNameOf", "d7/d2f/group__DataMapper.html#ga2665a959d7015cc22cabb0334b056bd8", null ]
+    [ "FieldNameOf", "d7/d2f/group__DataMapper.html#ga2665a959d7015cc22cabb0334b056bd8", null ],
+    [ "RecordTableName", "d7/d2f/group__DataMapper.html#ga4565e3cf41830db5a08951da5702c776", null ]
 ];
