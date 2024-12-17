@@ -106,7 +106,7 @@ $(document).ready(function(){initNavTree('d0/df8/structSqlVariant.html','../../'
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a13ad8633a019c66dc28431b389541754" id="r_a13ad8633a019c66dc28431b389541754"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a13ad8633a019c66dc28431b389541754">InnerType</a> = std::variant&lt; SqlNullType, bool, short, unsigned short, int, unsigned int, long long, unsigned long long, float, double, std::string, std::string_view, std::u16string, std::u16string_view, SqlText, SqlDate, SqlTime, SqlDateTime &gt;</td></tr>
+<tr class="memitem:a13ad8633a019c66dc28431b389541754" id="r_a13ad8633a019c66dc28431b389541754"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a13ad8633a019c66dc28431b389541754">InnerType</a> = std::variant&lt; <a class="el" href="../../de/d07/structSqlNullType.html">SqlNullType</a>, bool, short, unsigned short, int, unsigned int, long long, unsigned long long, float, double, std::string, std::string_view, std::u16string, std::u16string_view, SqlText, <a class="el" href="../../d3/d0e/structSqlDate.html">SqlDate</a>, <a class="el" href="../../d5/d6d/structSqlTime.html">SqlTime</a>, <a class="el" href="../../da/dd7/structSqlDateTime.html">SqlDateTime</a> &gt;</td></tr>
 <tr class="separator:a13ad8633a019c66dc28431b389541754"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -128,7 +128,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a7203097f3bcae1aec1d833b2770f4b37" id="r_a7203097f3bcae1aec1d833b2770f4b37"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a7203097f3bcae1aec1d833b2770f4b37">SqlVariant</a> (InnerType &amp;&amp;other) noexcept</td></tr>
 <tr class="separator:a7203097f3bcae1aec1d833b2770f4b37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae75cec666dec5becd451c715ec5566a6" id="r_ae75cec666dec5becd451c715ec5566a6"><td class="memTemplParams" colspan="2">template&lt;std::size_t N, typename T  = char, SqlFixedStringMode Mode&gt; </td></tr>
-<tr class="memitem:ae75cec666dec5becd451c715ec5566a6"><td class="memTemplItemLeft" align="right" valign="top">constexpr LIGHTWEIGHT_FORCE_INLINE&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#ae75cec666dec5becd451c715ec5566a6">SqlVariant</a> (SqlFixedString&lt; N, T, Mode &gt; const &amp;other)</td></tr>
+<tr class="memitem:ae75cec666dec5becd451c715ec5566a6"><td class="memTemplItemLeft" align="right" valign="top">constexpr LIGHTWEIGHT_FORCE_INLINE&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#ae75cec666dec5becd451c715ec5566a6">SqlVariant</a> (<a class="el" href="../../d8/dcb/classSqlFixedString.html">SqlFixedString</a>&lt; N, T, Mode &gt; const &amp;other)</td></tr>
 <tr class="separator:ae75cec666dec5becd451c715ec5566a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adcaf6a76bee7b44086d3f2616528b862" id="r_adcaf6a76bee7b44086d3f2616528b862"><td class="memTemplParams" colspan="2">template&lt;std::size_t TextSize&gt; </td></tr>
 <tr class="memitem:adcaf6a76bee7b44086d3f2616528b862"><td class="memTemplItemLeft" align="right" valign="top">constexpr LIGHTWEIGHT_FORCE_INLINE&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#adcaf6a76bee7b44086d3f2616528b862">SqlVariant</a> (char const (&amp;text)[TextSize])</td></tr>
@@ -179,11 +179,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad166000c9ca7bcac977e35ba2d46af14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0527e224ff468a41bb2c193475c719fb" id="r_a0527e224ff468a41bb2c193475c719fb"><td class="memItemLeft" align="right" valign="top">std::optional&lt; std::string_view &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a0527e224ff468a41bb2c193475c719fb">TryGetStringView</a> () const noexcept</td></tr>
 <tr class="separator:a0527e224ff468a41bb2c193475c719fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a711dd23d6443e4fba6dc6cb6e674597f" id="r_a711dd23d6443e4fba6dc6cb6e674597f"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; SqlDate &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a711dd23d6443e4fba6dc6cb6e674597f">TryGetDate</a> () const</td></tr>
+<tr class="memitem:a711dd23d6443e4fba6dc6cb6e674597f" id="r_a711dd23d6443e4fba6dc6cb6e674597f"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; <a class="el" href="../../d3/d0e/structSqlDate.html">SqlDate</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a711dd23d6443e4fba6dc6cb6e674597f">TryGetDate</a> () const</td></tr>
 <tr class="separator:a711dd23d6443e4fba6dc6cb6e674597f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7d9baacb62d03dd0f42b04aeb7e39947" id="r_a7d9baacb62d03dd0f42b04aeb7e39947"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; SqlTime &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a7d9baacb62d03dd0f42b04aeb7e39947">TryGetTime</a> () const</td></tr>
+<tr class="memitem:a7d9baacb62d03dd0f42b04aeb7e39947" id="r_a7d9baacb62d03dd0f42b04aeb7e39947"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; <a class="el" href="../../d5/d6d/structSqlTime.html">SqlTime</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a7d9baacb62d03dd0f42b04aeb7e39947">TryGetTime</a> () const</td></tr>
 <tr class="separator:a7d9baacb62d03dd0f42b04aeb7e39947"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b2c8582356d8c88814112dcc42e68db" id="r_a8b2c8582356d8c88814112dcc42e68db"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; SqlDateTime &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a8b2c8582356d8c88814112dcc42e68db">TryGetDateTime</a> () const</td></tr>
+<tr class="memitem:a8b2c8582356d8c88814112dcc42e68db" id="r_a8b2c8582356d8c88814112dcc42e68db"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; <a class="el" href="../../da/dd7/structSqlDateTime.html">SqlDateTime</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/df8/structSqlVariant.html#a8b2c8582356d8c88814112dcc42e68db">TryGetDateTime</a> () const</td></tr>
 <tr class="separator:a8b2c8582356d8c88814112dcc42e68db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfd9cc94c7be9f532260afccacab4f1e" id="r_adfd9cc94c7be9f532260afccacab4f1e"><td class="memItemLeft" align="right" valign="top"><a id="adfd9cc94c7be9f532260afccacab4f1e" name="adfd9cc94c7be9f532260afccacab4f1e"></a>
 LIGHTWEIGHT_API std::string&#160;</td><td class="memItemRight" valign="bottom"><b>ToString</b> () const</td></tr>
@@ -207,7 +207,7 @@ Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using SqlVariant::InnerType =  std::variant&lt;SqlNullType, bool, short, unsigned short, int, unsigned int, long long, unsigned long long, float, double, std::string, std::string_view, std::u16string, std::u16string_view, SqlText, SqlDate, SqlTime, SqlDateTime&gt;</td>
+          <td class="memname">using SqlVariant::InnerType =  std::variant&lt;<a class="el" href="../../de/d07/structSqlNullType.html">SqlNullType</a>, bool, short, unsigned short, int, unsigned int, long long, unsigned long long, float, double, std::string, std::string_view, std::u16string, std::u16string_view, SqlText, <a class="el" href="../../d3/d0e/structSqlDate.html">SqlDate</a>, <a class="el" href="../../d5/d6d/structSqlTime.html">SqlTime</a>, <a class="el" href="../../da/dd7/structSqlDateTime.html">SqlDateTime</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -287,7 +287,7 @@ template&lt;std::size_t N, typename T  = char, SqlFixedStringMode Mode&gt; </div
         <tr>
           <td class="memname">constexpr LIGHTWEIGHT_FORCE_INLINE SqlVariant::SqlVariant </td>
           <td>(</td>
-          <td class="paramtype">SqlFixedString&lt; N, T, Mode &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="../../d8/dcb/classSqlFixedString.html">SqlFixedString</a>&lt; N, T, Mode &gt; const &amp;&#160;</td>
           <td class="paramname"><em>other</em></td><td>)</td>
           <td></td>
         </tr>
@@ -880,7 +880,7 @@ template&lt;typename ResultType &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; SqlDate &gt; SqlVariant::TryGetDate </td>
+          <td class="memname">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; <a class="el" href="../../d3/d0e/structSqlDate.html">SqlDate</a> &gt; SqlVariant::TryGetDate </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -907,7 +907,7 @@ template&lt;typename ResultType &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; SqlTime &gt; SqlVariant::TryGetTime </td>
+          <td class="memname">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; <a class="el" href="../../d5/d6d/structSqlTime.html">SqlTime</a> &gt; SqlVariant::TryGetTime </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -934,7 +934,7 @@ template&lt;typename ResultType &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; SqlDateTime &gt; SqlVariant::TryGetDateTime </td>
+          <td class="memname">LIGHTWEIGHT_FORCE_INLINE std::optional&lt; <a class="el" href="../../da/dd7/structSqlDateTime.html">SqlDateTime</a> &gt; SqlVariant::TryGetDateTime </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>

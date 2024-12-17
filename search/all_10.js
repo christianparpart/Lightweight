@@ -7,5 +7,6 @@ var searchData=
   ['queryas_4',['queryas',['../d7/d7b/classSqlConnection.html#a48f9b48947217c890754f0645716eff8',1,'SqlConnection::QueryAs()'],['../df/d17/classSqlStatement.html#a0a836e68222b66b84cb4e7e94e60c1da',1,'SqlStatement::QueryAs()']]],
   ['queryformatter_5',['QueryFormatter',['../d7/d7b/classSqlConnection.html#adcaa93ca1d83786875e6df3bea261bef',1,'SqlConnection']]],
   ['querylastinsertid_6',['QueryLastInsertId',['../dc/df2/classSqlQueryFormatter.html#a486b099bedf156da92ca36adb6602fba',1,'SqlQueryFormatter']]],
-  ['querysingle_7',['QuerySingle',['../dc/dc7/classDataMapper.html#a9cd001a64226389a0803d76b499081e2',1,'DataMapper']]]
+  ['querysingle_7',['querysingle',['../dc/dc7/classDataMapper.html#abc5831d373b3818e7b0dd856e5998209',1,'DataMapper::QuerySingle(SqlSelectQueryBuilder selectQuery, Args &amp;&amp;... args)'],['../dc/dc7/classDataMapper.html#a9cd001a64226389a0803d76b499081e2',1,'DataMapper::QuerySingle(PrimaryKeyTypes &amp;&amp;... primaryKeys)']]],
+  ['querysingleby_8',['QuerySingleBy',['../dc/dc7/classDataMapper.html#a4087831801de0daa9add83cb4e0d7e78',1,'DataMapper']]]
 ];

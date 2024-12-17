@@ -6,5 +6,6 @@ var searchData=
   ['requiredforeignkey_3',['RequiredForeignKey',['../d4/d4a/classSqlCreateTableQueryBuilder.html#ac53b30a0e5df011418f0264090ce49c5',1,'SqlCreateTableQueryBuilder']]],
   ['requirestatementsuccess_4',['RequireStatementSuccess',['../d3/dbc/structSqlErrorInfo.html#a7818658b44c27da0ca3d5bfaee63d4a2',1,'SqlErrorInfo']]],
   ['requiresuccess_5',['RequireSuccess',['../d7/d7b/classSqlConnection.html#a40df02eaa4dc4a3fb5e646dc6db3c26f',1,'SqlConnection']]],
-  ['resetpostconnectedhook_6',['ResetPostConnectedHook',['../d7/d7b/classSqlConnection.html#a0bef34bceacdb82e71bce7cb328b8c41',1,'SqlConnection']]]
+  ['resetpostconnectedhook_6',['ResetPostConnectedHook',['../d7/d7b/classSqlConnection.html#a0bef34bceacdb82e71bce7cb328b8c41',1,'SqlConnection']]],
+  ['resize_7',['resize',['../d8/dcb/classSqlFixedString.html#a40fc4353d3351ad90304248552c4771e',1,'SqlFixedString']]]
 ];

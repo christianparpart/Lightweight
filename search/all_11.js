@@ -13,8 +13,9 @@ var searchData=
   ['requirestatementsuccess_10',['RequireStatementSuccess',['../d3/dbc/structSqlErrorInfo.html#a7818658b44c27da0ca3d5bfaee63d4a2',1,'SqlErrorInfo']]],
   ['requiresuccess_11',['RequireSuccess',['../d7/d7b/classSqlConnection.html#a40df02eaa4dc4a3fb5e646dc6db3c26f',1,'SqlConnection']]],
   ['resetpostconnectedhook_12',['ResetPostConnectedHook',['../d7/d7b/classSqlConnection.html#a0bef34bceacdb82e71bce7cb328b8c41',1,'SqlConnection']]],
-  ['result_20row_20columns_20in_20order_13',['Query result row columns in order',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#query-result-row-columns-in-order',1,'']]],
-  ['retrieval_20via_20structs_14',['retrieval via structs',['../index.html#example-simple-row-retrieval-via-structs',1,'Example: Simple row retrieval via structs'],['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#simple-row-retrieval-via-structs',1,'Simple row retrieval via structs']]],
-  ['row_20columns_20in_20order_15',['Query result row columns in order',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#query-result-row-columns-in-order',1,'']]],
-  ['row_20retrieval_20via_20structs_16',['row retrieval via structs',['../index.html#example-simple-row-retrieval-via-structs',1,'Example: Simple row retrieval via structs'],['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#simple-row-retrieval-via-structs',1,'Simple row retrieval via structs']]]
+  ['resize_13',['resize',['../d8/dcb/classSqlFixedString.html#a40fc4353d3351ad90304248552c4771e',1,'SqlFixedString']]],
+  ['result_20row_20columns_20in_20order_14',['Query result row columns in order',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#query-result-row-columns-in-order',1,'']]],
+  ['retrieval_20via_20structs_15',['retrieval via structs',['../index.html#example-simple-row-retrieval-via-structs',1,'Example: Simple row retrieval via structs'],['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#simple-row-retrieval-via-structs',1,'Simple row retrieval via structs']]],
+  ['row_20columns_20in_20order_16',['Query result row columns in order',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#query-result-row-columns-in-order',1,'']]],
+  ['row_20retrieval_20via_20structs_17',['row retrieval via structs',['../index.html#example-simple-row-retrieval-via-structs',1,'Example: Simple row retrieval via structs'],['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#simple-row-retrieval-via-structs',1,'Simple row retrieval via structs']]]
 ];
