@@ -33,7 +33,7 @@ static_assert(
 #endif
 // clang-format on
 
-// Helper struct to store a time (of the day) to write to or read from a database.
+/// Stores the time (of the day) to efficiently write to or read from a database.
 struct SqlTime
 {
     using native_type = std::chrono::hh_mm_ss<std::chrono::microseconds>;

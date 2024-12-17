@@ -17,11 +17,11 @@ enum class SqlFixedStringMode : uint8_t
     VARIABLE_SIZE,
 };
 
-// SQL fixed-capacity string that mimmicks standard library string/string_view with a fixed-size underlying
-// buffer.
-//
-// The underlying storage will not be guaranteed to be `\0`-terminated unless
-// a call to mutable/const c_str() has been performed.
+/// SQL fixed-capacity string that mimmicks standard library string/string_view with a fixed-size underlying
+/// buffer.
+///
+/// The underlying storage will not be guaranteed to be `\0`-terminated unless
+/// a call to mutable/const c_str() has been performed.
 template <std::size_t N, typename T = char, SqlFixedStringMode Mode = SqlFixedStringMode::FIXED_SIZE>
 class SqlFixedString
 {
@@ -39,6 +39,7 @@ class SqlFixedString
     static constexpr std::size_t Capacity = N;
     static constexpr SqlFixedStringMode PostRetrieveOperation = Mode;
 
+    /// Constructs a fixed-size string from a string literal.
     template <std::size_t SourceSize>
     constexpr LIGHTWEIGHT_FORCE_INLINE SqlFixedString(T const (&text)[SourceSize]):
         _size { SourceSize - 1 }
@@ -54,18 +55,21 @@ class SqlFixedString
     LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString& operator=(SqlFixedString&&) noexcept = default;
     LIGHTWEIGHT_FORCE_INLINE constexpr ~SqlFixedString() noexcept = default;
 
+    /// Constructs a fixed-size string from a string view.
     LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString(std::basic_string_view<T> s) noexcept:
         _size { (std::min)(N, s.size()) }
     {
         std::copy_n(s.data(), _size, _data);
     }
 
+    /// Constructs a fixed-size string from a string pointer and length.
     LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString(T const* s, std::size_t len) noexcept:
         _size { (std::min)(N, len) }
     {
         std::copy_n(s, _size, _data);
     }
 
+    /// Constructs a fixed-size string from a string pointer and end pointer.
     LIGHTWEIGHT_FORCE_INLINE constexpr SqlFixedString(T const* s, T const* e) noexcept:
         _size { (std::min)(N, static_cast<std::size_t>(e - s)) }
     {
@@ -79,11 +83,13 @@ class SqlFixedString
                 std::format("SqlFixedString: capacity {} exceeds maximum capacity {}", capacity, N));
     }
 
+    /// Tests if the string is empty.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr bool empty() const noexcept
     {
         return _size == 0;
     }
 
+    /// Returns the size of the string.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::size_t size() const noexcept
     {
         return _size;
@@ -96,6 +102,10 @@ class SqlFixedString
         _data[newSize] = '\0';
     }
 
+    /// Resizes the string.
+    ///
+    /// This sets the size of the string to `n`. If `n` is greater than the current size,
+    /// capped at the maximum capacity.
     LIGHTWEIGHT_FORCE_INLINE constexpr void resize(std::size_t n) noexcept
     {
         auto const newSize = (std::min)(n, N);
@@ -103,16 +113,19 @@ class SqlFixedString
         _data[newSize] = '\0';
     }
 
+    /// Returns the maximum capacity of the string.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::size_t capacity() const noexcept
     {
         return N;
     }
 
+    /// Clears the string.
     LIGHTWEIGHT_FORCE_INLINE constexpr void clear() noexcept
     {
         _size = 0;
     }
 
+    /// Assigns a string literal to the string.
     template <std::size_t SourceSize>
     LIGHTWEIGHT_FORCE_INLINE constexpr void assign(T const (&source)[SourceSize]) noexcept
     {
@@ -121,12 +134,14 @@ class SqlFixedString
         std::copy_n(source, SourceSize, _data);
     }
 
+    /// Assigns a string view to the string.
     LIGHTWEIGHT_FORCE_INLINE constexpr void assign(std::string_view s) noexcept
     {
         _size = (std::min)(N, s.size());
         std::copy_n(s.data(), _size, _data);
     }
 
+    /// Appends a character to the string.
     LIGHTWEIGHT_FORCE_INLINE constexpr void push_back(T c) noexcept
     {
         if (_size < N)
@@ -136,12 +151,14 @@ class SqlFixedString
         }
     }
 
+    /// Removes the last character from the string.
     LIGHTWEIGHT_FORCE_INLINE constexpr void pop_back() noexcept
     {
         if (_size > 0)
             --_size;
     }
 
+    /// Returns a sub string of the string.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::basic_string_view<T> substr(
         std::size_t offset = 0, std::size_t count = (std::numeric_limits<std::size_t>::max)()) const noexcept
     {
@@ -154,6 +171,7 @@ class SqlFixedString
         return std::basic_string_view<T>(_data + offset, count);
     }
 
+    /// Returns a string view of the string.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::basic_string_view<T> str() const noexcept
     {
         return std::basic_string_view<T> { _data, _size };
@@ -241,18 +259,23 @@ struct IsSqlFixedStringType<SqlFixedString<N, T, Mode>>: std::true_type
 template <typename T>
 constexpr bool IsSqlFixedString = IsSqlFixedStringType<T>::value;
 
+/// Fixed-size string of element type `char` with a capacity of `N` characters.
 template <std::size_t N>
 using SqlAnsiString = SqlFixedString<N, char, SqlFixedStringMode::VARIABLE_SIZE>;
 
+/// Fixed-size string of element type `char16_t` with a capacity of `N` characters.
 template <std::size_t N>
 using SqlUtf16String = SqlFixedString<N, char16_t, SqlFixedStringMode::VARIABLE_SIZE>;
 
+/// Fixed-size string of element type `char32_t` with a capacity of `N` characters.
 template <std::size_t N>
 using SqlUtf32String = SqlFixedString<N, char32_t, SqlFixedStringMode::VARIABLE_SIZE>;
 
+/// Fixed-size string of element type `wchar_t` with a capacity of `N` characters.
 template <std::size_t N>
 using SqlWideString = SqlFixedString<N, wchar_t, SqlFixedStringMode::VARIABLE_SIZE>;
 
+/// Fixed-size (right-trimmed) string of element type `char` with a capacity of `N` characters.
 template <std::size_t N, typename T = char>
 using SqlTrimmedFixedString = SqlFixedString<N, T, SqlFixedStringMode::FIXED_SIZE_RIGHT_TRIMMED>;
 

@@ -21,27 +21,27 @@
 #endif
 // clang-format on
 
-// Represents a fixed-point number with a given precision and scale.
-//
-// Precision is *exactly* the total number of digits in the number,
-// including the digits after the decimal point.
-//
-// Scale is the number of digits after the decimal point.
+/// Represents a fixed-point number with a given precision and scale.
+///
+/// Precision is *exactly* the total number of digits in the number,
+/// including the digits after the decimal point.
+///
+/// Scale is the number of digits after the decimal point.
 template <std::size_t ThePrecision, std::size_t TheScale>
 struct SqlNumeric
 {
     static constexpr auto ColumnType = SqlColumnTypeDefinitions::Decimal { .precision = ThePrecision, .scale = TheScale };
 
-    // Number of total digits
+    /// Number of total digits
     static constexpr auto Precision = ThePrecision;
 
-    // Number of digits after the decimal point
+    /// Number of digits after the decimal point
     static constexpr auto Scale = TheScale;
 
     static_assert(TheScale < SQL_MAX_NUMERIC_LEN);
     static_assert(Scale <= Precision);
 
-    // The value is stored as a string to avoid floating point precision issues.
+    /// The value is stored as a string to avoid floating point precision issues.
     SQL_NUMERIC_STRUCT sqlValue {};
 
     constexpr SqlNumeric() noexcept = default;
@@ -51,11 +51,13 @@ struct SqlNumeric
     constexpr SqlNumeric& operator=(SqlNumeric const&) noexcept = default;
     constexpr ~SqlNumeric() noexcept = default;
 
+    /// Constructs a numeric from a floating point value.
     constexpr SqlNumeric(std::floating_point auto value) noexcept
     {
         assign(value);
     }
 
+    /// Constructs a numeric from a SQL_NUMERIC_STRUCT.
     constexpr explicit SqlNumeric(SQL_NUMERIC_STRUCT const& value) noexcept:
         sqlValue(value)
     {
@@ -64,7 +66,7 @@ struct SqlNumeric
     // For encoding/decoding purposes, we assume little-endian.
     static_assert(std::endian::native == std::endian::little);
 
-    // Assigns a value to the numeric.
+    /// Assigns a value to the numeric.
     LIGHTWEIGHT_FORCE_INLINE constexpr void assign(std::floating_point auto value) noexcept
     {
 #if defined(LIGHTWEIGHT_INT128_T)
@@ -81,12 +83,14 @@ struct SqlNumeric
         sqlValue.scale = Scale;
     }
 
+    /// Assigns a floating point value to the numeric.
     LIGHTWEIGHT_FORCE_INLINE constexpr SqlNumeric& operator=(std::floating_point auto value) noexcept
     {
         assign(value);
         return *this;
     }
 
+    /// Converts the numeric to an unscaled integer value.
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE auto ToUnscaledValue() const noexcept
     {
         auto const sign = sqlValue.sign ? 1 : -1;
@@ -97,36 +101,43 @@ struct SqlNumeric
 #endif
     }
 
+    /// Converts the numeric to a floating point value.
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE float ToFloat() const noexcept
     {
         return float(ToUnscaledValue()) / std::powf(10, Scale);
     }
 
+    /// Converts the numeric to a double precision floating point value.
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE double ToDouble() const noexcept
     {
         return double(ToUnscaledValue()) / std::pow(10, Scale);
     }
 
+    /// Converts the numeric to a long double precision floating point value.
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE long double ToLongDouble() const noexcept
     {
         return static_cast<long double>(ToUnscaledValue()) / std::pow(10, Scale);
     }
 
+    /// Converts the numeric to a floating point value.
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE explicit operator float() const noexcept
     {
         return ToFloat();
     }
 
+    /// Converts the numeric to a double precision floating point value.
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE explicit operator double() const noexcept
     {
         return ToDouble();
     }
 
+    /// Converts the numeric to a long double precision floating point value.
     [[nodiscard]] constexpr LIGHTWEIGHT_FORCE_INLINE explicit operator long double() const noexcept
     {
         return ToLongDouble();
     }
 
+    /// Converts the numeric to a string.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE std::string ToString() const
     {
         return std::format("{:.{}f}", ToFloat(), Scale);

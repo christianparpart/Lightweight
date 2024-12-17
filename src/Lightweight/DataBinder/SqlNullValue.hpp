@@ -4,13 +4,13 @@
 
 #include "Core.hpp"
 
-// Helper binder type to indicate NULL values in SQL queries.
+/// Helper binder type to indicate NULL values in SQL queries.
 struct SqlNullType
 {
     SQLLEN sqlValue = SQL_NULL_DATA;
 };
 
-// Used to indicate a NULL value in a SQL query.
+/// Used to indicate a NULL value in a SQL query.
 constexpr auto SqlNullValue = SqlNullType {};
 
 template <>

@@ -9,18 +9,18 @@
 #include <optional>
 #include <string>
 
-// Represents a GUID (Globally Unique Identifier).
+/// Represents a GUID (Globally Unique Identifier).
 struct LIGHTWEIGHT_API SqlGuid
 {
     uint8_t data[16] {};
 
-    // Creates a new non-empty GUID.
+    /// Creates a new non-empty GUID.
     static SqlGuid Create() noexcept;
 
-    // Parses a GUID from a string.
+    /// Parses a GUID from a string.
     static std::optional<SqlGuid> TryParse(std::string_view const& text) noexcept;
 
-    // Parses a GUID from a string. Use with caution and always prefer TryParse at all cost.
+    /// Parses a GUID from a string. Use with caution and always prefer TryParse at all cost.
     static SqlGuid constexpr UnsafeParse(std::string_view const& text) noexcept;
 
     constexpr std::weak_ordering operator<=>(SqlGuid const& other) const noexcept = default;

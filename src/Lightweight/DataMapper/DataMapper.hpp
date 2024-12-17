@@ -141,6 +141,12 @@ class DataMapper
     template <typename Record>
     RecordId CreateExplicit(Record const& record);
 
+    /// @brief Queries a single record from the database based on the given query.
+    ///
+    /// @param selectQuery The SQL select query to execute.
+    /// @param args The input parameters for the query.
+    ///
+    /// @return The record if found, otherwise std::nullopt.
     template <typename Record, typename... Args>
     std::optional<Record> QuerySingle(SqlSelectQueryBuilder selectQuery, Args&&... args);
 
@@ -150,6 +156,14 @@ class DataMapper
     /// If the record is not found, std::nullopt is returned.
     template <typename Record, typename... PrimaryKeyTypes>
     std::optional<Record> QuerySingle(PrimaryKeyTypes&&... primaryKeys);
+
+    /// @brief Queries a single record by the given column name and value.
+    ///
+    /// @param columnName The name of the column to search.
+    /// @param value The value to search for.
+    /// @return The record if found, otherwise std::nullopt.
+    template <typename Record, typename ColumnName, typename T>
+    std::optional<Record> QuerySingleBy(ColumnName const& columnName, T const& value);
 
     /// Queries multiple records from the database, based on the given query.
     template <typename Record, typename... InputParameters>
@@ -179,21 +193,6 @@ class DataMapper
     /// Loads all records from the database for the given record type.
     template <typename Record>
     std::vector<Record> All();
-
-    /// @brief Finds a record by its primary key.
-    ///
-    /// @param id The primary key of the record to find.
-    /// @return The record if found, otherwise std::nullopt.
-    template <typename Record>
-    std::optional<Record> Find(RecordId id);
-
-    /// @brief Finds a record by the given column name and value.
-    ///
-    /// @param columnName The name of the column to search.
-    /// @param value The value to search for.
-    /// @return The record if found, otherwise std::nullopt.
-    template <typename Record, typename ColumnName, typename T>
-    std::optional<Record> FindBy(ColumnName const& columnName, T const& value);
 
     /// Constructs an SQL query builder for the given record type.
     template <typename Record>
