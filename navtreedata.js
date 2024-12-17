@@ -26,13 +26,13 @@ var NAVTREE =
 [
   [ "Lightweight", "index.html", [
     [ "Lightweight, an ODBC SQL API for C++23", "index.html", "index" ],
-    [ "Usage Examples", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html", [
-      [ "Configure default connection information to the database", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#configure-default-connection-information-to-the-database", null ],
-      [ "Raw SQL Queries", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#raw-sql-queries", null ],
-      [ "Prepared Statements", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#prepared-statements", null ],
-      [ "SQL Query Builder", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#sql-query-builder", null ],
-      [ "High level Data Mapping", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#high-level-data-mapping", null ],
-      [ "Simple row retrieval via structs", "md__2home_2runner_2work_2_lightweight_2_lightweight_2docs_2usage.html#simple-row-retrieval-via-structs", null ]
+    [ "Usage Examples", "d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html", [
+      [ "Configure default connection information to the database", "d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#configure-default-connection-information-to-the-database", null ],
+      [ "Raw SQL Queries", "d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#raw-sql-queries", null ],
+      [ "Prepared Statements", "d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#prepared-statements", null ],
+      [ "SQL Query Builder", "d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#sql-query-builder", null ],
+      [ "High level Data Mapping", "d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#high-level-data-mapping", null ],
+      [ "Simple row retrieval via structs", "d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#simple-row-retrieval-via-structs", null ]
     ] ],
     [ "Topics", "topics.html", "topics" ],
     [ "Concepts", "concepts.html", "concepts" ],
@@ -55,8 +55,8 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"_api_8hpp_source.html",
-"class_sql_select_query_builder.html#acd9a64863ff8499b7d762f3ced2d3be1"
+"annotated.html",
+"df/d17/classSqlStatement.html#a90b7f94b46b84daf94bda2019bde86b3"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

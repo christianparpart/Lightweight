@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['datamapper_0',['DataMapper',['../class_data_mapper.html',1,'']]]
+  ['datamapper_0',['DataMapper',['../dc/dc7/classDataMapper.html',1,'']]]
 ];

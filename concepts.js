@@ -1,5 +1,5 @@
 var concepts =
 [
-    [ "DataMapperRecord", "concept_data_mapper_record.html", null ],
-    [ "SqlQueryObject", "concept_sql_query_object.html", null ]
+    [ "DataMapperRecord", "d2/db8/conceptDataMapperRecord.html", null ],
+    [ "SqlQueryObject", "d1/d05/conceptSqlQueryObject.html", null ]
 ];

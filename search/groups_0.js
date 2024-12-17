@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['builder_0',['Query Builder',['../group___query_builder.html',1,'']]]
+  ['builder_0',['Query Builder',['../d6/daa/group__QueryBuilder.html',1,'']]]
 ];
