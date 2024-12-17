@@ -2,17 +2,21 @@
 
 #pragma once
 
-#include "Core.hpp"
 #include "../SqlColumnTypeDefinitions.hpp"
+#include "Core.hpp"
 
 #include <chrono>
 #include <format>
 
+/// Represents a date and time to efficiently write to or read from a database.
+///
+/// @see SqlDate, SqlTime
 struct LIGHTWEIGHT_API SqlDateTime
 {
     using native_type = std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>;
 
-    static SqlDateTime Now() noexcept
+    /// Returns the current date and time.
+    [[nodiscard]] static SqlDateTime Now() noexcept
     {
         return SqlDateTime { std::chrono::system_clock::now() };
     }
@@ -34,6 +38,7 @@ struct LIGHTWEIGHT_API SqlDateTime
         return !(*this == other);
     }
 
+    /// Constructs a date and time from individual components.
     constexpr SqlDateTime(std::chrono::year_month_day ymd,
                           std::chrono::hh_mm_ss<std::chrono::nanoseconds> time) noexcept
     {
@@ -46,6 +51,7 @@ struct LIGHTWEIGHT_API SqlDateTime
         sqlValue.fraction = (SQLUINTEGER) (time.subseconds().count() / 100) * 100;
     }
 
+    /// Constructs a date and time from individual components.
     constexpr SqlDateTime(std::chrono::year year,
                           std::chrono::month month,
                           std::chrono::day day,
@@ -63,6 +69,7 @@ struct LIGHTWEIGHT_API SqlDateTime
         sqlValue.fraction = (SQLUINTEGER) (nanosecond.count() / 100) * 100;
     }
 
+    /// Constructs a date and time from a time point.
     constexpr SqlDateTime(std::chrono::system_clock::time_point value) noexcept:
         sqlValue { SqlDateTime::ConvertToSqlValue(value) }
     {
@@ -104,6 +111,7 @@ struct LIGHTWEIGHT_API SqlDateTime
         // clang-format on
     }
 
+    /// Returns the current date and time.
     [[nodiscard]] constexpr native_type value() const noexcept
     {
         return ConvertToNative(sqlValue);

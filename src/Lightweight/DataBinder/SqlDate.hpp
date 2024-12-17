@@ -8,7 +8,7 @@
 #include <chrono>
 #include <format>
 
-// Helper struct to store a date (without time of the day) to write to or read from a database.
+/// Represents a date to efficiently write to or read from a database.
 struct LIGHTWEIGHT_API SqlDate
 {
     SQL_DATE_STRUCT sqlValue {};
@@ -20,6 +20,7 @@ struct LIGHTWEIGHT_API SqlDate
     constexpr SqlDate& operator=(SqlDate const&) noexcept = default;
     constexpr ~SqlDate() noexcept = default;
 
+    /// Returns the current date.
     [[nodiscard]] LIGHTWEIGHT_FORCE_INLINE constexpr std::chrono::year_month_day value() const noexcept
     {
         return ConvertToNative(sqlValue);
@@ -36,17 +37,20 @@ struct LIGHTWEIGHT_API SqlDate
         return !(*this == other);
     }
 
+    /// Constructs a date from individual std::chrono::year_month_day.
     constexpr SqlDate(std::chrono::year_month_day value) noexcept:
         sqlValue { SqlDate::ConvertToSqlValue(value) }
     {
     }
 
+    /// Constructs a date from individual components.
     constexpr SqlDate(std::chrono::year year, std::chrono::month month, std::chrono::day day) noexcept:
         SqlDate(std::chrono::year_month_day { year, month, day })
     {
     }
 
-    static LIGHTWEIGHT_FORCE_INLINE SqlDate Today() noexcept
+    /// Returns the current date.
+    [[nodiscard]] static LIGHTWEIGHT_FORCE_INLINE SqlDate Today() noexcept
     {
         return SqlDate { std::chrono::year_month_day {
             std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now()),

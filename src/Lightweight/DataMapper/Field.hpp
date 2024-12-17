@@ -56,10 +56,6 @@ concept FieldElementType = SqlInputParameterBinder<T> && SqlOutputColumnBinder<T
 
 // clang-format on
 
-} // namespace detail
-
-namespace detail
-{
 template <typename TargetType, typename P1, typename P2>
 consteval auto Choose(TargetType defaultValue, P1 p1, P2 p2) noexcept
 {
@@ -74,11 +70,10 @@ consteval auto Choose(TargetType defaultValue, P1 p1, P2 p2) noexcept
 
 /// @brief Represents a single column in a table.
 ///
-/// The column name, index, and type are known at compile time.
-/// If either name or index are not known at compile time, leave them at their default values,
-/// but at least one of them msut be known.
+/// This class is used to represent a single column in a table.
+/// It also keeps track of modified-state of the field.
 ///
-/// It is imperative that this data structure is an aggregate type, such that it works with C++20 reflection.
+/// The column name, index, nullability, and type are known at compile time.
 ///
 /// @see DataMapper
 /// @ingroup DataMapper
@@ -99,10 +94,12 @@ struct Field
     constexpr ~Field() noexcept = default;
     // clang-format on
 
+    /// Constructs a new field with the given value.
     template <typename... S>
         requires std::constructible_from<T, S...>
     constexpr Field(S&&... value) noexcept;
 
+    /// Assigns a new value to the field.
     template <typename S>
         requires std::constructible_from<T, S>
     constexpr Field& operator=(S&& value) noexcept;
