@@ -33,6 +33,9 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 } // namespace detail
 
+/// @brief Represents a value that can be any of the supported SQL data types.
+///
+/// Use this class with care. Always prefer native types when possible, in order to avoid any unnecessary overhead.
 struct SqlVariant
 {
     using InnerType = std::variant<SqlNullType,

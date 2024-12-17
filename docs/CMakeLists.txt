@@ -46,7 +46,7 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_STRIP_FROM_PATH "${PROJECT_SOURCE_DIR}/src")
 
   doxygen_add_docs(doc
-    "${PROJECT_SOURCE_DIR}/src;${PROJECT_SOURCE_DIR}/README.md;${PROJECT_SOURCE_DIR}/docs/usage.md"
+    "${PROJECT_SOURCE_DIR}/src;${PROJECT_SOURCE_DIR}/README.md;${PROJECT_SOURCE_DIR}/docs/usage.md;${PROJECT_SOURCE_DIR}/docs/best-practices.md"
     ALL
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
     COMMENT "Generate HTML documentation"
