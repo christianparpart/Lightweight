@@ -1,8 +1,14 @@
 var searchData=
 [
-  ['unload_0',['unload',['../df/d1a/classBelongsTo.html#a83ec5bd75e4d193746869a315ff05389',1,'BelongsTo::Unload()'],['../da/d9d/classHasOneThrough.html#a870fa4d80433debd82a2d8d4ac40acd2',1,'HasOneThrough::Unload()']]],
-  ['update_1',['update',['../dc/dc7/classDataMapper.html#acb83d80931e5cd6259290bc795e362f7',1,'DataMapper::Update()'],['../d0/d78/classSqlQueryBuilder.html#a7ba41a3e575f9edd7254ff1f002ff789',1,'SqlQueryBuilder::Update()'],['../dc/df2/classSqlQueryFormatter.html#a95f1534a613e63ad1f554317c9733ece',1,'SqlQueryFormatter::Update()']]],
-  ['usage_20examples_2',['Usage Examples',['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html',1,'']]],
-  ['username_3',['UserName',['../d7/d7b/classSqlConnection.html#a4ee1f952a185fbf4bcd6666c3ed2f746',1,'SqlConnection']]],
-  ['using_20sqlite_20for_20testing_20on_20windows_20operating_20system_4',['Using SQLite for testing on Windows operating system',['../index.html#using-sqlite-for-testing-on-windows-operating-system',1,'']]]
+  ['testing_20on_20windows_20operating_20system_0',['Using SQLite for testing on Windows operating system',['../index.html#using-sqlite-for-testing-on-windows-operating-system',1,'']]],
+  ['the_20database_1',['Configure default connection information to the database',['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#configure-default-connection-information-to-the-database',1,'']]],
+  ['the_20tt_20datamapper_20tt_20api_2',['Use the &lt;tt&gt;DataMapper&lt;/tt&gt; API',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#use-the-datamapper-api',1,'']]],
+  ['throughrecord_3',['throughrecord',['../df/dd6/classHasManyThrough.html#a379b3afee3886e4166554b650ce0886b',1,'HasManyThrough::ThroughRecord'],['../da/d9d/classHasOneThrough.html#a38c692c1e65ea23626b6bb8b49dc94e5',1,'HasOneThrough::ThroughRecord']]],
+  ['to_20the_20database_4',['Configure default connection information to the database',['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#configure-default-connection-information-to-the-database',1,'']]],
+  ['tracelogger_5',['TraceLogger',['../d8/d7e/classSqlLogger.html#afb845fed40a9a3de87589304ea8053d8',1,'SqlLogger']]],
+  ['traits_6',['Traits',['../d7/d7b/classSqlConnection.html#ac2cea0bdd7ba96e98acc1669a82dbd17',1,'SqlConnection']]],
+  ['transactionactive_7',['TransactionActive',['../d7/d7b/classSqlConnection.html#a6ae1295e5d7226d13787e9ab663652d1',1,'SqlConnection']]],
+  ['transactionsallowed_8',['TransactionsAllowed',['../d7/d7b/classSqlConnection.html#aeaa239269993596de12bdb0edac0c7fc',1,'SqlConnection']]],
+  ['tt_20datamapper_20tt_20api_9',['Use the &lt;tt&gt;DataMapper&lt;/tt&gt; API',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#use-the-datamapper-api',1,'']]],
+  ['types_10',['Use native column types',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#use-native-column-types',1,'']]]
 ];

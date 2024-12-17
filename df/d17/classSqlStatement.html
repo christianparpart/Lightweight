@@ -185,7 +185,7 @@ template&lt;SqlOutputColumnBinder T&gt; </td></tr>
 <tr class="memdesc:a7d7fc4df758cfd56e3ddaf296b3b1411"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binds the given arguments to the prepared statement and executes it.  <br /></td></tr>
 <tr class="separator:a7d7fc4df758cfd56e3ddaf296b3b1411"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa3101fb879feddf2e2f1674a3c7cf93b" id="r_aa3101fb879feddf2e2f1674a3c7cf93b"><td class="memItemLeft" align="right" valign="top"><a id="aa3101fb879feddf2e2f1674a3c7cf93b" name="aa3101fb879feddf2e2f1674a3c7cf93b"></a>
-LIGHTWEIGHT_API void&#160;</td><td class="memItemRight" valign="bottom"><b>ExecuteWithVariants</b> (std::vector&lt; SqlVariant &gt; const &amp;args)</td></tr>
+LIGHTWEIGHT_API void&#160;</td><td class="memItemRight" valign="bottom"><b>ExecuteWithVariants</b> (std::vector&lt; <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a> &gt; const &amp;args)</td></tr>
 <tr class="memdesc:aa3101fb879feddf2e2f1674a3c7cf93b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binds the given arguments to the prepared statement and executes it. <br /></td></tr>
 <tr class="separator:aa3101fb879feddf2e2f1674a3c7cf93b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2433d1a76eaddd26aa22cc49b43a9806" id="r_a2433d1a76eaddd26aa22cc49b43a9806"><td class="memTemplParams" colspan="2">template&lt;SqlInputParameterBatchBinder FirstColumnBatch, std::ranges::contiguous_range... MoreColumnBatches&gt; </td></tr>
@@ -210,19 +210,19 @@ requires std::invocable&lt;Callable, <a class="el" href="../../d3/d15/classSqlMi
 <tr class="memdesc:ab1665766fa52c6fcdf8ca06c3895ea2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes an SQL migration query, as created b the callback.  <br /></td></tr>
 <tr class="separator:ab1665766fa52c6fcdf8ca06c3895ea2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd12aea32817fef21321a48d3daf7e7a" id="r_acd12aea32817fef21321a48d3daf7e7a"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; <br />
-requires (!std::same_as&lt;T, SqlVariant&gt;)</td></tr>
+requires (!std::same_as&lt;T, <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</td></tr>
 <tr class="memitem:acd12aea32817fef21321a48d3daf7e7a"><td class="memTemplItemLeft" align="right" valign="top">std::optional&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../df/d17/classSqlStatement.html#acd12aea32817fef21321a48d3daf7e7a">ExecuteDirectScalar</a> (const std::string_view &amp;query, std::source_location location=std::source_location::current())</td></tr>
 <tr class="separator:acd12aea32817fef21321a48d3daf7e7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2889019652724ca987d9c24999237975" id="r_a2889019652724ca987d9c24999237975"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; <br />
-requires (std::same_as&lt;T, SqlVariant&gt;)</td></tr>
+requires (std::same_as&lt;T, <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</td></tr>
 <tr class="memitem:a2889019652724ca987d9c24999237975"><td class="memTemplItemLeft" align="right" valign="top">T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../df/d17/classSqlStatement.html#a2889019652724ca987d9c24999237975">ExecuteDirectScalar</a> (const std::string_view &amp;query, std::source_location location=std::source_location::current())</td></tr>
 <tr class="separator:a2889019652724ca987d9c24999237975"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a81e0418f62dcb254f43d868f90c7b8" id="r_a0a81e0418f62dcb254f43d868f90c7b8"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; <br />
-requires (!std::same_as&lt;T, SqlVariant&gt;)</td></tr>
+requires (!std::same_as&lt;T, <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</td></tr>
 <tr class="memitem:a0a81e0418f62dcb254f43d868f90c7b8"><td class="memTemplItemLeft" align="right" valign="top">std::optional&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../df/d17/classSqlStatement.html#a0a81e0418f62dcb254f43d868f90c7b8">ExecuteDirectScalar</a> (<a class="el" href="../../d1/d05/conceptSqlQueryObject.html">SqlQueryObject</a> auto const &amp;query, std::source_location location=std::source_location::current())</td></tr>
 <tr class="separator:a0a81e0418f62dcb254f43d868f90c7b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0bfd2d0180148e4130452029b3a80704" id="r_a0bfd2d0180148e4130452029b3a80704"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; <br />
-requires (std::same_as&lt;T, SqlVariant&gt;)</td></tr>
+requires (std::same_as&lt;T, <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</td></tr>
 <tr class="memitem:a0bfd2d0180148e4130452029b3a80704"><td class="memTemplItemLeft" align="right" valign="top">T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="../../df/d17/classSqlStatement.html#a0bfd2d0180148e4130452029b3a80704">ExecuteDirectScalar</a> (<a class="el" href="../../d1/d05/conceptSqlQueryObject.html">SqlQueryObject</a> auto const &amp;query, std::source_location location=std::source_location::current())</td></tr>
 <tr class="separator:a0bfd2d0180148e4130452029b3a80704"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a798024560a6f680836e08f90dbb7b928" id="r_a798024560a6f680836e08f90dbb7b928"><td class="memItemLeft" align="right" valign="top"><a id="a798024560a6f680836e08f90dbb7b928" name="a798024560a6f680836e08f90dbb7b928"></a>
@@ -804,7 +804,7 @@ requires std::invocable&lt;Callable, <a class="el" href="../../d3/d15/classSqlMi
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename T &gt; <br />
-requires (!std::same_as&lt;T, SqlVariant&gt;)</div>
+requires (!std::same_as&lt;T, <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -846,7 +846,7 @@ requires (!std::same_as&lt;T, SqlVariant&gt;)</div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename T &gt; <br />
-requires (std::same_as&lt;T, SqlVariant&gt;)</div>
+requires (std::same_as&lt;T, <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -887,7 +887,7 @@ requires (std::same_as&lt;T, SqlVariant&gt;)</div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename T &gt; <br />
-requires (!std::same_as&lt;T, SqlVariant&gt;)</div>
+requires (!std::same_as&lt;T, <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -929,7 +929,7 @@ requires (!std::same_as&lt;T, SqlVariant&gt;)</div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename T &gt; <br />
-requires (std::same_as&lt;T, SqlVariant&gt;)</div>
+requires (std::same_as&lt;T, <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">

@@ -1,8 +1,12 @@
 var searchData=
 [
-  ['value_0',['value',['../df/d1a/classBelongsTo.html#a94d93fc122c629feb1064fca89cc23a0',1,'BelongsTo::Value()'],['../df/d27/structField.html#a2cc8ce7f24bceff610bfcab34c041562',1,'Field::Value()']]],
-  ['value_5ftype_1',['value_type',['../d3/d09/classHasMany.html#a5208639efe3028064f337811b6bc1bcf',1,'HasMany']]],
-  ['valuetype_2',['ValueType',['../df/d1a/classBelongsTo.html#ab0544087140dd09c3d4ccfc0b762cc26',1,'BelongsTo']]],
-  ['varying_3',['Varying',['../d1/d91/classSqlSelectQueryBuilder.html#aac98428d3a591ed18854c36b76489b7c',1,'SqlSelectQueryBuilder']]],
-  ['via_20structs_4',['via structs',['../index.html#example-simple-row-retrieval-via-structs',1,'Example: Simple row retrieval via structs'],['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html#simple-row-retrieval-via-structs',1,'Simple row retrieval via structs']]]
+  ['unload_0',['unload',['../df/d1a/classBelongsTo.html#a83ec5bd75e4d193746869a315ff05389',1,'BelongsTo::Unload()'],['../da/d9d/classHasOneThrough.html#a870fa4d80433debd82a2d8d4ac40acd2',1,'HasOneThrough::Unload()']]],
+  ['update_1',['update',['../dc/dc7/classDataMapper.html#acb83d80931e5cd6259290bc795e362f7',1,'DataMapper::Update()'],['../d0/d78/classSqlQueryBuilder.html#a7ba41a3e575f9edd7254ff1f002ff789',1,'SqlQueryBuilder::Update()'],['../dc/df2/classSqlQueryFormatter.html#a95f1534a613e63ad1f554317c9733ece',1,'SqlQueryFormatter::Update()']]],
+  ['usage_20examples_2',['Usage Examples',['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html',1,'']]],
+  ['use_20native_20column_20types_3',['Use native column types',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#use-native-column-types',1,'']]],
+  ['use_20pagination_4',['Use pagination',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#use-pagination',1,'']]],
+  ['use_20prepared_20statements_5',['Use prepared statements',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#use-prepared-statements',1,'']]],
+  ['use_20the_20tt_20datamapper_20tt_20api_6',['Use the &lt;tt&gt;DataMapper&lt;/tt&gt; API',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html#use-the-datamapper-api',1,'']]],
+  ['username_7',['UserName',['../d7/d7b/classSqlConnection.html#a4ee1f952a185fbf4bcd6666c3ed2f746',1,'SqlConnection']]],
+  ['using_20sqlite_20for_20testing_20on_20windows_20operating_20system_8',['Using SQLite for testing on Windows operating system',['../index.html#using-sqlite-for-testing-on-windows-operating-system',1,'']]]
 ];

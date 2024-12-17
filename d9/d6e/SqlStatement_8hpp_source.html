@@ -226,7 +226,7 @@ $(document).ready(function(){initNavTree('d9/d6e/SqlStatement_8hpp_source.html',
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="../../df/d17/classSqlStatement.html#a7d7fc4df758cfd56e3ddaf296b3b1411">Execute</a>(Args const&amp;... args);</div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span><span class="comment"></span> </div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span><span class="comment">    /// Binds the given arguments to the prepared statement and executes it.</span></div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno"><a class="line" href="../../df/d17/classSqlStatement.html#aa3101fb879feddf2e2f1674a3c7cf93b">  126</a></span><span class="comment"></span>    LIGHTWEIGHT_API <span class="keywordtype">void</span> <a class="code hl_function" href="../../df/d17/classSqlStatement.html#aa3101fb879feddf2e2f1674a3c7cf93b">ExecuteWithVariants</a>(std::vector&lt;SqlVariant&gt; const&amp; args);</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno"><a class="line" href="../../df/d17/classSqlStatement.html#aa3101fb879feddf2e2f1674a3c7cf93b">  126</a></span><span class="comment"></span>    LIGHTWEIGHT_API <span class="keywordtype">void</span> <a class="code hl_function" href="../../df/d17/classSqlStatement.html#aa3101fb879feddf2e2f1674a3c7cf93b">ExecuteWithVariants</a>(std::vector&lt;<a class="code hl_struct" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt; const&amp; args);</div>
 <div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span><span class="comment"></span> </div>
 <div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span><span class="comment">    /// Executes the prepared statement on a batch of data.</span></div>
 <div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span><span class="comment">    ///</span></div>
@@ -274,24 +274,24 @@ $(document).ready(function(){initNavTree('d9/d6e/SqlStatement_8hpp_source.html',
 <div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span><span class="comment">    /// Executes the given query, assuming that only one result row and column is affected, that one will be</span></div>
 <div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span><span class="comment">    /// returned.</span></div>
 <div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span><span class="comment"></span>    template &lt;typename T&gt;</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>        requires(!std::same_as&lt;T, SqlVariant&gt;)</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>        requires(!std::same_as&lt;T, <a class="code hl_struct" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</div>
 <div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>    [[nodiscard]] std::optional&lt;T&gt; <a class="code hl_function" href="../../df/d17/classSqlStatement.html#acd12aea32817fef21321a48d3daf7e7a">ExecuteDirectScalar</a>(const std::string_view&amp; query,</div>
 <div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>                                                       std::source_location location = std::source_location::current());</div>
 <div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span> </div>
 <div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>    template &lt;typename T&gt;</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        requires(std::same_as&lt;T, SqlVariant&gt;)</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        requires(std::same_as&lt;T, <a class="code hl_struct" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</div>
 <div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>    [[nodiscard]] T <a class="code hl_function" href="../../df/d17/classSqlStatement.html#acd12aea32817fef21321a48d3daf7e7a">ExecuteDirectScalar</a>(const std::string_view&amp; query,</div>
 <div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>                                        std::source_location location = std::source_location::current());</div>
 <div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span><span class="comment"></span> </div>
 <div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span><span class="comment">    /// Executes the given query, assuming that only one result row and column is affected, that one will be</span></div>
 <div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span><span class="comment">    /// returned.</span></div>
 <div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span><span class="comment"></span>    template &lt;typename T&gt;</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        requires(!std::same_as&lt;T, SqlVariant&gt;)</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        requires(!std::same_as&lt;T, <a class="code hl_struct" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</div>
 <div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>    [[nodiscard]] std::optional&lt;T&gt; <a class="code hl_function" href="../../df/d17/classSqlStatement.html#acd12aea32817fef21321a48d3daf7e7a">ExecuteDirectScalar</a>(<a class="code hl_concept" href="../../d1/d05/conceptSqlQueryObject.html">SqlQueryObject</a> auto const&amp; query,</div>
 <div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>                                                       std::source_location location = std::source_location::current());</div>
 <div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span> </div>
 <div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>    template &lt;typename T&gt;</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        requires(std::same_as&lt;T, SqlVariant&gt;)</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        requires(std::same_as&lt;T, <a class="code hl_struct" href="../../d0/df8/structSqlVariant.html">SqlVariant</a>&gt;)</div>
 <div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>    [[nodiscard]] T <a class="code hl_function" href="../../df/d17/classSqlStatement.html#acd12aea32817fef21321a48d3daf7e7a">ExecuteDirectScalar</a>(<a class="code hl_concept" href="../../d1/d05/conceptSqlQueryObject.html">SqlQueryObject</a> auto const&amp; query,</div>
 <div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>                                        std::source_location location = std::source_location::current());</div>
 <div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span><span class="comment"></span> </div>
@@ -831,7 +831,7 @@ $(document).ready(function(){initNavTree('d9/d6e/SqlStatement_8hpp_source.html',
 <div class="line"><a id="l00681" name="l00681"></a><span class="lineno">  681</span>    RequireSuccess(FetchRow());</div>
 <div class="line"><a id="l00682" name="l00682"></a><span class="lineno">  682</span>    <span class="keywordflow">if</span> (<span class="keyword">auto</span> result = GetNullableColumn&lt;T&gt;(1); result.has_value())</div>
 <div class="line"><a id="l00683" name="l00683"></a><span class="lineno">  683</span>        <span class="keywordflow">return</span> *result;</div>
-<div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>    <span class="keywordflow">return</span> SqlVariant { SqlNullValue };</div>
+<div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>    <span class="keywordflow">return</span> <a class="code hl_struct" href="../../d0/df8/structSqlVariant.html">SqlVariant</a> { SqlNullValue };</div>
 <div class="line"><a id="l00685" name="l00685"></a><span class="lineno">  685</span>}</div>
 <div class="line"><a id="l00686" name="l00686"></a><span class="lineno">  686</span> </div>
 <div class="line"><a id="l00687" name="l00687"></a><span class="lineno">  687</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
@@ -916,6 +916,7 @@ $(document).ready(function(){initNavTree('d9/d6e/SqlStatement_8hpp_source.html',
 <div class="ttc" id="aconceptSqlQueryObject_html"><div class="ttname"><a href="../../d1/d05/conceptSqlQueryObject.html">SqlQueryObject</a></div><div class="ttdoc">Represents an SQL query object, that provides a ToSql() method.</div><div class="ttdef"><b>Definition</b> <a href="../../d9/d6e/SqlStatement_8hpp_source.html#l00031">SqlStatement.hpp:31</a></div></div>
 <div class="ttc" id="astructSqlErrorInfo_html"><div class="ttname"><a href="../../d3/dbc/structSqlErrorInfo.html">SqlErrorInfo</a></div><div class="ttdoc">Represents an ODBC SQL error.</div><div class="ttdef"><b>Definition</b> <a href="../../d9/d02/SqlError_8hpp_source.html#l00028">SqlError.hpp:29</a></div></div>
 <div class="ttc" id="astructSqlErrorInfo_html_aeba209604eb4bf5d8904bb0a1ab29307"><div class="ttname"><a href="../../d3/dbc/structSqlErrorInfo.html#aeba209604eb4bf5d8904bb0a1ab29307">SqlErrorInfo::fromStatementHandle</a></div><div class="ttdeci">static SqlErrorInfo fromStatementHandle(SQLHSTMT hStmt)</div><div class="ttdoc">Constructs an ODBC error info object from the given ODBC statement handle.</div><div class="ttdef"><b>Definition</b> <a href="../../d9/d02/SqlError_8hpp_source.html#l00041">SqlError.hpp:41</a></div></div>
+<div class="ttc" id="astructSqlVariant_html"><div class="ttname"><a href="../../d0/df8/structSqlVariant.html">SqlVariant</a></div><div class="ttdoc">Represents a value that can be any of the supported SQL data types.</div><div class="ttdef"><b>Definition</b> <a href="../../d5/de3/SqlVariant_8hpp_source.html#l00039">SqlVariant.hpp:40</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

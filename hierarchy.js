@@ -24,6 +24,7 @@ var hierarchy =
     [ "SqlRowIterator< T >", "d7/db1/classSqlRowIterator.html", null ],
     [ "SqlScopedTraceLogger", "d5/d21/classSqlScopedTraceLogger.html", null ],
     [ "SqlStatement", "df/d17/classSqlStatement.html", null ],
+    [ "SqlVariant", "d0/df8/structSqlVariant.html", null ],
     [ "detail::SqlWhereClauseBuilder< SqlDeleteQueryBuilder >", null, [
       [ "SqlDeleteQueryBuilder", "d8/d88/classSqlDeleteQueryBuilder.html", null ]
     ] ],

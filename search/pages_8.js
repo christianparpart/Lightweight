@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['usage_20examples_0',['Usage Examples',['../d9/d80/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2usage.html',1,'']]]
+  ['practices_0',['Best practices',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html',1,'']]]
 ];

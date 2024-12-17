@@ -22,5 +22,6 @@ var searchData=
   ['sqlselectquerybuilder_19',['SqlSelectQueryBuilder',['../d1/d91/classSqlSelectQueryBuilder.html',1,'']]],
   ['sqlstatement_20',['SqlStatement',['../df/d17/classSqlStatement.html',1,'']]],
   ['sqlupdatequerybuilder_21',['SqlUpdateQueryBuilder',['../db/d2a/classSqlUpdateQueryBuilder.html',1,'']]],
-  ['sqlwildcardtype_22',['SqlWildcardType',['../da/dbf/structSqlWildcardType.html',1,'']]]
+  ['sqlvariant_22',['SqlVariant',['../d0/df8/structSqlVariant.html',1,'']]],
+  ['sqlwildcardtype_23',['SqlWildcardType',['../da/dbf/structSqlWildcardType.html',1,'']]]
 ];

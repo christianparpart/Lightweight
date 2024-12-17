@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['_7esqlconnection_0',['~SqlConnection',['../d7/d7b/classSqlConnection.html#a36a1845814fd307692f51b06b54f68a8',1,'SqlConnection']]]
+  ['windows_20operating_20system_0',['Using SQLite for testing on Windows operating system',['../index.html#using-sqlite-for-testing-on-windows-operating-system',1,'']]]
 ];

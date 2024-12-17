@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['c_2023_0',['Lightweight, an ODBC SQL API for C++23',['../index.html',1,'']]]
+  ['best_20practices_0',['Best practices',['../d2/d10/md__2home_2runner_2work_2Lightweight_2Lightweight_2docs_2best-practices.html',1,'']]]
 ];

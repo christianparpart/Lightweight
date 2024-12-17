@@ -115,7 +115,7 @@ LIGHTWEIGHT_API <a class="el" href="../../d0/d78/classSqlQueryBuilder.html">SqlQ
 LIGHTWEIGHT_API <a class="el" href="../../d0/d78/classSqlQueryBuilder.html">SqlQueryBuilder</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>FromTableAs</b> (std::string table, std::string alias)</td></tr>
 <tr class="memdesc:ac7c9c120430951e524eeee4746b1531e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a new query builder for the given table with an alias. <br /></td></tr>
 <tr class="separator:ac7c9c120430951e524eeee4746b1531e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2752da20dcda5fc1527670062fb45bdf" id="r_a2752da20dcda5fc1527670062fb45bdf"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_API <a class="el" href="../../dd/dbd/classSqlInsertQueryBuilder.html">SqlInsertQueryBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/d78/classSqlQueryBuilder.html#a2752da20dcda5fc1527670062fb45bdf">Insert</a> (std::vector&lt; SqlVariant &gt; *boundInputs=nullptr) noexcept</td></tr>
+<tr class="memitem:a2752da20dcda5fc1527670062fb45bdf" id="r_a2752da20dcda5fc1527670062fb45bdf"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_API <a class="el" href="../../dd/dbd/classSqlInsertQueryBuilder.html">SqlInsertQueryBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/d78/classSqlQueryBuilder.html#a2752da20dcda5fc1527670062fb45bdf">Insert</a> (std::vector&lt; <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a> &gt; *boundInputs=nullptr) noexcept</td></tr>
 <tr class="separator:a2752da20dcda5fc1527670062fb45bdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4cebfec7d16571e61e728c506889d603" id="r_a4cebfec7d16571e61e728c506889d603"><td class="memItemLeft" align="right" valign="top"><a id="a4cebfec7d16571e61e728c506889d603" name="a4cebfec7d16571e61e728c506889d603"></a>
 LIGHTWEIGHT_API SqlLastInsertIdQuery&#160;</td><td class="memItemRight" valign="bottom"><b>LastInsertId</b> ()</td></tr>
@@ -125,7 +125,7 @@ LIGHTWEIGHT_API SqlLastInsertIdQuery&#160;</td><td class="memItemRight" valign="
 LIGHTWEIGHT_API <a class="el" href="../../d1/d91/classSqlSelectQueryBuilder.html">SqlSelectQueryBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><b>Select</b> () noexcept</td></tr>
 <tr class="memdesc:a540942748905edd6045fe8c3fb16a124"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiates SELECT query building. <br /></td></tr>
 <tr class="separator:a540942748905edd6045fe8c3fb16a124"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ba41a3e575f9edd7254ff1f002ff789" id="r_a7ba41a3e575f9edd7254ff1f002ff789"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_API <a class="el" href="../../db/d2a/classSqlUpdateQueryBuilder.html">SqlUpdateQueryBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/d78/classSqlQueryBuilder.html#a7ba41a3e575f9edd7254ff1f002ff789">Update</a> (std::vector&lt; SqlVariant &gt; *boundInputs=nullptr) noexcept</td></tr>
+<tr class="memitem:a7ba41a3e575f9edd7254ff1f002ff789" id="r_a7ba41a3e575f9edd7254ff1f002ff789"><td class="memItemLeft" align="right" valign="top">LIGHTWEIGHT_API <a class="el" href="../../db/d2a/classSqlUpdateQueryBuilder.html">SqlUpdateQueryBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d0/d78/classSqlQueryBuilder.html#a7ba41a3e575f9edd7254ff1f002ff789">Update</a> (std::vector&lt; <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a> &gt; *boundInputs=nullptr) noexcept</td></tr>
 <tr class="separator:a7ba41a3e575f9edd7254ff1f002ff789"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b67b677befdd73664827d292e2fac61" id="r_a4b67b677befdd73664827d292e2fac61"><td class="memItemLeft" align="right" valign="top"><a id="a4b67b677befdd73664827d292e2fac61" name="a4b67b677befdd73664827d292e2fac61"></a>
 LIGHTWEIGHT_API <a class="el" href="../../d8/d88/classSqlDeleteQueryBuilder.html">SqlDeleteQueryBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><b>Delete</b> () noexcept</td></tr>
@@ -200,7 +200,7 @@ LIGHTWEIGHT_API <a class="el" href="../../d3/d15/classSqlMigrationQueryBuilder.h
         <tr>
           <td class="memname">LIGHTWEIGHT_API <a class="el" href="../../dd/dbd/classSqlInsertQueryBuilder.html">SqlInsertQueryBuilder</a> SqlQueryBuilder::Insert </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; SqlVariant &gt; *&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a> &gt; *&#160;</td>
           <td class="paramname"><em>boundInputs</em> = <code>nullptr</code></td><td>)</td>
           <td></td>
         </tr>
@@ -235,7 +235,7 @@ LIGHTWEIGHT_API <a class="el" href="../../d3/d15/classSqlMigrationQueryBuilder.h
         <tr>
           <td class="memname">LIGHTWEIGHT_API <a class="el" href="../../db/d2a/classSqlUpdateQueryBuilder.html">SqlUpdateQueryBuilder</a> SqlQueryBuilder::Update </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; SqlVariant &gt; *&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="../../d0/df8/structSqlVariant.html">SqlVariant</a> &gt; *&#160;</td>
           <td class="paramname"><em>boundInputs</em> = <code>nullptr</code></td><td>)</td>
           <td></td>
         </tr>
