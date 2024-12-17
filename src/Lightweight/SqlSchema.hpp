@@ -14,6 +14,8 @@
 #include <tuple>
 #include <vector>
 
+class SqlStatement;
+
 namespace SqlSchema
 {
 
@@ -132,6 +134,14 @@ using TableList = std::vector<Table>;
 
 LIGHTWEIGHT_API TableList ReadAllTables(std::string_view database, std::string_view schema = {});
 
+/// Retrieves all tables in the given database and schema that have a foreign key to the given table.
+LIGHTWEIGHT_API std::vector<ForeignKeyConstraint> AllForeignKeysTo(SqlStatement& stmt,
+                                                                   FullyQualifiedTableName const& table);
+
+/// Retrieves all tables in the given database and schema that have a foreign key from the given table.
+LIGHTWEIGHT_API std::vector<ForeignKeyConstraint> AllForeignKeysFrom(SqlStatement& stmt,
+                                                                     FullyQualifiedTableName const& table);
+
 } // namespace SqlSchema
 
 template <>
@@ -142,7 +152,7 @@ struct LIGHTWEIGHT_API std::formatter<SqlSchema::FullyQualifiedTableName>: std::
         string output = std::string(SqlSchema::detail::rtrim(value.schema));
         if (!output.empty())
             output += '.';
-        auto const trimmedSchema = SqlSchema::detail::rtrim(value.schema);
+        auto const trimmedSchema = SqlSchema::detail::rtrim(value.catalog);
         output += trimmedSchema;
         if (!output.empty() && !trimmedSchema.empty())
             output += '.';
