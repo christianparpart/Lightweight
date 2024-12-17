@@ -8,6 +8,12 @@ SqlQueryBuilder& SqlQueryBuilder::FromTable(std::string table)
     return *this;
 }
 
+SqlQueryBuilder& SqlQueryBuilder::FromTable(std::string_view table)
+{
+    m_table = std::string(table);
+    return *this;
+}
+
 SqlQueryBuilder& SqlQueryBuilder::FromTableAs(std::string table, std::string alias)
 {
     m_table = std::move(table);

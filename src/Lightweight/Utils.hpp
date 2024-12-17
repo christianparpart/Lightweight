@@ -63,6 +63,12 @@ struct RecordTableName
 
 } // namespace detail
 
+/// @brief Holds the SQL tabl ename for the given record type.
+///
+/// @ingroup DataMapper
+template <typename Record>
+constexpr std::string_view RecordTableName = detail::RecordTableName<Record>::Value;
+
 template <template <typename...> class S, class T>
 concept IsSpecializationOf = detail::is_specialization_of<S, T>::value;
 

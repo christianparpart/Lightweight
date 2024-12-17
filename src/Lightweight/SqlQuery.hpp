@@ -31,6 +31,16 @@ class [[nodiscard]] SqlQueryBuilder final
     /// Constructs a new query builder for the given table.
     LIGHTWEIGHT_API SqlQueryBuilder& FromTable(std::string table);
 
+    /// Constructs a new query builder for the given table.
+    LIGHTWEIGHT_API SqlQueryBuilder& FromTable(std::string_view table);
+
+    /// Constructs a new query builder for the given table.
+    template <size_t N>
+    SqlQueryBuilder& FromTable(char const (&table)[N])
+    {
+        return FromTable(std::string_view { table, N - 1 });
+    }
+
     /// Constructs a new query builder for the given table with an alias.
     LIGHTWEIGHT_API SqlQueryBuilder& FromTableAs(std::string table, std::string alias);
 

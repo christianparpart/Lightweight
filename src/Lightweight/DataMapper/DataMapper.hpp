@@ -60,12 +60,6 @@ auto ToSharedPtrList(Container<Object, Allocator<Object>> container)
 
 } // namespace detail
 
-/// @brief Holds the SQL tabl ename for the given record type.
-///
-/// @ingroup DataMapper
-template <DataMapperRecord Record>
-constexpr std::string_view RecordTableName = detail::RecordTableName<Record>::Value;
-
 /// @brief Main API for mapping records to and from the database using high level C++ syntax.
 ///
 /// @see Field, BelongsTo, HasMany, HasManyThrough, HasOneThrough
