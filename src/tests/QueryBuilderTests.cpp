@@ -176,19 +176,36 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Select.Range", "[SqlQueryBuild
 
 struct Users
 {
+    int id;
     std::string name;
     std::string address;
 };
 
+struct Orders
+{
+    int id;
+    int userId;
+    std::string comment;
+};
+
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Fields", "[SqlQueryBuilder]")
 {
-    checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("Users").Select().Fields<Users>().First(); },
-                         QueryExpectations {
-                             .sqlite = R"(SELECT "name", "address" FROM "Users" LIMIT 1)",
-                             .postgres = R"(SELECT "name", "address" FROM "Users" LIMIT 1)",
-                             .sqlServer = R"(SELECT TOP 1 "name", "address" FROM "Users")",
-                             .oracle = R"(SELECT "name", "address" FROM "Users" FETCH FIRST 1 ROWS ONLY)",
-                         });
+    checkSqlQueryBuilder([](SqlQueryBuilder& q) { return q.FromTable("Users").Select().Fields<Users>().All(); },
+                         QueryExpectations::All(R"(SELECT "id", "name", "address" FROM "Users")"));
+
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            // clang-format off
+            return q.FromTable(RecordTableName<Users>)
+                    .Select()
+                    .Fields<Users, Orders>()
+                    .LeftOuterJoin(RecordTableName<Orders>, "userId", "id")
+                    .All();
+            // clang-format onn
+        },
+        QueryExpectations::All(
+            R"(SELECT "Users"."id", "Users"."name", "Users"."address", "Orders"."id", "Orders"."userId", "Orders"."comment" FROM "Users"
+               LEFT OUTER JOIN "Orders" ON "Orders"."userId" = "Users"."id")"));
 }
 
 struct UsersFields

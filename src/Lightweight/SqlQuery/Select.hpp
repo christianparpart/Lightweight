@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../Utils.hpp"
 #include "Core.hpp"
 
 #include <reflection-cpp/reflection.hpp>
@@ -97,7 +98,8 @@ class [[nodiscard]] SqlSelectQueryBuilder final: public detail::SqlWhereClauseBu
     LIGHTWEIGHT_API SqlSelectQueryBuilder& Fields(std::initializer_list<std::string_view> const& fieldNames,
                                                   std::string_view tableName);
 
-    template <typename Record>
+    /// Adds a sequence of columns from the given tables to the SELECT clause.
+    template <typename FirstRecord, typename... MoreRecords>
     SqlSelectQueryBuilder& Fields();
 
     /// Adds a single column with an alias to the SELECT clause.
@@ -175,14 +177,32 @@ inline LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& SqlSelectQueryBuilder::Bu
     return *this;
 }
 
-template <typename Record>
+template <typename FirstRecord, typename... MoreRecords>
 inline LIGHTWEIGHT_FORCE_INLINE SqlSelectQueryBuilder& SqlSelectQueryBuilder::Fields()
 {
-    std::vector<std::string_view> fieldsNames;
-    Reflection::EnumerateMembers<Record>([&]<size_t FieldIndex, typename FieldType>() {
-            fieldsNames.push_back(std::string_view{Reflection::MemberNameOf<FieldIndex, Record>});
-    });
-    return Fields(fieldsNames);
+    if constexpr (sizeof...(MoreRecords) == 0)
+    {
+        Reflection::EnumerateMembers<FirstRecord>(
+            [&]<size_t FieldIndex, typename FieldType>() { Field(Reflection::MemberNameOf<FieldIndex, FirstRecord>); });
+    }
+    else
+    {
+        Reflection::EnumerateMembers<FirstRecord>([&]<size_t FieldIndex, typename FieldType>() {
+            Field(SqlQualifiedTableColumnName {
+                .tableName = RecordTableName<FirstRecord>,
+                .columnName = Reflection::MemberNameOf<FieldIndex, FirstRecord>,
+            });
+        });
+
+        (Reflection::EnumerateMembers<MoreRecords>([&]<size_t FieldIndex, typename FieldType>() {
+             Field(SqlQualifiedTableColumnName {
+                 .tableName = RecordTableName<MoreRecords>,
+                 .columnName = Reflection::MemberNameOf<FieldIndex, MoreRecords>,
+             });
+         }),
+         ...);
+    }
+    return *this;
 }
 
 /// @}
