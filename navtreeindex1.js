@@ -1,5 +1,7 @@
 var NAVTREEINDEX1 =
 {
+"class_sql_select_query_builder.html#acd9a64863ff8499b7d762f3ced2d3be1":[4,0,25,3],
+"class_sql_select_query_builder.html#ae3645baf1d575e42c553f28db319c85a":[4,0,25,14],
 "class_sql_select_query_builder.html#af9636e9707f36e3c6b5e21ff538758e7":[4,0,25,8],
 "class_sql_statement.html":[4,0,26],
 "class_sql_statement.html#a0071b804ef24c9c48ee18e5c1e20aede":[4,0,26,16],
@@ -94,8 +96,8 @@ var NAVTREEINDEX1 =
 "group___data_mapper.html#ga4565e3cf41830db5a08951da5702c776":[2,0,8],
 "group___query_builder.html":[2,1],
 "hierarchy.html":[4,1],
-"index.html":[],
 "index.html":[0],
+"index.html":[],
 "index.html#example-crud-style-high-level-data-mapping":[0,1],
 "index.html#example-simple-row-retrieval-via-structs":[0,2],
 "index.html#goals":[0,0],

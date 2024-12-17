@@ -10,7 +10,7 @@ var annotated_dup =
     [ "SqlConnection", "class_sql_connection.html", "class_sql_connection" ],
     [ "SqlConnectionDataSource", "struct_sql_connection_data_source.html", null ],
     [ "SqlConnectionString", "struct_sql_connection_string.html", null ],
-    [ "SqlCreateTableQueryBuilder", "class_sql_create_table_query_builder.html", null ],
+    [ "SqlCreateTableQueryBuilder", "class_sql_create_table_query_builder.html", "class_sql_create_table_query_builder" ],
     [ "SqlDeleteQueryBuilder", "class_sql_delete_query_builder.html", null ],
     [ "SqlErrorInfo", "struct_sql_error_info.html", null ],
     [ "SqlInsertQueryBuilder", "class_sql_insert_query_builder.html", null ],

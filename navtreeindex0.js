@@ -173,6 +173,8 @@ var NAVTREEINDEX0 =
 "class_sql_connection.html#aef6cca4aa9eda1d8a999ca681c3a1987":[4,0,7,21],
 "class_sql_connection.html#afe8d59e4a7c36314e15ee135b51e5ebc":[4,0,7,6],
 "class_sql_create_table_query_builder.html":[2,1,3],
+"class_sql_create_table_query_builder.html#a0072543c2affaa06d3ddf5b1a2d632b7":[2,1,3,0],
+"class_sql_create_table_query_builder.html#ac53b30a0e5df011418f0264090ce49c5":[2,1,3,1],
 "class_sql_delete_query_builder.html":[2,1,1],
 "class_sql_insert_query_builder.html":[2,1,2],
 "class_sql_join_condition_builder.html":[4,0,14],
@@ -247,7 +249,5 @@ var NAVTREEINDEX0 =
 "class_sql_select_query_builder.html#aa58e6a65bcca55afe0316bcfa1dd60bd":[4,0,25,2],
 "class_sql_select_query_builder.html#aa8b8176ba3661ceb0a0a2ac0d5f71c4e":[4,0,25,15],
 "class_sql_select_query_builder.html#aac98428d3a591ed18854c36b76489b7c":[4,0,25,0],
-"class_sql_select_query_builder.html#ab6b6bbe36ee51d4de422c8681266da3d":[4,0,25,13],
-"class_sql_select_query_builder.html#acd9a64863ff8499b7d762f3ced2d3be1":[4,0,25,3],
-"class_sql_select_query_builder.html#ae3645baf1d575e42c553f28db319c85a":[4,0,25,14]
+"class_sql_select_query_builder.html#ab6b6bbe36ee51d4de422c8681266da3d":[4,0,25,13]
 };
