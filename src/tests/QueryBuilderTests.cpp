@@ -812,7 +812,7 @@ TEST_CASE_METHOD(SqlTestFixture, "CreateTable with Index", "[SqlQueryBuilder][Mi
                                )sql"));
 }
 
-TEST_CASE_METHOD(SqlTestFixture, "CreateTable with Foreign key", "[SqlQueryBuilder][Migration]")
+TEST_CASE_METHOD(SqlTestFixture, "CreateTable with foreign key", "[SqlQueryBuilder][Migration]")
 {
     using namespace SqlColumnTypeDefinitions;
     checkSqlQueryBuilder(
@@ -828,15 +828,19 @@ TEST_CASE_METHOD(SqlTestFixture, "CreateTable with Foreign key", "[SqlQueryBuild
         },
         QueryExpectations {
             .sqlite = R"sql(CREATE TABLE "Table" (
-                                   FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id")
+                                   "other_id" INTEGER,
+                                   CONSTRAINT FK_other_id FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id")
                                      );)sql",
             .postgres = R"sql(CREATE TABLE "Table" (
-                                   FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id")
+                                   "other_id" INTEGER,
+                                   CONSTRAINT FK_other_id FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id")
                                      );)sql",
             .sqlServer = R"sql(CREATE TABLE "Table" (
+                                   "other_id" INTEGER,
                                    CONSTRAINT FK_other_id FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id")
                                      );)sql",
             .oracle = R"sql(CREATE TABLE "Table" (
+                                   "other_id" INTEGER,
                                    CONSTRAINT FK_other_id FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id")
                                      );)sql",
         });

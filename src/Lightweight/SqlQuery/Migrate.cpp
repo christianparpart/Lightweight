@@ -124,7 +124,7 @@ SqlCreateTableQueryBuilder& SqlCreateTableQueryBuilder::RequiredColumn(std::stri
 SqlCreateTableQueryBuilder& SqlCreateTableQueryBuilder::Timestamps()
 {
     RequiredColumn("created_at", SqlColumnTypeDefinitions::DateTime {}).Index();
-    RequiredColumn("updated_at", SqlColumnTypeDefinitions::Timestamp {}).Index();
+    RequiredColumn("updated_at", SqlColumnTypeDefinitions::DateTime {}).Index();
     return *this;
 }
 
@@ -157,6 +157,18 @@ SqlCreateTableQueryBuilder& SqlCreateTableQueryBuilder::PrimaryKeyWithAutoIncrem
 SqlCreateTableQueryBuilder& SqlCreateTableQueryBuilder::ForeignKey(std::string columnName,
                                                                    SqlColumnTypeDefinition columnType,
                                                                    SqlForeignKeyReferenceDefinition foreignKey)
+{
+    return Column(SqlColumnDeclaration {
+        .name = std::move(columnName),
+        .type = columnType,
+        .foreignKey = std::move(foreignKey),
+        .required = false,
+    });
+}
+
+SqlCreateTableQueryBuilder& SqlCreateTableQueryBuilder::RequiredForeignKey(std::string columnName,
+                                                                           SqlColumnTypeDefinition columnType,
+                                                                           SqlForeignKeyReferenceDefinition foreignKey)
 {
     return Column(SqlColumnDeclaration {
         .name = std::move(columnName),
