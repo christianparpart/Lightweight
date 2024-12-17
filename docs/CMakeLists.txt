@@ -38,6 +38,8 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_HTML_EXTRA_STYLESHEET "${CMAKE_BINARY_DIR}/_deps/doxygen-awesome-css-src/doxygen-awesome.css")
   set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
   set(DOXYGEN_EXCLUDE_SYMBOLS "detail,detail::*,std,std::*,benchmark,test")
+  set(DOXYGEN_CASE_SENSE_NAMES YES)
+  set(DOXYGEN_CREATE_SUBDIRS YES)
 
   # TODO: get include paths correct, e.g. <Lightweight/SqlConnection.hpp> rather than <SqlConnection.hpp>
   set(DOXYGEN_FULL_PATH_NAMES YES)
