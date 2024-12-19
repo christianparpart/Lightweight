@@ -6,7 +6,7 @@ var annotated_dup =
     [ "HasMany", "d3/d09/classHasMany.html", "d3/d09/classHasMany" ],
     [ "HasManyThrough", "df/dd6/classHasManyThrough.html", "df/dd6/classHasManyThrough" ],
     [ "HasOneThrough", "da/d9d/classHasOneThrough.html", "da/d9d/classHasOneThrough" ],
-    [ "SqlAlterTableQueryBuilder", "d3/d3f/classSqlAlterTableQueryBuilder.html", null ],
+    [ "SqlAlterTableQueryBuilder", "d3/d3f/classSqlAlterTableQueryBuilder.html", "d3/d3f/classSqlAlterTableQueryBuilder" ],
     [ "SqlConnection", "d7/d7b/classSqlConnection.html", "d7/d7b/classSqlConnection" ],
     [ "SqlConnectionDataSource", "df/dde/structSqlConnectionDataSource.html", null ],
     [ "SqlConnectionString", "d0/d8e/structSqlConnectionString.html", null ],
