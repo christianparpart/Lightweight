@@ -36,37 +36,6 @@ auto EraseLinefeeds(std::string str) noexcept -> std::string
     return str;
 }
 
-[[nodiscard]] std::string NormalizeText(std::string_view const& text)
-{
-    auto result = std::string(text);
-
-    // Remove any newlines and reduce all whitespace to a single space
-    result.erase(
-        std::unique(result.begin(), result.end(), [](char a, char b) { return std::isspace(a) && std::isspace(b); }),
-        result.end());
-
-    // trim lading and trailing whitespace
-    while (!result.empty() && std::isspace(result.front()))
-        result.erase(result.begin());
-
-    while (!result.empty() && std::isspace(result.back()))
-        result.pop_back();
-
-    return result;
-}
-
-[[nodiscard]] std::string NormalizeText(std::vector<std::string> const& texts)
-{
-    auto result = std::string {};
-    for (auto const& text: texts)
-    {
-        if (!result.empty())
-            result += '\n';
-        result += NormalizeText(text);
-    }
-    return result;
-}
-
 template <typename TheSqlQuery>
     requires(std::is_invocable_v<TheSqlQuery, SqlQueryBuilder&>)
 void checkSqlQueryBuilder(TheSqlQuery const& sqlQueryBuilder,
@@ -210,7 +179,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.Fields", "[SqlQueryBuilder]")
 
 struct UsersFields
 {
-    Field<std::string> name;
+    Field<std::string, PrimaryKey::AutoAssign> name;
     Field<std::optional<std::string>> address;
 };
 
@@ -243,6 +212,7 @@ TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.FieldsWithBelongsTo", "[SqlQue
             .sqlServer = R"(SELECT TOP 1 "email", "user" FROM "QueryBuilderTestEmail")",
             .oracle = R"(SELECT "email", "user" FROM "QueryBuilderTestEmail" FETCH FIRST 1 ROWS ONLY)",
         });
+
 }
 
 TEST_CASE_METHOD(SqlTestFixture, "SqlQueryBuilder.ComplexOR", "[SqlQueryBuilder]")

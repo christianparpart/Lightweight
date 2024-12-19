@@ -19,6 +19,7 @@
 ///
 /// The `TheReferencedField` parameter is the field in the other record that references the current record,
 /// in the form of `&OtherRecord::Field`.
+/// Other Field must be a primary key.
 ///
 /// @ingroup DataMapper
 template <auto TheReferencedField, auto ColumnNameOverrideString = std::nullopt>
@@ -29,7 +30,7 @@ class BelongsTo
     static constexpr auto ReferencedField = TheReferencedField;
 
     /// If not an empty string, this value will be used as the column name in the database.
-    static constexpr std::string_view ColumnNameOverride = []() {
+    static constexpr std::string_view ColumnNameOverride = []() consteval {
         if constexpr (!std::same_as<decltype(ColumnNameOverrideString), std::nullopt_t>)
             return ColumnNameOverrideString;
         else
@@ -38,6 +39,9 @@ class BelongsTo
 
     /// Represents the record type of the other field.
     using ReferencedRecord = MemberClassType<decltype(TheReferencedField)>;
+
+    static_assert(std::remove_cvref_t<decltype(std::declval<ReferencedRecord>().*ReferencedField)>::IsPrimaryKey,
+                  "The referenced field must be a primary key.");
 
     /// Represents the column type of the foreign key, matching the primary key of the other record.
     using ValueType =

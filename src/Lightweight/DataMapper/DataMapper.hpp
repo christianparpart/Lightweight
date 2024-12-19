@@ -276,12 +276,14 @@ template <std::size_t I, typename Record>
 struct BelongsToNameImpl
 {
     static constexpr auto baseName = Reflection::MemberNameOf<I, Record>;
-    static constexpr auto storage = []() -> std::array<char, baseName.size() + 3> {
+    static constexpr auto storage = []() -> std::array<char, baseName.size() + 3>
+    {
         std::array<char, baseName.size() + 3> storage;
         std::copy_n(baseName.begin(), baseName.size(), storage.begin());
         std::copy_n("_id", 3, storage.begin() + baseName.size());
         return storage;
-    }();
+    }
+    ();
     static constexpr auto name = std::string_view(storage.data(), storage.size());
 };
 
@@ -329,6 +331,26 @@ std::vector<std::string> DataMapper::CreateTableString(SqlServerType serverType)
             else if constexpr (FieldType::IsPrimaryKey)
                 createTable.PrimaryKey(std::string(FieldNameOf<I, Record>),
                                        SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
+            else if constexpr (IsBelongsTo<FieldType>)
+            {
+                constexpr size_t referencedFieldIndex = []() constexpr -> size_t {
+                    size_t index = -1;
+                    Reflection::EnumerateMembers<typename FieldType::ReferencedRecord>(
+                        [&index]<size_t J, typename ReferencedFieldType>() constexpr -> void {
+                            if constexpr (IsField<ReferencedFieldType>)
+                                if constexpr (ReferencedFieldType::IsPrimaryKey)
+                                    index = J;
+                        });
+                    return index;
+                }();
+                createTable.ForeignKey(
+                    std::string(FieldNameOf<I, Record>),
+                    SqlColumnTypeDefinitionOf<typename FieldType::ValueType>,
+                    SqlForeignKeyReferenceDefinition {
+                        .tableName = std::string { RecordTableName<typename FieldType::ReferencedRecord> },
+                        .columnName =
+                            std::string { FieldNameOf<referencedFieldIndex, typename FieldType::ReferencedRecord> } });
+            }
             else if constexpr (FieldType::IsMandatory)
                 createTable.RequiredColumn(std::string(FieldNameOf<I, Record>),
                                            SqlColumnTypeDefinitionOf<typename FieldType::ValueType>);
@@ -834,11 +856,10 @@ void DataMapper::CallOnHasManyThrough(Record& record, Callable const& callback)
                                                     }
                                                 });
                                         })
-                                        .InnerJoin(
-                                            RecordTableName<ThroughRecord>,
-                                            FieldNameOf<ThroughBelongsToReferenceRecordIndex, ThroughRecord>,
-                                            SqlQualifiedTableColumnName { RecordTableName<ReferencedRecord>,
-                                                                          FieldNameOf<PrimaryKeyIndex, Record> })
+                                        .InnerJoin(RecordTableName<ThroughRecord>,
+                                                   FieldNameOf<ThroughBelongsToReferenceRecordIndex, ThroughRecord>,
+                                                   SqlQualifiedTableColumnName { RecordTableName<ReferencedRecord>,
+                                                                                 FieldNameOf<PrimaryKeyIndex, Record> })
                                         .Where(
                                             SqlQualifiedTableColumnName {
                                                 RecordTableName<ThroughRecord>,
