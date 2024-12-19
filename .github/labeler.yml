@@ -1,0 +1,26 @@
+"CI pipeline":
+    - .github/**
+CMake:
+    - "**CMakeLists.txt"
+    - cmake/**
+documentation:
+    - "**/*.md"
+    - docs/**
+benchmark:
+    - src/benchmark/**
+tests:
+    - src/tests/**
+ddl2cpp:
+    - src/tools/ddl2cpp**
+"Core API":
+    - src/Lightweight/*.cpp
+    - src/Lightweight/*.hpp
+"Data Binder":
+    - src/Lightweight/DataBinder/**
+"Data Mapper":
+    - src/Lightweight/DataMapper/**
+"Query Builder":
+    - src/Lightweight/SqlQuery/**
+    - src/Lightweight/SqlQuery*
+"CLI":
+    - src/tools/**
