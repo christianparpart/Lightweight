@@ -902,10 +902,10 @@ TEST_CASE_METHOD(SqlTestFixture, "AlterTable AddColumn", "[SqlQueryBuilder][Migr
             return migration.GetPlan();
         },
         QueryExpectations {
-            .sqlite = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT;)sql",
-            .postgres = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT;)sql",
-            .sqlServer = R"sql(ALTER TABLE "Table" ADD "column" BIGINT;)sql",
-            .oracle = R"sql(ALTER TABLE "Table" ADD COLUMN "column" NUMBER;)sql",
+            .sqlite = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT NOT NULL;)sql",
+            .postgres = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT NOT NULL;)sql",
+            .sqlServer = R"sql(ALTER TABLE "Table" ADD "column" BIGINT NOT NULL;)sql",
+            .oracle = R"sql(ALTER TABLE "Table" ADD COLUMN "column" NUMBER NOT NULL;)sql",
         });
 }
 
@@ -919,17 +919,17 @@ TEST_CASE_METHOD(SqlTestFixture, "AlterTable multiple AddColumn calls", "[SqlQue
             return migration.GetPlan();
         },
         QueryExpectations {
-            .sqlite = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT;
-                             ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR(255);
+            .sqlite = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT NOT NULL;
+                             ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR(255) NOT NULL;
                        )sql",
-            .postgres = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT;
-                             ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR(255);
+            .postgres = R"sql(ALTER TABLE "Table" ADD COLUMN "column" BIGINT NOT NULL;
+                             ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR(255) NOT NULL;
                        )sql",
-            .sqlServer = R"sql(ALTER TABLE "Table" ADD "column" BIGINT;
-                             ALTER TABLE "Table" ADD "column2" VARCHAR(255);
+            .sqlServer = R"sql(ALTER TABLE "Table" ADD "column" BIGINT NOT NULL;
+                             ALTER TABLE "Table" ADD "column2" VARCHAR(255) NOT NULL;
                        )sql",
-            .oracle = R"sql(ALTER TABLE "Table" ADD COLUMN "column" NUMBER;
-                             ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR2(255 CHAR);
+            .oracle = R"sql(ALTER TABLE "Table" ADD COLUMN "column" NUMBER NOT NULL;
+                             ALTER TABLE "Table" ADD COLUMN "column2" VARCHAR2(255 CHAR) NOT NULL;
                        )sql",
         });
 }
@@ -991,4 +991,38 @@ TEST_CASE_METHOD(SqlTestFixture, "AlterTable DropIndex", "[SqlQueryBuilder][Migr
             return migration.GetPlan();
         },
         QueryExpectations::All(R"sql(DROP INDEX "Table_column_index";)sql"));
+}
+
+TEST_CASE_METHOD(SqlTestFixture, "AlterTable AddForeignKeyColumn", "[SqlQueryBuilder][Migration]")
+{
+    using namespace SqlColumnTypeDefinitions;
+    checkSqlQueryBuilder(
+        [](SqlQueryBuilder& q) {
+            auto migration = q.Migration();
+            migration.AlterTable("Table").AddForeignKeyColumn("other_id",
+                                                              Integer {},
+                                                              SqlForeignKeyReferenceDefinition {
+                                                                  .tableName = "OtherTable",
+                                                                  .columnName = "id",
+                                                              });
+            return migration.GetPlan();
+        },
+        QueryExpectations {
+            .sqlite = R"sql(
+                        ALTER TABLE "Table" ADD COLUMN "other_id" INTEGER NOT NULL;
+                        ALTER TABLE "Table" ADD CONSTRAINT FK_other_id FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id");
+                    )sql",
+            .postgres = R"sql(
+                        ALTER TABLE "Table" ADD COLUMN "other_id" INTEGER NOT NULL;
+                        ALTER TABLE "Table" ADD CONSTRAINT FK_other_id FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id");
+                    )sql",
+            .sqlServer = R"sql(
+                        ALTER TABLE "Table" ADD "other_id" INTEGER NOT NULL;
+                        ALTER TABLE "Table" ADD CONSTRAINT FK_other_id FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id");
+                    )sql",
+            .oracle = R"sql(
+                        ALTER TABLE "Table" ADD "other_id" INTEGER NOT NULL;
+                        ALTER TABLE "Table" ADD CONSTRAINT FK_other_id FOREIGN KEY ("other_id") REFERENCES "OtherTable"("id");
+                    )sql",
+        });
 }
